@@ -1,4 +1,4 @@
-# fields_config.md
+﻿# fields_config.md
 
 > **Fields Config — конфігурація просторових впливів середовища**
 
@@ -224,7 +224,7 @@ max_value: 1.0
 default_value: 0.5
 ```
 
-Рекомендація для MVP:
+Рекомендація Для базової моделі:
 
 ```text id="58q0x5"
 0.0 = мінімальний вплив
@@ -265,7 +265,7 @@ spatial_mode: "uniform"
 default_value: 0.5
 ```
 
-Корисно для простих MVP-світів.
+Корисно для простих базових світів.
 
 ---
 
@@ -489,7 +489,7 @@ diffusion: 0.15
 
 Diffusion означає, що локальні значення вирівнюються між сусідніми клітинками простору.
 
-Для MVP:
+Для базової моделі:
 
 ```text id="f6z0ql"
 0.0 = не поширюється
@@ -534,7 +534,7 @@ inverse_square
 custom
 ```
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text id="svut4z"
 none
@@ -788,9 +788,9 @@ Moisture-like Field може задавати умови для diffusive або
 
 ---
 
-# MVP Field Set
+# базова модель Field Set
 
-Для MVP достатньо 4–5 Fields:
+Для базової моделі достатньо 4–5 Fields:
 
 ```yaml id="yhhu6d"
 fields:
@@ -1022,9 +1022,9 @@ Light або Heat не є прямим Energy Buffer клітини.
 
 Потрібно вирішити, чи Field зберігається як grid layer, continuous function або hybrid.
 
-## MVP spatial modes
+## базова модель spatial modes
 
-Потрібно вибрати мінімальні `spatial_mode` для MVP:
+Потрібно вибрати мінімальні `spatial_mode` Для базової моделі:
 
 ```text id="721ivh"
 uniform
@@ -1033,9 +1033,9 @@ zones
 dynamic
 ```
 
-## MVP temporal modes
+## базова модель temporal modes
 
-Потрібно вибрати мінімальні `temporal_mode` для MVP:
+Потрібно вибрати мінімальні `temporal_mode` Для базової моделі:
 
 ```text id="m6z1zp"
 constant
@@ -1063,3 +1063,5 @@ dynamic
 ## Config schema
 
 Потрібно створити формальну schema validation для Fields.
+
+

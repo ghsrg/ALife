@@ -1,4 +1,4 @@
-# philosophy.md
+﻿# philosophy.md
 
 > **Філософія побудови світу Artificial Life Engine**
 
@@ -308,16 +308,10 @@ Joint
 * `world/materials.md`
 * `biology/genome.md`
 
----
-
-# ADR
-
-Будь-яка зміна концепції світу повинна супроводжуватися Architecture Decision Record.
-
----
-
 # Open Questions
 
 На даному етапі філософія світу вважається стабільною.
 
 Подальші зміни стосуватимуться реалізації окремих механік, а не загальної концепції.
+
+

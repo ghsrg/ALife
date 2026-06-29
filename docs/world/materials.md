@@ -1,4 +1,4 @@
-# materials.md
+﻿# materials.md
 
 > **Матеріали — функціональна речовина клітини**
 
@@ -467,3 +467,4 @@ Rule 6.
 - fields.md
 - cell.md
 - genome.md
+

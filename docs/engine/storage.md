@@ -1,4 +1,4 @@
-# docs/engine/storage.md
+﻿# docs/engine/storage.md
 
 > **Storage — збереження метрик, подій, snapshot і дослідницьких даних**
 
@@ -172,7 +172,7 @@ run:
   engine_version: "0.1.0"
   config_hash: "..."
   seed: 12345
-  notes: "early earth-like MVP test"
+  notes: "early earth-like базова модель test"
 ```
 
 ---
@@ -210,9 +210,9 @@ full rendering state
 
 ---
 
-# Suggested MVP Formats
+# Suggested базова модель Formats
 
-Для MVP можна використати:
+Для базової моделі можна використати:
 
 ```text id="6wgtcd"
 JSON / JSONL for metadata and event logs
@@ -299,9 +299,11 @@ Full trace тільки для debug, не для кожного run.
 
 # Open Questions
 
-* Який формат storage обрати для MVP?
+* Який формат storage обрати Для базової моделі?
 * Чи потрібна SQLite/Parquet пізніше?
 * Як зберігати великі grid layers?
 * Чи потрібен replay без повного snapshot?
 * Як зв’язувати event log із lineage tree?
 * Які metrics є must-have для першого vertical slice?
+
+

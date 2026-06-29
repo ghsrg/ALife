@@ -1,4 +1,4 @@
-# docs/engine/physics.md
+﻿# docs/engine/physics.md
 
 > **Physics Engine — рух, простір, зіткнення, тиск, Joint і матеріальні наслідки**
 
@@ -10,7 +10,7 @@
 
 Цей файл не задає повний physics solver.
 
-Його задача — пояснити агенту, що physics має бути достатньо простою для MVP, але всі біологічні наслідки мають проходити через матеріальну модель.
+Його задача — пояснити агенту, що physics має бути достатньо простою Для базової моделі, але всі біологічні наслідки мають проходити через матеріальну модель.
 
 ---
 
@@ -45,7 +45,7 @@ Movement / Pressure / Collision / Damage
 
 Physics Engine не є:
 
-* реалістичним soft-body симулятором у MVP;
+* реалістичним soft-body симулятором У базовій моделі;
 * системою HP damage;
 * поведінкою клітин;
 * організмовим контролером;
@@ -54,9 +54,9 @@ Physics Engine не є:
 
 ---
 
-# MVP Scope
+# Scope базової моделі
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text id="btr58y"
 2D position
@@ -70,7 +70,7 @@ movement cost support
 material damage hooks
 ```
 
-Не потрібно в MVP:
+Не потрібно у базовій моделі:
 
 ```text id="yf3z2c"
 full soft-body physics
@@ -85,7 +85,7 @@ detailed deformation mesh
 
 # Space
 
-MVP світ — 2D.
+базова модель світ — 2D.
 
 ```text id="usys73"
 Position:
@@ -184,7 +184,7 @@ Pressure впливає на клітини лише через Materials і Bou
 
 Joint може працювати як просте distance constraint або spring-like connection.
 
-MVP:
+базова модель:
 
 ```text id="6jup17"
 Joint tries to keep cells within max_distance.
@@ -220,7 +220,7 @@ cell.hp -= damage
 
 Physics Engine має підтримувати spatial index.
 
-MVP:
+базова модель:
 
 ```text id="w242kh"
 uniform grid
@@ -240,7 +240,7 @@ uniform grid
 
 Physics має виконуватися після Action Execution або у визначеній фазі Scheduler.
 
-Рекомендований MVP порядок:
+Рекомендований базова модель порядок:
 
 ```text id="7bdeiq"
 Cell requests movement
@@ -269,7 +269,7 @@ Mass, volume, pressure і damage мають походити з Resources і Mat
 
 Joint має mechanical consequence і може рватися.
 
-## Rule 5. MVP physics must stay simple
+## Rule 5. базова модель physics must stay simple
 
 Краще проста стабільна модель, ніж складний solver без користі.
 
@@ -304,11 +304,13 @@ Joint має mechanical consequence і може рватися.
 
 # Open Questions
 
-* Чи cell shape у MVP — circle?
+* Чи cell shape У базовій моделі — circle?
 * Чи volume впливає на radius?
 * Чи pressure буде Field, derived value або physics-only value?
 * Чи Joint spring-like, чи distance constraint?
-* Чи потрібен flow у Physics MVP?
+* Чи потрібен flow у Physics базова модель?
 
 ---
+
+
 

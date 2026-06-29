@@ -1,10 +1,10 @@
-# docs/research/mobile-genetic-elements.md
+﻿# docs/research/mobile-genetic-elements.md
 
 > **Mobile Genetic Elements — мобільні genetic fragments, plasmid-like і HGT-compatible ідеї**
 
 ---
 
-# Статус
+# Research Note
 
 Research / future design.
 
@@ -38,7 +38,7 @@ docs/biology/genome.md
 
 # Поточна позиція
 
-Для MVP не потрібно реалізовувати plasmid-like genome system.
+Для базової моделі не потрібно реалізовувати plasmid-like genome system.
 
 Достатньо, щоб архітектура не блокувала майбутні:
 
@@ -119,7 +119,7 @@ virus-like emergent dynamics
 * вводити infection system;
 * робити fragment always beneficial;
 * додавати species-specific genetic exchange;
-* ускладнювати MVP.
+* ускладнювати базова модель.
 
 ---
 
@@ -138,7 +138,9 @@ virus-like emergent dynamics
 
 Цей файл навмисно короткий.
 
-Він існує, щоб зафіксувати майбутній research напрямок і не дозволити агенту випадково впровадити plasmid або virus-like behavior у MVP.
+Він існує, щоб зафіксувати майбутній research напрямок і не дозволити агенту випадково впровадити plasmid або virus-like behavior У базовій моделі.
 
 ---
+
+
 

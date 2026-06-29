@@ -1,4 +1,4 @@
-# engine/serialization.md
+﻿# engine/serialization.md
 
 > **Serialization — збереження, завантаження і відтворюваність симуляції**
 
@@ -122,7 +122,7 @@ rng:
   weather_rng_state: "..."
 ```
 
-Для MVP можна почати з одного RNG state.
+Для базової моделі можна почати з одного RNG state.
 
 ---
 
@@ -186,7 +186,7 @@ joint:
 
 Fields можуть бути великими.
 
-Для MVP можна зберігати:
+Для базової моделі можна зберігати:
 
 ```text id="fpwecb"
 field config
@@ -241,9 +241,9 @@ catastrophe
 
 ---
 
-# MVP Recommendation
+# Recommendation базової моделі
 
-Для MVP:
+Для базової моделі:
 
 ```text id="8vywwb"
 JSON or MessagePack for snapshots
@@ -299,11 +299,13 @@ Genome, Cell, Joint і Lineage повинні мати стабільні ids.
 
 # Open Questions
 
-* Який формат snapshot для MVP: JSON, MessagePack, SQLite?
+* Який формат snapshot Для базової моделі: JSON, MessagePack, SQLite?
 * Чи потрібна compression?
 * Як зберігати великі Field layers?
 * Як робити migration між schema versions?
 * Як часто робити full snapshots?
 
 ---
+
+
 

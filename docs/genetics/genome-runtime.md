@@ -1,4 +1,4 @@
-# genome-runtime.md
+﻿# genome-runtime.md
 
 > **Genome Runtime — виконання регуляторної мережі під час Cell Decision**
 
@@ -176,7 +176,7 @@ Source: aggregated signal from connected Joint
 unavailable
 ```
 
-Для MVP простіше використовувати `0.0`.
+Для базової моделі простіше використовувати `0.0`.
 
 ---
 
@@ -257,7 +257,7 @@ value = clamp(value, 0.0, 1.0)
 -1.0 .. 1.0
 ```
 
-але MVP краще тримати простим.
+але базова модель краще тримати простим.
 
 ---
 
@@ -366,7 +366,7 @@ Threshold reached
 Output activated
 ```
 
-Для MVP stateful nodes можна відкласти, але модель повинна не блокувати їх появу.
+Для базової моделі stateful nodes можна відкласти, але модель повинна не блокувати їх появу.
 
 ---
 
@@ -408,13 +408,13 @@ fixed-step recurrent execution
 event-like propagation
 ```
 
-Для MVP краще вибрати один простий режим.
+Для базової моделі краще вибрати один простий режим.
 
 ---
 
-# MVP Execution Mode
+# базова модель Execution Mode
 
-Рекомендований MVP-режим:
+Рекомендований режим базової моделі:
 
 ```text
 DAG execution
@@ -480,7 +480,7 @@ convergence_threshold
 deterministic update order
 ```
 
-Для MVP цикли краще не вмикати або дозволити тільки через явно обмежену кількість кроків.
+Для базової моделі цикли краще не вмикати або дозволити тільки через явно обмежену кількість кроків.
 
 ---
 
@@ -524,7 +524,7 @@ activation_function(weighted_sum)
 node_activation = clamp(node_activation, min_value, max_value)
 ```
 
-Для MVP:
+Для базової моделі:
 
 ```text
 min_value = 0.0
@@ -535,7 +535,7 @@ max_value = 1.0
 
 # Activation Functions
 
-Мінімальний набір для MVP:
+Мінімальний набір Для базової моделі:
 
 ```text
 linear_clamp
@@ -634,7 +634,7 @@ Output priority можна інтерпретувати як:
 * порядок важливості;
 * інтенсивність.
 
-Для MVP краще трактувати priority як силу запиту:
+Для базової моделі краще трактувати priority як силу запиту:
 
 ```text
 0.0 = процес не запитується
@@ -686,11 +686,12 @@ Feasibility Check перевіряє:
 Якщо процес неможливий, він:
 
 * не виконується;
-* виконується частково;
 * переходить у failure mode;
 * створює побічний ефект, якщо це визначено процесом.
 
 Genome Runtime не вирішує це сам.
+
+Якщо Energy недостатньо для planned action, action не виконується.
 
 ---
 
@@ -700,9 +701,9 @@ Genome Runtime може мати Energy cost.
 
 Можливі варіанти:
 
-## Варіант A. Runtime без Energy cost у MVP
+## Варіант A. Runtime без Energy cost У базовій моделі
 
-Простіше для першої реалізації.
+Простіше для базової моделі.
 
 Підходить, якщо потрібно швидко отримати живу симуляцію.
 
@@ -728,7 +729,7 @@ base_cost
 + runtime_steps * step_cost
 ```
 
-Для MVP можна почати без cost, але зафіксувати, що більший Genome має вартість через copying, storage і mutation risk.
+Для базової моделі можна почати без cost, але зафіксувати, що більший Genome має вартість через copying, storage і mutation risk.
 
 ---
 
@@ -753,7 +754,7 @@ base_cost
 * cell enters dormant state;
 * cell dies if maintenance impossible.
 
-Для MVP краще мати просте правило:
+Для базової моделі краще мати просте правило:
 
 ```text
 Invalid Genome Runtime -> no regulated active processes
@@ -803,7 +804,7 @@ value = default_value
 input disabled
 ```
 
-Для MVP:
+Для базової моделі:
 
 ```text
 missing input = 0.0
@@ -955,7 +956,7 @@ GenomeRuntimeOutput
 └── errors
 ```
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text
 process_priorities
@@ -1172,9 +1173,9 @@ Result:
 
 ---
 
-# MVP Runtime
+# Runtime базової моделі
 
-Для першої реалізації рекомендується:
+Для базової моделі рекомендується:
 
 ```text
 Graph type: DAG
@@ -1271,38 +1272,23 @@ Genome Runtime не повинен залежати від порядку вик
 * `engine/scheduler.md`
 * `engine/serialization.md`
 
----
-
-# ADR
-
-Потрібні ADR:
-
-```text
-ADR-000X: Genome Runtime Runs During Cell Decision
-ADR-000X: Runtime Outputs Priorities, Not Actions
-ADR-000X: Runtime State Is Not Genome
-ADR-000X: MVP Genome Runtime Uses DAG Execution
-```
-
----
-
 # Open Questions
 
 ## Runtime energy cost
 
-Потрібно вирішити, чи Runtime витрачає Energy у MVP.
+Потрібно вирішити, чи Runtime витрачає Energy У базовій моделі.
 
 ## Cycles
 
 Потрібно вирішити, чи дозволяти цикли:
 
-* заборонити в MVP;
+* заборонити у базовій моделі;
 * дозволити через fixed runtime steps;
 * дозволити лише для stateful nodes.
 
 ## Stateful nodes
 
-Потрібно визначити, чи MVP підтримує накопичення сигналу у вузлах.
+Потрібно визначити, чи базова модель підтримує накопичення сигналу у вузлах.
 
 ## Activation functions
 
@@ -1326,7 +1312,7 @@ missing input = 0.0
 
 ## Epigenetic modifiers
 
-Потрібно визначити, які саме параметри може змінювати epigenetic_state у MVP.
+Потрібно визначити, які саме параметри може змінювати epigenetic_state У базовій моделі.
 
 ## Debug trace
 
@@ -1335,3 +1321,5 @@ missing input = 0.0
 ## Parallel execution
 
 Потрібно деталізувати правила scheduler для паралельного виконання Genome Runtime.
+
+

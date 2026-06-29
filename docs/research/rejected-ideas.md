@@ -1,10 +1,10 @@
-# docs/research/rejected-ideas.md
+﻿# docs/research/rejected-ideas.md
 
-> **Rejected Ideas — ідеї, які не входять у канон або MVP**
+> **Rejected Ideas — ідеї, які не входять у канон або базова модель**
 
 ---
 
-# Статус
+# Research Note
 
 Active guardrail document.
 
@@ -107,7 +107,7 @@ PreyCell
 * cells remain primary agents;
 * organism-like structure — це Cell-Joint graph;
 * communication локальна;
-* global brain не є MVP.
+* global brain не є базова модель.
 
 ---
 
@@ -233,4 +233,6 @@ World scenario не повинен спавнити готові species або 
 Це активний guardrail document.
 
 ---
+
+
 

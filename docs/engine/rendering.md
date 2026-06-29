@@ -1,4 +1,4 @@
-# docs/engine/rendering.md
+﻿# docs/engine/rendering.md
 
 > **Rendering — візуалізація симуляції без впливу на поведінку**
 
@@ -49,9 +49,9 @@ Rendering не є:
 
 ---
 
-# MVP Scope
+# Scope базової моделі
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text id="jwdcnk"
 2D viewport
@@ -64,7 +64,7 @@ basic time controls
 population metrics panel
 ```
 
-Не потрібно в MVP:
+Не потрібно у базовій моделі:
 
 ```text id="42p7ud"
 3D
@@ -293,4 +293,6 @@ Observed roles, organism labels і species-like clusters не є input для к
 * Чи потрібен replay viewer для snapshots?
 
 ---
+
+
 

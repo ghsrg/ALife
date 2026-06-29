@@ -1,10 +1,10 @@
-# docs/research/reproduction-strategy-options.md
+﻿# docs/research/reproduction-strategy-options.md
 
 > **Reproduction Strategy Options — майбутні варіанти стратегій розмноження**
 
 ---
 
-# Статус
+# Research Note
 
 Research / future design.
 
@@ -23,15 +23,15 @@ docs/biology/organism.md
 
 Цей файл призначений для майбутніх варіантів reproduction strategy.
 
-Він не описує MVP реалізацію.
+Він не описує реалізацію базової моделі.
 
-MVP має починатися з простого cell division і inheritance.
+базова модель має починатися з простого cell division і inheritance.
 
 ---
 
 # Поточна позиція
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text id="9unvnt"
 one parent cell
@@ -108,7 +108,7 @@ viable descendant structure
 
 Файл варто доповнювати, коли:
 
-* MVP cell division працює стабільно;
+* базова модель cell division працює стабільно;
 * з'явиться organism-like structure;
 * fragmentation стане реальною подією;
 * буде потрібна recombination between lineages;
@@ -152,4 +152,6 @@ viable descendant structure
 
 Цей файл є research placeholder.
 
-Не розширювати його в MVP-реалізацію без окремого завдання або ADR.
+Не розширювати його в реалізацію базової моделі без окремого завдання або ADR.
+
+

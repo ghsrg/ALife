@@ -1,4 +1,4 @@
-# evolution/selection.md
+﻿# evolution/selection.md
 
 > **Selection — відбір через виживання, розмноження і зникнення ліній**
 
@@ -243,6 +243,8 @@ Cell, colony, organism-like і lineage рівні можуть давати рі
 * Які metrics потрібні для аналізу selection?
 * Чи рахувати selection на рівні cell lineage або organism-like structures?
 * Як відрізняти selection від drift у логах?
-* Які population-level метрики потрібні для MVP?
+* Які population-level метрики потрібні Для базової моделі?
 
 ---
+
+

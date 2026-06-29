@@ -1,4 +1,4 @@
-# evolution/species-like-clusters.md
+﻿# evolution/species-like-clusters.md
 
 > **Species-like Clusters — видоподібні групи без hardcoded species_id**
 
@@ -180,7 +180,7 @@ organism structure similarity
 niche similarity
 ```
 
-Для MVP це можна не реалізовувати.
+Для базової моделі це можна не реалізовувати.
 
 ---
 
@@ -222,9 +222,9 @@ Organism-like structures можуть підсилювати species-like bounda
 
 ---
 
-# MVP Recommendation
+# Recommendation базової моделі
 
-Для MVP не треба вводити species system.
+Для базової моделі не треба вводити species system.
 
 Достатньо:
 
@@ -292,7 +292,8 @@ Species-like label не може бути input для Genome Runtime.
 
 # Open Questions
 
-* Чи потрібне species-like clustering у MVP?
+* Чи потрібне species-like clustering У базовій моделі?
 * Який metric краще: genome similarity, lineage distance чи fragment sharing?
 * Як аналізувати mixed-genome organism-like structures?
 * Чи потрібні fuzzy cluster labels у debug UI?
+

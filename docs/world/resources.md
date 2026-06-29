@@ -1,4 +1,4 @@
-# resources.md
+﻿# resources.md
 
 > **Ресурси — універсальні рухомі речовини світу**
 
@@ -633,3 +633,4 @@ volume occupation.
 - fields.md
 - physics.md
 - biology/cell.md
+

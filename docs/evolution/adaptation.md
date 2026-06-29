@@ -1,4 +1,4 @@
-# evolution/adaptation.md
+﻿# evolution/adaptation.md
 
 > **Adaptation — зміни, які підвищують відповідність клітини, lineage або структури до середовища**
 
@@ -229,4 +229,6 @@ Adaptation — це результат взаємодії variation, environment
 * Як логувати adaptive shifts у population?
 
 ---
+
+
 

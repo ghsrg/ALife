@@ -1,4 +1,4 @@
-# evolution/population-dynamics.md
+﻿# evolution/population-dynamics.md
 
 > **Population Dynamics — зміни чисельності, складу і структури популяцій**
 
@@ -305,11 +305,13 @@ Population metrics не повинні бути входами для кліти
 
 # Open Questions
 
-* Які population metrics обов'язкові для MVP?
+* Які population metrics обов'язкові Для базової моделі?
 * Чи логувати lineage tree?
 * Чи потрібна окрема система для genome variant clustering?
 * Як зберігати population snapshots без перевантаження storage?
 
 ---
+
+
 
 

@@ -1,4 +1,4 @@
-# processes.md
+﻿# processes.md
 
 > **Cell Processes — локальні процеси клітини**
 
@@ -134,12 +134,15 @@ Resource + Energy + Synthesis-capable Material -> Material
 Недостатня Energy може призвести до:
 
 * скасування процесу;
-* часткового виконання;
 * зменшення швидкості;
 * деградації матеріалів;
 * накопичення незавершених станів.
 
-Точні правила часткового виконання визначаються окремо.
+Активний процес не виконується, якщо Energy недостатньо для його повного виконання.
+
+Якщо у Tick заплановано кілька активних процесів і Energy недостатньо для всього набору planned actions, planned actions не виконуються в цьому Tick.
+
+Обов'язкові витрати підтримки обробляються окремо від planned actions.
 
 ---
 
@@ -204,8 +207,6 @@ Resource + Energy + Synthesis-capable Material -> Material
 Можливі режими відмови:
 
 * процес не запускається;
-* процес виконується частково;
-* ресурси витрачаються, але результат неповний;
 * створюється побічний продукт;
 * виникає Heat;
 * пошкоджується Material;
@@ -282,18 +283,15 @@ Genome не може обійти Feasibility Check.
 
 ---
 
-# Пріоритети процесів
+# Конфлікт процесів за Energy
 
-Якщо кілька процесів одночасно хочуть використати однакові ресурси або Energy, потрібен механізм пріоритетів.
+Якщо кілька процесів одночасно хочуть використати однакові ресурси або Energy, рушій не повинен випадково обрати перший процес у порядку обходу.
 
-Пріоритети можуть походити з:
+Для базової моделі діє консервативне правило:
 
-* Genome output;
-* epigenetic state;
-* emergency state;
-* lifecycle state;
-* material constraints;
-* engine-level deterministic ordering.
+* mandatory costs обробляються першими, якщо Energy достатньо;
+* якщо Energy недостатньо для всього набору planned actions, planned actions не виконуються;
+* порядок ітерації Systems або процесів не створює пріоритету.
 
 Приклад:
 
@@ -307,25 +305,7 @@ movement wants 4
 
 Клітина не може виконати все повністю.
 
-Потрібен розподіл.
-
----
-
-# Partial Execution
-
-Деякі процеси можуть виконуватися частково.
-
-Наприклад:
-
-* Pump може перенести менше ресурсу;
-* Repair може відновити менше Material;
-* Movement може бути слабшим;
-* Synthesis може накопичувати progress;
-* Genome copying може бути незавершеним.
-
-Не всі процеси повинні підтримувати часткове виконання.
-
-Це визначається типом процесу.
+У цьому Tick planned actions не виконуються.
 
 ---
 
@@ -528,7 +508,7 @@ Energy витрачається на:
 * maintenance;
 * division.
 
-Якщо Energy недостатньо, процес повинен пройти через failure або partial execution.
+Якщо Energy недостатньо, активний процес не виконується.
 
 ---
 
@@ -679,7 +659,7 @@ Maintenance може потребувати Energy навіть тоді, кол
 * Genome може пошкоджуватися;
 * клітина втрачає функціональність.
 
-Maintenance не повинен бути великим прихованим податком у MVP, але має існувати як принцип.
+Maintenance не повинен бути великим прихованим податком У базовій моделі, але має існувати як принцип.
 
 ---
 
@@ -725,7 +705,7 @@ Movement не є hardcoded поведінкою.
 * damage;
 * division preparation.
 
-У MVP shape може бути спрощена до кола, а Shape Change — до зміни radius або elasticity.
+У базовій моделі shape може бути спрощена до кола, а Shape Change — до зміни radius або elasticity.
 
 ---
 
@@ -1072,7 +1052,7 @@ Randomness не повинна підміняти фізику або регул
 
 ---
 
-# Мінімальний набір процесів для MVP
+# Мінімальний набір процесів Для базової моделі
 
 Для першої життєздатної симуляції достатньо:
 
@@ -1176,39 +1156,24 @@ Waste не є окремою сутністю.
 * `world/tick.md`
 * `engine/scheduler.md`
 
----
-
-# ADR
-
-Потрібні ADR:
-
-```text
-ADR-000X: Processes Transform State, Not Execute Behavior
-ADR-000X: Active Processes Require Energy
-ADR-000X: Waste Is Resource State
-ADR-000X: Feasibility Check Before Process Execution
-```
-
----
-
 # Open Questions
 
-## Partial execution
+## Process progress
 
-Потрібно визначити, які процеси підтримують часткове виконання.
+Потрібно визначити, які довгі процеси накопичують progress між Tick.
+
+Це не є частковим виконанням активної дії без достатньої Energy.
 
 Кандидати:
 
-* transport;
-* repair;
-* synthesis;
-* movement;
-* genome copying;
+* repair preparation;
+* synthesis preparation;
+* genome copying preparation;
 * division preparation.
 
 ## Process scheduling
 
-Потрібно визначити, як розподіляються Energy і Resources між конкуруючими процесами.
+Потрібно визначити, як planned actions перевіряються на достатність Energy і Resources без залежності від порядку ітерації.
 
 ## Process duration
 
@@ -1224,10 +1189,12 @@ ADR-000X: Feasibility Check Before Process Execution
 * Heat;
 * material damage.
 
-## MVP process list
+## базова модель process list
 
 Потрібно остаточно затвердити мінімальний список процесів для першої симуляції.
 
 ## Process formulas
 
 Потрібно винести точні формули в `engine/chemistry.md`, `engine/physics.md` або `engine/scheduler.md`.
+
+

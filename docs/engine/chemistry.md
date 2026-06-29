@@ -1,4 +1,4 @@
-# docs/engine/chemistry.md
+﻿# docs/engine/chemistry.md
 
 > **Chemistry Engine — базовий шар реакцій між Resources, Materials і середовищем**
 
@@ -56,9 +56,9 @@ Chemistry Engine не є:
 
 ---
 
-# MVP Scope
+# Scope базової моделі
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text id="ti0rls"
 Resource decay
@@ -70,7 +70,7 @@ Heat release from reactions
 Resource -> Energy conversion support
 ```
 
-Не потрібно в MVP:
+Не потрібно у базовій моделі:
 
 ```text id="p9z1po"
 complex chemistry
@@ -222,7 +222,7 @@ Stochastic reactions мають бути відтворюваними.
 * hardcoded sugar;
 * hardcoded toxin;
 * direct Energy creation;
-* real-world chemistry dependency in MVP.
+* real-world chemistry dependency in base model.
 
 ---
 
@@ -248,4 +248,6 @@ Stochastic reactions мають бути відтворюваними.
 * Чи потрібні catalysts як Material property, а не hardcoded enzyme?
 
 ---
+
+
 

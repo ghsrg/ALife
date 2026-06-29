@@ -1,4 +1,4 @@
-# organism.md
+﻿# organism.md
 
 > **Organism — стабільна багатоклітинна структура з взаємозалежних клітин**
 
@@ -13,6 +13,10 @@ Organism не є hardcoded сутністю.
 Organism не є готовим класом `Animal`, `Plant`, `Fungus`, `Body` або `Creature`.
 
 Organism — це emergent структура, яка може бути розпізнана як стабільний граф клітин, що разом підтримують життя, ріст, repair, reproduction або іншу довготривалу функціональність.
+
+Світ не використовує `Organism` як поведінкову сутність.
+
+Observer, debug UI, lineage tools і research metrics можуть відстежувати `Organism` як derived analytical view над Cells + Joints + Genome lineage.
 
 ---
 
@@ -371,7 +375,7 @@ cluster split
 fusion-like reproduction
 ```
 
-У MVP достатньо, щоб organism-like structure виникав з поділу клітин і Joint.
+У базовій моделі достатньо, щоб organism-like structure виникав з поділу клітин і Joint.
 
 Складні репродуктивні стратегії можна описати пізніше.
 
@@ -888,7 +892,7 @@ specialized reproductive cells
 fusion-like reproduction
 ```
 
-Для MVP достатньо cell-level division.
+Для базової моделі достатньо cell-level division.
 
 Organism-level reproduction можна вважати emergent, якщо від структури відокремлюється життєздатний fragment або founder cell.
 
@@ -1199,14 +1203,14 @@ decomposing
 
 ---
 
-# MVP Organism Model
+# базова модель Organism Model
 
-Для MVP organism можна не робити активною engine-сутністю.
+Для базової моделі organism можна не робити активною engine-сутністю.
 
 Достатньо обчислювати organism-like structures як connected components.
 
 ```text id="fa7rfb"
-MVP:
+базова модель:
   organism-like structure = connected component of Cells through Joints
 ```
 
@@ -1226,7 +1230,7 @@ fragmentation_events
 
 ---
 
-# MVP Organism Detection
+# базова модель Organism Detection
 
 Просте правило:
 
@@ -1528,27 +1532,11 @@ Organism death — це втрата підтримуваної структур
 * `engine/ecs.md`
 * `engine/scheduler.md`
 
----
-
-# ADR
-
-Потрібні ADR:
-
-```text id="dfztv5"
-ADR-000X: Organism as Emergent Cell-Joint Graph
-ADR-000X: Organism Is Not a Global Controller
-ADR-000X: Colony-to-Organism Is a Continuum
-ADR-000X: Tissues and Organs Are Emergent Analytical Patterns
-ADR-000X: No Organism HP
-```
-
----
-
 # Open Questions
 
 ## Organism detection
 
-Потрібно визначити, чи organism detection у MVP буде лише connected component, чи з dependency score.
+Потрібно визначити, чи organism detection У базовій моделі буде лише connected component, чи з dependency score.
 
 ## Colony vs organism threshold
 
@@ -1587,6 +1575,8 @@ ADR-000X: No Organism HP
 
 Потрібно визначити мінімальний Organism Trace для debug UI і досліджень.
 
-## Engine-level entity
+## Organism observer model
 
-Потрібно вирішити, чи `Organism` буде engine-level entity, чи лише derived analytical view над Cells + Joints.
+Потрібно визначити мінімальні дані observer-side `OrganismView` для debug UI, lineage tracking і research metrics.
+
+

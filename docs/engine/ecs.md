@@ -1,4 +1,4 @@
-# engine/ecs.md
+﻿# engine/ecs.md
 
 > **ECS — базова архітектура Entity / Component / System**
 
@@ -39,7 +39,7 @@ System читає Components і змінює world state згідно з Tick sc
 
 # Основні Entity
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text id="9k1olc"
 CellEntity
@@ -142,11 +142,12 @@ Fields можуть бути реалізовані як grid layers або фу
 
 ```text id="qqygq9"
 LightField
-HeatField
 PressureField
 RadiationField
 FlowField
 ```
+
+`HeatField` не входить до базової моделі. На поточному рівні клітина має локальну temperature, а Heat передається лише через контакт або Joint.
 
 Field не є Resource.
 
@@ -156,7 +157,7 @@ Field не є Energy Buffer.
 
 ---
 
-# Мінімальні Components MVP
+# Мінімальні Components для базової моделі
 
 ```text id="i2ahk9"
 PositionComponent
@@ -174,7 +175,7 @@ LineageComponent
 
 ---
 
-# Мінімальні Systems MVP
+# Мінімальні Systems для базової моделі
 
 ```text id="1znrfq"
 FieldSystem
@@ -369,3 +370,5 @@ Observed roles, organism-like labels і species-like clusters не можуть 
 * Яка мінімальна структура Components для першого vertical slice?
 
 ---
+
+

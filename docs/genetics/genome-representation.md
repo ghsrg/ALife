@@ -1,4 +1,4 @@
-# genome-representation.md
+﻿# genome-representation.md
 
 > **Genome Representation — вибір формального представлення Genome**
 
@@ -18,23 +18,23 @@
 
 ---
 
-# Статус
+# Поточне базове рішення
 
-```text
-Status: Research / Mostly Stable
-```
-
-Базовий напрямок визначено:
+Базовий напрямок визначено як вимогу:
 
 ```text
 Genome = фізичний носій спадкової регуляторної мережі
 ```
 
-MVP-представлення:
+Представлення для базової моделі:
 
 ```text
 Genome as Direct Regulatory Graph
 ```
+
+Це не означає, що модель є остаточним монолітом.
+
+Direct Regulatory Graph є першою моделлю, яка зійшлася по суті й механіці. Її можна уточнювати, якщо наступні аудити або експерименти покажуть слабкі місця.
 
 Майбутній розвиток:
 
@@ -176,7 +176,7 @@ JUMP ...
 ## Рішення
 
 ```text
-Rejected for MVP
+Rejected for first implementation
 ```
 
 Можна розглядати як окремий експеримент, але не як базову модель.
@@ -210,7 +210,7 @@ tag_C binds resource_signal
 * складніше реалізувати;
 * складніше дебажити;
 * важко пояснювати агентам;
-* важко контролювати першу MVP-симуляцію;
+* важко контролювати базову симуляцію;
 * багато параметрів сумісності;
 * високий ризик хаотичної поведінки без зрозумілої причини.
 
@@ -220,7 +220,7 @@ tag_C binds resource_signal
 Future Research
 ```
 
-Цікава модель, але не для першої реалізації.
+Цікава модель, але не для базової моделі.
 
 ---
 
@@ -272,10 +272,10 @@ produce_energy_priority
 ## Рішення
 
 ```text
-Accepted for MVP
+Base requirement for first implementation
 ```
 
-Direct Regulatory Graph — базова модель Genome для першої реалізації.
+Direct Regulatory Graph — базова модель Genome для базової моделі.
 
 ---
 
@@ -308,7 +308,7 @@ Genome Pool
 
 ## Мінуси
 
-* складніше для MVP;
+* складніше Для базової моделі;
 * потрібно визначити fragment boundaries;
 * потрібна integration model;
 * потрібна cost model;
@@ -318,10 +318,10 @@ Genome Pool
 ## Рішення
 
 ```text
-Post-MVP Direction
+у майбутньому Direction
 ```
 
-Архітектура MVP повинна не блокувати цей перехід.
+Архітектура базової моделі повинна не блокувати цей перехід.
 
 ---
 
@@ -366,7 +366,7 @@ Genome Pool
 * потрібна fragment competition;
 * потрібна copy-rate модель;
 * складно балансувати;
-* не потрібно для MVP.
+* не потрібно Для базової моделі.
 
 ## Рішення
 
@@ -380,25 +380,27 @@ Future Direction
 
 # Поточне рішення
 
-Для MVP використовується:
+Для базової моделі використовується:
 
 ```text
 Direct Regulatory Graph
 ```
 
-Але з обмеженням:
+Але це не монолітне остаточне рішення.
+
+Обмеження:
 
 ```text
 Design must remain fragment-compatible.
 ```
 
-Тобто перша реалізація може мати один Genome на клітину, але структура даних не повинна заважати майбутньому переходу до fragments.
+Тобто базова модель може мати один Genome на клітину, але структура даних не повинна заважати майбутньому переходу до fragments, Genome Pool або іншої сумісної моделі.
 
 ---
 
-# MVP Representation
+# Representation базової моделі
 
-MVP Genome:
+Genome базової моделі:
 
 ```text
 Genome
@@ -447,7 +449,7 @@ Edge
 └── mutation_rate
 ```
 
-Для MVP достатньо:
+Для базової моделі достатньо:
 
 ```text
 source_node_id
@@ -533,7 +535,7 @@ Metadata потрібна для аналізу.
 
 # Runtime
 
-MVP Runtime:
+Runtime базової моделі:
 
 ```text
 DAG execution
@@ -550,7 +552,7 @@ activation functions: linear_clamp, threshold
 
 # Mutation Compatibility
 
-MVP Genome повинен підтримувати мутації:
+Genome базової моделі повинен підтримувати мутації:
 
 ```text
 edge_weight_shift
@@ -576,7 +578,7 @@ threshold_shift
 
 # Recombination Compatibility
 
-Навіть якщо recombination не входить у MVP, модель повинна дозволяти майбутні оператори:
+Навіть якщо recombination не входить у базову модель, модель повинна дозволяти майбутні оператори:
 
 ```text
 fragment_insert
@@ -605,13 +607,13 @@ mobile fragment
 plasmid-like fragment
 ```
 
-Навіть якщо MVP має один Genome, формат повинен дозволяти пізніше додати `GenomePool`.
+Навіть якщо базова модель має один Genome, формат повинен дозволяти пізніше додати `GenomePool`.
 
 ---
 
 # Recommended Data Shape
 
-Для MVP:
+Для базової моделі:
 
 ```text
 Cell
@@ -656,7 +658,7 @@ GeneticSystem
 └── integration_queue
 ```
 
-У MVP:
+У базовій моделі:
 
 ```text
 fragments = []
@@ -859,9 +861,9 @@ Mutation, recombination і HGT також повинні бути відтвор
 
 ---
 
-# MVP Recommendation
+# Recommendation базової моделі
 
-Рекомендована MVP-модель:
+Рекомендована модель базової моделі:
 
 ```text
 Genome:
@@ -883,10 +885,10 @@ Inheritance:
   copy Genome to daughters with mutation chance
 
 Recombination:
-  not in MVP, but data model fragment-compatible
+  not in first implementation, but data model fragment-compatible
 
 HGT:
-  not in MVP, but architecture future-compatible
+  not in first implementation, but architecture future-compatible
 
 Epigenetics:
   separate state modifying Runtime, not Genome
@@ -894,7 +896,7 @@ Epigenetics:
 
 ---
 
-# Приклад MVP Genome
+# Приклад Genome базової моделі
 
 ```text
 Inputs:
@@ -950,7 +952,7 @@ GeneticSystem
     └── increased HGT openness
 ```
 
-Це не потрібно для MVP, але структура повинна дозволити такий розвиток.
+Це не потрібно Для базової моделі, але структура повинна дозволити такий розвиток.
 
 ---
 
@@ -958,7 +960,7 @@ GeneticSystem
 
 ```text
 Accepted:
-  Direct Regulatory Graph for MVP
+  Direct Regulatory Graph for first implementation
 
 Required:
   fragment-compatible architecture
@@ -982,9 +984,9 @@ Future:
 
 Genome повинен представляти спадкову регуляцію, а не готову поведінку.
 
-## Rule 2. Direct Regulatory Graph is MVP baseline
+## Rule 2. Direct Regulatory Graph is first implementation baseline
 
-Для MVP базова модель — орієнтований regulatory graph.
+Для базової моделі базова модель — орієнтований regulatory graph.
 
 ## Rule 3. Genome outputs priorities
 
@@ -1004,7 +1006,7 @@ Genome повинен передаватися дочірнім клітинам
 
 ## Rule 7. Representation must remain fragment-compatible
 
-Навіть MVP не повинен блокувати future fragments, recombination і HGT.
+Навіть базова модель не повинна блокувати future fragments, recombination і HGT.
 
 ## Rule 8. Technical validity is separate from biological viability
 
@@ -1059,27 +1061,11 @@ Genome не повинен містити hardcoded species, organs або cell 
 * `world/laws.md`
 * `engine/serialization.md`
 
----
-
-# ADR
-
-Потрібні ADR:
-
-```text
-ADR-000X: Direct Regulatory Graph as MVP Genome Representation
-ADR-000X: Reject Behavior Tree Genome
-ADR-000X: Reject Linear Instruction Genome as Baseline
-ADR-000X: Keep Genome Architecture Fragment-compatible
-ADR-000X: Genome Representation Must Have Physical Carrier and Cost
-```
-
----
-
 # Open Questions
 
 ## GeneticSystem wrapper
 
-Потрібно вирішити, чи одразу вводити `Cell.genetic_system`, навіть якщо в MVP там буде тільки один Genome.
+Потрібно вирішити, чи одразу вводити `Cell.genetic_system`, навіть якщо у базовій моделі там буде тільки один Genome.
 
 ## Fragment model
 
@@ -1087,11 +1073,11 @@ ADR-000X: Genome Representation Must Have Physical Carrier and Cost
 
 ## Cycles
 
-Потрібно вирішити, чи Runtime graph у MVP є тільки DAG, чи дозволяє цикли через fixed runtime steps.
+Потрібно вирішити, чи Runtime graph У базовій моделі є тільки DAG, чи дозволяє цикли через fixed runtime steps.
 
 ## Activation functions
 
-Потрібно остаточно затвердити набір activation functions для MVP.
+Потрібно остаточно затвердити набір activation functions Для базової моделі.
 
 ## Cost formula
 
@@ -1123,8 +1109,10 @@ repair_cost
 
 ## Debugging
 
-Потрібно визначити мінімальний набір debug traces для MVP.
+Потрібно визначити мінімальний набір debug traces Для базової моделі.
 
 ## HGT-ready architecture
 
 Потрібно вирішити, які поля додати вже зараз, щоб потім не ламати модель під HGT.
+
+

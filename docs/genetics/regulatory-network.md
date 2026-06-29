@@ -1,4 +1,4 @@
-# regulatory-network.md
+﻿# regulatory-network.md
 
 > **Regulatory Network — графова модель спадкової регуляції**
 
@@ -119,7 +119,7 @@ Output Layer формує пріоритети клітинних процесі
 
 Regulatory Network може містити кілька типів вузлів.
 
-Мінімальні типи для MVP:
+Мінімальні типи Для базової моделі:
 
 ```text
 InputNode
@@ -163,7 +163,7 @@ InputNode не має глобального знання про світ.
 
 Входи повинні бути приведені до числового діапазону.
 
-Базовий діапазон для MVP:
+Базовий діапазон Для базової моделі:
 
 ```text
 0.0 .. 1.0
@@ -261,7 +261,7 @@ stability
 mutation_rate
 ```
 
-Мінімально для MVP достатньо:
+Мінімально Для базової моделі достатньо:
 
 ```text
 source
@@ -329,7 +329,7 @@ threshold
 clamp
 ```
 
-Для MVP краще почати з простих функцій:
+Для базової моделі краще почати з простих функцій:
 
 ```text
 linear + clamp
@@ -392,7 +392,7 @@ Threshold може мутувати.
 * ритмічну поведінку;
 * повільну регуляцію.
 
-Для MVP delay можна не реалізовувати.
+Для базової моделі delay можна не реалізовувати.
 
 Але модель повинна дозволяти його додати пізніше.
 
@@ -564,13 +564,13 @@ Regulatory Network може бути:
 * модульним;
 * фрагментованим.
 
-Для MVP краще почати з обмеженої моделі.
+Для базової моделі краще почати з обмеженої моделі.
 
 ---
 
-# MVP Topology
+# базова модель Topology
 
-Для MVP рекомендується:
+Для базової моделі рекомендується:
 
 ```text
 InputNode -> RegulatoryNode -> OutputNode
@@ -602,7 +602,7 @@ InputNode -> RegulatoryNode -> OutputNode
 
 Але цикли ускладнюють виконання.
 
-Для MVP можливі два варіанти:
+Для базової моделі можливі два варіанти:
 
 ## Варіант A. Заборонити цикли
 
@@ -625,7 +625,7 @@ for step in runtime_steps:
 
 Мінус: складніше балансувати.
 
-Для MVP безпечніше почати з `DAG` або з фіксованої малої кількості runtime steps.
+Для базової моделі безпечніше почати з `DAG` або з фіксованої малої кількості runtime steps.
 
 ---
 
@@ -675,7 +675,7 @@ mutation_rate
 integration_rules
 ```
 
-Для MVP фрагменти можна не реалізовувати повністю.
+Для базової моделі фрагменти можна не реалізовувати повністю.
 
 Але структура даних не повинна блокувати їх появу.
 
@@ -765,7 +765,7 @@ noise_level
 mutation_rate
 ```
 
-Не всі параметри потрібні в MVP.
+Не всі параметри потрібні у базовій моделі.
 
 ---
 
@@ -781,7 +781,7 @@ stability
 mutation_rate
 ```
 
-Не всі параметри потрібні в MVP.
+Не всі параметри потрібні у базовій моделі.
 
 ---
 
@@ -846,7 +846,7 @@ Randomness може з'являтися у:
 * damage;
 * recombination.
 
-У MVP краще мінімізувати runtime randomness.
+У базовій моделі краще мінімізувати runtime randomness.
 
 ---
 
@@ -1044,7 +1044,7 @@ Regulatory Network у такій клітині може регулювати:
 
 ---
 
-# Minimal MVP Network
+# Minimal базова модель Network
 
 Для першої симуляції достатньо невеликої мережі.
 
@@ -1295,24 +1295,9 @@ Regulatory Network повинна копіюватися і передавати
 * `genetics/horizontal-transfer.md`
 * `genetics/epigenetics.md`
 
----
-
-# ADR
-
-Потрібні ADR:
-
-```text
-ADR-000X: Genome as Regulatory Network
-ADR-000X: Genome Outputs Priorities, Not Actions
-ADR-000X: Runtime State Is Not Genome
-ADR-000X: Keep Regulatory Network Fragment-Compatible
-```
-
----
-
 # Open Questions
 
-## MVP topology
+## базова модель topology
 
 Потрібно остаточно вирішити:
 
@@ -1335,7 +1320,7 @@ threshold
 
 ## Node state
 
-Потрібно вирішити, чи підтримує MVP stateful RegulatoryNode.
+Потрібно вирішити, чи підтримує базова модель stateful RegulatoryNode.
 
 ## Fragment support
 
@@ -1356,7 +1341,7 @@ threshold
 
 ## Runtime cost
 
-Потрібно визначити, чи виконання Regulatory Network витрачає Energy у MVP.
+Потрібно визначити, чи виконання Regulatory Network витрачає Energy У базовій моделі.
 
 ## Network size limits
 
@@ -1367,3 +1352,5 @@ threshold
 * max depth;
 * max fragments;
 * max runtime steps.
+
+

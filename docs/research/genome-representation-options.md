@@ -1,10 +1,10 @@
-# docs/research/genome-representation-options.md
+﻿# docs/research/genome-representation-options.md
 
 > **Genome Representation Options — альтернативи представлення Genome**
 
 ---
 
-# Статус
+# Research Note
 
 Research / design options.
 
@@ -28,14 +28,14 @@ docs/genetics/genome-runtime.md
 
 * не змішувати поточну реалізацію з research-ідеями;
 * зберігати альтернативи для майбутніх етапів;
-* пояснити, чому для MVP обрано простішу модель;
+* пояснити, чому Для базової моделі обрано простішу модель;
 * не повертатися випадково до відхилених або надто складних варіантів.
 
 ---
 
 # Поточна позиція
 
-Для MVP використовується:
+Для базової моделі використовується:
 
 ```text id="ziw5ba"
 Direct Regulatory Graph
@@ -66,7 +66,7 @@ Hybrid Graph + Fragments
 
 Ці варіанти не треба реалізовувати автоматично.
 
-Вони мають розглядатися лише тоді, коли MVP покаже обмеження поточної моделі.
+Вони мають розглядатися лише тоді, коли базова модель покаже обмеження поточної моделі.
 
 ---
 
@@ -90,7 +90,7 @@ Hybrid Graph + Fragments
 * реалізовувати кілька genome formats;
 * додавати behavior tree genome;
 * додавати blueprint організму;
-* змінювати MVP genome model без ADR.
+* змінювати Genome базової моделі model без ADR.
 
 ---
 
@@ -112,4 +112,6 @@ Hybrid Graph + Fragments
 Не розширювати його під час аудиту документації без конкретної задачі на research або ADR.
 
 ---
+
+
 

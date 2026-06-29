@@ -1,4 +1,4 @@
-# engine/scheduler.md
+﻿# engine/scheduler.md
 
 > **Scheduler — порядок виконання Systems у Tick**
 
@@ -7,6 +7,12 @@
 # Призначення
 
 Цей документ описує мінімальний порядок виконання Systems у межах одного Tick.
+
+Tick — це модель часу світу.
+
+Scheduler — це виконавча оптимізація рушія, яка визначає порядок Systems, snapshots, buffers і кешованих views.
+
+Scheduler не є окремим законом світу. Його фази можуть не збігатися один-в-один із концептуальними фазами `world/tick.md`, але результат має зберігати семантику Tick.
 
 Scheduler потрібен, щоб уникнути хаосу:
 
@@ -17,9 +23,9 @@ Scheduler потрібен, щоб уникнути хаосу:
 
 ---
 
-# Базова структура Tick
+# Базова структура Scheduler
 
-Канонічний порядок:
+Орієнтовний порядок виконання Systems:
 
 ```text id="ocfl2s"
 1. Environment Update
@@ -43,11 +49,13 @@ WeatherSystem
 ResourceSourceSystem
 ResourceDiffusionSystem
 ResourceDecaySystem
-HeatDiffusionSystem
+LocalHeatTransferSystem
 TraceDecaySystem
 ```
 
 Ця фаза готує snapshot, який клітини читатимуть під час Cell Decision.
+
+Глобальний `HeatDiffusionSystem` можливий пізніше, якщо Heat стане окремим Field.
 
 ---
 
@@ -232,7 +240,7 @@ proportional allocation
 randomized but seeded order
 ```
 
-MVP може використовувати deterministic order.
+Базова реалізація може використовувати deterministic order.
 
 Пізніше можна додати більш фізичне proportional allocation.
 
@@ -260,9 +268,9 @@ Action Plan — тимчасовий об'єкт.
 
 ---
 
-# Scheduler MVP Order
+# Базовий порядок Scheduler
 
-Мінімальний порядок для MVP:
+Мінімальний порядок для базової моделі:
 
 ```text id="a4nx18"
 1. Update Fields
@@ -323,7 +331,9 @@ Statistics і views не змінюють клітинний state.
 * Чи signal, створений у Tick N, читається тільки в Tick N+1?
 * Чи Joint transfer відбувається до або після Cell Process Execution?
 * Чи Physics має бути до або після LifecycleSystem?
-* Яка conflict resolution стратегія для MVP?
+* Яка conflict resolution стратегія потрібна для базової моделі?
 
 ---
+
+
 

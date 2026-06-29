@@ -1,4 +1,4 @@
-# world_config.md
+﻿# world_config.md
 
 > **World Config — конфігурація світу, клімату, епох і глобальних сценаріїв**
 
@@ -741,11 +741,11 @@ Config задає середовище, а не готові форми житт
 
 ## Weather complexity
 
-Потрібно вирішити, чи MVP має погодні події, чи лише noise + seasons.
+Потрібно вирішити, чи базова модель має погодні події, чи лише noise + seasons.
 
 ## Catastrophe model
 
-Потрібно визначити мінімальний набір catastrophe effects для MVP.
+Потрібно визначити мінімальний набір catastrophe effects Для базової моделі.
 
 ## Earth-like preset
 
@@ -754,3 +754,5 @@ Config задає середовище, а не готові форми житт
 ## Validation schema
 
 Потрібно створити schema validation для world config.
+
+
