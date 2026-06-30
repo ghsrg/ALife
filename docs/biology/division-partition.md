@@ -33,10 +33,24 @@ Everything else is partitioned, degraded, duplicated with cost, or lost.
 
 Базова модель: noisy proportional split.
 
+Starting coefficients:
+
+```text
+default_split = 0.5
+split_noise = ±0.15
+allowed_split_range = 0.35..0.65
+```
+
+Resources, Materials, Energy Buffer and MaterialState split noisy-proportionally.
+
+Genome information is not partitioned. It is copied onto a second physical carrier before partition.
+
 Future-compatible options:
 
 - spatial split;
 - regulated asymmetric split.
+
+Asymmetric inheritance is not base behavior. It may be enabled later only as an explicit division rule.
 
 ---
 
@@ -54,7 +68,7 @@ Future-compatible options:
 | RuntimeState | usually reset | explicit exceptions only |
 | MaterialState | partitioned with Materials | physical state follows material |
 | Damage | split or inherited by affected materials | conserved as material condition |
-| Joints | broken or reassigned if still valid | no magic preservation |
+| Joints | external Joints break by default | no magic preservation |
 | ProcessProgress | normally not inherited | no hidden copy |
 
 ---
@@ -94,9 +108,10 @@ Existing Joints are not duplicated.
 
 Default:
 
-- reassign to spatially valid daughter;
-- otherwise break;
+- external Joints break;
 - create new Joint only through explicit process.
+
+Reassignment is a future extension and requires an explicit rule. Details belong to `biology/joint.md`.
 
 ---
 
@@ -150,6 +165,10 @@ Only explicitly copied state is copied.
 ## Rule 5. Genome copying conserves matter
 
 Energy can power copying, but cannot create the physical Genome carrier.
+
+## Rule 6. No implicit asymmetric inheritance
+
+Resources, Materials, Energy Buffer and MaterialState use noisy proportional split in the base model. Any regulated asymmetric inheritance must be an explicit future rule.
 
 ---
 

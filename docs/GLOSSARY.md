@@ -646,7 +646,7 @@ Architecture Decision Record.
 
 ---
 
-# Open Questions
+# Future Glossary Terms
 
 Після стабілізації моделі геному цей словник буде доповнений термінами:
 

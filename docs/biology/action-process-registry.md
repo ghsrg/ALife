@@ -26,37 +26,47 @@ tags:
 ```text
 process_id
 kind: passive | planned_action | controlled_reaction
-implementation_level: base | future_compatible | later
+status: now | future
 duration: atomic | long_running
 required_capabilities
-allowed_genome_output
-feasibility_scope
-resource_cost
+required_inputs
 energy_cost
 material_cost
-result_state
-failure_behavior
+output/effect
+feasibility_rules
+failure_modes
 ```
+
+Optional binding fields may include:
+
+```text
+allowed_genome_output
+notes
+```
+
+Only entries with `status: now` are executable. `status: future` entries may exist for schema compatibility, but must not be accepted by Genome Runtime or Feasibility until explicitly enabled.
 
 ---
 
 # Base Process Set
 
-| process_id | kind | duration | allowed_genome_output | Notes |
-| --- | --- | --- | --- | --- |
-| `mandatory_upkeep` | passive | atomic | none | Paid before planned action Feasibility. |
-| `resource_uptake` | planned_action | atomic | `resource_uptake_priority` | Uses local Resource and Boundary/transport capability. |
-| `resource_export` | planned_action | atomic | `resource_export_priority` | Exports Resource or waste. |
-| `energy_conversion` | controlled_reaction | atomic | `energy_conversion_priority` | Converts Resource/Field potential through Material/process. |
-| `material_synthesis` | planned_action | atomic or long_running | `material_synthesis_priority` | Large synthesis must be marked long_running. |
-| `basic_repair` | planned_action | atomic or long_running | `repair_priority` | Repairs Materials/Boundary through explicit cost. |
-| `signal_emit` | planned_action | atomic | `signal_emit_priority` | Active signal has cost and carrier. |
-| `movement_request` | planned_action | atomic | `movement_priority` | Physics resolves movement/collision. |
-| `division_preparation` | planned_action | long_running | `division_preparation_priority` | Accumulates paid progress before partition. |
-| `genome_copying` | planned_action | long_running | `genome_copying_priority` | Requires physical carrier synthesis. |
-| `division_partition` | planned_action | atomic | `division_partition_priority` | Requires completed preparation and Feasibility. |
-| `dormancy_shift` | planned_action | atomic | `dormancy_bias` | Changes activity mode if lifecycle allows. |
-| `internal_rebalance` | planned_action | atomic | `internal_rebalance_priority` | Local redistribution without hidden creation. |
+| process_id | kind | status | duration | allowed_genome_output | required_capabilities | required_inputs | energy_cost | material_cost | output/effect | feasibility_rules | failure_modes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `mandatory_upkeep` | passive | now | atomic | none | stability-capable Materials | live Cell state | mandatory | maintenance resources if configured | maintains minimal stability | paid before planned actions | `cell_stressed`, `material_degraded`, `heat_generated` |
+| `resource_uptake` | planned_action | now | atomic | `resource_uptake_priority` | Boundary permeability or transport capability | local Resource, free internal capacity | uptake cost if active | none unless carrier/process consumes Material | Resource enters Cell | Boundary allows passive or active_required; capacity exists | `rejected_no_effect`, `resource_wasted`, `heat_generated` |
+| `resource_export` | planned_action | now | atomic | `resource_export_priority` | Boundary export capability or passive leak | internal Resource, local external capacity | export cost if active | none unless carrier/process consumes Material | Resource leaves Cell | Resource exists; Boundary/export rule allows it | `rejected_no_effect`, `resource_wasted`, `heat_generated` |
+| `energy_conversion` | controlled_reaction | now | atomic | `energy_conversion_priority` | conversion-capable Material | Resource/Field potential | none or catalyst upkeep | consumed Resource, catalyst wear if configured | Energy Buffer and/or Heat | inputs exist; conversion pathway allowed | `rejected_no_effect`, `resource_wasted`, `heat_generated`, `cell_stressed` |
+| `material_synthesis` | planned_action | now | atomic | `material_synthesis_priority` | synthesis-capable Material | precursor Resources, free capacity | synthesis cost | precursor Materials/Resources | new or repaired Material amount | inputs and capacity exist | `rejected_no_effect`, `resource_wasted`, `heat_generated`, `partial_progress_not_added` |
+| `basic_repair` | planned_action | now | atomic | `repair_priority` | repair-capable Material | damaged Material, repair inputs | repair cost | repair Resources/Materials | lower damage / higher integrity | target exists; repair path allowed | `rejected_no_effect`, `resource_wasted`, `heat_generated`, `material_degraded` |
+| `signal_emit` | planned_action | now | atomic | `signal_emit_priority` | signal-emitting Material | signal level, carrier/contact/joint/trace path | signal cost | trace Resource if emitted | scalar `signal_level` emitted | medium exists; output bounded | `rejected_no_effect`, `heat_generated` |
+| `movement_request` | planned_action | now | atomic | `movement_priority` | movement-capable Material | direction/bias, local space | movement cost | wear if configured | movement intent for physics | space/collision rules allow resolution | `rejected_no_effect`, `heat_generated`, `material_degraded` |
+| `division_preparation` | planned_action | now | long_running | `division_preparation_priority` | growth/division-capable Materials | resources, energy, capacity | per-progress cost | division prep Materials | paid division progress | no partial final result; progress rules apply | `rejected_no_effect`, `progress_paused`, `progress_decayed`, `partial_progress_not_added` |
+| `genome_copying` | planned_action | now | long_running | `genome_copying_priority` | genome-copy-capable Material | genome carrier, copy precursors | per-progress cost | carrier Material/precursors | copied Genome carrier | carrier integrity and inputs valid | `rejected_no_effect`, `progress_paused`, `progress_decayed`, `resource_wasted`, `heat_generated` |
+| `division_partition` | planned_action | now | atomic | `division_partition_priority` | division-capable Materials | completed prep, copied genome carrier | partition cost | partitioned Materials/Resources | two daughter cells | prep complete; carrier exists; space/capacity valid | `rejected_no_effect`, `material_degraded`, `cell_stressed` |
+| `dormancy_shift` | planned_action | now | atomic | `dormancy_bias` | lifecycle regulation capability | lifecycle state | transition cost if configured | none | activity mode changes | lifecycle allows transition | `rejected_no_effect` |
+| `internal_rebalance` | planned_action | now | atomic | `internal_rebalance_priority` | internal transport capability | internal Resources/Materials | rebalance cost if active | none | local internal redistribution | no hidden creation; capacity valid | `rejected_no_effect`, `heat_generated` |
+
+Long-running synthesis or repair variants require separate registry entries with separate `process_id` values.
 
 ---
 
@@ -65,16 +75,17 @@ failure_behavior
 These may be referenced as future-compatible, but must not be treated as implemented base behavior unless enabled by this registry:
 
 ```text
-joint_creation
-joint_repair
-joint_strengthening
-hgt_fragment_uptake
-genome_integration
+HGT / genome integration
 recombination
 advanced_learning_plasticity
-specialized_structure_growth
 fast_signal_conduction
+complex_joint_remodeling
+specialized_structure_growth
+long_range_sensing
+multi_cell_coordinated_development
 ```
+
+Future entries must use `status: future` and must not expose an allowed Genome output or Feasibility action until promoted to `status: now`.
 
 ---
 
@@ -88,7 +99,7 @@ Genome Runtime may output only priorities listed in this registry.
 Genome output -> ActionPlan candidate -> Feasibility -> Execution
 ```
 
-Genome output names must not be invented in genetics documents without adding a registry entry.
+Genome output names must not be invented in genetics documents without adding a registry entry. Future entries do not become allowed outputs until their status is `now`.
 
 ## Rule 2. Feasibility accepts registered actions
 
@@ -96,13 +107,21 @@ Feasibility Check accepts only registered planned actions or controlled reaction
 
 Passive processes do not require Genome output, but still require explicit rules.
 
+Feasibility must reject `status: future` actions with `rejected_no_effect`.
+
 ## Rule 3. Long-running processes are registered
 
 A process may be long-running only if this registry marks it as `long_running`.
 
+If an action needs both atomic and long-running variants, they must be separate registry entries with separate `process_id` values.
+
 ## Rule 4. Registry is canonical
 
 No document may introduce a new executable process or Genome output outside this registry.
+
+## Rule 5. Failure modes are explicit
+
+Each executable process must define `failure_modes`. If Feasibility rejects before execution, the result is `rejected_no_effect`. If failure happens during execution, the process rule must state the concrete consequences.
 
 ---
 

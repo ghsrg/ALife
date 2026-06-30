@@ -152,11 +152,40 @@ Species-like clusters можуть мати нечіткі межі.
 
 # Species-like Cluster Metrics
 
-Для аналізу можна використовувати:
+Species-like clustering не потрібне як базова поведінка.
+
+Base identity data:
+
+```text
+lineage_ref
+genome_id
+parent_genome_id
+mutation_count
+```
+
+Species-like clusters можуть бути тільки observer/research-аналітикою.
+
+Клітини не мають `species_id` і не читають cluster label.
+
+Base metric:
+
+```text
+lineage_distance
+```
+
+`lineage_distance` дешевий і стабільний для першого аналізу.
+
+Optional metric:
 
 ```text
 genome_similarity
-lineage_distance
+```
+
+`genome_similarity` можна рахувати періодично або для selected samples, але не кожен Tick за замовчуванням.
+
+Future metrics:
+
+```text
 fragment_sharing
 HGT_rate_between_groups
 recombination_success_rate
@@ -167,19 +196,32 @@ offspring_viability
 ecological_niche_overlap
 ```
 
-Ці метрики не повинні керувати поведінкою клітин.
+`fragment_sharing` залишається Future, доки HGT/fragments model не стане активнішою.
+
+Ці метрики не повинні керувати поведінкою клітин, сумісністю або reproduction.
 
 ---
 
 # Cluster Detection
 
-Species-like clusters можна визначати аналітично.
+Species-like clusters можна визначати тільки аналітично.
 
-Можливі підходи:
+Base approach:
+
+```text
+lineage tree clustering
+using lineage_distance
+```
+
+Optional periodic/selected-sample approach:
 
 ```text
 genome similarity clustering
-lineage tree clustering
+```
+
+Future approaches:
+
+```text
 fragment sharing network
 HGT flow graph
 phenotype-like similarity
@@ -187,7 +229,47 @@ organism structure similarity
 niche similarity
 ```
 
-Для базової моделі це можна не реалізовувати.
+Для базової моделі не треба реалізовувати active species clustering system.
+
+---
+
+# Mixed Organism-like Structures
+
+Mixed-genome organism-like structures аналізуються як склад компонента, а не як "вид".
+
+OrganismView analysis:
+
+```text
+dominant_lineage_refs
+lineage_distribution
+genome_distribution
+mixedness_score
+```
+
+`mixedness_score` є observer-only metric. Він не впливає на сумісність, поведінку чи reproduction.
+
+Mixed organisms are analyzed by lineage/genome composition, not assigned a hard species.
+
+---
+
+# Debug Labels
+
+Fuzzy cluster labels дозволені тільки як debug labels:
+
+```text
+cluster_A
+cluster_B
+mixed_cluster
+unclassified
+```
+
+UI має показувати такі labels як:
+
+```text
+observer-only inferred cluster
+```
+
+Debug cluster label is not a Canon entity and not a behavior parameter.
 
 ---
 
@@ -238,9 +320,9 @@ Organism-like structures можуть підсилювати species-like bounda
 ```text
 no species_id
 lineage tracking
-genome similarity metrics
-HGT/recombination traces
-organism-like component metrics
+lineage_distance
+optional periodic genome_similarity
+organism-like component composition metrics
 ```
 
 Species-like clusters можна аналізувати пізніше на основі логів.
@@ -269,6 +351,10 @@ Species-like межі не повинні бути абсолютно жорст
 
 Species-like label не може бути input для Genome Runtime.
 
+## Rule 6. Cluster labels are observer-only
+
+Fuzzy cluster labels are debug/research labels, not Canon entities and not behavior parameters.
+
 ---
 
 # Заборонено
@@ -281,7 +367,9 @@ Species-like label не може бути input для Genome Runtime.
 * forced species categories;
 * species manager;
 * fixed taxonomy;
-* automatic naming of species as engine rule.
+* automatic naming of species as engine rule;
+* hard species assignment for mixed organism-like structures;
+* cluster label as compatibility, behavior or reproduction input.
 
 ---
 
@@ -301,13 +389,4 @@ Species-like label не може бути input для Genome Runtime.
 * `genetics/horizontal-transfer.md`
 * `biology/organism.md`
 * `biology/specialization.md`
-
----
-
-# Open Questions
-
-* Чи потрібне species-like clustering У базовій моделі?
-* Який metric краще: genome similarity, lineage distance чи fragment sharing?
-* Як аналізувати mixed-genome organism-like structures?
-* Чи потрібні fuzzy cluster labels у debug UI?
 

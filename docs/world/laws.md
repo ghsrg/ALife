@@ -329,7 +329,7 @@ Environment Phase може підготувати committed environment snapshot
 * `world/energy.md`
 * `biology/cell.md`
 
-# Open Questions
+# Implementation Notes
 
 Фундаментальні закони світу вважаються завершеними.
 

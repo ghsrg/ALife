@@ -78,7 +78,11 @@ Rates задаються на один Tick:
 
 | Parameter | Baseline |
 | --- | --- |
-| radius | `1.0..2.0 su` |
+| radius | `0.5..3.0 su`, default `1.0 su` |
+| sense_radius | `4.0 su` |
+| uptake_radius | `1.5 su` |
+| signal_radius | `4.0 su` |
+| spatial_grid_size | `8.0 su` |
 | volume_capacity | `10.0 vu` |
 | energy_capacity | `10.0 eu` |
 

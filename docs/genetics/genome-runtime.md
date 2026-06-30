@@ -24,9 +24,12 @@ Genome Runtime читає normalized local inputs, застосовує regulato
 2. Normalize inputs.
 3. Apply material/capability masks.
 4. Apply epigenetic modifiers.
-5. Evaluate regulatory graph.
-6. Produce output priorities.
-7. Pass planned actions to Feasibility Check.
+5. Commit `last_decision_inputs`.
+6. Evaluate regulatory graph.
+7. Store `last_regulatory_outputs`.
+8. Build `action_plan`.
+9. Pass `action_plan` to Feasibility Check.
+10. Store `feasibility_result`.
 ```
 
 ---
@@ -59,10 +62,10 @@ Genome Runtime may propose priorities before mandatory costs are applied, but pl
 ```text
 tick
 cell_id
-inputs
+last_decision_inputs
 epigenetic_modifiers
-outputs
-planned_actions
+last_regulatory_outputs
+action_plan
 feasibility_result
 ```
 

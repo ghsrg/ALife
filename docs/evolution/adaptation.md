@@ -62,32 +62,42 @@ Adaptation — це результат, а не окремий engine command.
 
 ---
 
-# Рівні Adaptation
+# Debug UI Levels
 
-## Short-term adaptation
+Для debug UI достатньо чотирьох рівнів:
 
-Клітина змінює поточний стан.
+```text
+cell_state_adaptation
+material_adaptation
+lineage_adaptation
+population_shift
+```
 
-Приклади:
+Meaning:
 
-* stress response;
-* dormancy;
-* repair priority;
-* reduced growth;
-* changed signal sensitivity.
+```text
+cell_state_adaptation =
+  зміни runtime/epigenetic/material state в межах життя клітини
 
-Механізми:
+material_adaptation =
+  зміни Materials: sensitivity, conductivity, storage, damage tolerance
 
-* Epigenetic State;
-* Runtime State;
-* Material State;
-* Energy balance.
+lineage_adaptation =
+  спадкові зміни Genome/EpigeneticState у нащадків
+
+population_shift =
+  зміна частот lineage/genome/material profiles у популяції
+```
+
+Ці рівні є observer/debug interpretation, а не inputs для клітини.
 
 ---
 
+# Lifetime vs Lineage Adaptation
+
 ## Lifetime adaptation
 
-Клітина змінює свою поведінку або структуру протягом життя.
+Lifetime adaptation відбулась у межах життя однієї клітини і не обов'язково передається нащадкам.
 
 Приклади:
 
@@ -98,11 +108,9 @@ Adaptation — це результат, а не окремий engine command.
 
 Це не змінює Genome напряму.
 
----
-
 ## Lineage adaptation
 
-Lineage змінюється через спадкові варіації.
+Lineage adaptation повторюється або закріплюється через поділ і видима як зміна властивостей нащадків, lineage або population.
 
 Приклади:
 
@@ -115,6 +123,13 @@ Lineage змінюється через спадкові варіації.
 * краща Boundary regulation.
 
 Це довготривала еволюційна adaptation.
+
+Short form:
+
+```text
+lifetime = cell changed during life
+lineage = descendants changed across generations
+```
 
 ---
 
@@ -142,6 +157,54 @@ Organism-like structures можуть адаптуватися через:
 * repair coordination;
 * fragmentation reproduction;
 * mechanical stability.
+
+---
+
+# Observer Metrics
+
+Не вводити один загальний `adaptation_score` у базовій моделі. Він легко стає pseudo-fitness.
+
+Замість цього використовувати окремі observer-only metrics:
+
+```text
+survival_delta
+division_rate_delta
+material_profile_shift
+genome_profile_shift
+resource_efficiency_shift
+stress_resilience_shift
+population_frequency_shift
+```
+
+Future може додати aggregate `adaptation_score` тільки як observer-only metric. Він не може бути input для Genome Runtime, Feasibility, selection або behavior.
+
+---
+
+# Adaptive Shift Events
+
+Adaptive shifts логуються як events і aggregates по rolling windows, а не як single-tick conclusion.
+
+Minimum event:
+
+```text
+adaptive_shift_event
+├── tick_range
+├── lineage_ref
+├── population_before
+├── population_after
+├── dominant_material_changes
+├── dominant_genome_changes
+├── survival_change
+├── division_change
+└── environment_context
+```
+
+Starting windows:
+
+```text
+last 1_000 ticks
+last 10_000 ticks
+```
 
 ---
 
@@ -201,6 +264,10 @@ Adaptation — це результат взаємодії variation, environment
 
 Щоб adaptation зберігалася в lineage, потрібен спадковий канал.
 
+## Rule 6. Adaptation metrics are observer-only
+
+Adaptation is observer interpretation, not a Cell, Genome Runtime, Feasibility, selection or behavior input.
+
 ---
 
 # Заборонено
@@ -212,7 +279,8 @@ Adaptation — це результат взаємодії variation, environment
 * automatic useful response;
 * global adaptive controller;
 * fitness-guided mutation;
-* inherited learning as Genome rewrite.
+* inherited learning as Genome rewrite;
+* adaptation_score as behavior or selection input.
 
 ---
 
@@ -232,17 +300,5 @@ Adaptation — це результат взаємодії variation, environment
 * `biology/organism.md`
 * `evolution/selection.md`
 * `evolution/population-dynamics.md`
-
----
-
-# Open Questions
-
-* Які рівні adaptation треба показувати в debug UI?
-* Як відрізняти lifetime adaptation від lineage adaptation?
-* Чи потрібна аналітична metric `adaptation_score`, якщо вона не впливає на клітини?
-* Як логувати adaptive shifts у population?
-
----
-
 
 

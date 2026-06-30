@@ -37,6 +37,28 @@ metrics summary
 debug sampled traces
 ```
 
+Population storage uses bounded observer data:
+
+```text
+lineage event log:
+  cell_birth
+  cell_division
+  cell_death
+  parent_cell_id
+  daughter_cell_ids
+  lineage_ref
+  tick
+
+every N ticks:
+  population totals
+  lineage summaries
+  birth/death/division counters
+  top lineage counts
+  resource/environment summary
+```
+
+Full population snapshots are rare or manually requested. Detailed population traces are debug/selected-run features, not default storage behavior.
+
 ---
 
 # Заборонено
@@ -45,7 +67,8 @@ debug sampled traces
 
 - behavior input from previous logs unless explicitly loading snapshot;
 - unbounded trace by default;
-- hidden mutable global storage.
+- hidden mutable global storage;
+- full lineage tree snapshot every Tick by default.
 
 ---
 

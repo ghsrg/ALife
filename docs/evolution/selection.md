@@ -159,6 +159,98 @@ fitness
 
 ---
 
+# Selection Analysis Metrics
+
+Base selection analysis is observer-only and lineage-first.
+
+Minimum metrics:
+
+```text
+survival_time_by_lineage
+division_count_by_lineage
+offspring_count_by_lineage
+death_rate_by_lineage
+lineage_frequency_over_time
+resource_efficiency_by_lineage
+stress_survival_by_lineage
+```
+
+Це аналітика після факту, не fitness input.
+
+Base level:
+
+```text
+selection analysis = lineage-level first
+organism-like analysis = derived observer view
+```
+
+OrganismView можна аналізувати окремо:
+
+```text
+component_lifetime
+component_cell_count
+fragmentation_events
+viable_child_components
+collapse_reason
+```
+
+Базова selection-аналітика йде від lineage/cell reproduction. Organism-like metrics не є окремою selection mechanism.
+
+---
+
+# Selection vs Drift Logs
+
+Логи не повинні одразу доводити selection. Спочатку фіксується нейтральна подія:
+
+```text
+observed_frequency_shift
+├── tick_range
+├── lineage_ref
+├── frequency_before
+├── frequency_after
+├── survival_context
+├── division_context
+├── resource_efficiency_context
+├── population_size_context
+└── environment_context
+```
+
+Interpretation:
+
+```text
+if lineage частішає разом із кращим survival/division/resource efficiency:
+  possible selection
+
+if lineage частішає без стабільної переваги або при малих числах:
+  possible drift
+```
+
+Selection is an analytical interpretation, not simulation mechanics.
+
+---
+
+# Population-Level Metrics
+
+Minimum population-level metrics for selection analysis:
+
+```text
+population_count
+births_per_window
+deaths_per_window
+divisions_per_window
+lineage_count
+lineage_frequency_distribution
+extinction_events
+average_survival_time
+average_division_rate
+resource_pressure_summary
+environment_context
+```
+
+These metrics align with `evolution/population-dynamics.md` and remain observer-only.
+
+---
+
 # Selection і Neutrality
 
 Не всі зміни одразу корисні або шкідливі.
@@ -204,6 +296,8 @@ Selection виникає з різниці у виживанні й розмно
 
 Genome не повинен читати fitness score.
 
+Adaptation metrics, including any future `adaptation_score`, must not become selection inputs or behavior inputs.
+
 ## Rule 3. Bad variants are allowed
 
 Шкідливі, нейтральні й lethal варіанти не забороняються рушієм.
@@ -215,6 +309,10 @@ Genome не повинен читати fitness score.
 ## Rule 5. Selection can operate at multiple levels
 
 Cell, colony, organism-like і lineage рівні можуть давати різні selection effects.
+
+## Rule 6. Frequency shifts are logged before interpretation
+
+Frequency shifts should be logged first, then interpreted as possible selection or possible drift using survival, division, resource and population-size context.
 
 ---
 
@@ -228,7 +326,9 @@ Cell, colony, organism-like і lineage рівні можуть давати рі
 * global evaluator;
 * hardcoded best strategy;
 * organism HP as selection;
-* species-based selection rule.
+* species-based selection rule;
+* adaptation metric as a selection controller;
+* direct selection label without observed frequency shift context.
 
 ---
 
@@ -249,16 +349,5 @@ Cell, colony, organism-like і lineage рівні можуть давати рі
 * `evolution/adaptation.md`
 * `evolution/population-dynamics.md`
 * `evolution/species-like-clusters.md`
-
----
-
-# Open Questions
-
-* Які metrics потрібні для аналізу selection?
-* Чи рахувати selection на рівні cell lineage або organism-like structures?
-* Як відрізняти selection від drift у логах?
-* Які population-level метрики потрібні Для базової моделі?
-
----
 
 

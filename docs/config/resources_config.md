@@ -28,7 +28,11 @@ resources:
     diffusion_rate: 0.1
     energy_value: 4.0
     decay_rate: 0.0
-    passable: true
+    size_class: small
+    phase: dissolved
+    reactivity_class: stable
+    polarity_tag: neutral
+    permeability_class: small_nutrient
     tags: [energy_source]
 ```
 
@@ -41,6 +45,7 @@ resources:
 - Немає окремої властивості `toxicity`.
 - `energy_value` є потенціалом для Energy production, а не автоматичним поповненням Energy Buffer.
 - Resource займає capacity.
+- Resource не проходить через Boundary напряму; exchange визначається Resource physical traits і Boundary Material permeability rules.
 
 ---
 
@@ -52,6 +57,10 @@ volume >= 0
 diffusion_rate >= 0
 energy_value >= 0
 decay_rate >= 0
+known size_class
+known phase
+known reactivity_class
+known permeability_class
 known tags
 ```
 

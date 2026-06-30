@@ -322,7 +322,7 @@ Joint
 * `world/materials.md`
 * `biology/genome.md`
 
-# Open Questions
+# Implementation Notes
 
 На даному етапі філософія світу вважається стабільною.
 

@@ -25,9 +25,9 @@ tags:
 
 - `Organism` не є класом, який керує клітинами.
 - Базова структура: `OrganismGraph = (Cells, Joints)`.
-- Connected component є кандидатом на organism-like structure, але не автоматично organism.
+- Detection у першій реалізації: `OrganismView = connected component of Cell-Joint graph`.
 - Межа між `cluster`, `colony-like` і `organism-like` є континуумом.
-- Ступінь інтеграції визначається dependency, resource flow, signal flow, specialization, repair coupling і reproduction coupling.
+- Dependency, resource flow, signal flow, specialization, repair coupling і reproduction coupling є observer/debug/research metrics, а не умовами detection.
 - `Organism identity` є аналітичною міткою, а не входом для Genome Runtime.
 - Усі процеси виконуються клітинами, а не organism-level controller.
 - `Organism death` означає структурний collapse, а не HP event.
@@ -39,7 +39,7 @@ tags:
 Для першої реалізації достатньо:
 
 ```text
-organism-like candidate = connected component of alive/decomposing Cells through active Joints
+OrganismView = connected component of Cell-Joint graph
 ```
 
 Observer може рахувати:
@@ -47,13 +47,14 @@ Observer може рахувати:
 ```text
 cell_count
 joint_count
-average_joint_strength
-resource_flow
-signal_flow
-specialization_diversity
-dependency_score
-lifetime
-fragmentation_events
+component_age_ticks
+connectedness
+shared_lineage_ratio
+resource_transfer_edges_count
+signal_edges_count
+fragmentation_events_count
+merge_events_count
+collapse_reason
 ```
 
 Ці метрики не повинні повертатися в поведінку клітини як глобальний control signal.
@@ -62,7 +63,18 @@ fragmentation_events
 
 # Dependency
 
-Dependency показує, наскільки клітина залежить від структури:
+Dependency metrics describe structure. They do not define whether OrganismView exists and do not control behavior.
+
+Minimum `connectedness` can start as:
+
+```text
+connectedness =
+  joint_count / max(1, cell_count - 1)
+```
+
+This is a debug metric, not a quality score.
+
+Future dependency analysis may include:
 
 ```text
 resource_dependency
@@ -73,7 +85,69 @@ reproduction_dependency
 survival_without_structure_probability
 ```
 
-Низька dependency ближча до colony-like structure. Висока dependency ближча до organism-like structure.
+Low dependency is closer to colony-like structure. High dependency is closer to organism-like structure. This classification is observer-side only.
+
+---
+
+# View Lineage Events
+
+Do not model complex organism heredity in the first implementation.
+
+Track observer-only events:
+
+```text
+component_created
+component_split
+component_merged
+component_collapsed
+component_extinct
+```
+
+For each OrganismView:
+
+```text
+view_id
+parent_view_ids
+child_view_ids
+dominant_lineage_refs
+lineage_distribution
+genome_distribution
+mixedness_score
+created_tick
+ended_tick
+```
+
+If a component fragments, new components get new `view_id` values and reference the parent view.
+
+If components merge, the new `view_id` has multiple parents.
+
+---
+
+# Minimum OrganismView
+
+```text
+OrganismView
+├── view_id
+├── tick_created
+├── tick_updated
+├── cell_ids optional
+├── cell_count
+├── joint_count
+├── bounding_box
+├── center_of_mass
+├── dominant_lineage_refs
+├── lineage_distribution
+├── genome_distribution
+├── mixedness_score
+├── component_age_ticks
+├── resource_flow_summary
+├── signal_flow_summary
+└── event_refs
+```
+
+For performance, `cell_ids` may be stored only in selected/debug mode.
+
+General statistics can use only `cell_count`, `joint_count`, `bounding_box` and lineage summary.
 
 ---
 
@@ -102,12 +176,14 @@ Observer може позначати reproduction-like event, якщо від с
 
 ---
 
-# Open Questions
+# Invariant
 
-- Чи organism detection у першій реалізації буде тільки connected component, чи component + dependency score.
-- Які мінімальні dependency metrics потрібні для debug UI.
-- Як відстежувати lineage organism-like structures при fragmentation, merge і collapse.
-- Який мінімальний `OrganismView` потрібен для research metrics.
+```text
+OrganismView is observer-only.
+Detection is based on Cell-Joint connected components.
+Dependency metrics describe structure, but do not define behavior.
+Cells cannot read OrganismView, dependency score, fitness or component id.
+```
 
 ---
 

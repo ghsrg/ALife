@@ -54,6 +54,97 @@ Genome copying не створюється Energy. Energy powers copying, repair
 
 ---
 
+# Minimal Carrier State
+
+Genome in the first implementation is:
+
+```text
+Genome information + physical carrier state
+```
+
+Minimum carrier state:
+
+```text
+genome_carrier
+├── integrity: 0.0..1.0
+├── amount
+├── material_id
+└── copy_progress
+```
+
+Genome information is stored on a physical carrier. The carrier occupies capacity, has integrity and can be damaged.
+
+---
+
+# Carrier Damage
+
+```text
+genome_damage = degradation of genome carrier
+```
+
+Genome carrier damage is tracked as `genome_carrier_state`, not as mutation of the regulatory graph.
+
+Carrier damage may cause:
+
+- runtime errors;
+- reduced regulatory stability;
+- copy errors;
+- mutation during explicit repair/copying mechanisms;
+- nonfunctional Genome.
+
+Carrier damage is not automatically mutation.
+
+Mutation, repair, copying and HGT are explicit mechanisms.
+
+---
+
+# Genome Trace
+
+Minimum observer-only Genome Trace:
+
+```text
+genome_trace
+├── genome_id
+├── parent_genome_id
+├── carrier_integrity
+├── copy_progress
+├── mutation_events
+├── repair_events
+├── copy_errors
+├── hgt_events
+└── division_copy_result
+```
+
+Genome Trace is observer-only. Cells, Genome Runtime, Feasibility Check and Processes must not read Genome Trace as behavior input.
+
+---
+
+# Future Carrier Extensions
+
+Future models may add:
+
+- fragments;
+- multiple genome segments;
+- mobile genetic elements;
+- HGT carriers;
+- recombination;
+- spatial genome organization.
+
+Base model requires only one physical carrier state with integrity/copy/damage tracking.
+
+---
+
+# Invariant
+
+```text
+Genome is information stored on a physical carrier.
+Carrier damage is not automatically mutation.
+Mutation, repair, copying and HGT are explicit mechanisms.
+Genome Trace is observer-only.
+```
+
+---
+
 # Межа Відповідальності
 
 ```text
@@ -88,16 +179,6 @@ genetics/inheritance.md
 - hardcoded organs/tissues/cell types;
 - direct matter or Energy creation;
 - mutation that bypasses validation.
-
----
-
-# Open Questions
-
-- Який мінімальний physical carrier Genome потрібен у першій реалізації.
-- Чи genome damage буде окремим state або частиною material/internal fragment model.
-- Який мінімальний Genome Trace потрібен для debug.
-
----
 
 # Semantic Links
 

@@ -27,6 +27,9 @@ Specialization описує, як клітини з однаковим або с
 - `SpecializationProfile` є observer/debug view, а не input для behavior.
 - Однаковий Genome може давати різні стани через різні local inputs.
 - Neural-like behavior дозволений тільки як `signal-plastic cell/material state`, без hardcoded neurons.
+- Specialization is inferred from persistent material/process patterns, not from one Tick or one signal impulse.
+- Temporary RuntimeState is not specialization.
+- No cell may read its `SpecializationProfile` as behavior input.
 
 ---
 
@@ -41,7 +44,7 @@ Joint context
 Signals
 Pressure / Heat / contact
 Epigenetic State
-asymmetric inheritance
+asymmetric inheritance (future explicit division rule only)
 damage history
 lifecycle state
 position in Cell-Joint graph
@@ -51,20 +54,87 @@ position in Cell-Joint graph
 
 # Observer Profile
 
-Для аналізу можна рахувати:
+Мінімальний observer-only профіль:
 
 ```text
 SpecializationProfile
-├── material_profile
-├── process_profile
-├── signal_profile
-├── joint_profile
-├── energy_profile
-├── epigenetic_profile
-└── lifecycle_profile
+├── dominant_materials
+├── dominant_processes
+├── average_regulatory_outputs
+├── signal_sensitivity_level
+├── signal_conductivity_level
+├── storage_ratio
+├── repair_ratio
+├── movement_ratio
+├── boundary_ratio
+├── joint_ratio
+└── stability_ticks
 ```
 
-Цей профіль не повинен напряму керувати клітиною.
+Це не "тип клітини". Це observer/debug profile, який описує стійкий функціональний патерн.
+
+Genome Runtime, Feasibility Check і Processes не читають `SpecializationProfile`.
+
+---
+
+# Signal-Plastic Materials
+
+Мінімальні Material properties для signal-plastic behavior:
+
+```text
+signal_sensitivity
+signal_storage
+signal_conductivity
+```
+
+Мінімальні MaterialState поля:
+
+```text
+stored_signal
+fatigue
+conductivity_modifier
+```
+
+Цього достатньо, щоб Material міг накопичувати сигнал, втомлюватись, гасити або передавати імпульс без hardcoded neurons.
+
+---
+
+# Inheritance Boundary
+
+У базовій division model:
+
+```text
+Resources / Materials / Energy -> noisy proportional split
+Genome information -> copied to physical carrier
+EpigeneticState -> reset або attenuated by explicit rule
+```
+
+Asymmetric inheritance підтримується схемою як future-compatible option, але не є базовою поведінкою і не має виникати неявно.
+
+---
+
+# Temporary vs Stable
+
+Debug UI має відрізняти тимчасовий стан від стабільної спеціалізації:
+
+```text
+temporary state:
+  short-lived changes in runtime_state or MaterialState
+
+stable specialization:
+  repeated process bias + stable material composition + persistence over N ticks
+```
+
+Мінімальні debug UI fields:
+
+```text
+state_now
+profile_window
+stability_ticks
+profile_confidence
+```
+
+Клітина не стає `signal-plastic` після одного імпульсу. Такий label може з'являтися тільки після стабільно високих signal-related Materials/processes протягом заданого вікна.
 
 ---
 
@@ -97,16 +167,9 @@ reproduction-supporting
 - blueprint органу;
 - species-specific role;
 - `if position == X then role Y`;
-- fixed neural/muscle/skin classes.
-
----
-
-# Open Questions
-
-- Які observer metrics потрібні для першого `SpecializationProfile`.
-- Який мінімальний набір stateful Materials потрібен для signal-plastic behavior.
-- Чи asymmetric inheritance входить у першу реалізацію або лише підтримується схемою.
-- Як відрізняти тимчасовий стан від стабільної спеціалізації в debug UI.
+- fixed neural/muscle/skin classes;
+- implicit asymmetric inheritance;
+- treating one Tick of RuntimeState as stable specialization.
 
 ---
 

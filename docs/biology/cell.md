@@ -25,20 +25,71 @@ tags:
 Cell
 ├── id
 ├── position
+├── radius
 ├── physical_state
 ├── resources
 ├── materials
 ├── energy_buffer
+├── temperature
 ├── genome_state
 ├── epigenetic_state
 ├── runtime_state
 ├── joints
 ├── local_inputs
 ├── lifecycle_state
-└── process_progress
+├── process_progress
+└── debug_metrics
 ```
 
 Функціональні стани `active`, `stalled`, `dormant`, `inert`, `decomposing` і `persistent_remains` описані в `biology/cell-state.md`.
+
+`temperature` є локальним станом клітини, через який Heat впливає на Materials, Lifecycle і суміжні клітини/Joint.
+
+`debug_metrics` є observer-only state і не може впливати на поведінку клітини, Genome Runtime або Feasibility Check.
+
+Boundary у базовій моделі не є окремим мінімальним полем `Cell`: це назва для агрегованої властивості Materials, яка пояснює відокремлення внутрішнього стану клітини від середовища.
+
+Мінімальний `runtime_state`:
+
+```text
+runtime_state
+├── active_processes
+│   └── long-running process progress
+├── process_cooldowns
+│   └── refractory/cooldown timers
+├── signal_state
+│   └── accumulated signal_level, decay, threshold state
+├── last_decision_inputs
+│   └── committed local inputs used by Genome Runtime
+├── last_regulatory_outputs
+│   └── bounded Genome Runtime outputs / priorities
+├── action_plan
+│   └── planned candidate actions for this Tick
+├── feasibility_result
+│   └── allowed/rejected actions and reasons
+└── runtime_flags
+    └── temporary execution/lifecycle flags
+```
+
+`runtime_state` є локальним технічним станом виконання між ticks. Він не є спадковим станом, довготривалою пам'яттю, behavior script або джерелом нових дій поза Genome Runtime, ActionPlan і Feasibility Check.
+
+Мінімальний `debug_metrics`:
+
+```text
+debug_metrics
+├── age_ticks
+├── divisions_count
+├── stress_level
+├── last_feasibility_summary
+├── last_rejection_reasons
+├── energy_balance_snapshot
+├── capacity_snapshot
+└── lineage_ref
+```
+
+`debug_metrics` є observer-only. Genome Runtime, Feasibility Check і Processes не можуть читати `debug_metrics` як input.
+
+`stress_level` є derived debug summary для observer/debug UI, а не реальний стан клітини, не regulatory input і не причина behavior сама по собі.
 
 ---
 
@@ -123,17 +174,6 @@ If stored amount exceeds capacity, lifecycle/physics rules must handle rejection
 - HP;
 - process without materials/resources/energy when required;
 - magic detox або poison damage поза reaction/material model.
-
----
-
-# Open Questions
-
-- Мінімальний набір fields для першої `Cell` entity.
-- Чи Boundary у першій реалізації буде агрегованою властивістю Materials або окремим component.
-- Який мінімальний `runtime_state` потрібен для signal accumulation і cooldowns.
-- Які metrics зберігати для debug без впливу на behavior.
-
----
 
 # Semantic Links
 

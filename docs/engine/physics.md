@@ -27,6 +27,8 @@ Space semantics описані в `world/space.md`.
 - Pressure/contact можуть бути inputs для клітин тільки через material basis.
 - Heat/temperature effects застосовуються локально згідно з поточною спрощеною моделлю.
 - Field effects, including Heat/temperature, follow `world/field-semantics.md`.
+- Locality queries use the `uniform_spatial_grid` contract from `world/space.md` in the first implementation.
+- Boundary behavior follows explicit world `boundary_mode`, with `solid_wall` as the default.
 
 ---
 
