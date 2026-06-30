@@ -1,4 +1,4 @@
-# reactions.md
+﻿# reactions.md
 
 > **Reactions — універсальна семантика перетворень Resources, Materials, Heat і Energy release**
 
@@ -99,6 +99,59 @@ Passive reaction may release Heat or products, but not magical cell Energy.
 
 ---
 
+# Reaction Accounting Contract
+
+Reactions may simplify chemistry, but they must not silently create or destroy matter.
+
+Resources and Materials are accounted in simulation amount units, not strict SI mass units.
+
+Every reaction must explicitly describe where input matter goes:
+
+```text
+inputs
+  -> products
+  -> retained/internalized material
+  -> residual/waste
+  -> configured sink/loss
+```
+
+`energy_output` represents released or captured energy potential from input Resources/Materials.
+
+It does not replace material outputs and does not explain missing matter.
+
+Configured loss is allowed only when explicitly modeled as:
+
+```text
+outflow
+degradation sink
+evaporation-like removal
+radiation-like escape
+scenario-defined sink
+```
+
+Hidden disappearance is not allowed.
+
+Validation should:
+
+```text
+warn when input/output accounting is not balanced
+warn when part of input matter has no explicit destination
+fail when reaction creates products without inputs
+fail when unknown Resources/Materials are used
+fail when core invariants are violated
+```
+
+Invariant:
+
+```text
+Energy is not matter.
+Reaction products must have material sources.
+Configured loss must be explicit.
+Unaccounted Resources or Materials are invalid or at least a validation warning.
+```
+
+---
+
 # Poisoning-by-Reaction
 
 There is no `toxicity` field.
@@ -133,6 +186,10 @@ Passive reactions do not require Genome decision.
 
 Reaction candidates come from Locality Contract in `space.md`.
 
+## Rule 5. Material accounting is explicit
+
+Reaction inputs must have explicit products, retained state, residual/waste, or configured sink/loss.
+
 ---
 
 # Пов'язані документи
@@ -144,4 +201,3 @@ Reaction candidates come from Locality Contract in `space.md`.
 - `biology/processes.md`
 - `engine/chemistry.md`
 - `config/reactions_config.md`
-

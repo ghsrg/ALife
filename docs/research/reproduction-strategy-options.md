@@ -10,7 +10,7 @@ Research / future design.
 
 Канонічні базові документи:
 
-```text id="aazwp3"
+```text
 docs/biology/lifecycle.md
 docs/genetics/inheritance.md
 docs/genetics/heredity.md
@@ -33,7 +33,7 @@ docs/biology/organism.md
 
 Для базової моделі достатньо:
 
-```text id="9unvnt"
+```text
 one parent cell
     ↓
 division
@@ -57,7 +57,7 @@ two daughter cells
 
 Можливі варіанти для дослідження:
 
-```text id="n6oj7l"
+```text
 simple cell division
 asymmetric division
 fragmentation
@@ -92,7 +92,7 @@ multi-parent recombination
 
 Organism-like reproduction може виникати, коли частина Cell-Joint graph відокремлюється і здатна продовжувати lineage.
 
-```text id="6c5wcz"
+```text
 organism-like structure
     ↓
 fragmentation / budding-like split
@@ -121,7 +121,7 @@ viable descendant structure
 
 Перед реалізацією нової strategy треба відповісти:
 
-```text id="w6t07m"
+```text
 Який фізичний носій reproduction?
 Що саме успадковується?
 Де виникає mutation?

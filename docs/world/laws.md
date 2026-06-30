@@ -36,13 +36,19 @@
 
 ---
 
-# Закон 3. Причинність
+# Закон 3. Phase-based причинність
 
 Причина завжди передує наслідку.
 
-Зміни, що виникли в Tick **N**, можуть впливати лише на Tick **N+1** або пізніше.
+Зміни стають видимими лише після визначеного phase commit.
 
-Не допускається миттєвий зворотний вплив у межах того самого Tick.
+Жодна сутність не може читати uncommitted changes з тієї самої phase.
+
+Cell decisions у Tick **N** читають тільки committed environment snapshot **N** і committed cell/world state, доступний на Decision Phase.
+
+Environment Phase може підготувати committed environment snapshot для поточного Tick, якщо це явно визначено `world/tick-semantics.md`.
+
+Не допускається same-phase feedback, same-tick signal ping-pong або залежність поведінки від partial writes.
 
 ---
 
@@ -288,10 +294,12 @@
 * матерія перебуває у безперервному кругообігу;
 * Energy існує лише як локальний Energy Buffer клітини;
 * Energy не є Resource або Material;
+* Energy Buffer не займає volume напряму, але його capacity задається Materials;
 * Energy виникає через перетворення Resource або Field за участі Material;
+* Reaction accounting має явно описувати, куди переходять input Resources/Materials;
 * старіння — наслідок деградації;
 * смерть — наслідок нездатності підтримувати власну структуру;
-* організм — це граф клітин;
+* organism-like structure є observer-side view над графом клітин;
 * функції визначаються матеріалами;
 * еволюція визначається лише природним добором.
 

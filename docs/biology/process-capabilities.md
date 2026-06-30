@@ -1,4 +1,4 @@
-# process-capabilities.md
+﻿# process-capabilities.md
 
 > **Process Capabilities — як Materials дозволяють процеси**
 

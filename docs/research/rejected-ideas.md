@@ -26,7 +26,7 @@ Active guardrail document.
 
 Не вводити:
 
-```text id="ydgbh7"
+```text
 species_id
 ```
 
@@ -44,7 +44,7 @@ species_id
 
 Не вводити:
 
-```text id="tojm45"
+```text
 fitness_score
 ```
 
@@ -62,7 +62,7 @@ fitness_score
 
 Не вводити:
 
-```text id="0t2imp"
+```text
 cell.hp
 organism.hp
 damage_points
@@ -80,7 +80,7 @@ damage_points
 
 Не вводити:
 
-```text id="glep42"
+```text
 NeuronCell
 MuscleCell
 SkinCell
@@ -127,7 +127,7 @@ PreyCell
 
 Не вводити:
 
-```text id="ewqo96"
+```text
 toxicity
 poison_damage
 healing_resource
@@ -155,7 +155,7 @@ healing_resource
 
 Не вводити:
 
-```text id="8ukl5g"
+```text
 Heart
 Brain
 Root

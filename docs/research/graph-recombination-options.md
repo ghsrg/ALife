@@ -12,7 +12,7 @@ Research / future design.
 
 Канонічний опис recombination знаходиться в:
 
-```text id="bvbjlp"
+```text
 docs/genetics/recombination.md
 ```
 
@@ -24,13 +24,13 @@ docs/genetics/recombination.md
 
 Він потрібен, щоб не змішувати:
 
-```text id="xv82oz"
+```text
 recombination as biological/evolutionary concept
 ```
 
 з конкретними технічними алгоритмами:
 
-```text id="ytjupi"
+```text
 graph crossover
 subgraph insertion
 fragment replacement
@@ -48,7 +48,7 @@ node alignment
 
 Поточний фокус:
 
-```text id="fe1udq"
+```text
 mutation
 inheritance
 simple genome copying
@@ -61,7 +61,7 @@ future-compatible genome structure
 
 Майбутні алгоритми можуть включати:
 
-```text id="no81pj"
+```text
 subgraph insertion
 subgraph replacement
 edge weight merging

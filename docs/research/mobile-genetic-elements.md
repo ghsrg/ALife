@@ -12,7 +12,7 @@ Research / future design.
 
 Канонічні базові документи:
 
-```text id="i7rd7x"
+```text
 docs/genetics/horizontal-transfer.md
 docs/genetics/recombination.md
 docs/biology/genome.md
@@ -42,7 +42,7 @@ docs/biology/genome.md
 
 Достатньо, щоб архітектура не блокувала майбутні:
 
-```text id="1my98x"
+```text
 genetic fragments
 HGT
 fragment uptake
@@ -84,7 +84,7 @@ Mobile genetic element не є:
 
 Можливі теми для дослідження:
 
-```text id="x8h5tv"
+```text
 plasmid-like persistence
 fragment copy stability
 fragment compatibility

@@ -1,151 +1,120 @@
 # stability_bounds.md
 
-> **Stability Bounds — empirical config validation and calibration horizons**
+> Межі параметрів для стабільної та діагностованої симуляції.
 
 ---
 
 # Призначення
 
-`stability_bounds.md` описує, як поступово знаходити стабільні межі конфігів.
+Цей файл фіксує типи меж, які потрібні, щоб світ не розвалювався чисельно або логічно.
 
-Стабільність не hardcoded наперед. Вона калібрується через smoke tests, isolated balance checks і scenario benchmarks.
+Точні значення належать окремим scenario/config файлам і мають перевірятися експериментально.
 
 ---
 
-# Base Approach
+# Категорії Меж
 
 ```text
-initial assumptions
-  ↓
-primitive balance calculator
-  ↓
-isolated stability tests
-  ↓
-scenario seed configs
-  ↓
-observed stable / unstable ranges
-  ↓
-config validation rules
+time_step bounds
+space/cell density bounds
+resource concentration bounds
+material stability bounds
+energy capacity and flow bounds
+heat/temperature bounds
+reaction rate bounds
+mutation rate bounds
+joint density/strength bounds
+process duration bounds
+scheduler budget bounds
 ```
 
 ---
 
-# Validation Levels
+# Канонічні правила
 
-| Level | Meaning |
-| --- | --- |
-| fatal | config violates core invariants or cannot run |
-| warning | config may run but likely creates unstable or hostile world |
-| info | unusual but allowed experimental setting |
-
----
-
-# Calibration Stages
-
-1. Smoke stability.
-2. Single-cell survival.
-3. Single-cell division.
-4. Multicellular stability.
-5. Specialization potential.
-6. Evolution run.
-7. Cognitive potential.
+- Межа має мати одиниці або нормалізований діапазон.
+- Значення поза межами не повинні мовчки прийматися.
+- Stability config не є Canon закону світу; це експериментальна рамка.
+- Для кожного boundary test має бути описано очікування: stable, fragile, collapse або invalid.
 
 ---
 
-# Balance Calculator
-
-Primitive calculator estimates:
-
-- maintenance cost per Tick;
-- expected Energy intake;
-- resource consumption rate;
-- resource regeneration rate;
-- reaction output balance;
-- heat / waste accumulation;
-- division affordability;
-- material repair affordability;
-- decay pressure.
-
-It does not prove life will emerge. It detects impossible configs before simulation.
-
----
-
-# Seed Configs
-
-Reference scenarios:
-
-- `smoke_world`
-- `single_cell_survival`
-- `single_cell_division`
-- `multicellular_stability`
-- `basic_evolution`
-- `hostile_world`
-
-Each seed config should define expected outcomes and tick horizon.
-
----
-
-# Time Horizons
-
-Initial calibration defaults:
-
-| Scenario | Horizon |
-| --- | --- |
-| smoke | `1,000 ticks` |
-| single-cell survival | `10,000 ticks` |
-| single-cell division | `50,000 ticks` |
-| basic evolution | `100,000..500,000 ticks` |
-
-Default time scale:
+# Мінімальні Виходи Тесту
 
 ```text
-1 tick = 1 simulation second
-online target = 10..30 ticks/sec wall-clock
+scenario_id
+config_hash
+seed
+tick_count
+survival_result
+collapse_reason
+metrics_summary
 ```
 
-These values are calibration defaults, not biological truth.
+---
+
+# Hard Invalid Examples
+
+Config або scenario invalid, якщо:
+
+```text
+negative amount/rate/capacity
+unknown Resource/Material/Field/process id
+reaction creates products without inputs
+reaction uses unknown Resources/Materials
+configured sink/loss is required but missing
+Field has unbounded value without clamp/decay/abstracted rule
+capacity is too high for radius/materials without explicit override
+stored amount exceeds capacity at initialization
+cell radius is impossible for world size
+division creates daughters below minimum viable footprint/capacity
+mutation can create graph beyond validation limits
+```
 
 ---
 
-# Instability Categories
+# Warning Ranges
 
-| Category | Meaning |
-| --- | --- |
-| instant invalidity | cannot initialize or violates invariants at tick 0 |
-| immediate collapse | most life-critical state collapses in first 100 ticks |
-| early instability | world fails before 1,000 ticks |
-| no single-cell survival | no stable survival by 10,000 ticks |
-| no sustainable evolution | no persistent lineages over evolution horizon |
+Config або scenario should warn, якщо:
 
-Config can be stable for one horizon and unstable for another.
+```text
+diffusion/decay above safe per-Tick bound
+reaction rate too high for dt
+heat transfer/dissipation creates likely instability
+resource density likely causes immediate clogging
+cell density likely causes immediate collision collapse
+energy capacity far exceeds storage-capable Materials
+process duration/cost likely prevents any lifecycle progress
+unbalanced reaction accounting has explicit configured sink/loss
+```
+
+Exact warning thresholds are scenario-specific and should be calibrated experimentally.
 
 ---
 
-# Rules
+# Scenario-Specific Experimental Ranges
 
-## Rule 1. Stability is empirical
+Scenario configs may define experimental ranges for:
 
-Stable ranges are empirical contracts, not guesses.
+```text
+single_cell_survival
+single_cell_division
+heat_stress
+resource_starvation
+reaction_balance
+multicellular_stability
+joint_density
+mutation_stability
+```
 
-## Rule 2. Stability is scenario-specific
-
-No config is simply stable or unstable without scenario and tick horizon.
-
-## Rule 3. Invalid configs fail early
-
-Fatal configs must fail validation before simulation.
-
-## Rule 4. Hostile worlds are explicit
-
-Hostile/experimental configs are allowed only when marked as such.
+Experimental range is not Canon law. It is a calibration boundary for a specific scenario.
 
 ---
 
 # Пов'язані документи
 
+- `docs/examples/config-examples.md`
 - `world/units.md`
-- `config/world_config.md`
-- `config/resources_config.md`
-- `config/materials_config.md`
-- `config/fields_config.md`
-- `config/reactions_config.md`
+- `world/field-semantics.md`
+- `engine/scheduler.md`
+- `engine/performance.md`

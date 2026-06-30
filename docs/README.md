@@ -129,6 +129,7 @@ docs/
 │   └── physics.md
 │
 ├── biology/
+│   ├── action-process-registry.md
 │   ├── cell.md
 │   ├── cell-state.md
 │   ├── communication.md
@@ -180,6 +181,13 @@ docs/
 │   ├── serialization.md
 │   └── storage.md
 │
+├── examples/
+│   ├── README.md
+│   ├── biology-examples.md
+│   ├── config-examples.md
+│   ├── engine-examples.md
+│   └── genetics-examples.md
+│
 ├── research/
 │   ├── genome-representation-options.md
 │   ├── graph-recombination-options.md
@@ -227,7 +235,7 @@ docs/
 
 ## `biology/`
 
-Механіка життя: клітина, мембрана, Joint, організм, процеси, комунікація, спеціалізація та життєвий цикл.
+Механіка життя: клітина, мембрана, Joint, організм, процеси, реєстр actions/processes, комунікація, спеціалізація та життєвий цикл.
 
 ## `genetics/`
 
@@ -248,6 +256,12 @@ docs/
 Технічна архітектура майбутнього рушія.
 
 Engine не визначає законів світу, а реалізує їх.
+
+## `examples/`
+
+Ілюстративні сценарії для читання разом із Canon.
+
+Examples не створюють нових правил. Якщо приклад суперечить Canon, правильним вважається Canon.
 
 ## `research/`
 

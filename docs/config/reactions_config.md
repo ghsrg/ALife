@@ -1,128 +1,76 @@
 # reactions_config.md
 
-> **Reactions Config — конфігурація passive і controlled reaction rules**
+> Конфігурація passive і controlled reactions.
 
 ---
 
 # Призначення
 
-`reactions_config.md` описує формат balanced reaction rules.
-
-Reaction semantics описані в `world/reactions.md`.
+`reactions_config` описує перетворення Resources/Materials, побічні продукти, Heat і Energy production pathways.
 
 ---
 
-# Що Reactions Config НЕ є
-
-Не описує:
-
-- hardcoded biology;
-- toxicity shortcuts;
-- direct kill commands;
-- automatic Energy Buffer charging.
-
----
-
-# Basic Schema
+# Мінімальна Схема
 
 ```yaml
 reactions:
-  - id: "nutrient_oxidation_A"
-    type: "controlled"
+  glucose_to_energy:
+    mode: controlled
     inputs:
-      nutrient_A: 1.0
-      oxidizer_A: 0.5
-    conditions:
-      heat:
-        min: 0.2
-        max: 0.8
-    catalyst:
-      material_id: "conversion_polymer_A"
-      min_amount: 0.2
-    products:
-      waste_A: 0.6
-    energy_release: 0.8
-    heat_release: 0.1
-    rate: 0.25
-    probability: 0.8
+      glucose: 1.0
+    required_materials:
+      catalyst: 0.2
+    outputs:
+      waste: 0.5
+    energy_output: 3.0
+    heat_output: 0.2
+    rate: 1.0
+    accounting:
+      residual:
+        waste: 0.5
+      configured_sink: 0.0
 ```
 
 ---
 
-# Passive Reaction Example
+# Канонічні правила
 
-```yaml
-reactions:
-  - id: "organic_waste_decay"
-    type: "decay"
-    inputs:
-      organic_waste: 1.0
-    products:
-      mineral_A: 0.4
-      inert_waste: 0.4
-    heat_release: 0.02
-    rate: 0.01
-    probability: 1.0
-```
-
----
-
-# Controlled Reaction Example
-
-Controlled reaction requires ActionPlan and Feasibility Check.
-
-```yaml
-reactions:
-  - id: "cell_energy_conversion_A"
-    type: "controlled"
-    inputs:
-      nutrient_A: 1.0
-    catalyst:
-      material_id: "energy_conversion_polymer"
-      min_amount: 0.2
-    energy_release: 0.8
-    heat_release: 0.1
-    rate: 0.25
-    probability: 0.9
-```
+- Reactions є джерелом корисності/шкідливості речовин.
+- Немає `toxicity`; є реакції, Heat, volume, degradation і capacity effects.
+- Controlled reaction потребує process/capability/regulation.
+- Passive reaction може відбуватися без Genome, якщо умови виконані.
+- Energy output не може з'явитися без визначеної reaction/process.
+- Reaction має explicit material/amount accounting.
+- `energy_output` не замінює material outputs.
+- Configured sink/loss дозволений тільки якщо описаний явно.
+- MaterialFragment може стати Resource тільки через explicit degradation/reaction/conversion rule.
 
 ---
 
 # Validation
 
-Validation must check:
-
-- reaction ids are unique;
-- referenced Resources exist;
-- referenced Materials exist;
-- rates are per Tick;
-- probabilities are normalized;
-- outputs do not create matter without inputs unless explicit source rule exists;
-- no `toxicity: true` shortcut.
-
----
-
-# Rules
-
-## Rule 1. Config defines reaction rules
-
-New reactions are added by config, not by hardcoded biological cases.
-
-## Rule 2. Reactions reference existing types
-
-Reaction inputs, outputs and catalysts must reference valid Resource/Material IDs.
-
-## Rule 3. No magical Energy
-
-Energy release is not automatic Energy Buffer.
+```text
+known input resources/materials
+non-negative stoichiometry
+known outputs
+explicit accounting for input matter
+warning for unbalanced input/output accounting
+warning for input matter without explicit destination
+fatal when products exist without inputs
+known MaterialFragment conversion source when fragment is consumed
+energy_output >= 0
+heat_output >= 0
+rate >= 0
+known mode
+```
 
 ---
 
 # Пов'язані документи
 
 - `world/reactions.md`
+- `world/resources.md`
+- `world/materials.md`
+- `world/energy.md`
 - `engine/chemistry.md`
-- `config/resources_config.md`
-- `config/materials_config.md`
-- `config/stability_bounds.md`
-
+- `docs/examples/config-examples.md`

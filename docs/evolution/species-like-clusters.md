@@ -222,7 +222,7 @@ Organism-like structures можуть підсилювати species-like bounda
 
 ---
 
-# Recommendation базової моделі
+# Базова модель
 
 Для базової моделі не треба вводити species system.
 

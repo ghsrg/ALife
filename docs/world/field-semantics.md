@@ -1,18 +1,44 @@
 # field-semantics.md
 
-> **Field Semantics — як Fields стають локальними впливами без командної поведінки**
+> Field Effect Contract — як Fields стають локальними впливами без командної поведінки.
 
 ---
 
 # Призначення
 
-`field-semantics.md` визначає спільні правила для Light, Heat, Pressure, Radiation, Flow та майбутніх Fields.
+`field-semantics.md` визначає спільний contract для Light, Heat, Pressure, Radiation, Flow, Chemical gradients та майбутніх Fields.
 
-Fields are not commands.
+Field не є командою і не виконує поведінку напряму.
 
 ---
 
-# Field Categories
+# Field Effect Contract
+
+Для кожного Field або derived field-like effect потрібно явно описати:
+
+```text
+origin
+propagation / decay
+local sampling
+effect mechanism
+bounds
+conserved or abstracted behavior
+```
+
+Cell, Material або Resource реагує на Field тільки через:
+
+```text
+material capability
+reaction
+physics rule
+process
+```
+
+Field не може напряму створити Energy Buffer, damage, mutation, movement або behavior.
+
+---
+
+# Categories
 
 ## External Field
 
@@ -20,7 +46,7 @@ Fields are not commands.
 
 ## Local State
 
-Стан клітини, матеріалу, ресурсу або environment patch.
+Стан Cell, Material, Resource patch або environment patch.
 
 ## Derived Field
 
@@ -32,64 +58,86 @@ Fields are not commands.
 
 ---
 
-# Field Effect Contract
-
-A Field may affect a cell only if:
-
-1. the cell locally samples it;
-2. the cell has a Material or process capable of responding to it;
-3. the effect passes through Feasibility, Process, Physics or Reaction rules.
-
----
-
-# Examples
-
-## Light
-
-```text
-LightField exists in world
-    ↓
-cell samples local light
-    ↓
-light-sensitive Material can use it
-    ↓
-energy conversion / signal / degradation modifier
-```
+# Concrete Profiles
 
 ## Heat
 
+Heat is a local physical effect represented through local temperature state and explicit transfer/dissipation rules.
+
+Base fields:
+
 ```text
-reaction produces heat locally
-    ↓
-local temperature changes
-    ↓
-heat transfers by contact / Joint
-    ↓
-optional HeatField derived for visualization
+temperature
+heat_capacity
+heat_generated
+heat_transfer_rate
+heat_dissipation_rate
+material_heat_tolerance
 ```
 
-Environment Heat transfer is optional explicit model, not automatic global command.
+`temperature` is a local state of a Cell, Material, Resource patch or environment patch.
 
-## Radiation
+Reaction `heat_output` changes local temperature through `heat_capacity`.
 
-RadiationField can affect mutation risk or degradation only through explicit material/genome damage rules.
+```text
+higher heat_capacity -> same heat output causes smaller temperature change
+lower heat_capacity  -> same heat output causes larger temperature change
+```
+
+Heat may transfer only through explicit local mechanisms:
+
+```text
+contact
+nearby environment patch
+Joint with heat_transfer capability
+```
+
+If no global HeatField or full thermodynamic environment is modeled, local dissipation is allowed as explicit sink:
+
+```text
+temperature -> ambient_temperature by heat_dissipation_rate
+```
+
+This is a simplification representing heat escaping into unresolved environment.
+
+Heat damage works only through Material tolerance/degradation thresholds:
+
+```text
+if local temperature exceeds material tolerance:
+  material degradation risk increases
+```
+
+Heat is not Energy Buffer.
+
+## Light
+
+Light has intensity, propagation/occlusion, absorption and bounds.
+
+Light can support Energy conversion only through photosensitive Material and explicit process/reaction.
+
+Light does not directly create Energy Buffer.
 
 ## Pressure
 
-Pressure may be derived from crowding, collision or flow and affect boundary damage, Joint stress or movement resistance.
+Pressure arises from collision, crowding, flow or Joint/mechanical constraints.
 
----
+Pressure affects cells through structural strength, elasticity, Boundary tolerance, Material degradation or physics rules.
 
-# Config Semantics
+Pressure does not directly damage HP because HP does not exist.
 
-Recommended config block:
+## Radiation
 
-```yaml
-field_semantics:
-  direct_behavior_effects_allowed: false
-  local_sampling_required: true
-  material_capability_required: true
-```
+Radiation may affect mutation risk, Material degradation or Genome carrier damage only through explicit damage/mutation/degradation rules.
+
+## Chemical Gradient
+
+Chemical gradient is either Resource distribution or a derived Field.
+
+Cells read only local samples through sensing Material.
+
+## Flow
+
+Flow changes movement or Resource transport only through physics rules.
 
 ---
 
@@ -111,6 +159,23 @@ Field effect needs compatible Material, process, reaction or physics rule.
 
 Derived fields for rendering/debug do not automatically become behavior inputs.
 
+## Rule 5. Field accounting is explicit
+
+Every Field must define whether it is conserved, dissipated, clamped, derived or abstracted.
+
+---
+
+# Invariants
+
+```text
+Field effects require explicit mechanism and material/process/physics/reaction mediation.
+Heat is not Energy Buffer.
+Heat damage is Material degradation.
+Heat transfer is local and explicit.
+Heat dissipation must be configured, not hidden.
+Reaction heat_output changes local temperature through heat_capacity.
+```
+
 ---
 
 # Пов'язані документи
@@ -120,4 +185,3 @@ Derived fields for rendering/debug do not automatically become behavior inputs.
 - `world/physics.md`
 - `world/reactions.md`
 - `config/fields_config.md`
-

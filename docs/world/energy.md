@@ -1,528 +1,70 @@
-﻿# energy.md
+# energy.md
 
-> **Energy — локальний енергетичний буфер клітини**
+> `Energy` — локальний буфер здатності клітини виконувати активну роботу.
 
 ---
 
 # Призначення
 
-Цей документ описує модель `Energy` в Artificial Life Engine.
-
-Energy — це не речовина, не ресурс і не матеріал.
-
-Energy є локальним станом клітини, який показує, скільки доступної роботи клітина може виконати в поточний момент.
-
-Energy виникає через взаємодію:
-
-- ресурсів;
-- матеріалів;
-- полів;
-- реакцій.
+Energy Buffer є локальним станом клітини. Він не є Resource і не є Material.
 
 ---
 
-# Основна ідея
+# Канонічні правила
 
-Клітина не використовує ресурси напряму для кожної дії.
+- Energy Buffer is a local state of a Cell.
+- Energy Buffer не є Resource, Material або transferable substance.
+- Energy Buffer не займає internal volume напряму.
+- Energy capacity задається storage-capable Materials, структурою та internal organization клітини.
+- Energy Buffer не передається напряму між незалежними клітинами.
+- Energy Buffer може partition-итися під час division як локальний стан parent cell.
+- Energy production потребує Resource/Field + Material/process/reaction.
+- Active processes потребують Energy.
+- Mandatory costs are paid before planned action Feasibility.
+- Якщо Energy недостатньо для planned actions як набору, planned actions не виконуються в цьому Tick.
+- Mandatory costs обробляються окремо.
+- Excess/inefficiency може створювати Heat.
+- Heat не є Energy Buffer.
 
-Спочатку ресурси або поля за участі відповідних матеріалів перетворюються на локальний енергетичний запас.
+---
 
-Після цього клітина витрачає цей запас на активні процеси.
+# Мінімальні Властивості
 
 ```text
-Resource / Field
-        +
-Material
-        ↓
-Energy Buffer
-        ↓
-Cell Work
+energy_current
+energy_capacity
+mandatory_costs
+planned_action_costs
+production_rate
+consumption_rate
+heat_side_effect
 ```
 
-Energy Buffer є короткочасним локальним запасом клітини.
-
-Він потрібен, щоб клітина могла:
-
-- накопичувати енергію між Tick;
-- виконувати декілька дій після одного виробництва енергії;
-- переживати періоди нестачі ресурсів;
-- мати різні енергетичні стратегії.
+`energy_capacity` визначається Materials клітини.
 
 ---
 
-# Що Energy НЕ є
+# Mandatory Costs
 
-Energy не є `Resource`.
+Mandatory costs are the cost of remaining an alive cell in current local conditions.
 
-Energy не є `Material`.
-
-Energy не є глобальним полем.
-
-Energy не є магічним запасом.
-
-Energy не існує окремо від клітини.
-
-Energy не транспортується як абстрактне число між клітинами.
-
----
-
-# Energy Buffer
-
-Кожна клітина має власний `Energy Buffer`.
-
-Він містить поточну кількість доступної енергії.
+They may include:
 
 ```text
-Cell
-├── Resources
-├── Materials
-├── Genome
-└── Energy Buffer
+minimal boundary stability
+basic internal stability
+Genome Runtime baseline cost if configured
+other required existence costs
 ```
 
-Energy Buffer не займає окремого фізичного місця як речовина.
-
-Але його максимальна місткість визначається фізичною структурою клітини — її матеріалами.
-
----
-
-# Місткість Energy Buffer
-
-Energy Buffer не має фіксованого розміру.
-
-Його місткість обчислюється з матеріалів клітини.
+Planned actions may use only Energy, Resources, Materials, volume and process capacity that remain after mandatory costs.
 
 ```text
-energy_capacity =
-Σ(material_amount × material.energy_capacity)
+available_for_planned_actions =
+  committed_state_after_mandatory_costs
 ```
 
-Матеріали можуть мати різну здатність підтримувати енергетичний буфер.
-
-Наприклад:
-
-```text
-Storage Material:
-  energy_capacity = 10.0
-
-Catalytic Material:
-  energy_capacity = 1.5
-
-Structural Material:
-  energy_capacity = 0.1
-
-Inert Material:
-  energy_capacity = 0.0
-```
-
-Таким чином еволюція може створювати клітини з різною енергетичною стратегією:
-
-- швидкі клітини з малим запасом;
-- повільні клітини з великим запасом;
-- клітини-акумулятори;
-- клітини, що живуть від постійного потоку ресурсів;
-- клітини, що запасають енергію на майбутні дії.
-
----
-
-# Джерела Energy
-
-Energy може утворюватися лише через процеси, визначені світом.
-
-## 1. Ресурс як джерело хімічного потенціалу
-
-Ресурс може мати параметр:
-
-```text
-energy_value
-```
-
-Це означає, що з цього ресурсу потенційно можна отримати енергію.
-
-Але сам по собі `energy_value` нічого не гарантує.
-
-Клітина повинна мати відповідний матеріал, який здатний використати цей ресурс.
-
-```text
-Resource
-    +
-Catalytic Material
-    ↓
-Energy Buffer
-    +
-Reaction Products
-```
-
----
-
-## 2. Поле як джерело енергії
-
-Поле може бути використане лише за наявності відповідного матеріалу.
-
-Наприклад:
-
-```text
-Light
-    +
-Photosensitive Material
-    ↓
-Energy Buffer
-```
-
-Поле саме по собі не створює Energy.
-
-Клітина повинна мати матеріал, який здатний перетворити вплив поля на енергетичний буфер.
-
----
-
-## 3. Реакція ресурсів
-
-Деякі реакції між ресурсами можуть виділяти енергію.
-
-Наприклад:
-
-```text
-Oxidizer
-    +
-Reducer
-    +
-Catalytic Material
-    ↓
-Energy Buffer
-    +
-Resource Product
-```
-
-Такі реакції описуються через `reaction_profile` ресурсів.
-
----
-
-# Роль матеріалів
-
-Матеріали не є Energy.
-
-Матеріали визначають:
-
-- які ресурси клітина може використати для енергії;
-- які поля клітина може використати;
-- швидкість перетворення;
-- ефективність перетворення;
-- місткість Energy Buffer;
-- стабільність енергетичного стану.
-
-Матеріал є механізмом, а не паливом.
-
----
-
-# Витрати Energy
-
-Будь-яка активна дія потребує Energy.
-
-Приклади:
-
-- Pump;
-- активний транспорт ресурсів;
-- синтез матеріалів;
-- ремонт;
-- скорочення;
-- рух;
-- створення Joint;
-- руйнування Joint;
-- поділ клітини;
-- інференс геному;
-- навчання;
-- підтримка складних матеріалів.
-
-Якщо Energy недостатньо, активна дія не виконується.
-
-Часткове виконання активної дії не є базовим правилом світу.
-
----
-
-# Пасивні процеси
-
-Не всі процеси потребують Energy.
-
-Energy не потрібна для:
-
-- пасивної дифузії;
-- природного розпаду;
-- зовнішнього фізичного впливу;
-- поширення поля;
-- руйнування через зіткнення.
-
----
-
-# Підтримка життя
-
-Навіть якщо клітина нічого активно не робить, вона може потребувати Energy для підтримки складних матеріалів.
-
-Якщо Energy недостатньо:
-
-- ремонт зупиняється;
-- активний транспорт зупиняється;
-- синтез зупиняється;
-- складні матеріали починають деградувати;
-- клітина поступово втрачає функціональність.
-
-Клітина не помирає напряму через нульову Energy.
-
-Смерть є наслідком руйнування матеріальної структури.
-
----
-
-# Енергетичний баланс Tick
-
-Кожен Tick клітина оновлює Energy Buffer.
-
-```text
-Energy_next =
-Energy_current
-+ Produced
-- Consumed
-- Maintenance
-- Losses
-```
-
-Після цього Energy обмежується максимальною місткістю:
-
-```text
-Energy_next = min(Energy_next, energy_capacity)
-```
-
-Якщо Energy падає нижче нуля, вона встановлюється в нуль.
-
----
-
-# Обов'язкові та планові витрати
-
-У межах одного Tick клітина може мати кілька запланованих дій.
-
-Для базової моделі витрати поділяються на:
-
-```text
-mandatory costs
-planned actions
-```
-
-Mandatory costs — це витрати на підтримку вже наявної структури, якщо вони визначені відповідними процесами.
-
-Planned actions — це дії, які клітина вирішила виконати під час Cell Decision.
-
-Правило:
-
-1. mandatory costs списуються першими, якщо Energy достатньо;
-2. якщо Energy недостатньо навіть для mandatory costs, клітина переходить у деградаційний стан відповідних матеріалів;
-3. якщо після mandatory costs Energy недостатньо для всього набору planned actions, planned actions не виконуються в цьому Tick.
-
-Порядок виконання planned actions не повинен створювати випадкову перевагу одній дії над іншою.
-
-Це консервативне правило може бути уточнене пізніше, але базова аксіома зберігається: дія без достатньої Energy не виконується.
-
----
-
-# Надлишок Energy
-
-Якщо Energy Buffer заповнений, надлишкова Energy не зберігається.
-
-Надлишок може:
-
-- підвищити temperature клітини;
-- через контакт або Joint вплинути на сусідню клітину;
-- бути використаний у реакції `Resource + Energy -> Resource`;
-- бути втрачений згідно з конфігурацією світу.
-
-Energy не повинна напряму створювати глобальне поле.
-
-Для базової моделі достатньо локальної temperature клітини та передачі Heat лише через контакт або Joint.
-
-На поточному рівні temperature клітини не змінює середовище напряму. Це обмеження зменшує обчислювальну складність.
-
----
-
-# Локальність Energy
-
-Energy Buffer належить конкретній клітині.
-
-Energy не передається між клітинами напряму як абстрактне число.
-
-Але клітина може передавати іншим клітинам:
-
-- ресурси з високим `energy_value`;
-- ресурси-носії;
-- продукти реакцій;
-- тепло через контакт;
-- тепло через Joint.
-
-Інша клітина може локально перетворити отримані ресурси на власний Energy Buffer, якщо має відповідні матеріали.
-
----
-
-# Energy і Resources
-
-Resource може бути джерелом Energy.
-
-Але Resource не є Energy.
-
-Ресурс може:
-
-- мати `energy_value`;
-- брати участь у реакції;
-- бути знищений у процесі отримання Energy;
-- перетворитися на інший ресурс;
-- стати продуктом реакції `Resource + Energy -> Resource`.
-
-Приклад:
-
-```text
-SugarResource
-    +
-CatalyticMaterial
-    ↓
-Energy Buffer
-    +
-SpentResource
-```
-
----
-
-# Energy і Materials
-
-Material може:
-
-- дозволяти виробництво Energy;
-- збільшувати Energy Buffer capacity;
-- зменшувати втрати;
-- прискорювати реакції;
-- захищати від перегріву;
-- використовувати Energy для функції.
-
-Material не є Energy.
-
-Material не є паливом, якщо це не визначено окремою реакцією руйнування матеріалу.
-
----
-
-# Energy і Fields
-
-Field може бути джерелом Energy лише через Material.
-
-Наприклад:
-
-```text
-Light
-    +
-PhotosensitiveMaterial
-    +
-OptionalResource
-    ↓
-Energy Buffer
-```
-
-Heat не є Energy Buffer.
-
-Heat є передачею теплового впливу між клітинами, об'єктами або полем.
-
-Temperature є локальним станом клітини або об'єкта.
-
----
-
-# Energy і Heat
-
-Heat може виникати як:
-
-- надлишок Energy;
-- побічний результат реакції;
-- наслідок тертя;
-- наслідок зіткнення;
-- результат деградації матеріалів.
-
-Heat може впливати на:
-
-- швидкість реакцій;
-- стабільність матеріалів;
-- замерзання;
-- перегрів;
-- сусідні клітини через контакт або Joint.
-
-У базовій моделі клітина має локальну temperature.
-
-Heat передається лише суміжним клітинам або об'єктам через контакт чи Joint.
-
-Глобальне Heat field можливе як майбутня модель, але не є обов'язковим для поточного рівня документації.
-
----
-
-# Energy і смерть клітини
-
-Нульова Energy не означає смерть.
-
-Клітина може залишатися живою, якщо її матеріали ще зберігають структуру.
-
-Але без Energy клітина не може:
-
-- ремонтуватися;
-- активно виводити зайві ресурси;
-- синтезувати нові матеріали;
-- підтримувати складні структури.
-
-Тому з часом вона деградує і може загинути.
-
----
-
-# Energy і еволюція
-
-Еволюція може змінювати:
-
-- здатність добувати Energy з різних ресурсів;
-- здатність використовувати поля;
-- місткість Energy Buffer;
-- втрати Energy;
-- реакцію на перегрів;
-- пріоритети витрат;
-- стратегію накопичення ресурсів із високим `energy_value`.
-
----
-
-# Правила
-
-## Rule 1. Energy is local
-
-Energy існує лише як локальний Energy Buffer клітини.
-
-## Rule 2. Energy is not matter
-
-Energy не є Resource або Material.
-
-## Rule 3. Energy requires conversion
-
-Energy виникає лише через перетворення Resource або Field за участі Material.
-
-## Rule 4. Energy capacity comes from Material
-
-Максимальна місткість Energy Buffer визначається матеріалами клітини.
-
-## Rule 5. Active work requires Energy
-
-Будь-яка активна дія потребує Energy.
-
-Якщо Energy недостатньо для дії, дія не виконується.
-
-## Rule 6. Energy is not directly transferable
-
-Energy не передається між клітинами напряму як число.
-
-Передаватися можуть ресурси, продукти реакцій або тепло.
-
-## Rule 7. Lack of Energy does not directly kill
-
-Нестача Energy не вбиває клітину напряму.
-
-Смерть є наслідком деградації матеріалів.
-
-## Rule 8. Excess Energy becomes local effects
-
-Надлишкова Energy може підвищити local temperature, перейти в Heat transfer, локальні втрати або реакції.
+If mandatory costs cannot be paid, planned actions are skipped or rejected for that Tick. The cell may become stalled, damaged, degrading, dormant or inert according to lifecycle rules.
 
 ---
 
@@ -530,51 +72,19 @@ Energy не передається між клітинами напряму як
 
 Не вводити:
 
-- `mana`;
-- `stamina`;
-- `HP`;
-- `global_energy`;
-- пряме передавання Energy між клітинами;
-- Energy як ресурс у середовищі.
-
-Усі енергетичні процеси повинні бути наслідком взаємодії:
-
-- Resources;
-- Materials;
-- Fields;
-- Reactions.
+- treating Energy Buffer as Resource;
+- treating Energy Buffer as Material;
+- direct Energy transfer through Joint;
+- free Energy from Field;
+- action execution without sufficient Energy;
+- hidden priority from action iteration order.
 
 ---
 
 # Пов'язані документи
 
-- `world/resources.md`
-- `world/materials.md`
-- `world/fields.md`
+- `biology/processes.md`
+- `biology/feasibility.md`
+- `biology/division-partition.md`
+- `world/reactions.md`
 - `world/physics.md`
-- `biology/cell.md`
-- `biology/joint.md`
-
----
-
-# Open Questions
-
-## Heat propagation
-
-Потрібно визначити, чи Heat буде:
-
-- лише передачею між суміжними клітинами;
-- частиною `Field`;
-- частиною `physics.md`;
-- або спрощеним побічним ефектом без окремого поширення в середовище.
-
-## Energy to Resource reactions
-
-Потрібно деталізувати правила реакцій типу:
-
-```text
-Resource + Energy -> Resource
-```
-
-Це може бути механізмом запасання енергії у високопотенційні ресурси.
-

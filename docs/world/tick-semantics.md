@@ -1,4 +1,4 @@
-# tick-semantics.md
+﻿# tick-semantics.md
 
 > **Tick Semantics — видимість стану, deltas і commit boundaries**
 
@@ -54,11 +54,21 @@ Physics/Lifecycle Phase
 Statistics Phase
 ```
 
+Tick N starts from committed state N.
+
+Environment Phase computes and commits environment snapshot N.
+
+Decision Phase reads environment snapshot N plus committed cell/world state available at that phase.
+
+Action Execution, Physics and Lifecycle produce committed state N+1.
+
 ## Environment Phase
 
 Оновлює Fields, Resources, Traces та environment buffers.
 
 Результат: committed environment snapshot.
+
+Passive environment updates at the start of Tick N are part of preparing the readable environment snapshot for Tick N.
 
 ## Decision Phase
 
@@ -87,6 +97,12 @@ Cell decision in Tick N may depend only on committed decision snapshot for Tick 
 Changes created by a cell during Decision Phase are not visible to any cell decision in the same Tick.
 
 Signal emitted in Tick N becomes readable by other cells no earlier than Tick N+1, unless a specific phase-level exception is documented.
+
+Same-tick phase commits are allowed only when explicitly defined.
+
+Same-phase feedback is forbidden.
+
+Decision behavior must not depend on iteration order, partial writes or uncommitted state.
 
 ---
 
@@ -142,6 +158,10 @@ World mutation happens through deltas and commit boundaries.
 
 Statistics, rendering and observer metrics do not affect behavior during normal simulation.
 
+## Rule 5. Changes are visible after phase commit
+
+No entity may read uncommitted changes from the same phase.
+
 ---
 
 # Пов'язані документи
@@ -151,4 +171,3 @@ Statistics, rendering and observer metrics do not affect behavior during normal 
 - `biology/feasibility.md`
 - `biology/communication.md`
 - `engine/ecs.md`
-

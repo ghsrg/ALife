@@ -1,4 +1,4 @@
-# regulatory-interface.md
+﻿# regulatory-interface.md
 
 > **Regulatory Interface — межа між Genome Runtime, ActionPlan і Feasibility**
 
@@ -86,6 +86,10 @@ Meaning:
 
 High priority does not guarantee execution.
 
+Allowed Genome outputs are defined in `biology/action-process-registry.md`.
+
+Genome Runtime may output only registered priorities.
+
 ---
 
 # Runtime Model
@@ -149,4 +153,3 @@ Runtime memory requires explicit RuntimeState or EpigeneticState.
 - `genetics/genome-representation.md`
 - `genetics/regulatory-network.md`
 - `biology/feasibility.md`
-

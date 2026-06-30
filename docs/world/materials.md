@@ -1,473 +1,97 @@
-﻿# materials.md
+# materials.md
 
-> **Матеріали — функціональна речовина клітини**
+> `Material` — структурна або функціональна основа клітин, Boundary і Joint.
 
 ---
 
 # Призначення
 
-Матеріали є основною будівельною речовиною клітини.
-
-Саме матеріали визначають фізичні властивості клітини та її потенційні можливості.
-
-Матеріали синтезуються з ресурсів.
-
-Після руйнування матеріали повертаються до ресурсів.
+Material визначає physical/function capabilities. Він не є поведінкою і не є готовою роллю клітини.
 
 ---
 
-# Основна ідея
+# Канонічні правила
 
-Матеріал не є клітиною.
-
-Матеріал не приймає рішень.
-
-Матеріал не містить генетичної інформації.
-
-Матеріал лише надає клітині певні властивості.
-
-Наприклад
-
-```text
-Resource
-      ↓
-Material
-      ↓
-Cell Property
-      ↓
-Genome decides when to use it
-```
+- Materials займають capacity.
+- Materials можуть надавати capabilities для processes.
+- Materials можуть деградувати, ремонтуватися, синтезуватися або розпадатися.
+- Boundary і Joint мають Material basis.
+- Stateful Materials можуть підтримувати signal-plastic behavior.
+- Genome регулює використання/синтез Materials, але не створює capability без Material.
+- Material capabilities require proper biological context.
+- External MaterialFragment is matter with material identity, not active Cell material.
 
 ---
 
-# Потенційні властивості матеріалу
-
-Матеріал може мати числові властивості від `0.0` до `1.0` або параметри ефективності.
-
-Матеріал не є готовою функцією.
-
-Він лише визначає потенційні можливості клітини.
-
-Зв'язок `Materials -> Capabilities -> allowed process set` описаний у `biology/process-capabilities.md`.
-
-Наприклад:
+# Мінімальні Властивості
 
 ```text
-strength = 0.8
-elasticity = 0.4
-conductivity = 0.6
-light_sensitivity = 0.9
-contractility = 0.5
-pump_efficiency = 0.3
-energy_conversion_efficiency = 0.7
-energy_capacity = 2.0
-```
-
-Матеріали можуть мати властивості, які дозволяють learning-like behavior:
-
-```text
-signal_conductivity
-signal_sensitivity
-signal_gain
-activation_threshold
-impulse_accumulation
-impulse_decay
-state_plasticity
-memory_stability
-connection_weight_modifier
-```
-Ці властивості не створюють готовий Neuron.
-
-Вони лише дозволяють клітинам накопичувати, передавати і змінювати сигнальний стан.
-Якщо клітина гібридна, то накопичивши сингал - вона активує й свої функції матеріалів.
-
-
----
-
-# MaterialType
-
-Кожен тип матеріалу визначається набором параметрів.
-
-```text
-MaterialType
-
 id
-
-density
-
-strength
-
-elasticity
-
+volume
 stability
-
-repair_cost
-
-synthesis_cost
-
-reaction_profile
-
-field_sensitivity
-
-properties
-
+strength
+permeability
 energy_capacity
-
-energy_conversion_efficiency
-
-heat_resistance
+capabilities
+decay_rate
+repair_requirements
+reaction_profile
 ```
 
 ---
 
-# density
-
-Впливає на фізику.
-
----
-
-# strength
-
-Стійкість до руйнування.
-
----
-
-# elasticity
-
-Здатність повертати форму.
-
----
-
-# stability
-
-Швидкість природного розпаду.
-
----
-
-# repair_cost
-
-Кількість ресурсів для ремонту.
-
----
-
-# synthesis_cost
-
-Кількість ресурсів для синтезу.
-
----
-
-# field_sensitivity
-
-Чутливість до:
-
-- Light
-- Heat
-- Pressure
-- інших полів
-
----
-
-# properties
-
-Довільний набір властивостей матеріалу.
-
-Наприклад
+# MaterialFragment
 
 ```text
-contractile
-
-photosensitive
-
-conductive
-
-pump
-
-sensor
-
-barrier
-
-storage
-
-elastic
+Material inside Cell      -> functional cell material
+MaterialFragment outside  -> physical remains / structure / debris
+Resource                  -> movable or consumable substance
 ```
 
-Властивостей матеріалу числовими коефіцієнтами від 0 до 1.
-Наприклад:
-
-contractility = 0.8
-conductivity = 0.3
-light_sensitivity = 0.9
-elasticity = 0.4
-
-Матеріал може мати будь-яку комбінацію.
-
----
-
-# Матеріали і Energy
-
-Energy не є матеріалом.
-
-Матеріали не передають Energy напряму як речовину.
-
-Але матеріали визначають, як клітина працює з Energy.
-
-Матеріал може:
-
-- збільшувати місткість Energy Buffer;
-- перетворювати ресурс на Energy;
-- використовувати поле для виробництва Energy;
-- зменшувати втрати;
-- захищати клітину від перегріву.
-
-Приклад:
+MaterialFragment may retain:
 
 ```text
-Resource
-    +
-Catalytic Material
-    ↓
-Energy Buffer
-    +
-Reaction Products
-Light
-    +
-Photosensitive Material
-    ↓
-Energy Buffer
-
----
-
-# Матеріал не виконує роботу
-
-Матеріал сам нічого не робить.
-
-Щоб властивість проявилася, необхідні:
-
-- рішення клітини;
-- енергія;
-- відповідні умови.
-
-Наприклад
-
-```text
-Contractile Material
-        +
-Energy
-        +
-Genome Signal
-        ↓
-Contraction
+material_id
+amount
+location
+mass / volume
+stability
+damage state
+decay_rate
+remaining structural properties
 ```
 
----
-# Матеріали не є Energy.
+Outside a Cell, MaterialFragment does not provide active cell capabilities such as repair, energy conversion, signal processing, genome execution, movement, controlled transport or reproduction.
 
-Але матеріали можуть визначати:
-
-- місткість Energy Buffer;
-- ефективність перетворення ресурсів на Energy;
-- здатність використовувати поля для отримання Energy;
-- втрати Energy;
-- стійкість до Heat.
-
----
-
-# Синтез
-
-Матеріали утворюються лише з ресурсів.
+Context-specific capability interpretation:
 
 ```text
-Resources
-      ↓
-Synthesis
-      ↓
-Material
+inside living Cell  -> may enable processes
+inside Joint        -> may enable joint behavior
+outside Cell        -> passive physical/material properties only
 ```
 
-Синтез потребує:
-
-- ресурсів;
-- енергії;
-- часу;
-- може потребувати наявності поля.
-
----
-
-# Ремонт
-
-Пошкоджений матеріал можна відновити.
-
-Для ремонту необхідні:
-
-- ресурси;
-- енергія;
-- вільний об'єм.
-
----
-
-# Деградація
-
-Будь-який матеріал природно деградує.
-
-Якщо ремонт не компенсує втрати,
-
-клітина поступово втрачає функціональність.
-
----
-
-# Руйнування
-
-Матеріал може бути зруйнований через:
-
-- механічний вплив;
-- реакцію з ресурсом;
-- реакцію з іншим матеріалом;
-- нестачу енергії;
-- перегрів;
-- вплив поля чи зміна швидкості розпаду через вплив;
-- старіння.
-
-Результатом є:
-
-- ресурси;
-- простіші матеріали;
-- енергія (якщо реакція екзотермічна);
-- може бути зміна поля.
-
----
-
-# Локальні реакції
-
-Матеріали можуть взаємодіяти з ресурсами.
-
-Наприклад
-
-```text
-Resource A
-      +
-Material B
-      ↓
-Material C
-```
-
-або
-
-```text
-Resource A
-      +
-Material B
-      ↓
-Resource D
-      +
-Energy
-```
-
----
-
-# Простір
-
-Матеріал займає внутрішній об'єм клітини.
-
-Більше матеріалу →
-
-менше місця для:
-
-- ресурсів;
-- енергії;
-- геному.
-
----
-
-# Кількість має значення
-
-Властивість матеріалу залежить не лише від його типу.
-
-Вона також залежить від:
-
-- кількості;
-- просторового розташування;
-- сусідніх матеріалів;
-- сигналів геному.
-
-Наприклад
-
-Мало Contractile Material →
-
-слабке скорочення.
-
-Багато Contractile Material →
-
-сильне скорочення.
-
----
-
-# Нові матеріали
-
-Світ не містить фіксованого списку матеріалів.
-
-Новий світ може додати:
-
-- нові властивості;
-- нові реакції;
-- нові механізми.
-
-Без зміни рушія.
-
----
-
-# Правила
-
-Rule 1.
-
-Матеріали визначають потенційні властивості клітини.
-
-Rule 2.
-
-Матеріали синтезуються лише з ресурсів.
-
-Rule 3.
-
-Матеріали займають об'єм.
-
-Rule 4.
-
-Матеріали природно деградують.
-
-Rule 5.
-
-Матеріали можуть ремонтуватися.
-
-Rule 6.
-
-Будь-яка функція виникає через взаємодію:
-
-- матеріалу;
-- енергії;
-- регуляції;
-- середовища.
+A MaterialFragment becomes Resource only through explicit degradation, reaction or conversion rules.
 
 ---
 
 # Заборонено
 
-Не вводити окремі класи:
+Не вводити:
 
-- Muscle
-- Bone
-- Skin
-- Eye
-- Sensor
-
-Усе це повинно виникати як комбінація матеріалів.
+- Material as hardcoded behavior;
+- capability without material basis;
+- indestructible material by default;
+- free repair;
+- direct species marker.
+- active cell capability from external MaterialFragment without Cell context.
 
 ---
 
 # Пов'язані документи
 
-- resources.md
-- energy.md
-- fields.md
-- ../biology/process-capabilities.md
-- cell.md
-- genome.md
-
+- `biology/process-capabilities.md`
+- `biology/cell.md`
+- `biology/membrane.md`
+- `biology/joint.md`
+- `docs/config/materials_config.md`

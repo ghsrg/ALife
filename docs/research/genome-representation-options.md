@@ -12,7 +12,7 @@ Research / design options.
 
 Канонічна реалізація Genome описується в:
 
-```text id="9xwqk2"
+```text
 docs/biology/genome.md
 docs/genetics/regulatory-network.md
 docs/genetics/genome-runtime.md
@@ -37,7 +37,7 @@ docs/genetics/genome-runtime.md
 
 Для базової моделі використовується:
 
-```text id="ziw5ba"
+```text
 Direct Regulatory Graph
 ```
 
@@ -55,7 +55,7 @@ Direct Regulatory Graph
 
 Можливі варіанти:
 
-```text id="q4jv9r"
+```text
 Direct Regulatory Graph
 Linear Instruction Genome
 Fragment-based Genome

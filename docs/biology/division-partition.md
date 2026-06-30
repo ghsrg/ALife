@@ -1,4 +1,4 @@
-# division-partition.md
+﻿# division-partition.md
 
 > **Division Partition — фізичний розподіл локального стану однієї клітини**
 
@@ -41,7 +41,7 @@ Future-compatible options:
 | Resources | noisy proportional by target volume | conserved |
 | Materials | noisy proportional by target volume | conserved unless configured loss |
 | Boundary material | split into two boundary states | conserved, but may be insufficient |
-| Genome | copied, not partitioned | copy cost paid before completion |
+| Genome | copied, not partitioned | physical copy or valid carrier must exist before partition |
 | Genome mutation | applied during copying | deterministic with seed |
 | EpigeneticState | partial inherited / attenuated | not necessarily conserved |
 | RuntimeState | usually reset | explicit exceptions only |
@@ -93,6 +93,35 @@ Default:
 
 ---
 
+# Genome Copying Material Basis
+
+Genome copying є long-running controlled process.
+
+Before division partition is completed, parent Cell must either:
+
+```text
+have a complete physical Genome copy
+or have an explicitly incomplete/damaged Genome fragment
+```
+
+A Genome copy is synthesized from configured Resources, Materials or internal precursor fragments according to recipe/cost.
+
+Energy is only the work cost of copying, repair and organization. Energy is not the source of matter.
+
+Allowed daughter Genome outcomes:
+
+```text
+complete functional Genome
+damaged Genome
+incomplete Genome
+nonfunctional Genome carrier
+no viable Genome copy
+```
+
+No daughter Cell receives a functional Genome unless a physical Genome copy or explicitly valid inherited carrier exists before partition.
+
+---
+
 # Rules
 
 ## Rule 1. Division is deterministic
@@ -111,6 +140,10 @@ Division can produce weak, inert, leaking or dead descendants.
 
 Only explicitly copied state is copied.
 
+## Rule 5. Genome copying conserves matter
+
+Energy can power copying, but cannot create the physical Genome carrier.
+
 ---
 
 # Пов'язані документи
@@ -120,4 +153,3 @@ Only explicitly copied state is copied.
 - `genetics/inheritance.md`
 - `biology/joint.md`
 - `world/energy.md`
-

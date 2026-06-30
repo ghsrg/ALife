@@ -1,4 +1,4 @@
-# cell-state.md
+﻿# cell-state.md
 
 > **Cell State — функціональна безперервність життя без hidden HP**
 
