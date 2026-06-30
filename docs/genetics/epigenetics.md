@@ -150,6 +150,13 @@ Runtime State частіше короткочасний.
 
 Epigenetic State може бути довшим і частково успадковуваним.
 
+Для меж шарів:
+
+* `Runtime State` — короткочасна пам'ять виконання Genome Runtime;
+* `Material State` — стан конкретного Material, який передається лише разом із ним;
+* `Epigenetic State` — клітинний modifier runtime, може частково успадковуватися;
+* `ProcessProgress` — стан довгого процесу, зазвичай не успадковується.
+
 ---
 
 # Epigenetic State
@@ -1223,12 +1230,14 @@ signal_sensitivity_modifier
 
 ## Neural-like behavior
 
-Потрібно уточнити, де проходить межа між:
+Базова межа:
 
 * Runtime State;
 * Stateful Material;
 * Epigenetic State;
 * learning-like adaptation.
+
+Потрібно вибрати, які поля включати в першу реалізацію.
 
 ## Trace
 

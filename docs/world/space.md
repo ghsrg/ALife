@@ -302,6 +302,20 @@ local inputs
 
 ---
 
+# Locality Contract
+
+Space визначає локальність для всіх систем:
+
+```text
+Cell input = only local neighborhood + connected Joints + internal state
+```
+
+Genome Runtime не отримує абсолютну карту світу, список усіх клітин або глобальні координати цілей.
+
+Observer Layer може будувати повну карту для аналізу, але ці дані не є поведінковим input.
+
+---
+
 # Cell Position
 
 Кожна жива клітина має Position.
@@ -371,6 +385,8 @@ flow at position
 ```
 
 Клітина читає лише локальне значення Field або локальний gradient, якщо має відповідні Materials.
+
+Для базової моделі Field representation може бути grid, function або hybrid, але Cell Input завжди залишається локальним sampled value/gradient.
 
 ---
 
@@ -625,19 +641,25 @@ CellEntity — біологічна одиниця симуляції.
 
 ## Resource representation
 
-Потрібно вирішити, чи Resources будуть grid-based, entity-based або hybrid.
+Стартова рекомендація: grid-based або sparse grid-based Resources.
+
+Потрібно вибрати конкретну структуру для першої реалізації.
 
 ## Field representation
 
-Потрібно вирішити, чи Field layers зберігаються як grid, function або hybrid.
+Потрібно вибрати конкретну структуру для першої реалізації: grid, function або hybrid.
 
 ## Boundary changes
 
-Потрібно вирішити, чи boundary mode може змінюватися під час scenario.
+Базове правило: boundary mode фіксується на scenario run.
+
+Потрібно вирішити, чи runtime boundary changes потрібні як future event-механіка.
 
 ## Zones
 
-Потрібно визначити, чи Zones є частиною world config, field config або окремого spatial layer.
+Zones є config overlay для Fields, Resources або events.
+
+Потрібно вибрати файл конфігурації для першої реалізації.
 
 ## Nested spaces
 

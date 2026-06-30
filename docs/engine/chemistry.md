@@ -12,6 +12,8 @@
 
 Його задача — пояснити агенту, що reactions мають бути універсальними, конфігурованими і не повинні перетворюватися на hardcoded біологію.
 
+Доменна семантика reactions описана в `world/reactions.md`, а формат конфігурації — в `config/reactions_config.md`.
+
 ---
 
 # Основна ідея
@@ -180,6 +182,7 @@ resources_config.md
 materials_config.md
 fields_config.md
 world_config.md
+reactions_config.md
 ```
 
 Типи Resources і Materials не повинні бути зашиті в код.
@@ -231,6 +234,7 @@ Stochastic reactions мають бути відтворюваними.
 Під час реалізації цей файл треба розширити, коли з’являться:
 
 * перша схема reactions;
+* інтеграція з `world/reactions.md` і `config/reactions_config.md`;
 * формула decay;
 * правила heat release;
 * material degradation model;

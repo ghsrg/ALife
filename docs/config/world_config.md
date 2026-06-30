@@ -29,6 +29,8 @@ World Config не описує конкретні Resources, Materials або Fi
 resources_config.md
 materials_config.md
 fields_config.md
+reactions_config.md
+stability_bounds.md
 ```
 
 ---
@@ -213,6 +215,8 @@ statistics_interval  як часто рахувати метрики
 `tick_duration` не повинен бути прив'язаний до реальних секунд.
 
 Це масштаб симуляції.
+
+Калібрувальні сценарії можуть використовувати default `1 tick = 1 simulation second`, але це не біологічна істина і не вимога для всіх світів.
 
 ---
 
@@ -660,6 +664,8 @@ World Config повинен проходити validation.
 * probabilities у межах `0.0..1.0`;
 * seed заданий або автоматично створений.
 
+Діапазони стабільності, seed configs і рівні validation описані в `config/stability_bounds.md`.
+
 ---
 
 # Правила
@@ -714,6 +720,8 @@ Config задає середовище, а не готові форми житт
 * `config/resources_config.md`
 * `config/materials_config.md`
 * `config/fields_config.md`
+* `config/reactions_config.md`
+* `config/stability_bounds.md`
 * `world/fields.md`
 * `world/resources.md`
 * `world/materials.md`
@@ -729,7 +737,7 @@ Config задає середовище, а не готові форми житт
 
 ## Time scale
 
-Потрібно визначити, що означає `tick_duration` для різних сценаріїв.
+Потрібно визначити, які presets використовують calibration default `1 tick = 1 simulation second`, а які мають інший масштаб.
 
 ## Scenario format
 

@@ -50,6 +50,8 @@ Action Plan
 Cell State Changes
 ```
 
+Точний інтерфейс між Genome Runtime, ActionPlan, Feasibility Check і Process Execution описаний у `genetics/regulatory-interface.md`.
+
 ---
 
 # Що Genome НЕ є
@@ -425,9 +427,9 @@ Different Cell Function
 
 ---
 
-# Базова модель базової моделі: Direct Regulatory Graph
+# Базова модель: Direct Regulatory Graph
 
-Базовий варіант для базової моделі:
+Поточний базовий варіант:
 
 ```text
 Inputs
@@ -449,6 +451,8 @@ Genome
 ```
 
 Це дозволяє моделювати просту спадкову регуляцію без hardcoded поведінки.
+
+Direct Regulatory Graph є прийнятим напрямком, який зійшовся по суті й механіці. Він ще не є монолітом: можна коригувати bindings, limits, mutation parameters і шлях до fragment-compatible моделі.
 
 ---
 
@@ -571,6 +575,8 @@ Feasibility Check перевіряє:
 - Physics;
 - Joint;
 - стан клітини.
+
+Genome output не може обходити `biology/feasibility.md` і не є direct command.
 
 ---
 
@@ -1145,6 +1151,8 @@ Learning не змінює Genome напряму.
 - `world/energy.md`
 - `world/physics.md`
 - `world/tick.md`
+- `genetics/regulatory-interface.md`
+- `biology/feasibility.md`
 - `research/genome-representation.md`
 - `research/graph-crossover.md`
 - `research/plasmid-genome.md`
@@ -1155,7 +1163,7 @@ Learning не змінює Genome напряму.
 
 ## Межі Direct Regulatory Graph
 
-Direct Regulatory Graph є базовою моделлю базової моделі.
+Direct Regulatory Graph є поточним базовим варіантом.
 
 Потрібно уточнити, які частини моделі залишаються стабільними, а які можна коригувати після перших експериментів:
 
@@ -1201,5 +1209,5 @@ Direct Regulatory Graph є базовою моделлю базової моде
 
 ## Minimal viable Genome
 
-Потрібно визначити мінімальний набір inputs/outputs для першої симуляції.
+Потрібно визначити мінімальний набір inputs/outputs для першої реалізації.
 

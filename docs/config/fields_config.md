@@ -31,6 +31,8 @@ Field не є Energy Buffer.
 
 Field — це умова або вплив, який клітини можуть відчувати лише через Materials, Genome inputs і локальну фізику.
 
+Семантичні обмеження Field описані в `world/field-semantics.md`.
+
 ---
 
 # Основна ідея
@@ -641,7 +643,9 @@ Light не створює Energy напряму.
 
 # Heat Field
 
-Heat Field описує локальне тепло.
+Heat Field описує локальне тепло, якщо сценарій або future-реалізація вмикає глобальний heat layer.
+
+Поточне базове правило простіше: клітина має локальну `temperature`, а Heat передається через контакт або Joint без прямої зміни середовища.
 
 ```yaml id="e7hc81"
 - id: "heat"
@@ -1006,6 +1010,7 @@ Light або Heat не є прямим Energy Buffer клітини.
 * `config/resources_config.md`
 * `config/materials_config.md`
 * `world/fields.md`
+* `world/field-semantics.md`
 * `world/resources.md`
 * `world/materials.md`
 * `world/energy.md`
@@ -1046,7 +1051,9 @@ dynamic
 
 ## Heat implementation
 
-Потрібно вирішити, чи Heat є Field, окремим physics layer або обома.
+Поточне базове правило: local temperature + contact/Joint Heat transfer.
+
+Потрібно вирішити, коли додавати глобальний Heat Field.
 
 ## Pressure implementation
 

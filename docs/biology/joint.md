@@ -55,6 +55,8 @@ Joint не передає Energy Buffer напряму як абстрактне
 
 Але через Joint можуть передаватися Resources з `energy_value`, продукти реакцій, Heat або сигнали, які змінюють Energy production у клітині-одержувачі.
 
+Базовий контракт: один `Joint` object може мати кілька каналів (`mechanical`, `resource`, `signal`, `heat`). Канали є параметрами одного Joint, а не окремими сутностями, якщо немає окремої фізичної причини.
+
 ---
 
 # Що Joint НЕ є
@@ -833,7 +835,7 @@ Existing Joint follows the daughter cell closest to original attachment point.
 Division breaks existing external Joints unless explicitly maintained.
 ```
 
-Потрібно вибрати в `lifecycle.md` або `engine/physics.md`.
+Для документації базовим правилом є: existing Joint не дублюється. Він або reassigned до просторово валідної дочірньої клітини, або breaks. Новий Joint між дочірніми клітинами виникає лише через explicit process.
 
 ---
 
@@ -1348,6 +1350,7 @@ Joint model повинна працювати для:
 * `biology/membrane.md`
 * `biology/processes.md`
 * `biology/lifecycle.md`
+* `biology/division-partition.md`
 * `biology/genome.md`
 * `biology/communication.md`
 * `biology/specialization.md`
@@ -1403,11 +1406,14 @@ Joint model повинна працювати для:
 
 ## Joint during division
 
-Потрібно вибрати правило для поділу клітини з існуючими Joint.
+Потрібно вибрати реалізаційний default між:
+
+* reassign to closest spatially valid daughter;
+* break external Joints unless maintained.
 
 ## Joint death behavior
 
-Потрібно визначити, що стається з Joint після смерті однієї клітини.
+Потрібно деталізувати rates деградації Joint після смерті однієї клітини.
 
 ## HGT through Joint
 

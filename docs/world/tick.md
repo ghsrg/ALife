@@ -18,6 +18,8 @@ Tick є єдиним способом зміни стану світу.
 
 Будь-яка зміна може відбутися лише всередині Tick.
 
+Детальний контракт видимості snapshot, delta, commit, same-tick effects і deterministic conflict resolution описаний у `world/tick-semantics.md`.
+
 ---
 
 # Основні принципи
@@ -343,9 +345,12 @@ Current World
 # Пов'язані документи
 
 - `world/laws.md`
+- `world/tick-semantics.md`
 - `world/resources.md`
 - `world/materials.md`
 - `world/energy.md`
+- `biology/feasibility.md`
+- `biology/process-progress.md`
 - `biology/cell.md`
 - `engine/scheduler.md`
 
@@ -353,6 +358,5 @@ Current World
 
 # Open Questions
 
-- Остаточний порядок внутрішніх фаз етапу **Action Execution** може уточнюватися після реалізації фізики та біохімії.
-- Scheduler повинен гарантувати однаковий результат незалежно від кількості потоків виконання.
+- Остаточний порядок внутрішніх фаз етапу **Action Execution** може уточнюватися після реалізації фізики та біохімії, якщо результат зберігає контракт `world/tick-semantics.md`.
 

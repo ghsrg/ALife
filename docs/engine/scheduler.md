@@ -14,6 +14,8 @@ Scheduler — це виконавча оптимізація рушія, яка 
 
 Scheduler не є окремим законом світу. Його фази можуть не збігатися один-в-один із концептуальними фазами `world/tick.md`, але результат має зберігати семантику Tick.
 
+Обов'язковий семантичний контракт Scheduler описаний у `world/tick-semantics.md`: stable snapshot, read-only Decision, delta collection, deterministic commit і заборона same-tick feedback loops.
+
 Scheduler потрібен, щоб уникнути хаосу:
 
 * same-tick feedback loops;
@@ -328,10 +330,9 @@ Statistics і views не змінюють клітинний state.
 
 # Open Questions
 
-* Чи signal, створений у Tick N, читається тільки в Tick N+1?
-* Чи Joint transfer відбувається до або після Cell Process Execution?
-* Чи Physics має бути до або після LifecycleSystem?
-* Яка conflict resolution стратегія потрібна для базової моделі?
+* Чи Joint transfer відбувається до або після Cell Process Execution у конкретній реалізації Scheduler, якщо це не порушує `world/tick-semantics.md`?
+* Чи Physics має бути до або після LifecycleSystem у конкретній реалізації Scheduler?
+* Яка deterministic conflict resolution стратегія потрібна для першої реалізації: stable id, proportional allocation або seeded arbitration?
 
 ---
 

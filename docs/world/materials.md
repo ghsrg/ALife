@@ -48,6 +48,8 @@ Genome decides when to use it
 
 Він лише визначає потенційні можливості клітини.
 
+Зв'язок `Materials -> Capabilities -> allowed process set` описаний у `biology/process-capabilities.md`.
+
 Наприклад:
 
 ```text
@@ -465,6 +467,7 @@ Rule 6.
 - resources.md
 - energy.md
 - fields.md
+- ../biology/process-capabilities.md
 - cell.md
 - genome.md
 

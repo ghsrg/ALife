@@ -28,6 +28,8 @@ Inheritance не є гарантією життєздатності.
 
 Дочірня клітина може отримати неповний, пошкоджений або погано збалансований стартовий стан.
 
+Фізичний контракт partition під час division описаний у `biology/division-partition.md`.
+
 ---
 
 # Основна ідея
@@ -466,6 +468,8 @@ Runtime State не є Genome.
 * залежати від epigenetic_state.
 
 Для базової моделі краще більшість Runtime State скидати або передавати мінімально.
+
+Базовий контракт: ProcessProgress зазвичай не успадковується, RuntimeState зазвичай reset, MaterialState переходить лише разом із відповідним Material.
 
 ---
 
@@ -1165,6 +1169,7 @@ Inheritance не повинна створювати технічно злама
 
 * `biology/cell.md`
 * `biology/lifecycle.md`
+* `biology/division-partition.md`
 * `biology/processes.md`
 * `biology/genome.md`
 * `biology/membrane.md`
@@ -1203,11 +1208,13 @@ epigenetic_inheritance_factor
 
 ## Runtime state inheritance
 
-Потрібно вирішити, чи accumulated_signal, impulse memory та material coefficients передаються у базовій моделі.
+Базове правило: Runtime State reset або мінімальна передача; Material coefficients передаються лише разом із відповідним Material.
+
+Потрібно вибрати конкретні поля для першої реалізації.
 
 ## Joint inheritance
 
-Потрібно визначити, як поділ клітини впливає на існуючі Joint.
+Базове правило описане в `biology/division-partition.md`: Joint не дублюється; він reassigned до валідної daughter або breaks.
 
 ## Non-viable daughter handling
 

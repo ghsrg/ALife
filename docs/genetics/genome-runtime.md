@@ -16,6 +16,8 @@ Genome Runtime не змінює світ напряму.
 
 Genome Runtime читає локальний стан клітини, обчислює регуляторні сигнали і передає їх у `Action Planning`.
 
+Нормативний інтерфейс входів, виходів, output scale, forbidden inputs і runtime limits описаний у `genetics/regulatory-interface.md`.
+
 ---
 
 # Основна ідея
@@ -412,9 +414,9 @@ event-like propagation
 
 ---
 
-# базова модель Execution Mode
+# Базовий Execution Mode
 
-Рекомендований режим базової моделі:
+Рекомендований простий режим:
 
 ```text
 DAG execution
@@ -482,6 +484,8 @@ deterministic update order
 
 Для базової моделі цикли краще не вмикати або дозволити тільки через явно обмежену кількість кроків.
 
+Якщо цикли дозволені, вони повинні виконуватися fixed-step recurrent mode з малим фіксованим `runtime_steps`, без convergence-loop всередині Tick.
+
 ---
 
 # Fixed-step Recurrent Execution
@@ -538,11 +542,14 @@ max_value = 1.0
 Мінімальний набір Для базової моделі:
 
 ```text
-linear_clamp
+linear_clamped
 threshold
+sigmoid
 ```
 
-Можливий розширений набір:
+Інші функції потребують окремого рішення, бо ускладнюють мутації й аналіз.
+
+Можливий future-набір:
 
 ```text
 sigmoid
@@ -1257,6 +1264,7 @@ Genome Runtime не повинен залежати від порядку вик
 
 # Пов'язані документи
 
+* `genetics/regulatory-interface.md`
 * `genetics/regulatory-network.md`
 * `genetics/mutation.md`
 * `genetics/inheritance.md`
@@ -1274,17 +1282,9 @@ Genome Runtime не повинен залежати від порядку вик
 
 # Open Questions
 
-## Runtime energy cost
-
-Потрібно вирішити, чи Runtime витрачає Energy У базовій моделі.
-
 ## Cycles
 
-Потрібно вирішити, чи дозволяти цикли:
-
-* заборонити у базовій моделі;
-* дозволити через fixed runtime steps;
-* дозволити лише для stateful nodes.
+Потрібно вирішити, чи перша реалізація починає з DAG-only або fixed-step recurrent mode з обмеженнями `genetics/regulatory-interface.md`.
 
 ## Stateful nodes
 
@@ -1295,20 +1295,10 @@ Genome Runtime не повинен залежати від порядку вик
 Потрібно остаточно вибрати набір функцій:
 
 ```text
-linear_clamp
+linear_clamped
 threshold
 sigmoid
 ```
-
-## Missing inputs
-
-Потрібно підтвердити правило:
-
-```text
-missing input = 0.0
-```
-
-або ввести окремий стан `unavailable`.
 
 ## Epigenetic modifiers
 

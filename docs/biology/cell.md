@@ -58,6 +58,8 @@ Cell State
 - фізику;
 - Tick.
 
+Функціональні стани клітини, включно з `active`, `stalled`, `dormant`, `inert`, `decomposing` і `persistent_remains`, описані в `biology/cell-state.md`.
+
 ---
 
 # Що клітина НЕ є
@@ -314,7 +316,7 @@ Neural-like Cells
 
 У рушії не існує hardcoded NeuronCell.
 
-Neural-like cell може виникнути, якщо клітина має матеріали, які підтримують:
+Сигнально-пластична клітина (`neural-like cell/material state`) може виникнути, якщо клітина має матеріали, які підтримують:
 
 - signal accumulation;
 - signal conduction;
@@ -677,6 +679,8 @@ Action Execution
 
 Якщо у Tick заплановано кілька активних дій і Energy недостатньо для всього набору planned actions, planned actions не виконуються в цьому Tick.
 
+Це є застосуванням універсального `Feasibility Check`, описаного в `biology/feasibility.md`.
+
 ---
 
 # Основні процеси клітини
@@ -945,6 +949,8 @@ Temperature клітини не змінює середовище напряму
 
 Детальна модель поділу описується в `biology/lifecycle.md`.
 
+Фізичне partition-правило для Resources, Materials, Energy Buffer, Genome, Epigenetic State, Runtime State, damage і Joint context описане в `biology/division-partition.md`.
+
 ---
 
 # Недобудована клітина
@@ -1161,6 +1167,10 @@ Dormancy не є окремим типом клітини.
 - `world/energy.md`
 - `world/physics.md`
 - `biology/joint.md`
+- `biology/feasibility.md`
+- `biology/process-capabilities.md`
+- `biology/cell-state.md`
+- `biology/division-partition.md`
 - `biology/genome.md`
 - `biology/lifecycle.md`
 - `biology/development.md`
@@ -1184,25 +1194,14 @@ Dormancy не є окремим типом клітини.
 - мають мікроструктуру;
 - впливають на форму клітини.
 
-## Мінімальна життєздатність
-
-Потрібно формалізувати умови, за яких клітина вважається живою, сплячою, нежиттєздатною або мертвою.
-
-## Поділ
-
-Потрібно деталізувати, як саме розподіляються:
-
-- матеріали;
-- ресурси;
-- Energy Buffer;
-- геном;
-- епігенетичний стан.
-
 ## Геном
 
-Потрібно визначити фінальну модель геномної регуляції:
+Direct Regulatory Graph є поточним базовим варіантом, але не закритим монолітом.
 
-- direct regulatory network;
-- plasmid-like model;
-- hybrid model.
+Потрібно уточнювати:
+
+- input/output bindings;
+- limits nodes/edges;
+- mutation parameters;
+- шлях сумісності з fragment-compatible моделлю.
 

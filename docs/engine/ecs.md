@@ -60,6 +60,8 @@ TraceEntity
 
 Це derived analytical view над Cells + Joints.
 
+Observer/analytics views є read-only щодо поведінки клітин: їх не можна подавати як Genome Runtime input або використовувати як organism-level command.
+
 ---
 
 # CellEntity
@@ -131,6 +133,8 @@ JointDamageComponent
 JointEntity не є нервом, судиною або органом.
 
 Це універсальний матеріальний зв'язок між клітинами.
+
+Один JointEntity може мати кілька каналів (`mechanical`, `resource`, `signal`, `heat`) як компоненти одного Joint.
 
 ---
 

@@ -30,6 +30,8 @@ Resource не є Material.
 
 Resource не є Energy Buffer.
 
+Реакції між Resources і Materials мають описуватися через `config/reactions_config.md` або сумісний reaction block без `toxicity` shortcut.
+
 ---
 
 # Основна ідея
@@ -355,6 +357,8 @@ reaction_profile:
 ```
 
 Reaction Profile описує потенційні реакції.
+
+Нормативна схема reaction config описана в `config/reactions_config.md`.
 
 Реакція не повинна автоматично відбуватися завжди.
 
@@ -695,6 +699,7 @@ Tags не повинні бути поведінковою логікою клі
 * `config/world_config.md`
 * `config/materials_config.md`
 * `config/fields_config.md`
+* `config/reactions_config.md`
 * `world/resources.md`
 * `world/materials.md`
 * `world/energy.md`
@@ -708,7 +713,7 @@ Tags не повинні бути поведінковою логікою клі
 
 ## Reaction model
 
-Потрібно вирішити, наскільки складними будуть reactions У базовій моделі.
+Потрібно вибрати мінімальний subset `config/reactions_config.md` для першої реалізації.
 
 ## Resource phase
 
@@ -728,6 +733,6 @@ Tags не повинні бути поведінковою логікою клі
 
 ## Units
 
-Потрібно визначити умовні одиниці для amount, volume і density.
+Умовні одиниці описані в `world/units.md`; потрібно лише закріпити стартові числові межі в config schema.
 
 

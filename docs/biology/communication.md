@@ -113,6 +113,8 @@ Signal не є командою.
 
 Signal не гарантує реакцію.
 
+Базовий signal contract: scalar value, local carrier, decay, optional direction. Typed signals, delay і складні частотні моделі є future extensions.
+
 ```text
 Signal
     ↓
@@ -1282,9 +1284,10 @@ Joint може передавати Signals, Resources, Heat і Force.
 
 ## Signal typing
 
-Потрібно вирішити, чи базова модель має:
+Базове правило: scalar signal.
 
-* один scalar signal;
+Майбутні варіанти:
+
 * кілька typed signals;
 * resource/material-based signals only;
 * hybrid model.
@@ -1295,12 +1298,14 @@ Joint може передавати Signals, Resources, Heat і Force.
 
 ## Signal accumulation
 
-Потрібно визначити, чи accumulation зберігається в:
+Базова межа шарів:
 
 * Runtime State;
 * Epigenetic State;
 * Stateful Materials;
 * Joint state.
+
+Потрібно вибрати, які з цих шарів реалізуються першими.
 
 ## Signal cost
 
@@ -1321,7 +1326,7 @@ Joint може передавати Signals, Resources, Heat і Force.
 
 ## Same-tick effects
 
-Потрібно уточнити, чи будь-який сигнал, створений у Tick N, читається лише в Tick N+1.
+Базове правило описане в `world/tick-semantics.md`: signal, створений у Tick N, читається іншими клітинами не раніше стабільної reading phase Tick N+1, якщо виняток не описаний явно.
 
 ## Debug trace
 
