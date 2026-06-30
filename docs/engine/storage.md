@@ -23,6 +23,8 @@ Storage визначає, що і як записується для replay, aud
 - Logs/traces мають бути bounded або configurable.
 - Experiment output має містити config hash і seed.
 - Data needed for replay належить snapshot/serialization, а не ad hoc logs.
+- Storage is outside the simulation hot path.
+- SQLite, Parquet and viewer output must not block simulation by default.
 
 ---
 
@@ -59,6 +61,29 @@ every N ticks:
 
 Full population snapshots are rare or manually requested. Detailed population traces are debug/selected-run features, not default storage behavior.
 
+Storage layers:
+
+```text
+hot path:
+  memory-only SoA/ECS state
+  deterministic event buffers
+  periodic binary snapshot buffers
+
+replay:
+  versioned binary snapshots
+  binary event logs
+
+metadata/index:
+  SQLite
+
+analytics:
+  Parquet
+  DuckDB / Python analysis
+
+debug:
+  small sampled JSON/CSV exports only
+```
+
 ---
 
 # Заборонено
@@ -68,7 +93,8 @@ Full population snapshots are rare or manually requested. Detailed population tr
 - behavior input from previous logs unless explicitly loading snapshot;
 - unbounded trace by default;
 - hidden mutable global storage;
-- full lineage tree snapshot every Tick by default.
+- full lineage tree snapshot every Tick by default;
+- DB writes in behavior-critical hot path.
 
 ---
 
@@ -77,9 +103,11 @@ Full population snapshots are rare or manually requested. Detailed population tr
 - stores snapshots from: [[docs/engine/serialization|Serialization]]
 - stores: [[docs/engine/ecs|ECS]]
 - supports analysis of: [[docs/evolution/population-dynamics|Population Dynamics]]
+- constrained by: [[docs/engine/technology-stack|Technology Stack]]
 
 # Пов'язані документи
 
 - `engine/serialization.md`
+- `engine/technology-stack.md`
 - `engine/rendering.md`
 - `docs/config/stability_bounds.md`

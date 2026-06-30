@@ -46,6 +46,42 @@ Scheduler оптимізує виконання systems. `Tick` є часом с
 - Feasibility Check for planned actions uses post-mandatory state.
 - Scheduler optimizations must not change simulation semantics.
 - Parallel execution must preserve deterministic reduction order.
+- Genome Runtime may be scheduled at configurable cadence instead of every Tick.
+- Trace diffusion, Field updates and observer metrics may use configurable cadence if semantic visibility remains explicit.
+- Between Genome Runtime evaluations, Cell behavior uses committed `runtime_state`, `action_plan`, process progress and lifecycle state.
+
+---
+
+# Cadence Model
+
+Not every system must run every Tick.
+
+```text
+fast Tick systems:
+  mandatory costs
+  passive local accounting
+  lifecycle checks
+  physics/contact basics
+  process progress accounting
+  resource uptake/export execution
+
+scheduled systems:
+  Genome Runtime
+  trace diffusion
+  Field updates
+  observer metrics
+  graph/organism analysis
+```
+
+Scheduled systems must define:
+
+```text
+cadence_ticks
+staggering rule if entity-based
+input snapshot visibility
+commit boundary
+deterministic partition / merge order
+```
 
 ---
 
@@ -57,7 +93,8 @@ Scheduler оптимізує виконання systems. `Tick` є часом с
 - same-tick infinite feedback;
 - optimization that changes Canon behavior;
 - hidden retry/repair of invalid actions;
-- organism-level control phase.
+- organism-level control phase;
+- cadence optimization that changes Tick visibility without explicit rule.
 
 ---
 
@@ -65,6 +102,7 @@ Scheduler оптимізує виконання systems. `Tick` є часом с
 
 - implements: [[docs/world/tick|Tick]]
 - orders: [[docs/world/tick-semantics|Tick Semantics]]
+- constrained by: [[docs/engine/technology-stack|Technology Stack]]
 - invokes: [[docs/genetics/genome-runtime|Genome Runtime]]
 - invokes: [[docs/biology/processes|Processes]]
 
@@ -72,6 +110,7 @@ Scheduler оптимізує виконання systems. `Tick` є часом с
 
 - `world/tick.md`
 - `world/tick-semantics.md`
+- `engine/technology-stack.md`
 - `biology/feasibility.md`
 - `biology/process-progress.md`
 - `genetics/genome-runtime.md`

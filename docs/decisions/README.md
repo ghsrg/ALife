@@ -44,7 +44,9 @@ ADR не потрібен для:
 
 # Поточний стан
 
-Прийнятих ADR ще немає.
+Прийняті ADR:
+
+- [[docs/decisions/ADR-0001-tech-stack|ADR-0001: Technology Stack]]
 
 Не створювати ADR-заглушки без описаної причини, контексту й прийнятого рішення.
 
@@ -72,4 +74,3 @@ ADR-0001-short-title.md
 - records accepted changes to: [[docs/PRINCIPLES|Principles]]
 - records accepted changes to: [[docs/world/laws|Canon]]
 - may promote research from: [[docs/research/rejected-ideas|Research]]
-
