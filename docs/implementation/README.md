@@ -21,6 +21,7 @@ tags:
 
 # Документи
 
+- [[docs/implementation/architecture|Architecture]]
 - [[docs/implementation/implementation-phases|Implementation Phases]]
 
 ---
@@ -37,6 +38,7 @@ tags:
 # Semantic Links
 
 - implements: [[docs/decisions/ADR-0001-tech-stack|ADR-0001 Technology Stack]]
+- defines implementation: [[docs/implementation/architecture|Architecture]]
 - follows: [[docs/engine/technology-stack|Technology Stack]]
 - follows: [[docs/PRINCIPLES|Principles]]
 - bounded by: [[docs/config/stability_bounds|Stability Bounds]]

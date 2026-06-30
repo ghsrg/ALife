@@ -22,6 +22,7 @@ It is intentionally not a detailed task plan. Before starting each phase, create
 # Implementation Principles
 
 - Headless simulation is the source of truth.
+- Core architecture is data-oriented and deterministic; outer adapters may use clean / hexagonal boundaries.
 - Viewer is read-only.
 - Deterministic replay is required from the first runnable phase.
 - Performance tests are part of every phase.
@@ -273,6 +274,7 @@ Detailed phase plans should be created only when the phase starts.
 
 - implements: [[docs/engine/technology-stack|Technology Stack]]
 - follows accepted: [[docs/decisions/ADR-0001-tech-stack|ADR-0001 Technology Stack]]
+- follows architecture: [[docs/implementation/architecture|Architecture]]
 - starts from: [[docs/world/space|Space]]
 - starts from: [[docs/biology/cell|Cell]]
 - uses: [[docs/biology/feasibility|Feasibility Check]]
