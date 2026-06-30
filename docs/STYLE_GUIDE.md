@@ -1,4 +1,10 @@
-﻿# STYLE_GUIDE.md
+﻿---
+tags:
+  - alife
+  - docs/index
+---
+
+# STYLE_GUIDE.md
 
 > **Єдиний стандарт оформлення документації Artificial Life Engine**
 
@@ -407,4 +413,10 @@ Engine
 
 **Якщо нову механіку неможливо пояснити через вже існуючі закони світу — її не слід додавати до рушія без окремого ADR.**
 
+# Semantic Links
+
+- governs writing of: [[docs/PRINCIPLES|Principles]]
+- governs writing of: [[docs/world/laws|Canon]]
+- governs writing of: [[docs/research/rejected-ideas|Research]]
+- governs writing of: [[docs/decisions/README|ADR]]
 

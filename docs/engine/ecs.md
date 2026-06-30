@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # ecs.md
 
 > ECS — технічна організація стану та систем рушія.
@@ -51,6 +58,14 @@ ObserverView
 - observer metrics as simulation inputs.
 
 ---
+
+# Semantic Links
+
+- represents: [[docs/biology/cell|Cell]]
+- represents: [[docs/biology/joint|Joint]]
+- represents: [[docs/world/resources|Resources]]
+- represents: [[docs/world/materials|Materials]]
+- persists through: [[docs/engine/storage|Storage]]
 
 # Пов'язані документи
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # regulatory-network.md
 
 > `Regulatory Network` — графова структура регуляції процесів клітини.
@@ -67,6 +74,13 @@ Genome output names must not be invented in genetics documents without adding a 
 - hardcoded cell roles.
 
 ---
+
+# Semantic Links
+
+- implements: [[docs/genetics/genome-representation|Genome Representation]]
+- executed by: [[docs/genetics/genome-runtime|Genome Runtime]]
+- constrained by: [[docs/genetics/regulatory-interface|Regulatory Interface]]
+- can mutate through: [[docs/genetics/mutation|Mutation]]
 
 # Пов'язані документи
 

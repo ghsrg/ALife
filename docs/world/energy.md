@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # energy.md
 
 > `Energy` — локальний буфер здатності клітини виконувати активну роботу.
@@ -80,6 +87,14 @@ If mandatory costs cannot be paid, planned actions are skipped or rejected for t
 - hidden priority from action iteration order.
 
 ---
+
+# Semantic Links
+
+- powers: [[docs/biology/processes|Processes]]
+- gates: [[docs/biology/feasibility|Feasibility Check]]
+- stored in: [[docs/biology/cell|Cell]]
+- produced through: [[docs/world/reactions|Reactions]]
+- capacity depends on: [[docs/world/materials|Materials]]
 
 # Пов'язані документи
 

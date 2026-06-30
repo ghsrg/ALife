@@ -1,4 +1,11 @@
-﻿# regulatory-interface.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
+# regulatory-interface.md
 
 > **Regulatory Interface — межа між Genome Runtime, ActionPlan і Feasibility**
 
@@ -145,6 +152,13 @@ Every candidate action passes Feasibility Check.
 Runtime memory requires explicit RuntimeState or EpigeneticState.
 
 ---
+
+# Semantic Links
+
+- translates outputs of: [[docs/genetics/genome-runtime|Genome Runtime]]
+- binds to: [[docs/biology/action-process-registry|Action Process Registry]]
+- cannot bypass: [[docs/biology/feasibility|Feasibility Check]]
+- modulates: [[docs/biology/processes|Processes]]
 
 # Пов'язані документи
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - examples
+  - area/examples
+---
+
 # genetics-examples.md
 
 > Приклади генетичних механік без створення нових Canon-правил.
@@ -77,4 +84,10 @@ External Genetic Fragment інтегрується як subgraph або fragment
 Dead cell decomposes, Genome fragments залишаються локально, living cell uptake-ить fragment за наявності Boundary/material mechanism.
 
 Fragment стає еволюційно значущим лише якщо зберігається і передається через inheritance.
+
+# Semantic Links
+
+- illustrates: [[docs/biology/genome|Genome]]
+- illustrates: [[docs/genetics/genome-runtime|Genome Runtime]]
+- illustrates: [[docs/genetics/mutation|Mutation]]
 

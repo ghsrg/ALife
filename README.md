@@ -1,4 +1,10 @@
-﻿# ALife Simulation
+---
+tags:
+  - alife
+  - index/root
+---
+
+# ALife Simulation
 
 **ALife Simulation** — documentation-first проєкт Artificial Life Engine: симулятора штучного життя, де складні форми поведінки, клітинна спеціалізація, організми та екосистеми мають виникати з універсальних законів світу, а не з жорстко запрограмованих біологічних shortcut-механік.
 
@@ -27,21 +33,22 @@
 Основний навігатор:
 
 * [docs/README.md](docs/README.md)
+* [LICENSE](LICENSE)
 
 Рекомендований маршрут читання:
 
 1. [docs/PRINCIPLES.md](docs/PRINCIPLES.md)
 2. [docs/GLOSSARY.md](docs/GLOSSARY.md)
 3. [docs/ROADMAP.md](docs/ROADMAP.md)
-4. [docs/world/](docs/world/)
-5. [docs/biology/](docs/biology/)
-6. [docs/genetics/](docs/genetics/)
-7. [docs/evolution/](docs/evolution/)
-8. [docs/config/](docs/config/)
-9. [docs/engine/](docs/engine/)
-10. [docs/research/](docs/research/)
-11. [docs/decisions/](docs/decisions/)
+4. `docs/world/`
+5. `docs/biology/`
+6. `docs/genetics/`
+7. `docs/evolution/`
+8. `docs/config/`
+9. `docs/engine/`
+10. `docs/research/`
+11. `docs/decisions/`
 
 Поточні статуси, пріоритети та етапи розвитку ведуться тільки в [docs/ROADMAP.md](docs/ROADMAP.md).
 
-
+Службові правила для агентів описані в [[AGENTS|AGENTS.MD]], а робочі плани й звіти зібрані в [[outputs/worklogs/README|outputs/worklogs]].

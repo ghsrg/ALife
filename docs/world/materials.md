@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # materials.md
 
 > `Material` — структурна або функціональна основа клітин, Boundary і Joint.
@@ -87,6 +94,15 @@ A MaterialFragment becomes Resource only through explicit degradation, reaction 
 - active cell capability from external MaterialFragment without Cell context.
 
 ---
+
+# Semantic Links
+
+- compose: [[docs/biology/cell|Cell]]
+- compose: [[docs/biology/membrane|Boundary]]
+- compose: [[docs/biology/joint|Joint]]
+- enable: [[docs/biology/process-capabilities|Process Capabilities]]
+- can carry: [[docs/biology/genome|Genome]]
+- configured by: [[docs/config/materials_config|Materials Config]]
 
 # Пов'язані документи
 

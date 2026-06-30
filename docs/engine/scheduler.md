@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # scheduler.md
 
 > Scheduler — технічний порядок оновлення стану.
@@ -53,6 +60,13 @@ Scheduler оптимізує виконання systems. `Tick` є часом с
 - organism-level control phase.
 
 ---
+
+# Semantic Links
+
+- implements: [[docs/world/tick|Tick]]
+- orders: [[docs/world/tick-semantics|Tick Semantics]]
+- invokes: [[docs/genetics/genome-runtime|Genome Runtime]]
+- invokes: [[docs/biology/processes|Processes]]
 
 # Пов'язані документи
 

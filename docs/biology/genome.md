@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # genome.md
 
 > `Genome` — фізичний носій спадкової регуляції клітини.
@@ -91,6 +98,15 @@ genetics/inheritance.md
 - Який мінімальний Genome Trace потрібен для debug.
 
 ---
+
+# Semantic Links
+
+- regulates: [[docs/biology/processes|Processes]]
+- executed by: [[docs/genetics/genome-runtime|Genome Runtime]]
+- represented by: [[docs/genetics/genome-representation|Genome Representation]]
+- constrained by: [[docs/genetics/regulatory-interface|Regulatory Interface]]
+- inherited through: [[docs/genetics/inheritance|Inheritance]]
+- physically carried by: [[docs/world/materials|Materials]]
 
 # Пов'язані документи
 

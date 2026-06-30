@@ -1,4 +1,11 @@
-﻿# evolution/adaptation.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/evolution
+---
+
+# evolution/adaptation.md
 
 > **Adaptation — зміни, які підвищують відповідність клітини, lineage або структури до середовища**
 
@@ -208,6 +215,13 @@ Adaptation — це результат взаємодії variation, environment
 * inherited learning as Genome rewrite.
 
 ---
+
+# Semantic Links
+
+- emerges from: [[docs/evolution/selection|Selection]]
+- depends on variation from: [[docs/genetics/mutation|Mutation]]
+- can stabilize: [[docs/biology/specialization|Specialization]]
+- measured through: [[docs/evolution/population-dynamics|Population Dynamics]]
 
 # Пов'язані документи
 

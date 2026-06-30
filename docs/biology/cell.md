@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # cell.md
 
 > `Cell` — базова локальна одиниця життя у світі.
@@ -127,6 +134,16 @@ If stored amount exceeds capacity, lifecycle/physics rules must handle rejection
 - Які metrics зберігати для debug без впливу на behavior.
 
 ---
+
+# Semantic Links
+
+- contains: [[docs/world/resources|Resources]]
+- contains: [[docs/world/materials|Materials]]
+- stores: [[docs/world/energy|Energy Buffer]]
+- bounded by: [[docs/biology/membrane|Boundary]]
+- regulated by: [[docs/biology/genome|Genome]]
+- connected through: [[docs/biology/joint|Joint]]
+- progresses through: [[docs/biology/lifecycle|Lifecycle]]
 
 # Пов'язані документи
 

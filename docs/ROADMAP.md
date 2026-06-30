@@ -1,4 +1,10 @@
-﻿# ROADMAP.md
+﻿---
+tags:
+  - alife
+  - docs/index
+---
+
+# ROADMAP.md
 
 > **Поточний стан документації Artificial Life Engine**
 
@@ -94,4 +100,12 @@ Smoke Simulation:
 # Довгострокова мета
 
 Створити симуляцію, у якій складні багатоклітинні організми, навчання, спеціалізація тканин, соціальна поведінка та екосистеми виникають без жорстко запрограмованих біологічних механік, а є наслідком універсальних законів світу та еволюції.
+
+# Semantic Links
+
+- tracks status of: [[docs/PRINCIPLES|Principles]]
+- tracks status of: [[docs/world/laws|World Laws]]
+- tracks status of: [[docs/biology/cell|Cell]]
+- tracks status of: [[docs/genetics/genome-representation|Genome Representation]]
+- informs: [[docs/config/stability_bounds|Stability Bounds]]
 

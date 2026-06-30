@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # genome-representation.md
 
 > `Genome Representation` — структура спадкового регуляторного носія.
@@ -68,6 +75,13 @@ Genome
 - mutation operators без validation.
 
 ---
+
+# Semantic Links
+
+- represents: [[docs/biology/genome|Genome]]
+- executed by: [[docs/genetics/genome-runtime|Genome Runtime]]
+- structured as: [[docs/genetics/regulatory-network|Regulatory Network]]
+- compared with: [[docs/research/genome-representation-options|Genome Representation Options]]
 
 # Пов'язані документи
 

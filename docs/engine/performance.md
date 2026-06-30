@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # performance.md
 
 > Performance — обмеження й оптимізації без зміни семантики симуляції.
@@ -44,6 +51,13 @@ profile-guided budgets
 - optimization-only behavior differences.
 
 ---
+
+# Semantic Links
+
+- optimizes execution of: [[docs/engine/scheduler|Scheduler]]
+- optimizes fields from: [[docs/world/fields|Fields]]
+- optimizes many: [[docs/biology/cell|Cells]]
+- must preserve: [[docs/world/tick-semantics|Tick Semantics]]
 
 # Пов'язані документи
 

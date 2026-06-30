@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # action-process-registry.md
 
 > Action / Process Registry — canonical source of process ids, Genome output bindings, Feasibility scope and process duration.
@@ -98,6 +105,13 @@ A process may be long-running only if this registry marks it as `long_running`.
 No document may introduce a new executable process or Genome output outside this registry.
 
 ---
+
+# Semantic Links
+
+- registers: [[docs/biology/processes|Processes]]
+- binds outputs from: [[docs/genetics/regulatory-interface|Regulatory Interface]]
+- constrains: [[docs/genetics/regulatory-network|Regulatory Network]]
+- used by: [[docs/biology/feasibility|Feasibility Check]]
 
 # Пов'язані документи
 

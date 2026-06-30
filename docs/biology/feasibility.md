@@ -1,4 +1,11 @@
-﻿# feasibility.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
+# feasibility.md
 
 > **Feasibility Check — єдиний contract перевірки можливості planned actions**
 
@@ -145,6 +152,14 @@ Genome output є regulatory intent, а не дозвіл на зміну сві�
 Planned actions cannot consume Energy or Resources required for mandatory existence.
 
 ---
+
+# Semantic Links
+
+- gates execution of: [[docs/biology/processes|Processes]]
+- checks availability of: [[docs/world/energy|Energy]]
+- checks availability of: [[docs/world/resources|Resources]]
+- checks capabilities from: [[docs/world/materials|Materials]]
+- constrains outputs from: [[docs/biology/genome|Genome]]
 
 # Пов'язані документи
 

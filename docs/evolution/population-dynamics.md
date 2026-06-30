@@ -1,4 +1,11 @@
-﻿# evolution/population-dynamics.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/evolution
+---
+
+# evolution/population-dynamics.md
 
 > **Population Dynamics — зміни чисельності, складу і структури популяцій**
 
@@ -290,6 +297,13 @@ Population metrics не повинні бути входами для кліти
 * hardcoded ecological roles.
 
 ---
+
+# Semantic Links
+
+- observes populations of: [[docs/biology/cell|Cell]]
+- observes derived: [[docs/biology/organism|Organism View]]
+- shaped by: [[docs/evolution/selection|Selection]]
+- may form: [[docs/evolution/species-like-clusters|Species-like Clusters]]
 
 # Пов'язані документи
 

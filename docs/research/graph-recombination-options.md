@@ -1,4 +1,11 @@
-﻿# docs/research/graph-recombination-options.md
+﻿---
+tags:
+  - alife
+  - research
+  - area/research
+---
+
+# docs/research/graph-recombination-options.md
 
 > **Graph Recombination Options — варіанти рекомбінації для graph-based Genome**
 
@@ -117,6 +124,12 @@ Graph recombination може легко стати надто “розумно�
 * блокувати базова модель через складну recombination.
 
 ---
+
+# Semantic Links
+
+- researches: [[docs/genetics/recombination|Recombination]]
+- depends on: [[docs/genetics/regulatory-network|Regulatory Network]]
+- may affect: [[docs/genetics/inheritance|Inheritance]]
 
 # Пов'язані документи
 

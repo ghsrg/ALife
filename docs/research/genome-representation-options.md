@@ -1,4 +1,11 @@
-﻿# docs/research/genome-representation-options.md
+﻿---
+tags:
+  - alife
+  - research
+  - area/research
+---
+
+# docs/research/genome-representation-options.md
 
 > **Genome Representation Options — альтернативи представлення Genome**
 
@@ -93,6 +100,12 @@ Hybrid Graph + Fragments
 * змінювати Genome базової моделі model без ADR.
 
 ---
+
+# Semantic Links
+
+- compares alternatives for: [[docs/genetics/genome-representation|Genome Representation]]
+- informs: [[docs/biology/genome|Genome]]
+- may require ADR in: [[docs/decisions/README|Decisions]]
 
 # Пов'язані документи
 

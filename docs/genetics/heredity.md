@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # heredity.md
 
 > `Heredity` — збереження властивостей lineage через спадкові носії.
@@ -62,6 +69,13 @@ structure_recurrence
 - guaranteed trait preservation.
 
 ---
+
+# Semantic Links
+
+- defines continuity of: [[docs/biology/genome|Genome]]
+- implemented through: [[docs/genetics/inheritance|Inheritance]]
+- creates variation with: [[docs/genetics/mutation|Mutation]]
+- exposed to: [[docs/evolution/selection|Selection]]
 
 # Пов'язані документи
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # organism.md
 
 > `Organism` — observer-side уявлення про стабільну багатоклітинну структуру.
@@ -103,6 +110,14 @@ Observer може позначати reproduction-like event, якщо від с
 - Який мінімальний `OrganismView` потрібен для research metrics.
 
 ---
+
+# Semantic Links
+
+- derived from: [[docs/biology/cell|Cell]]
+- derived from: [[docs/biology/joint|Joint]]
+- observed by: [[docs/engine/rendering|Rendering]]
+- analyzed by: [[docs/evolution/population-dynamics|Population Dynamics]]
+- not controlling: [[docs/biology/processes|Processes]]
 
 # Пов'язані документи
 

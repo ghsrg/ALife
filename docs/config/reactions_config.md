@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - config
+  - area/config
+---
+
 # reactions_config.md
 
 > Конфігурація passive і controlled reactions.
@@ -65,6 +72,13 @@ known mode
 ```
 
 ---
+
+# Semantic Links
+
+- configures: [[docs/world/reactions|Reactions]]
+- consumes: [[docs/config/resources_config|Resources Config]]
+- modifies: [[docs/config/materials_config|Materials Config]]
+- implemented by: [[docs/engine/chemistry|Engine Chemistry]]
 
 # Пов'язані документи
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # mutation.md
 
 > `Mutation` — спадкова зміна Genome або genetic fragment.
@@ -77,6 +84,13 @@ Technical validity не означає життєздатність.
 - mutation that bypasses Feasibility Check.
 
 ---
+
+# Semantic Links
+
+- changes: [[docs/biology/genome|Genome]]
+- changes: [[docs/genetics/regulatory-network|Regulatory Network]]
+- inherited through: [[docs/genetics/inheritance|Inheritance]]
+- filtered by: [[docs/evolution/selection|Selection]]
 
 # Пов'язані документи
 

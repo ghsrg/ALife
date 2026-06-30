@@ -1,4 +1,11 @@
-﻿# process-progress.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
+# process-progress.md
 
 > **ProcessProgress — накопичуваний прогрес довгих процесів без partial execution**
 
@@ -120,6 +127,13 @@ Progress is not hidden side effect and not partial final product.
 Paid progress work can be stored, but final result appears only at completion.
 
 ---
+
+# Semantic Links
+
+- tracks execution of: [[docs/biology/processes|Processes]]
+- advances across: [[docs/world/tick|Tick]]
+- gated by: [[docs/biology/feasibility|Feasibility Check]]
+- accounts for: [[docs/world/energy|Energy]]
 
 # Пов'язані документи
 

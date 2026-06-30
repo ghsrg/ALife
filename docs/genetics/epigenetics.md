@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # epigenetics.md
 
 > `Epigenetics` — успадковуваний або довший регуляторний bias без зміни Genome.
@@ -61,6 +68,13 @@ asymmetric inheritance
 - organism-level role assignment.
 
 ---
+
+# Semantic Links
+
+- modulates: [[docs/genetics/genome-runtime|Genome Runtime]]
+- supports: [[docs/biology/specialization|Specialization]]
+- can be partitioned by: [[docs/genetics/inheritance|Inheritance]]
+- depends on state of: [[docs/biology/cell|Cell]]
 
 # Пов'язані документи
 

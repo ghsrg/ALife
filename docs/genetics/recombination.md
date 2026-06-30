@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # recombination.md
 
 > `Recombination` — future-compatible обмін або перебудова genetic fragments.
@@ -46,6 +53,13 @@ output binding conflict resolution
 - behavior scripts through fragments.
 
 ---
+
+# Semantic Links
+
+- recombines: [[docs/biology/genome|Genome]]
+- interacts with: [[docs/genetics/inheritance|Inheritance]]
+- creates variation for: [[docs/evolution/selection|Selection]]
+- researched in: [[docs/research/graph-recombination-options|Graph Recombination Options]]
 
 # Пов'язані документи
 

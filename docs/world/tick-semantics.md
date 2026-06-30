@@ -1,4 +1,11 @@
-﻿# tick-semantics.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
+# tick-semantics.md
 
 > **Tick Semantics — видимість стану, deltas і commit boundaries**
 
@@ -163,6 +170,13 @@ Statistics, rendering and observer metrics do not affect behavior during normal 
 No entity may read uncommitted changes from the same phase.
 
 ---
+
+# Semantic Links
+
+- resolves execution of: [[docs/biology/processes|Processes]]
+- uses gate: [[docs/biology/feasibility|Feasibility Check]]
+- accounts for: [[docs/world/energy|Energy]]
+- implemented by: [[docs/engine/scheduler|Scheduler]]
 
 # Пов'язані документи
 

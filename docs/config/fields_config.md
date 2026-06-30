@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - config
+  - area/config
+---
+
 # fields_config.md
 
 > Конфігурація полів і зовнішніх впливів.
@@ -55,6 +62,13 @@ explicit bounds
 ```
 
 ---
+
+# Semantic Links
+
+- configures: [[docs/world/fields|Fields]]
+- interpreted by: [[docs/world/field-semantics|Field Semantics]]
+- sensed by: [[docs/biology/cell|Cell]]
+- bounded by: [[docs/config/stability_bounds|Stability Bounds]]
 
 # Пов'язані документи
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # fields.md
 
 > `Field` — просторовий вплив або величина світу.
@@ -50,6 +57,14 @@ interaction rules
 - direct Energy, damage, mutation or movement without explicit mechanism.
 
 ---
+
+# Semantic Links
+
+- influences: [[docs/world/resources|Resources]]
+- influences: [[docs/world/materials|Materials]]
+- sensed by: [[docs/biology/cell|Cell]]
+- interpreted by: [[docs/world/field-semantics|Field Semantics]]
+- configured by: [[docs/config/fields_config|Fields Config]]
 
 # Пов'язані документи
 

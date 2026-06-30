@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # lifecycle.md
 
 > `Cell Lifecycle` — життєвий цикл клітини як наслідок її матеріального стану.
@@ -139,6 +146,15 @@ Living Cell не може поглинути dead remains як Resource без f
 - Мінімальні lifecycle metrics для debug UI: `age_ticks`, `divisions_count`, `stress_level`, `parent_id`, `lineage_id`.
 
 ---
+
+# Semantic Links
+
+- evaluates viability of: [[docs/biology/cell|Cell]]
+- depends on: [[docs/world/materials|Materials]]
+- depends on: [[docs/world/energy|Energy]]
+- depends on: [[docs/biology/genome|Genome]]
+- triggers: [[docs/biology/division-partition|Division Partition]]
+- produces remains through: [[docs/world/reactions|Reactions]]
 
 # Пов'язані документи
 

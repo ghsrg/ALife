@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - config
+  - area/config
+---
+
 # materials_config.md
 
 > Конфігурація структурних і функціональних матеріалів.
@@ -57,6 +64,14 @@ known fragment behavior if material can exist as external remains
 ```
 
 ---
+
+# Semantic Links
+
+- configures: [[docs/world/materials|Materials]]
+- enables: [[docs/biology/process-capabilities|Process Capabilities]]
+- shapes: [[docs/biology/membrane|Boundary]]
+- shapes: [[docs/biology/joint|Joint]]
+- bounded by: [[docs/config/stability_bounds|Stability Bounds]]
 
 # Пов'язані документи
 

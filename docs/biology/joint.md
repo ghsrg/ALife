@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # joint.md
 
 > `Joint` — матеріальний локальний зв'язок між клітинами.
@@ -115,6 +122,15 @@ Joint не створюється дистанційно.
 - Чи HGT через Joint входить у першу реалізацію або лишається future extension.
 
 ---
+
+# Semantic Links
+
+- connects: [[docs/biology/cell|Cells]]
+- made from: [[docs/world/materials|Materials]]
+- transfers: [[docs/world/resources|Resources]]
+- transfers heat under: [[docs/world/field-semantics|Field Semantics]]
+- carries signals for: [[docs/biology/communication|Communication]]
+- constrained by: [[docs/world/physics|Physics]]
 
 # Пов'язані документи
 

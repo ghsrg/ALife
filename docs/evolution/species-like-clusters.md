@@ -1,4 +1,11 @@
-﻿# evolution/species-like-clusters.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/evolution
+---
+
+# evolution/species-like-clusters.md
 
 > **Species-like Clusters — видоподібні групи без hardcoded species_id**
 
@@ -277,6 +284,13 @@ Species-like label не може бути input для Genome Runtime.
 * automatic naming of species as engine rule.
 
 ---
+
+# Semantic Links
+
+- derived from: [[docs/evolution/population-dynamics|Population Dynamics]]
+- shaped by: [[docs/evolution/selection|Selection]]
+- not hardcoded in: [[docs/biology/cell|Cell]]
+- tracked through: [[docs/genetics/heredity|Heredity]]
 
 # Пов'язані документи
 

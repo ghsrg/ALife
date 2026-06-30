@@ -1,4 +1,11 @@
-﻿# laws.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
+# laws.md
 
 > **Формальні закони світу Artificial Life Engine**
 
@@ -304,6 +311,14 @@ Environment Phase може підготувати committed environment snapshot
 * еволюція визначається лише природним добором.
 
 ---
+
+# Semantic Links
+
+- constrains: [[docs/world/space|Space]]
+- constrains: [[docs/world/tick|Tick]]
+- constrains: [[docs/world/physics|Physics]]
+- constrains: [[docs/world/reactions|Reactions]]
+- constrains: [[docs/biology/cell|Cell]]
 
 # Пов'язані документи
 

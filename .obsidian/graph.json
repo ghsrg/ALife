@@ -5,18 +5,68 @@
   "showAttachments": false,
   "hideUnresolved": false,
   "showOrphans": true,
-  "collapse-color-groups": true,
-  "colorGroups": [],
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "tag:#area/biology  ",
+      "color": {
+        "a": 1,
+        "rgb": 1741685
+      }
+    },
+    {
+      "query": "tag:#area/evolution  ",
+      "color": {
+        "a": 1,
+        "rgb": 14069084
+      }
+    },
+    {
+      "query": "tag:#area/genetics  ",
+      "color": {
+        "a": 1,
+        "rgb": 11392604
+      }
+    },
+    {
+      "query": "tag:#area/world  ",
+      "color": {
+        "a": 1,
+        "rgb": 6072278
+      }
+    },
+    {
+      "query": "tag:#docs/index  ",
+      "color": {
+        "a": 1,
+        "rgb": 16117565
+      }
+    },
+    {
+      "query": "tag:#index  ",
+      "color": {
+        "a": 1,
+        "rgb": 15059487
+      }
+    },
+    {
+      "query": "tag:#area/engine  ",
+      "color": {
+        "a": 1,
+        "rgb": 13750757
+      }
+    }
+  ],
   "collapse-display": true,
   "showArrow": false,
   "textFadeMultiplier": 0,
-  "nodeSizeMultiplier": 1,
-  "lineSizeMultiplier": 1,
-  "collapse-forces": true,
-  "centerStrength": 0.518713248970312,
-  "repelStrength": 10,
-  "linkStrength": 1,
-  "linkDistance": 250,
-  "scale": 1,
-  "close": true
+  "nodeSizeMultiplier": 1.19739583333333,
+  "lineSizeMultiplier": 1.14635416666667,
+  "collapse-forces": false,
+  "centerStrength": 0.494791666666667,
+  "repelStrength": 9.79166666666667,
+  "linkStrength": 0.708333333333333,
+  "linkDistance": 236,
+  "scale": 0.5087618855792582,
+  "close": false
 }

@@ -1,4 +1,11 @@
-﻿# docs/research/reproduction-strategy-options.md
+﻿---
+tags:
+  - alife
+  - research
+  - area/research
+---
+
+# docs/research/reproduction-strategy-options.md
 
 > **Reproduction Strategy Options — майбутні варіанти стратегій розмноження**
 
@@ -134,6 +141,12 @@ viable descendant structure
 ```
 
 ---
+
+# Semantic Links
+
+- compares options for: [[docs/biology/division-partition|Division Partition]]
+- affects: [[docs/genetics/inheritance|Inheritance]]
+- filtered by: [[docs/evolution/selection|Selection]]
 
 # Пов'язані документи
 

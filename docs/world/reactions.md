@@ -1,4 +1,11 @@
-﻿# reactions.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
+# reactions.md
 
 > **Reactions — універсальна семантика перетворень Resources, Materials, Heat і Energy release**
 
@@ -191,6 +198,15 @@ Reaction candidates come from Locality Contract in `space.md`.
 Reaction inputs must have explicit products, retained state, residual/waste, or configured sink/loss.
 
 ---
+
+# Semantic Links
+
+- consumes: [[docs/world/resources|Resources]]
+- consumes or modifies: [[docs/world/materials|Materials]]
+- produces or dissipates: [[docs/world/energy|Energy and Heat]]
+- enables: [[docs/biology/processes|Processes]]
+- implemented by: [[docs/engine/chemistry|Engine Chemistry]]
+- configured by: [[docs/config/reactions_config|Reactions Config]]
 
 # Пов'язані документи
 

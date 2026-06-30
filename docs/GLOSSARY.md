@@ -1,4 +1,10 @@
-﻿# GLOSSARY.md
+﻿---
+tags:
+  - alife
+  - docs/index
+---
+
+# GLOSSARY.md
 
 > **Єдиний словник термінів Artificial Life Engine**
 
@@ -624,6 +630,13 @@ Architecture Decision Record.
 Документує причини прийнятого рішення.
 
 ---
+
+# Semantic Links
+
+- defines terms for: [[docs/world/laws|World Laws]]
+- defines terms for: [[docs/biology/cell|Cell]]
+- defines terms for: [[docs/biology/genome|Genome]]
+- defines terms for: [[docs/engine/ecs|ECS]]
 
 # Пов'язані документи
 

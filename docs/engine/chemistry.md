@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # chemistry.md
 
 > Chemistry system — виконання reactions і material/resource transformations.
@@ -52,6 +59,13 @@ emit trace/debug data
 - products without material source.
 
 ---
+
+# Semantic Links
+
+- implements: [[docs/world/reactions|Reactions]]
+- updates: [[docs/world/resources|Resources]]
+- updates: [[docs/world/materials|Materials]]
+- updates: [[docs/world/energy|Energy]]
 
 # Пов'язані документи
 

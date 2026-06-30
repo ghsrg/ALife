@@ -1,4 +1,11 @@
-﻿# ADR Journal
+﻿---
+tags:
+  - alife
+  - adr
+  - area/decisions
+---
+
+# ADR Journal
 
 > Журнал Architecture Decision Records для Artificial Life Engine.
 
@@ -60,4 +67,9 @@ ADR-0001-short-title.md
 5. наслідки;
 6. пов'язані документи.
 
+# Semantic Links
+
+- records accepted changes to: [[docs/PRINCIPLES|Principles]]
+- records accepted changes to: [[docs/world/laws|Canon]]
+- may promote research from: [[docs/research/rejected-ideas|Research]]
 

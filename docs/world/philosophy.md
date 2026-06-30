@@ -1,4 +1,11 @@
-﻿# philosophy.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
+# philosophy.md
 
 > **Філософія побудови світу Artificial Life Engine**
 
@@ -299,6 +306,13 @@ Joint
 * мінімальна кількість базових сутностей.
 
 ---
+
+# Semantic Links
+
+- motivates: [[docs/world/laws|World Laws]]
+- constrains: [[docs/biology/cell|Cell]]
+- constrains: [[docs/biology/organism|Organism View]]
+- constrains: [[docs/evolution/selection|Selection]]
 
 # Пов'язані документи
 

@@ -1,4 +1,11 @@
-﻿# docs/research/mobile-genetic-elements.md
+﻿---
+tags:
+  - alife
+  - research
+  - area/research
+---
+
+# docs/research/mobile-genetic-elements.md
 
 > **Mobile Genetic Elements — мобільні genetic fragments, plasmid-like і HGT-compatible ідеї**
 
@@ -122,6 +129,12 @@ virus-like emergent dynamics
 * ускладнювати базова модель.
 
 ---
+
+# Semantic Links
+
+- researches fragments of: [[docs/biology/genome|Genome]]
+- relates to: [[docs/genetics/horizontal-transfer|Horizontal Transfer]]
+- affects: [[docs/genetics/inheritance|Inheritance]]
 
 # Пов'язані документи
 

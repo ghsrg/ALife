@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - examples
+  - area/examples
+---
+
 # biology-examples.md
 
 > Приклади біологічних механік без створення нових Canon-правил.
@@ -93,4 +100,10 @@ Outer cells підтримують Boundary-like layer, inner cells отриму
 Joint network розривається або перебудовується так, що відокремлений cluster виживає.
 
 Якщо такий pattern повторюється і передає lineage, selection може підтримати organism-level reproduction-like strategy.
+
+# Semantic Links
+
+- illustrates: [[docs/biology/cell|Cell]]
+- illustrates: [[docs/biology/joint|Joint]]
+- illustrates: [[docs/biology/lifecycle|Lifecycle]]
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # storage.md
 
 > Storage — файли, логи, traces і результати експериментів.
@@ -41,6 +48,12 @@ debug sampled traces
 - hidden mutable global storage.
 
 ---
+
+# Semantic Links
+
+- stores snapshots from: [[docs/engine/serialization|Serialization]]
+- stores: [[docs/engine/ecs|ECS]]
+- supports analysis of: [[docs/evolution/population-dynamics|Population Dynamics]]
 
 # Пов'язані документи
 

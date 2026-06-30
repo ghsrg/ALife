@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # genome-runtime.md
 
 > `Genome Runtime` — виконання регуляторного графа в межах Tick.
@@ -75,6 +82,13 @@ Trace може бути sampled або вимкнений для performance.
 - mutation during runtime evaluation unless explicitly modeled.
 
 ---
+
+# Semantic Links
+
+- executes: [[docs/biology/genome|Genome]]
+- reads state from: [[docs/biology/cell|Cell]]
+- emits through: [[docs/genetics/regulatory-interface|Regulatory Interface]]
+- influences: [[docs/biology/processes|Processes]]
 
 # Пов'язані документи
 

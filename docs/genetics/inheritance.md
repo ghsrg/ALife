@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # inheritance.md
 
 > `Inheritance` — передача локального стану під час reproduction/division.
@@ -74,6 +81,13 @@ Validation не повинна автоматично робити daughter жи
 - hidden species inheritance.
 
 ---
+
+# Semantic Links
+
+- transfers: [[docs/biology/genome|Genome]]
+- occurs during: [[docs/biology/division-partition|Division Partition]]
+- constrained by: [[docs/genetics/heredity|Heredity]]
+- can include: [[docs/genetics/mutation|Mutation]]
 
 # Пов'язані документи
 

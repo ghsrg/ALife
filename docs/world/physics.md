@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # physics.md
 
 > `Physics` — концептуальні фізичні обмеження світу.
@@ -55,6 +62,14 @@ boundary/world limits
 - species-specific physics.
 
 ---
+
+# Semantic Links
+
+- constrains: [[docs/world/space|Space]]
+- constrains contact for: [[docs/biology/cell|Cell]]
+- constrains mechanics of: [[docs/biology/joint|Joint]]
+- constrains boundary behavior of: [[docs/biology/membrane|Boundary]]
+- implemented by: [[docs/engine/physics|Engine Physics]]
 
 # Пов'язані документи
 

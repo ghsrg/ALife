@@ -1,4 +1,11 @@
-﻿# cell-state.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
+# cell-state.md
 
 > **Cell State — функціональна безперервність життя без hidden HP**
 
@@ -99,6 +106,14 @@ Dead/inert cells do not disappear magically.
 Observer metrics may label state, but cells and Genome Runtime cannot read viability labels or scores.
 
 ---
+
+# Semantic Links
+
+- describes state of: [[docs/biology/cell|Cell]]
+- derived from: [[docs/biology/lifecycle|Lifecycle]]
+- affected by: [[docs/world/materials|Materials]]
+- affected by: [[docs/world/energy|Energy]]
+- affected by: [[docs/world/field-semantics|Field Semantics]]
 
 # Пов'язані документи
 

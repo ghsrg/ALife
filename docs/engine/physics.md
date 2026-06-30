@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # physics.md
 
 > Physics system — локальна геометрія, contact, movement, pressure і Joint mechanics.
@@ -49,6 +56,13 @@ local neighborhood queries
 - physics shortcuts that create biological outcomes directly.
 
 ---
+
+# Semantic Links
+
+- implements: [[docs/world/physics|Physics]]
+- resolves: [[docs/world/space|Space]]
+- resolves contact for: [[docs/biology/cell|Cell]]
+- resolves mechanics for: [[docs/biology/joint|Joint]]
 
 # Пов'язані документи
 

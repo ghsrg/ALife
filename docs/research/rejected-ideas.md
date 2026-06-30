@@ -1,4 +1,11 @@
-﻿# docs/research/rejected-ideas.md
+﻿---
+tags:
+  - alife
+  - research
+  - area/research
+---
+
+# docs/research/rejected-ideas.md
 
 > **Rejected Ideas — ідеї, які не входять у канон або базова модель**
 
@@ -213,6 +220,12 @@ World scenario не повинен спавнити готові species або 
 Якщо ідея є тут, її не можна реалізовувати без нового ADR.
 
 ---
+
+# Semantic Links
+
+- rejects shortcuts for: [[docs/biology/cell|Cell]]
+- rejects shortcuts for: [[docs/biology/genome|Genome]]
+- protects constraints from: [[docs/PRINCIPLES|Principles]]
 
 # Пов'язані документи
 

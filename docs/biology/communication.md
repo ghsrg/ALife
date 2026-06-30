@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # communication.md
 
 > `Communication` — локальна передача сигналів і впливів між клітинами.
@@ -118,6 +125,13 @@ Joint State          локальна провідність, damage, signal res
 - Мінімальний формат Communication Trace для debug UI.
 
 ---
+
+# Semantic Links
+
+- uses: [[docs/biology/joint|Joint]]
+- uses local: [[docs/world/fields|Fields]]
+- affects inputs for: [[docs/genetics/genome-runtime|Genome Runtime]]
+- can shape: [[docs/biology/specialization|Specialization]]
 
 # Пов'язані документи
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - config
+  - area/config
+---
+
 # resources_config.md
 
 > Конфігурація рухомих речовин світу.
@@ -49,6 +56,13 @@ known tags
 ```
 
 ---
+
+# Semantic Links
+
+- configures: [[docs/world/resources|Resources]]
+- consumed by: [[docs/world/reactions|Reactions]]
+- used by: [[docs/biology/cell|Cell]]
+- bounded by: [[docs/config/stability_bounds|Stability Bounds]]
 
 # Пов'язані документи
 

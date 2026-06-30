@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # space.md
 
 > `Space` — простір, локальність і межі світу.
@@ -116,6 +123,14 @@ physics_collision_radius
 - Як boundary mode впливає на Resources, Fields і Cells.
 
 ---
+
+# Semantic Links
+
+- constrains locality of: [[docs/biology/cell|Cell]]
+- constrains movement of: [[docs/world/resources|Resources]]
+- constrains geometry of: [[docs/biology/joint|Joint]]
+- implemented by: [[docs/engine/physics|Engine Physics]]
+- configured by: [[docs/config/world_config|World Config]]
 
 # Пов'язані документи
 

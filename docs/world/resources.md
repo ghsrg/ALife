@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # resources.md
 
 > `Resource` — рухома речовина світу.
@@ -53,6 +60,15 @@ tags
 - silent consumption of MaterialFragment without explicit breakdown/conversion process.
 
 ---
+
+# Semantic Links
+
+- stored inside: [[docs/biology/cell|Cell]]
+- constrained by: [[docs/world/space|Space]]
+- converted by: [[docs/world/reactions|Reactions]]
+- can become: [[docs/world/materials|Materials]]
+- can feed: [[docs/world/energy|Energy Buffer]]
+- configured by: [[docs/config/resources_config|Resources Config]]
 
 # Пов'язані документи
 

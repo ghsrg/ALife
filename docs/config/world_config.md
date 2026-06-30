@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - config
+  - area/config
+---
+
 # world_config.md
 
 > Конфігурація геометрії, часу, seed і базових меж світу.
@@ -62,6 +69,13 @@ known dimensions
 ```
 
 ---
+
+# Semantic Links
+
+- configures: [[docs/world/space|Space]]
+- configures: [[docs/world/tick|Tick]]
+- configures environment for: [[docs/world/physics|Physics]]
+- bounded by: [[docs/config/stability_bounds|Stability Bounds]]
 
 # Пов'язані документи
 

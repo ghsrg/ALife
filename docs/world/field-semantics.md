@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # field-semantics.md
 
 > Field Effect Contract — як Fields стають локальними впливами без командної поведінки.
@@ -177,6 +184,13 @@ Reaction heat_output changes local temperature through heat_capacity.
 ```
 
 ---
+
+# Semantic Links
+
+- constrains: [[docs/world/fields|Fields]]
+- constrains heat flow through: [[docs/biology/joint|Joint]]
+- affects: [[docs/biology/cell-state|Cell State]]
+- implemented by: [[docs/engine/physics|Engine Physics]]
 
 # Пов'язані документи
 

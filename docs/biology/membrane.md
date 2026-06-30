@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # membrane.md
 
 > `Boundary` — матеріальна межа клітини.
@@ -61,6 +68,14 @@ sensing_capabilities
 - Як damage Boundary впливає на leakage, uptake і death threshold.
 
 ---
+
+# Semantic Links
+
+- bounds: [[docs/biology/cell|Cell]]
+- made from: [[docs/world/materials|Materials]]
+- controls uptake of: [[docs/world/resources|Resources]]
+- enables contact with: [[docs/biology/joint|Joint]]
+- affects: [[docs/biology/lifecycle|Lifecycle]]
 
 # Пов'язані документи
 

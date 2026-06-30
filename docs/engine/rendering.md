@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # rendering.md
 
 > Rendering — read-only visualization of simulation state.
@@ -45,6 +52,13 @@ metrics overlays
 - organism labels that feed back into cells.
 
 ---
+
+# Semantic Links
+
+- visualizes: [[docs/biology/cell|Cell]]
+- visualizes: [[docs/biology/joint|Joint]]
+- visualizes: [[docs/world/resources|Resources]]
+- visualizes derived: [[docs/biology/organism|Organism View]]
 
 # Пов'язані документи
 

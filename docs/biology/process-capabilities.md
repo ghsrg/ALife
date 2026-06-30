@@ -1,4 +1,11 @@
-﻿# process-capabilities.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
+# process-capabilities.md
 
 > **Process Capabilities — як Materials дозволяють процеси**
 
@@ -104,6 +111,13 @@ Capability does not bypass Energy, Resources, Space or Lifecycle.
 Function comes from material properties, not cell class.
 
 ---
+
+# Semantic Links
+
+- enabled by: [[docs/world/materials|Materials]]
+- allow: [[docs/biology/processes|Processes]]
+- prioritized by: [[docs/biology/genome|Genome]]
+- checked by: [[docs/biology/feasibility|Feasibility Check]]
 
 # Пов'язані документи
 

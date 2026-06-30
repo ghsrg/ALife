@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - examples
+  - area/examples
+---
+
 # engine-examples.md
 
 > Приклади engine/debug/storage рішень без створення нових правил світу.
@@ -54,4 +61,10 @@ snapshot:
   seed: 42
   schema_version: 1
 ```
+
+# Semantic Links
+
+- illustrates: [[docs/engine/ecs|ECS]]
+- illustrates: [[docs/engine/scheduler|Scheduler]]
+- illustrates: [[docs/engine/physics|Engine Physics]]
 

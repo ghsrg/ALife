@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - examples
+  - area/examples
+---
+
 # examples
 
 > Ілюстративні сценарії для читання разом із Canon-документацією.
@@ -27,4 +34,11 @@
 - Приклад не може вводити новий механізм.
 - Приклад має посилатися на існуюче Canon-правило або демонструвати його.
 - Довгі приклади мають жити тут, а не в Canon-файлах.
+
+# Semantic Links
+
+- illustrates: [[docs/biology/cell|Cell]]
+- illustrates: [[docs/world/resources|Resources]]
+- illustrates: [[docs/biology/genome|Genome]]
+- must not override: [[docs/PRINCIPLES|Principles]]
 

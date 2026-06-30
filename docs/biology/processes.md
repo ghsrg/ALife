@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # processes.md
 
 > `Process` — локальне перетворення стану клітини або її взаємодія з середовищем.
@@ -120,6 +127,15 @@ Failure mode має бути описаний per-process або per-process-gro
 - Які future-compatible process groups залишити тільки в схемі.
 
 ---
+
+# Semantic Links
+
+- consume: [[docs/world/resources|Resources]]
+- consume: [[docs/world/energy|Energy]]
+- require capabilities from: [[docs/biology/process-capabilities|Process Capabilities]]
+- regulated by: [[docs/biology/genome|Genome]]
+- gated by: [[docs/biology/feasibility|Feasibility Check]]
+- tracked by: [[docs/biology/process-progress|Process Progress]]
 
 # Пов'язані документи
 

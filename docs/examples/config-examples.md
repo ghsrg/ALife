@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - examples
+  - area/examples
+---
+
 # config-examples.md
 
 > Приклади конфігів. Вони ілюстративні й не є окремим schema authority.
@@ -102,4 +109,11 @@ reactions:
         inert_waste: 0.2
     heat_release: 0.05
 ```
+
+# Semantic Links
+
+- illustrates: [[docs/config/world_config|World Config]]
+- illustrates: [[docs/config/resources_config|Resources Config]]
+- illustrates: [[docs/config/materials_config|Materials Config]]
+- illustrates: [[docs/config/stability_bounds|Stability Bounds]]
 

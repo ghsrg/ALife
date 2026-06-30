@@ -1,10 +1,18 @@
-﻿# AGENTS.MD
+﻿---
+tags:
+  - alife
+  - process/agents
+---
+
+# AGENTS.MD
 
 ## Project Context
 
 This repository is currently documentation-first. Treat `docs/` as the source of truth for future implementation.
 
 Documentation language is Ukrainian. Code identifiers and technical class-like terms may stay in English when already used by the docs.
+
+Use [[docs/README]] as the documentation navigator and [[outputs/worklogs/README]] as the worklog index.
 
 ## Required Reading
 
@@ -15,6 +23,8 @@ Before changing requirements, architecture, or future code, read:
 3. `docs/ROADMAP.md`
 4. Relevant Canon document under `docs/`
 5. Relevant ADR, if it exists
+
+Obsidian shortcuts: [[docs/PRINCIPLES]], [[docs/GLOSSARY]], [[docs/ROADMAP]], [[docs/README]].
 
 If a required rule is missing, do not invent it silently. Record it as an open question, TODO, or proposed ADR.
 

@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
 # specialization.md
 
 > `Specialization` — стабільні функціональні стани клітин, що виникають локально.
@@ -102,6 +109,14 @@ reproduction-supporting
 - Як відрізняти тимчасовий стан від стабільної спеціалізації в debug UI.
 
 ---
+
+# Semantic Links
+
+- emerges from: [[docs/biology/genome|Genome]]
+- emerges from: [[docs/world/materials|Materials]]
+- influenced by: [[docs/biology/joint|Joint]]
+- stabilized by: [[docs/genetics/epigenetics|Epigenetics]]
+- selected by: [[docs/evolution/selection|Selection]]
 
 # Пов'язані документи
 

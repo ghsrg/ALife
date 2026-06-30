@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/world
+---
+
 # tick.md
 
 > `Tick` — логічний крок дискретного часу симуляції.
@@ -99,6 +106,13 @@ No literal phase list in tick.md may override the Tick Semantics contract.
 ```
 
 ---
+
+# Semantic Links
+
+- orders: [[docs/world/tick-semantics|Tick Semantics]]
+- schedules: [[docs/biology/processes|Processes]]
+- runs: [[docs/genetics/genome-runtime|Genome Runtime]]
+- implemented by: [[docs/engine/scheduler|Scheduler]]
 
 # Пов'язані документи
 

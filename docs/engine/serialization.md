@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - engine
+  - area/engine
+---
+
 # serialization.md
 
 > Serialization — snapshot стану симуляції.
@@ -44,6 +51,13 @@ pending_process_progress
 - observer metrics required for behavior.
 
 ---
+
+# Semantic Links
+
+- serializes: [[docs/engine/ecs|ECS]]
+- serializes state of: [[docs/biology/cell|Cell]]
+- serializes state of: [[docs/biology/joint|Joint]]
+- persists through: [[docs/engine/storage|Storage]]
 
 # Пов'язані документи
 

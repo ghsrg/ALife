@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - canon
+  - area/genetics
+---
+
 # horizontal-transfer.md
 
 > `Horizontal Transfer` — future-compatible передача genetic fragments між незалежними клітинами.
@@ -49,6 +56,13 @@ fragment source
 - HGT as ordinary signal.
 
 ---
+
+# Semantic Links
+
+- moves fragments of: [[docs/biology/genome|Genome]]
+- can use: [[docs/biology/joint|Joint]]
+- can use: [[docs/biology/communication|Communication]]
+- affects: [[docs/evolution/population-dynamics|Population Dynamics]]
 
 # Пов'язані документи
 

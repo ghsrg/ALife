@@ -1,4 +1,11 @@
-﻿# division-partition.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/biology
+---
+
+# division-partition.md
 
 > **Division Partition — фізичний розподіл локального стану однієї клітини**
 
@@ -145,6 +152,15 @@ Only explicitly copied state is copied.
 Energy can power copying, but cannot create the physical Genome carrier.
 
 ---
+
+# Semantic Links
+
+- partitions state of: [[docs/biology/cell|Cell]]
+- requires: [[docs/biology/lifecycle|Lifecycle]]
+- partitions: [[docs/world/resources|Resources]]
+- partitions: [[docs/world/materials|Materials]]
+- partitions local: [[docs/world/energy|Energy]]
+- creates inheritance path for: [[docs/genetics/inheritance|Inheritance]]
 
 # Пов'язані документи
 

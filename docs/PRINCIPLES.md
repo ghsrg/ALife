@@ -1,4 +1,10 @@
-﻿# PRINCIPLES.md
+---
+tags:
+  - alife
+  - docs/index
+---
+
+# PRINCIPLES.md
 
 > **Конституція світу Artificial Life Engine**
 
@@ -352,6 +358,14 @@ Engine
 Жоден нижчий рівень документації не може суперечити цьому документу.
 
 ---
+
+# Semantic Links
+
+- constrains: [[docs/world/laws|World Laws]]
+- constrains: [[docs/world/physics|Physics]]
+- constrains: [[docs/biology/cell|Cell]]
+- constrains: [[docs/biology/genome|Genome]]
+- constrains: [[docs/evolution/selection|Selection]]
 
 # Пов'язані документи
 

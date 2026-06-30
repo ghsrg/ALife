@@ -1,4 +1,11 @@
-﻿# evolution/selection.md
+﻿---
+tags:
+  - alife
+  - canon
+  - area/evolution
+---
+
+# evolution/selection.md
 
 > **Selection — відбір через виживання, розмноження і зникнення ліній**
 
@@ -224,6 +231,13 @@ Cell, colony, organism-like і lineage рівні можуть давати рі
 * species-based selection rule.
 
 ---
+
+# Semantic Links
+
+- filters variation from: [[docs/genetics/mutation|Mutation]]
+- acts on viability of: [[docs/biology/cell|Cell]]
+- acts on derived: [[docs/biology/organism|Organism View]]
+- changes: [[docs/evolution/population-dynamics|Population Dynamics]]
 
 # Пов'язані документи
 

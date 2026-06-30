@@ -1,3 +1,10 @@
+﻿---
+tags:
+  - alife
+  - config
+  - area/config
+---
+
 # stability_bounds.md
 
 > Межі параметрів для стабільної та діагностованої симуляції.
@@ -110,6 +117,14 @@ mutation_stability
 Experimental range is not Canon law. It is a calibration boundary for a specific scenario.
 
 ---
+
+# Semantic Links
+
+- bounds: [[docs/config/world_config|World Config]]
+- bounds: [[docs/config/resources_config|Resources Config]]
+- bounds: [[docs/config/materials_config|Materials Config]]
+- bounds: [[docs/config/reactions_config|Reactions Config]]
+- protects stability of: [[docs/biology/cell|Cell]]
 
 # Пов'язані документи
 
