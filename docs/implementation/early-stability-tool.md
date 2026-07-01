@@ -36,7 +36,55 @@ This documentation task does not create the directory or tool code.
 
 ---
 
+# Implementation Stack
+
+Recommended first implementation stack:
+
+```text
+Python
+TOML input parsing
+JSON output
+Markdown report generation
+deterministic local calculations
+```
+
+Reason:
+
+```text
+This tool is outside the simulation hot path.
+It should be fast to modify while Phase 1 config fields are still stabilizing.
+It can later be cross-checked against Rust alife-core outputs.
+```
+
+The tool must not implement Python behavior inside the future core Tick loop. It is an offline calibration/helper tool only.
+
+---
+
 # Tool Modes
+
+## Evaluate Mode
+
+Runs the current scenario/config and does not tune values.
+
+Pipeline:
+
+```text
+input config
+  -> static validation
+  -> static calculator
+  -> optional micro simulation
+  -> machine-readable results
+  -> human report
+```
+
+Evaluate mode answers:
+
+```text
+Is this config stable, fragile, collapse or invalid?
+Why?
+Which constraints were closest to failure?
+Which metrics should be reviewed before tuning?
+```
 
 ## Static Calculator
 
@@ -72,6 +120,36 @@ free_capacity
 heat_next
 waste_next
 ```
+
+## Tune Mode
+
+Runs iterative candidate search over explicitly allowed parameters.
+
+Pipeline:
+
+```text
+base config
+  -> evaluate
+  -> analyze failure or margins
+  -> adjust allowed parameters
+  -> evaluate candidate
+  -> repeat until stable candidate found or budget exhausted
+  -> write run history, recommended configs and empirical ranges
+```
+
+Tune mode must not change source-of-truth configs in place. It writes candidate configs and reports under `outputs/stability/<run_id>/`.
+
+Tune mode should start with simple deterministic search:
+
+```text
+bounded grid search
+coarse-to-fine range narrowing
+stable sorted parameter order
+fixed seed list
+fixed max_iterations
+```
+
+Do not use nondeterministic optimizers for the first version.
 
 ---
 
@@ -140,11 +218,39 @@ Fields under `estimates.*` are tool-only helpers. They must not be treated as Ph
 
 The tool must reject unknown Resource, Material, Field or process ids when those ids are provided by config.
 
+Tune mode also needs a tuning request:
+
+```text
+tuning:
+  max_iterations
+  seeds
+  objective
+  allowed_parameters
+  parameter_ranges
+  candidate_profiles
+```
+
+Allowed `objective` values:
+
+```text
+find_first_stable
+find_conservative_stable
+map_stable_ranges
+```
+
+Candidate profiles:
+
+```text
+best_stable
+conservative_stable
+fragile_edge
+```
+
 ---
 
 # Outputs
 
-Minimum output:
+Minimum per-run result:
 
 ```text
 scenario_id
@@ -182,6 +288,110 @@ determinism_mismatch
 ```
 
 `metrics_summary` should include only observer/tool diagnostics. It must not become behavior input for the engine.
+
+Recommended artifact layout:
+
+```text
+outputs/stability/<run_id>/
+  results.json
+  REPORT.md
+  ranges.json
+  runs/
+    run_0001.json
+    run_0002.json
+    run_0003.json
+  recommended-configs/
+    best_stable.toml
+    conservative_stable.toml
+    fragile_edge.toml
+```
+
+`results.json` contains the latest or aggregate result for the run.
+
+`runs/*.json` contains every evaluated candidate, including failed and invalid candidates.
+
+`REPORT.md` explains the run for a human reader.
+
+`ranges.json` stores empirical tested and stable min/max ranges.
+
+`recommended-configs/*.toml` are candidate configs only. They are not source-of-truth configs until reviewed and accepted.
+
+Minimum `ranges.json` shape:
+
+```text
+parameter_id
+tested_min
+tested_max
+stable_min
+stable_max
+recommended
+confidence
+notes
+```
+
+Minimum `REPORT.md` content:
+
+```text
+run_id
+base_config
+scenario list
+mode: evaluate or tune
+iteration count
+stable / fragile / collapse / invalid summary
+best candidate
+recommended values
+empirical min/max ranges
+most sensitive parameters
+failure reasons
+warnings
+limits of evidence
+```
+
+---
+
+# Tunable Parameters
+
+Tune mode may move only explicitly allowed parameters.
+
+Recommended first tunable parameters:
+
+```text
+cell.initial_energy
+cell.energy_capacity
+cell.mandatory_cost_per_tick
+cell.dormant_mandatory_cost_modifier
+cell.capacity_limit
+resources.initial_distribution
+resources.passive_energy_income_placeholder
+environment.heat_dissipation_rate
+environment.heat_warning_threshold
+environment.heat_death_threshold
+environment.waste_sink_rate
+environment.waste_warning_threshold
+environment.waste_death_threshold
+lifecycle.stress_energy_threshold
+lifecycle.critical_capacity_overrun
+estimates.growth_cost_estimate
+estimates.division_cost_estimate
+estimates.resource_regeneration_or_inflow
+estimates.joint_upkeep_cost
+```
+
+Forbidden tuning targets:
+
+```text
+Canon rules
+Energy Buffer semantics
+direct Energy transfer rules
+viewer authority
+world law definitions
+process semantics
+collapse result vocabulary
+unknown id acceptance
+source-of-truth config files in docs/
+```
+
+If a parameter is not listed in `allowed_parameters`, the tool must not change it.
 
 ---
 
@@ -228,6 +438,7 @@ Future implementation should use a focused layout:
 ```text
 tools/early-stability/
   README.md
+  pyproject.toml or equivalent tool manifest
   scenarios/
     single_cell_survival.toml
     single_cell_starvation.toml
@@ -242,9 +453,12 @@ tools/early-stability/
     config_loader
     static_calculator
     micro_simulator
+    tuner
     result_writer
+    report_writer
   tests/
     static_calculator_tests
+    tune_mode_tests
     scenario_validation_tests
     phase1_contract_sync_tests
 ```
@@ -258,23 +472,29 @@ Exact language and file extensions may be chosen during tool implementation. The
 Future CLI shape:
 
 ```text
-early-stability check --scenario scenarios/single_cell_survival.toml
-early-stability simulate --scenario scenarios/single_cell_survival.toml --ticks 1000
-early-stability batch --scenarios scenarios/
+early-stability evaluate --scenario scenarios/single_cell_survival.toml --out outputs/stability/<run_id>/
+early-stability simulate --scenario scenarios/single_cell_survival.toml --ticks 1000 --out outputs/stability/<run_id>/
+early-stability tune --scenario scenarios/single_cell_survival.toml --tuning tuning/single_cell.toml --out outputs/stability/<run_id>/
+early-stability batch --scenarios scenarios/ --out outputs/stability/<run_id>/
 ```
 
 Expected behavior:
 
 ```text
-check
-  static calculator only
+evaluate
+  validation + static calculator + optional configured simulation
 
 simulate
   bounded micro headless scenario
 
+tune
+  deterministic candidate search over allowed parameters
+
 batch
   deterministic run over scenario files sorted by path
 ```
+
+CLI must write all artifacts under the provided output directory and must not overwrite source configs unless a future explicit command is designed and accepted.
 
 ---
 
@@ -289,6 +509,10 @@ The implementation agent for `tools/early-stability/` must:
 - keep outputs deterministic for same input and seed;
 - keep Phase 1-aligned scenario ids and result vocabulary synchronized with `phase-1-design.md`;
 - keep tool-only estimates clearly separated under `estimates.*`;
+- implement evaluate mode before tune mode;
+- make tune mode deterministic and bounded by `max_iterations`;
+- write all accumulated run artifacts to `outputs/stability/<run_id>/`;
+- generate candidate configs as recommendations only;
 - keep scenarios small and explicit;
 - produce a report after implementation.
 
@@ -346,6 +570,24 @@ estimates.joint_count_estimate
 estimates.joint_upkeep_cost
 population_unbounded collapse estimate
 joint_upkeep_impossible collapse estimate
+```
+
+---
+
+# Completion Criteria For Tool Implementation
+
+An implementation agent is done only when:
+
+```text
+evaluate mode can classify provided scenarios
+tune mode can produce at least one stable candidate or explain failure
+all candidate runs are recorded under outputs/stability/<run_id>/runs/
+results.json is machine-readable
+REPORT.md is human-readable
+ranges.json contains empirical min/max tested and stable ranges
+recommended-configs/ contains candidate TOML files when stable candidates exist
+source configs are not modified in place
+deterministic repeated run with same input produces same artifacts except run_id/timestamps
 ```
 
 ---
