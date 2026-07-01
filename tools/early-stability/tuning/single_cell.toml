@@ -1,0 +1,10 @@
+[tuning]
+max_iterations = 100
+seeds = [42, 100, 2026]
+objective = "find_first_stable"
+allowed_parameters = ["cell.initial_energy", "environment.heat_dissipation_rate", "cell.mandatory_cost_per_tick"]
+
+[tuning.ranges]
+"cell.initial_energy" = [5.0, 50.0, 5.0]
+"environment.heat_dissipation_rate" = [0.05, 0.5, 0.05]
+"cell.mandatory_cost_per_tick" = [1.0, 10.0, 1.0]

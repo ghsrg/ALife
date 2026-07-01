@@ -145,21 +145,17 @@ def run_tune_mode(scenario_path: str, tuning_path: str, out_dir: str):
         print(f"Error reading tuning config: {e}")
         sys.exit(1)
 
-    runs, ranges = run_tuning(base_config, tuning_config)
+    runs, ranges, profiles = run_tuning(base_config, tuning_config)
 
     for idx, run_record in enumerate(runs, 1):
         write_run_detail_json(out_dir, idx, run_record)
         
     write_ranges_json(out_dir, ranges)
 
-    stable_configs = []
-    for run in runs:
-        if run["survival_result"] == "stable" and run["parameters"] not in stable_configs:
-            stable_configs.append(run["parameters"])
+    for profile_name, params in profiles.items():
+        if params is not None:
+            write_recommended_toml(out_dir, base_config, profile_name, params)
 
-    for i, sc in enumerate(stable_configs, 1):
-        name = "best_stable" if i == 1 else f"candidate_stable_{i:03d}"
-        write_recommended_toml(out_dir, base_config, name, sc)
 
     stable_count = sum(1 for r in runs if r["survival_result"] == "stable")
     fragile_count = sum(1 for r in runs if r["survival_result"] == "fragile")
