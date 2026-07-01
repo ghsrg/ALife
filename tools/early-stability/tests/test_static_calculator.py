@@ -20,10 +20,16 @@ def base_config():
             "initial_materials": {"material_A": 3.0}
         },
         "environment": {
+            "heat_current": 0.0,
             "heat_generated_per_tick": 0.1,
             "heat_dissipation_rate": 0.2,
+            "heat_warning_threshold": 40.0,
+            "heat_death_threshold": 80.0,
+            "waste_current": 0.0,
             "waste_generated_per_tick": 0.05,
-            "waste_sink_rate": 0.1
+            "waste_sink_rate": 0.1,
+            "waste_warning_threshold": 10.0,
+            "waste_death_threshold": 20.0
         },
         "lifecycle": {}
     }
@@ -67,19 +73,65 @@ def test_initial_capacity_exceeded(base_config):
     assert reason == "capacity_exceeded"
 
 def test_unbounded_heat_accumulation(base_config):
-    # heat_generated_per_tick (0.3) > heat_dissipation_rate (0.2)
-    base_config["environment"]["heat_generated_per_tick"] = 0.3
-    base_config["environment"]["heat_dissipation_rate"] = 0.2
+    # heat_generated_per_tick (1.0) > heat_dissipation_rate (0.0). Tick count = 100.
+    # Projected heat = 100 > death threshold (80.0) -> collapse
+    base_config["environment"]["heat_generated_per_tick"] = 1.0
+    base_config["environment"]["heat_dissipation_rate"] = 0.0
     
     result, reason = evaluate_static_bounds(base_config)
     assert result == "collapse"
     assert reason == "heat_limit_exceeded"
 
 def test_unbounded_waste_accumulation(base_config):
-    # waste_generated_per_tick (0.15) > waste_sink_rate (0.1)
-    base_config["environment"]["waste_generated_per_tick"] = 0.15
-    base_config["environment"]["waste_sink_rate"] = 0.1
+    # waste_generated_per_tick (0.5) > waste_sink_rate (0.0). Tick count = 100.
+    # Projected waste = 50 > death threshold (20.0) -> collapse
+    base_config["environment"]["waste_generated_per_tick"] = 0.5
+    base_config["environment"]["waste_sink_rate"] = 0.0
     
     result, reason = evaluate_static_bounds(base_config)
     assert result == "collapse"
     assert reason == "waste_limit_exceeded"
+
+def test_accumulating_heat_survives_short_ticks(base_config):
+    # heat_generated_per_tick (0.2) > heat_dissipation_rate (0.1), but tick_count = 5.
+    # Projected heat = 0.0 + 5 * 0.1 = 0.5 < 80.0 (death). It should not collapse.
+    base_config["tick_count"] = 5
+    base_config["environment"]["heat_generated_per_tick"] = 0.2
+    base_config["environment"]["heat_dissipation_rate"] = 0.1
+    
+    result, reason = evaluate_static_bounds(base_config)
+    assert result != "collapse"
+    
+    # Let's test warning threshold crossed (e.g. warning = 0.4)
+    base_config["environment"]["heat_warning_threshold"] = 0.4
+    result, reason = evaluate_static_bounds(base_config)
+    assert result == "fragile"
+    assert reason == "none"
+
+def test_accumulating_waste_survives_short_ticks(base_config):
+    # waste_generated_per_tick (0.2) > waste_sink_rate (0.1), but tick_count = 5.
+    # Projected waste = 0.0 + 5 * 0.1 = 0.5 < 20.0 (death). It should not collapse.
+    base_config["tick_count"] = 5
+    base_config["environment"]["waste_generated_per_tick"] = 0.2
+    base_config["environment"]["waste_sink_rate"] = 0.1
+    
+    result, reason = evaluate_static_bounds(base_config)
+    assert result != "collapse"
+    
+    # Warning threshold crossed (warning = 0.4)
+    base_config["environment"]["waste_warning_threshold"] = 0.4
+    result, reason = evaluate_static_bounds(base_config)
+    assert result == "fragile"
+    assert reason == "none"
+
+def test_accumulating_heat_dies_long_ticks(base_config):
+    # heat_generated_per_tick (0.2) > heat_dissipation_rate (0.1), but tick_count = 1000.
+    # Projected heat = 0.0 + 1000 * 0.1 = 100 > 80.0 (death) -> collapse
+    base_config["tick_count"] = 1000
+    base_config["environment"]["heat_generated_per_tick"] = 0.2
+    base_config["environment"]["heat_dissipation_rate"] = 0.1
+    
+    result, reason = evaluate_static_bounds(base_config)
+    assert result == "collapse"
+    assert reason == "heat_limit_exceeded"
+

@@ -30,18 +30,36 @@ def evaluate_static_bounds(config: dict) -> tuple[str, str]:
         return "collapse", "capacity_exceeded"
 
     # 3. Heat accumulation check
+    tick_count = config.get("tick_count", 0)
     env = config.get("environment", {})
+    
+    heat_curr = env.get("heat_current", 0.0)
     heat_gen = env.get("heat_generated_per_tick", 0.0)
     heat_diss = env.get("heat_dissipation_rate", 0.0)
+    heat_warning = env.get("heat_warning_threshold", 0.0)
+    heat_death = env.get("heat_death_threshold", 0.0)
     
-    if heat_gen > heat_diss:
-        return "collapse", "heat_limit_exceeded"
+    projected_heat = heat_curr + tick_count * max(0.0, heat_gen - heat_diss)
 
     # 4. Waste accumulation check
+    waste_curr = env.get("waste_current", 0.0)
     waste_gen = env.get("waste_generated_per_tick", 0.0)
     waste_sink = env.get("waste_sink_rate", 0.0)
+    waste_warning = env.get("waste_warning_threshold", 0.0)
+    waste_death = env.get("waste_death_threshold", 0.0)
     
-    if waste_gen > waste_sink:
+    projected_waste = waste_curr + tick_count * max(0.0, waste_gen - waste_sink)
+
+    if projected_heat > heat_death:
+        return "collapse", "heat_limit_exceeded"
+        
+    if projected_waste > waste_death:
         return "collapse", "waste_limit_exceeded"
 
+    # Check fragile warnings
+    is_fragile = (projected_heat > heat_warning) or (projected_waste > waste_warning)
+    if is_fragile:
+        return "fragile", "none"
+
     return "stable", "none"
+

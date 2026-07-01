@@ -31,6 +31,7 @@ energy_capacity = 100.0
 mandatory_cost_per_tick = 2.0
 dormant_mandatory_cost_modifier = 0.1
 capacity_limit = 10.0
+minimum_viability_materials = ["material"]
 
 [environment]
 ambient_temperature = 25.0
