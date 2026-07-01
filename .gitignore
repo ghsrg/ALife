@@ -1,4 +1,7 @@
 outputs/*
+!outputs/worklogs/
+!outputs/worklogs/*.md
+outputs/stability/
 __pycache__/
 .pytest_cache/
 .venv/

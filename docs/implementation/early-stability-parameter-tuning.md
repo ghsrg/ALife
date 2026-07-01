@@ -524,6 +524,282 @@ Do not continue numeric fitting if the same collapse reasons repeat.
 
 ---
 
+# Наступні Групи Підбору
+
+Після першого `single_cell_survival` sweep прийнято тільки ranges для:
+
+```text
+cell.initial_energy
+cell.mandatory_cost_per_tick
+environment.heat_dissipation_rate
+```
+
+Наступні підбори треба робити групами. Не змішувати всі параметри в один великий sweep, бо тоді неможливо зрозуміти, що саме покращило або зламало результат.
+
+## Group 1: Energy Budget Sweep
+
+Мета:
+
+```text
+визначити енергетичний запас, при якому Cell стабільно платить mandatory costs
+відділити stable, fragile і starvation edges
+```
+
+Сценарії:
+
+```text
+single_cell_survival
+single_cell_starvation
+single_cell_growth_budget
+```
+
+Параметри:
+
+```text
+cell.initial_energy
+cell.energy_capacity
+cell.mandatory_cost_per_tick
+resources.passive_energy_income_placeholder
+lifecycle.stress_energy_threshold
+cell.dormant_mandatory_cost_modifier
+```
+
+Ловити:
+
+```text
+energy_depleted
+mandatory_cost_unpaid
+fragile через low energy margin
+dormancy loops
+static stable / simulation collapse
+```
+
+Очікуваний результат:
+
+```text
+stable range для initial_energy / energy_capacity / mandatory_cost
+fragile edge для starvation boundary
+conservative baseline recommendation без зміни Canon
+```
+
+## Group 2: Heat And Waste Sweep
+
+Мета:
+
+```text
+перевірити, чи Heat і waste мають явний sink і не накопичуються нескінченно
+```
+
+Сценарії:
+
+```text
+single_cell_survival
+single_cell_heat_stress
+waste_heat_balance
+```
+
+Параметри:
+
+```text
+environment.heat_generated_per_tick
+environment.heat_dissipation_rate
+environment.heat_warning_threshold
+environment.heat_death_threshold
+environment.waste_generated_per_tick
+environment.waste_sink_rate
+environment.waste_warning_threshold
+environment.waste_death_threshold
+```
+
+Ловити:
+
+```text
+heat_limit_exceeded
+waste_limit_exceeded
+slow accumulation under warning threshold
+stable тільки через завищені thresholds
+negative scenarios becoming stable
+```
+
+Очікуваний результат:
+
+```text
+heat generation/dissipation stable range
+waste generation/sink stable range
+warning/death threshold recommendations
+collapse edge для heat і waste
+```
+
+## Group 3: Capacity And Material Sweep
+
+Мета:
+
+```text
+перевірити, що початкові Resources/Materials вміщуються фізично
+і capacity не відривається від radius/material assumptions
+```
+
+Сценарії:
+
+```text
+single_cell_survival
+single_cell_over_capacity
+single_cell_growth_budget
+```
+
+Параметри:
+
+```text
+cell.capacity_limit
+cell.initial_resources
+cell.initial_materials
+cell.radius
+resources.initial_distribution
+```
+
+Ловити:
+
+```text
+invalid_config
+capacity_exceeded
+stored amount above capacity
+minimum_viability_materials missing
+capacity too high for radius without explanation
+```
+
+Очікуваний результат:
+
+```text
+capacity stable range
+minimum viable material/resource pack
+over-capacity invalid boundary
+notes if tool cannot evaluate radius/capacity physics yet
+```
+
+## Group 4: Growth And Division Estimate Sweep
+
+Мета:
+
+```text
+перевірити, чи базова Cell теоретично може рости і входити в division loop
+без повної Phase 2 simulation
+```
+
+Сценарії:
+
+```text
+single_cell_growth_budget
+single_cell_division_loop_estimate
+population_growth_bound
+```
+
+Параметри:
+
+```text
+estimates.growth_cost_estimate
+estimates.division_cost_estimate
+estimates.resource_regeneration_or_inflow
+estimates.population_space_limit
+cell.energy_capacity
+resources.passive_energy_income_placeholder
+```
+
+Ловити:
+
+```text
+growth impossible
+division loop impossible
+population_unbounded
+resource budget insufficient
+stable only because estimate is too optimistic
+```
+
+Очікуваний результат:
+
+```text
+growth budget range
+division budget range
+population pressure warning range
+explicit limits of evidence because estimates are tool-only
+```
+
+## Group 5: Joint Upkeep Estimate Sweep
+
+Мета:
+
+```text
+перевірити, чи multicellular structure теоретично може підтримувати Joints
+на рівні estimate-tool, без повної Joint simulation
+```
+
+Сценарії:
+
+```text
+joint_upkeep_budget
+population_growth_bound
+single_cell_survival
+```
+
+Параметри:
+
+```text
+estimates.joint_count_estimate
+estimates.joint_upkeep_cost
+estimates.resource_regeneration_or_inflow
+cell.mandatory_cost_per_tick
+resources.passive_energy_income_placeholder
+```
+
+Ловити:
+
+```text
+joint_upkeep_impossible
+energy budget consumed by upkeep
+joint support possible only at narrow margins
+multicellular estimate stable while single cell baseline is fragile
+```
+
+Очікуваний результат:
+
+```text
+joint_count / joint_upkeep stable ranges
+fragile edge for multicellular upkeep
+clear note that this is estimate-only until Joint model exists
+```
+
+## Group Stop Rules
+
+Для кожної групи:
+
+```text
+max_cycles = 5
+max_no_improvement_cycles = 3
+max_iterations_per_cycle = 300..1000 depending on parameter count
+```
+
+Зупинитись і надати report, якщо:
+
+```text
+3 cycles поспіль без meaningful improvement
+negative scenario перестав падати
+для стабільності треба рухати заборонений параметр
+потрібна зміна Canon або process semantics
+tool не має потрібного механізму для чесної оцінки
+```
+
+Report має явно вказати:
+
+```text
+яку групу ганяли
+які параметри були allowed
+stable / fragile / collapse / invalid before/after
+які ranges приймати
+які source configs не змінювались
+які питання залишились за межами tool-а
+```
+
+---
+
 # Semantic Links
 
 - uses: [[docs/implementation/early-stability-tool|Early Stability Tool]]

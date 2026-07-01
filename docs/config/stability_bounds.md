@@ -99,6 +99,75 @@ Exact warning thresholds are scenario-specific and should be calibrated experime
 
 ---
 
+# Прийняті Експериментальні Межі
+
+Ці значення не є Canon законами світу. Це зафіксований результат `early-stability` calibration pass для `single_cell_survival`.
+
+Source config не змінюється автоматично. Поточний baseline лишається прийнятним, якщо він лежить всередині stable range і негативні сценарії продовжують падати очікувано.
+
+## single_cell_survival: energy/heat smoke pass
+
+Джерело:
+
+```text
+outputs/worklogs/2026-07-01-1805-REPORT-early-stability-parameter-tuning.md
+outputs/stability/single_cell_tune/ranges.json
+```
+
+Комбінація сценарію:
+
+```text
+scenario: tools/early-stability/scenarios/single_cell_survival.toml
+tuning: tools/early-stability/tuning/single_cell.toml
+runs: 3000
+stable: 1350
+fragile: 750
+collapse: 900
+invalid: 0
+```
+
+Accepted stable ranges:
+
+| Parameter | Current Baseline | Stable Min | Stable Max | Tool Recommended | Decision |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `cell.initial_energy` | `50.0` | `10.0` | `50.0` | `30.0` | Keep current baseline; accept range. |
+| `cell.mandatory_cost_per_tick` | `2.0` | `1.0` | `5.0` | `3.0` | Keep `2.0`; accept range. |
+| `environment.heat_dissipation_rate` | `0.2` | `0.05` | `0.5` | `0.275` | Keep current baseline; accept range. |
+
+Interpretation:
+
+```text
+cell.mandatory_cost_per_tick = 2.0 is inside stable range and remains the baseline.
+Tool midpoint recommendations are not automatically better defaults.
+Ranges are accepted as current experimental bounds for Phase 1 smoke calibration.
+```
+
+Not covered by this pass:
+
+```text
+cell.radius
+cell.energy_capacity
+cell.capacity_limit
+cell.initial_resources
+cell.initial_materials
+resources.initial_distribution
+resources.passive_energy_income_placeholder
+environment.heat_generated_per_tick
+environment.heat_warning_threshold
+environment.heat_death_threshold
+environment.waste_generated_per_tick
+environment.waste_sink_rate
+environment.waste_warning_threshold
+environment.waste_death_threshold
+lifecycle.stress_energy_threshold
+cell.dormant_mandatory_cost_modifier
+estimates.*
+world.size
+space.spatial_grid_size
+```
+
+---
+
 # Scenario-Specific Experimental Ranges
 
 Scenario configs may define experimental ranges for:
