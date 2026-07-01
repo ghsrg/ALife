@@ -1,7 +1,7 @@
 [tuning]
-max_iterations = 100
+max_iterations = 1000
 seeds = [42, 100, 2026]
-objective = "find_first_stable"
+objective = "map_stable_ranges"
 allowed_parameters = ["cell.initial_energy", "environment.heat_dissipation_rate", "cell.mandatory_cost_per_tick"]
 
 [tuning.ranges]
