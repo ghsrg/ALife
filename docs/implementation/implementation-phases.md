@@ -63,6 +63,12 @@ no viewer dependency in core
 
 Goal: run a minimal deterministic world with one Cell and no division.
 
+Required pre-implementation artifact:
+
+```text
+docs/implementation/phase-1-design.md
+```
+
 Build:
 
 ```text
@@ -76,6 +82,15 @@ simple lifecycle state
 local WebGL2 viewer skeleton
 binary frame stream
 ```
+
+Early side-track after Phase 1 design:
+
+```text
+docs/implementation/early-stability-tool.md
+future tool path: tools/early-stability/
+```
+
+The Early Stability Tool starts as a static calculator and later grows into a small micro headless simulator. It is not part of the simulation hot path.
 
 Gate:
 
@@ -275,6 +290,8 @@ Detailed phase plans should be created only when the phase starts.
 - implements: [[docs/engine/technology-stack|Technology Stack]]
 - follows accepted: [[docs/decisions/ADR-0001-tech-stack|ADR-0001 Technology Stack]]
 - follows architecture: [[docs/implementation/architecture|Architecture]]
+- defines Phase 1: [[docs/implementation/phase-1-design|Phase 1 Design]]
+- starts tool side-track: [[docs/implementation/early-stability-tool|Early Stability Tool]]
 - starts from: [[docs/world/space|Space]]
 - starts from: [[docs/biology/cell|Cell]]
 - uses: [[docs/biology/feasibility|Feasibility Check]]
