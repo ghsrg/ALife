@@ -189,5 +189,9 @@ def test_cli_batch_on_real_scenarios(tmp_path):
     assert "scenarios" in res
     assert len(res["scenarios"]) >= 5
     for scenario_res in res["scenarios"]:
-        assert scenario_res["survival_result"] != "invalid", f"Scenario {scenario_res['file_name']} failed validation"
+        if scenario_res["file_name"] == "single_cell_over_capacity.toml":
+            assert scenario_res["survival_result"] == "invalid"
+        else:
+            assert scenario_res["survival_result"] != "invalid", f"Scenario {scenario_res['file_name']} failed validation: {scenario_res.get('collapse_reason')}"
+
 
