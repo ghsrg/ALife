@@ -209,7 +209,8 @@ def run_tune_mode(scenario_path: str, tuning_path: str, out_dir: str):
             "total_iterations": len(runs),
             "stable_count": stable_count,
             "fragile_count": fragile_count,
-            "collapse_count": collapse_count
+            "collapse_count": collapse_count,
+            "invalid_count": invalid_count
         }
     }
     write_results_json(out_dir, results_data)

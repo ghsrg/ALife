@@ -800,6 +800,112 @@ stable / fragile / collapse / invalid before/after
 
 ---
 
+# Candidate Revalidation Rule
+
+This calibration exercise exists to answer engineering questions before class/data-model design:
+
+```text
+can a world with these interaction rules remain viable?
+which parameter ranges are stable, fragile, collapsing or invalid?
+which min/max values should become future UI slider bounds?
+which values should trigger config warnings before simulation starts?
+which parts of the model are not represented by the current tool yet?
+```
+
+The output is not a final balance patch. It is input for:
+
+```text
+Phase 1 config defaults
+future UI limits and warnings
+Rust data structures
+class/module documentation
+test scenarios and boundary fixtures
+```
+
+---
+
+For every tuning candidate:
+
+```text
+base config
+  -> apply candidate parameter values
+  -> revalidate full mutated config
+  -> only then run micro simulation
+```
+
+If the mutated config is invalid, the candidate must be recorded as:
+
+```text
+survival_result = invalid
+collapse_reason = invalid_config
+history = []
+```
+
+Do not let invalid candidates enter the micro simulator.
+
+This is especially important for:
+
+```text
+cell.capacity_limit
+cell.initial_resources.*
+cell.initial_materials.*
+resource ids
+material ids
+threshold ordering
+negative amount/rate/capacity
+```
+
+Interpretation rule:
+
+```text
+invalid candidate = invalid config boundary
+fragile candidate = valid config that survives with warnings/stress
+collapse candidate = valid config that enters death/collapse condition
+```
+
+The report must separate `invalid`, `fragile`, and `collapse`. Do not merge them into one failure bucket.
+
+---
+
+# Scenario Coverage Rule
+
+Do not infer group-level stability from `single_cell_survival.toml` alone.
+
+For every group, tune against the group-specific scenario or explicitly state that the result is only a `single_cell_survival` smoke result.
+
+Required interpretation:
+
+```text
+Group 1 Energy Budget
+  may use single_cell_survival as primary scenario
+  must keep single_cell_starvation as negative check
+
+Group 2 Heat And Waste
+  must include heat/waste scenarios when claiming heat or waste bounds
+
+Group 3 Capacity And Material
+  must include over-capacity scenario or invalid candidate revalidation
+
+Group 4 Growth And Division
+  estimates.* do not prove runtime growth/division stability
+  report them as estimate-only until core processes exist
+
+Group 5 Joint Upkeep
+  estimates.* do not prove Joint stability
+  report them as estimate-only until Joint model exists
+```
+
+If a parameter has no direct effect in the current micro simulator, report:
+
+```text
+confidence = tool-limited
+reason = parameter is accepted by config but not consumed by current simulator
+```
+
+Do not report such bounds as `High` confidence runtime bounds.
+
+---
+
 # Semantic Links
 
 - uses: [[docs/implementation/early-stability-tool|Early Stability Tool]]

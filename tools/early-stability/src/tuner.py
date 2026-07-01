@@ -1,6 +1,7 @@
 import copy
 import itertools
 from micro_simulator import run_micro_simulation
+from config_loader import ValidationError, validate_config_dict
 
 class TuningValidationError(Exception):
     """Raised when a tuning configuration is structurally unsafe to execute."""
@@ -135,9 +136,14 @@ def run_tuning(base_config: dict, tuning_config: dict) -> tuple[list, list, dict
             # Set nested parameters
             for param, val in candidate.items():
                 set_nested_value(config_copy, param, val)
-                
-            # Run simulation
-            history, result, reason = run_micro_simulation(config_copy)
+
+            try:
+                validate_config_dict(config_copy)
+                history, result, reason = run_micro_simulation(config_copy)
+            except ValidationError:
+                history = []
+                result = "invalid"
+                reason = "invalid_config"
             
             final_step = history[-1] if history else {}
             run_record = {

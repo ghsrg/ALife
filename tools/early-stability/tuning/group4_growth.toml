@@ -1,0 +1,20 @@
+[tuning]
+max_iterations = 1000
+seeds = [42, 100, 2026]
+objective = "map_stable_ranges"
+allowed_parameters = [
+    "estimates.growth_cost_estimate",
+    "estimates.division_cost_estimate",
+    "estimates.resource_regeneration_or_inflow",
+    "estimates.population_space_limit",
+    "cell.energy_capacity",
+    "resources.passive_energy_income_placeholder"
+]
+
+[tuning.ranges]
+"estimates.growth_cost_estimate" = [2.0, 10.0, 4.0]
+"estimates.division_cost_estimate" = [10.0, 30.0, 10.0]
+"estimates.resource_regeneration_or_inflow" = [2.0, 10.0, 4.0]
+"estimates.population_space_limit" = [50.0, 150.0, 50.0]
+"cell.energy_capacity" = [50.0, 150.0, 50.0]
+"resources.passive_energy_income_placeholder" = [2.0, 8.0, 3.0]

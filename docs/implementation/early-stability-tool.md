@@ -151,6 +151,18 @@ fixed max_iterations
 
 Do not use nondeterministic optimizers for the first version.
 
+Every candidate produced by Tune mode must be revalidated after applying candidate parameter values and before running the micro simulator.
+
+Invalid mutated candidates must be recorded as:
+
+```text
+survival_result = invalid
+collapse_reason = invalid_config
+history = []
+```
+
+Invalid candidates must not enter the micro simulator. This keeps capacity, id, threshold and negative-value boundaries distinct from valid-but-fragile behavior.
+
 ---
 
 # Inputs

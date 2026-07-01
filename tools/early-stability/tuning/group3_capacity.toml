@@ -1,0 +1,18 @@
+[tuning]
+max_iterations = 1000
+seeds = [42, 100, 2026]
+objective = "map_stable_ranges"
+allowed_parameters = [
+    "cell.capacity_limit",
+    "cell.initial_resources.water",
+    "cell.initial_resources.nutrient",
+    "cell.initial_materials.cell_wall",
+    "cell.radius"
+]
+
+[tuning.ranges]
+"cell.capacity_limit" = [10.0, 50.0, 20.0]
+"cell.initial_resources.water" = [1.0, 5.0, 2.0]
+"cell.initial_resources.nutrient" = [1.0, 5.0, 2.0]
+"cell.initial_materials.cell_wall" = [1.0, 5.0, 2.0]
+"cell.radius" = [0.5, 1.5, 0.5]

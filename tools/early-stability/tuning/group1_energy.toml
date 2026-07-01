@@ -1,0 +1,20 @@
+[tuning]
+max_iterations = 1000
+seeds = [42, 100, 2026]
+objective = "map_stable_ranges"
+allowed_parameters = [
+    "cell.initial_energy",
+    "cell.energy_capacity",
+    "cell.mandatory_cost_per_tick",
+    "resources.passive_energy_income_placeholder",
+    "lifecycle.stress_energy_threshold",
+    "cell.dormant_mandatory_cost_modifier"
+]
+
+[tuning.ranges]
+"cell.initial_energy" = [10.0, 50.0, 20.0]
+"cell.energy_capacity" = [50.0, 150.0, 50.0]
+"cell.mandatory_cost_per_tick" = [1.0, 5.0, 2.0]
+"resources.passive_energy_income_placeholder" = [2.0, 8.0, 3.0]
+"lifecycle.stress_energy_threshold" = [5.0, 15.0, 5.0]
+"cell.dormant_mandatory_cost_modifier" = [0.1, 0.5, 0.2]

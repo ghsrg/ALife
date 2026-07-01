@@ -151,6 +151,38 @@ def test_cli_tune_report_contains_ranges_and_failures(setup_files):
     assert "Failure Reasons Summary" in report
     assert "cell.initial_energy" in report
 
+def test_cli_tune_results_include_invalid_count_for_invalid_candidates(tmp_path):
+    scenario_path = tmp_path / "scenario.toml"
+    scenario_path.write_text(VALID_SCENARIO_TOML, encoding="utf-8")
+
+    tuning_path = tmp_path / "tuning.toml"
+    tuning_path.write_text(
+        """
+[tuning]
+max_iterations = 1
+seeds = [42]
+objective = "map_stable_ranges"
+allowed_parameters = ["cell.capacity_limit"]
+
+[tuning.ranges]
+"cell.capacity_limit" = [4.0, 4.0, 1.0]
+""",
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "out"
+
+    main([
+        "tune",
+        "--scenario", str(scenario_path),
+        "--tuning", str(tuning_path),
+        "--out", str(out_dir),
+    ])
+
+    results_json_path = os.path.join(out_dir, "results.json")
+    res = json.load(open(results_json_path, "r", encoding="utf-8"))
+    assert res["survival_result"] == "collapse"
+    assert res["metrics_summary"]["invalid_count"] == 1
+
 def test_cli_evaluate_with_simulation_can_downgrade_static_stable(tmp_path):
     scenario_toml = VALID_SCENARIO_TOML.replace(
         "initial_energy = 50.0",
@@ -242,4 +274,3 @@ def test_cli_batch_on_real_scenarios(tmp_path):
             assert scenario_res["survival_result"] == "invalid"
         else:
             assert scenario_res["survival_result"] != "invalid", f"Scenario {scenario_res['file_name']} failed validation: {scenario_res.get('collapse_reason')}"
-

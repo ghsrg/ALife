@@ -1,0 +1,24 @@
+[tuning]
+max_iterations = 1000
+seeds = [42, 100, 2026]
+objective = "map_stable_ranges"
+allowed_parameters = [
+    "environment.heat_generated_per_tick",
+    "environment.heat_dissipation_rate",
+    "environment.heat_warning_threshold",
+    "environment.heat_death_threshold",
+    "environment.waste_generated_per_tick",
+    "environment.waste_sink_rate",
+    "environment.waste_warning_threshold",
+    "environment.waste_death_threshold"
+]
+
+[tuning.ranges]
+"environment.heat_generated_per_tick" = [0.05, 0.25, 0.2]
+"environment.heat_dissipation_rate" = [0.1, 0.3, 0.2]
+"environment.heat_warning_threshold" = [10.0, 40.0, 30.0]
+"environment.heat_death_threshold" = [50.0, 80.0, 30.0]
+"environment.waste_generated_per_tick" = [0.02, 0.1, 0.08]
+"environment.waste_sink_rate" = [0.05, 0.15, 0.1]
+"environment.waste_warning_threshold" = [5.0, 15.0, 10.0]
+"environment.waste_death_threshold" = [15.0, 25.0, 10.0]

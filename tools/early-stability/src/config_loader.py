@@ -26,14 +26,8 @@ def require_bool(config: dict, path: str):
         raise ValidationError(f"{path} must be a boolean")
     return curr
 
-def load_and_validate_config(toml_str: str) -> dict:
-    # 1. Validate TOML format
-    try:
-        config = tomllib.loads(toml_str)
-    except tomllib.TOMLDecodeError as e:
-        raise ValidationError(f"Invalid TOML format: {e}")
-
-    # 2. Check for missing required root keys
+def validate_config_dict(config: dict) -> dict:
+    # Check for missing required root keys
     required_root_keys = [
         "scenario_id",
         "seed",
@@ -224,3 +218,12 @@ def load_and_validate_config(toml_str: str) -> dict:
             raise ValidationError("waste_warning_threshold must be strictly less than waste_death_threshold")
 
     return config
+
+def load_and_validate_config(toml_str: str) -> dict:
+    # 1. Validate TOML format
+    try:
+        config = tomllib.loads(toml_str)
+    except tomllib.TOMLDecodeError as e:
+        raise ValidationError(f"Invalid TOML format: {e}")
+
+    return validate_config_dict(config)

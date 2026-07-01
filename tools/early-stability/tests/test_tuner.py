@@ -8,19 +8,29 @@ def base_config():
         "scenario_id": "test_scenario",
         "seed": 42,
         "tick_count": 5,
-        "world": {},
-        "space": {},
+        "world": {
+            "size": [32.0, 32.0],
+            "boundary_mode": "solid_wall"
+        },
+        "space": {
+            "spatial_grid_size": 8.0
+        },
         "resources": {
+            "resource_type_ids": ["nutrient_A"],
+            "initial_distribution": [1.0],
             "passive_energy_income_placeholder": 1.0
         },
         "cell": {
+            "initial_position": [16.0, 16.0],
+            "radius": 1.0,
             "initial_energy": 10.0,
             "energy_capacity": 100.0,
             "mandatory_cost_per_tick": 2.0,
             "dormant_mandatory_cost_modifier": 0.1,
             "capacity_limit": 10.0,
             "initial_resources": {"nutrient_A": 2.0},
-            "initial_materials": {"material_A": 3.0}
+            "initial_materials": {"material_A": 3.0},
+            "minimum_viability_materials": {"material_A": 1.0}
         },
         "environment": {
             "ambient_temperature": 25.0,
@@ -131,6 +141,69 @@ def test_tuning_rejects_unknown_non_estimate_path(base_config, tuning_config):
 
     with pytest.raises(TuningValidationError):
         run_tuning(base_config, tuning_config)
+
+def test_tuning_revalidates_mutated_candidate_before_simulation():
+    base = {
+        "scenario_id": "candidate_revalidation",
+        "seed": 42,
+        "tick_count": 5,
+        "world": {"size": [32.0, 32.0], "boundary_mode": "solid_wall"},
+        "space": {"spatial_grid_size": 8.0},
+        "resources": {
+            "resource_type_ids": ["nutrient_A"],
+            "initial_distribution": [1.0],
+            "passive_energy_income_placeholder": 1.0,
+        },
+        "cell": {
+            "initial_position": [16.0, 16.0],
+            "radius": 1.0,
+            "initial_energy": 10.0,
+            "energy_capacity": 100.0,
+            "mandatory_cost_per_tick": 1.0,
+            "dormant_mandatory_cost_modifier": 0.1,
+            "capacity_limit": 10.0,
+            "initial_resources": {"nutrient_A": 2.0},
+            "initial_materials": {"material_A": 3.0},
+            "minimum_viability_materials": {"material_A": 1.0},
+        },
+        "environment": {
+            "ambient_temperature": 25.0,
+            "heat_current": 0.0,
+            "heat_generated_per_tick": 0.1,
+            "heat_dissipation_rate": 0.2,
+            "heat_warning_threshold": 5.0,
+            "heat_death_threshold": 10.0,
+            "waste_current": 0.0,
+            "waste_generated_per_tick": 0.05,
+            "waste_sink_rate": 0.1,
+            "waste_warning_threshold": 2.0,
+            "waste_death_threshold": 5.0,
+        },
+        "lifecycle": {
+            "stress_energy_threshold": 2.0,
+            "dormancy_allowed": True,
+            "critical_capacity_overrun": 5.0,
+        },
+    }
+    tuning = {
+        "tuning": {
+            "max_iterations": 1,
+            "seeds": [42],
+            "objective": "map_stable_ranges",
+            "allowed_parameters": ["cell.capacity_limit"],
+            "ranges": {"cell.capacity_limit": [4.0, 4.0, 1.0]},
+        }
+    }
+
+    with patch("tuner.run_micro_simulation") as simulate:
+        runs, ranges, profiles = run_tuning(base, tuning)
+
+    assert len(runs) == 1
+    assert runs[0]["survival_result"] == "invalid"
+    assert runs[0]["collapse_reason"] == "invalid_config"
+    assert runs[0]["history"] == []
+    assert ranges[0]["stable_min"] is None
+    simulate.assert_not_called()
 
 def test_find_conservative_stable(base_config, tuning_config):
     tuning_config["tuning"]["objective"] = "find_conservative_stable"
