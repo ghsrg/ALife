@@ -57,6 +57,7 @@ TUNING_TOML = """
 max_iterations = 10
 seeds = [42, 100]
 objective = "map_stable_ranges"
+allowed_parameters = ["cell.initial_energy"]
 
 [tuning.ranges]
 "cell.initial_energy" = [5.0, 15.0, 5.0]
@@ -131,6 +132,54 @@ def test_cli_tune(setup_files):
     ranges_json_path = os.path.join(setup_files["out_dir"], "ranges.json")
     assert os.path.exists(ranges_json_path)
 
+def test_cli_tune_report_contains_ranges_and_failures(setup_files):
+    args = [
+        "tune",
+        "--scenario", setup_files["scenario_path"],
+        "--tuning", setup_files["tuning_path"],
+        "--out", setup_files["out_dir"]
+    ]
+    main(args)
+
+    report_path = os.path.join(setup_files["out_dir"], "REPORT.md")
+    assert os.path.exists(report_path)
+
+    report = open(report_path, "r", encoding="utf-8").read()
+    assert "Recommended Values Table" in report
+    assert "Empirical Tested & Stable Ranges" in report
+    assert "Parameter Sensitivity Ranking" in report
+    assert "Failure Reasons Summary" in report
+    assert "cell.initial_energy" in report
+
+def test_cli_evaluate_with_simulation_can_downgrade_static_stable(tmp_path):
+    scenario_toml = VALID_SCENARIO_TOML.replace(
+        "initial_energy = 50.0",
+        "initial_energy = 3.0"
+    ).replace(
+        "passive_energy_income_placeholder = 1.0",
+        "passive_energy_income_placeholder = 0.0"
+    ).replace(
+        "tick_count = 10",
+        "tick_count = 10"
+    )
+    scenario_path = tmp_path / "static_stable_sim_collapse.toml"
+    scenario_path.write_text(scenario_toml, encoding="utf-8")
+    out_dir = tmp_path / "out"
+
+    args = [
+        "evaluate",
+        "--scenario", str(scenario_path),
+        "--out", str(out_dir),
+        "--with-simulation"
+    ]
+    main(args)
+
+    results_json_path = os.path.join(out_dir, "results.json")
+    assert os.path.exists(results_json_path)
+    res = json.load(open(results_json_path, "r", encoding="utf-8"))
+    assert res["survival_result"] == "collapse"
+    assert res["collapse_reason"] in {"energy_depleted", "mandatory_cost_unpaid"}
+
 def test_cli_batch(setup_files):
     # Add a second scenario to batch run
     second_scenario_path = os.path.join(setup_files["scenarios_dir"], "another_scenario.toml")
@@ -193,5 +242,4 @@ def test_cli_batch_on_real_scenarios(tmp_path):
             assert scenario_res["survival_result"] == "invalid"
         else:
             assert scenario_res["survival_result"] != "invalid", f"Scenario {scenario_res['file_name']} failed validation: {scenario_res.get('collapse_reason')}"
-
 

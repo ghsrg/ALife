@@ -2,6 +2,10 @@ import copy
 import itertools
 from micro_simulator import run_micro_simulation
 
+class TuningValidationError(Exception):
+    """Raised when a tuning configuration is structurally unsafe to execute."""
+    pass
+
 def set_nested_value(d: dict, key_str: str, value):
     """Sets a value in a nested dictionary using a dot-separated key string."""
     parts = key_str.split(".")
@@ -27,6 +31,57 @@ def generate_values(range_spec: list) -> list:
         curr += step
     return values
 
+def path_exists(d: dict, key_str: str) -> bool:
+    parts = key_str.split(".")
+    curr = d
+    for part in parts:
+        if not isinstance(curr, dict) or part not in curr:
+            return False
+        curr = curr[part]
+    return True
+
+def validate_tuning_config(base_config: dict, tuning_config: dict) -> dict:
+    tuning_sect = tuning_config.get("tuning", {})
+    ranges_spec = tuning_sect.get("ranges", {})
+    allowed_params = tuning_sect.get("allowed_parameters")
+
+    if not isinstance(tuning_sect, dict):
+        raise TuningValidationError("tuning must be a table")
+    if not isinstance(ranges_spec, dict) or not ranges_spec:
+        raise TuningValidationError("tuning.ranges must be a non-empty table")
+    if allowed_params is None or not isinstance(allowed_params, list) or not allowed_params:
+        raise TuningValidationError("tuning.allowed_parameters must be a non-empty list")
+
+    allowed_set = set(allowed_params)
+    range_set = set(ranges_spec.keys())
+
+    missing_ranges = allowed_set - range_set
+    if missing_ranges:
+        raise TuningValidationError(f"allowed parameters missing ranges: {sorted(missing_ranges)}")
+
+    extra_ranges = range_set - allowed_set
+    if extra_ranges:
+        raise TuningValidationError(f"ranges include parameters not allowed: {sorted(extra_ranges)}")
+
+    for param in allowed_params:
+        if not isinstance(param, str):
+            raise TuningValidationError("allowed parameter names must be strings")
+        if not path_exists(base_config, param) and not param.startswith("estimates."):
+            raise TuningValidationError(f"parameter path does not exist in base config: {param}")
+
+    for param, spec in ranges_spec.items():
+        if not isinstance(spec, list) or len(spec) != 3:
+            raise TuningValidationError(f"range for {param} must be [start, end, step]")
+        start, end, step = spec
+        if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in [start, end, step]):
+            raise TuningValidationError(f"range for {param} must contain numbers")
+        if step <= 0:
+            raise TuningValidationError(f"range step for {param} must be positive")
+        if end < start:
+            raise TuningValidationError(f"range end for {param} must be greater than or equal to start")
+
+    return tuning_sect
+
 def run_tuning(base_config: dict, tuning_config: dict) -> tuple[list, list, dict]:
     """
     Performs deterministic grid search parameter optimization.
@@ -34,16 +89,11 @@ def run_tuning(base_config: dict, tuning_config: dict) -> tuple[list, list, dict
     Returns:
         tuple[list, list, dict]: (runs, ranges, profiles)
     """
-    tuning_sect = tuning_config.get("tuning", {})
+    tuning_sect = validate_tuning_config(base_config, tuning_config)
     max_iterations = tuning_sect.get("max_iterations", 100)
     seeds = tuning_sect.get("seeds", [42])
     objective = tuning_sect.get("objective", "map_stable_ranges")
     ranges_spec = tuning_sect.get("ranges", {})
-    allowed_params = tuning_sect.get("allowed_parameters", None)
-
-    # Filter ranges by allowed_parameters if present
-    if allowed_params is not None:
-        ranges_spec = {k: v for k, v in ranges_spec.items() if k in allowed_params}
 
     sorted_params = sorted(ranges_spec.keys())
     param_values = [generate_values(ranges_spec[p]) for p in sorted_params]
@@ -89,11 +139,17 @@ def run_tuning(base_config: dict, tuning_config: dict) -> tuple[list, list, dict
             # Run simulation
             history, result, reason = run_micro_simulation(config_copy)
             
+            final_step = history[-1] if history else {}
             run_record = {
-                "parameters": candidate,
+                "parameters": copy.deepcopy(candidate),
                 "seed": seed,
                 "survival_result": result,
-                "collapse_reason": reason
+                "collapse_reason": reason,
+                "history": history,
+                "final_energy": final_step.get("energy", 0.0),
+                "final_heat": final_step.get("heat", 0.0),
+                "final_waste": final_step.get("waste", 0.0),
+                "final_state": final_step.get("state", "unknown")
             }
             runs.append(run_record)
             candidate_runs.append(run_record)
@@ -103,8 +159,6 @@ def run_tuning(base_config: dict, tuning_config: dict) -> tuple[list, list, dict
             if result == "collapse" or result == "invalid":
                 all_seeds_survived = False
                 
-            # Track final steps for best_stable score
-            final_step = history[-1] if history else {}
             final_energies.append(final_step.get("energy", 0.0))
             final_heats.append(final_step.get("heat", 0.0))
             final_wastes.append(final_step.get("waste", 0.0))

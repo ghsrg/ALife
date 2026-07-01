@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from tuner import run_tuning
+from tuner import TuningValidationError, run_tuning
 
 @pytest.fixture
 def base_config():
@@ -49,6 +49,7 @@ def tuning_config():
             "max_iterations": 100,
             "seeds": [42, 100],
             "objective": "map_stable_ranges",
+            "allowed_parameters": ["cell.initial_energy"],
             "ranges": {
                 "cell.initial_energy": [5.0, 15.0, 5.0]  # values: 5.0, 10.0, 15.0
             }
@@ -100,22 +101,36 @@ def test_multiple_seeds_handling(base_config, tuning_config):
         assert ranges[0]["stable_min"] is None
         assert ranges[0]["stable_max"] is None
 
-def test_allowed_parameters_filtering(base_config, tuning_config):
-    # We add an extra parameter to ranges but do not include it in allowed_parameters.
-    # The tuner should ignore it and not generate candidate values for it.
+def test_tuning_rejects_range_not_in_allowed_parameters(base_config, tuning_config):
     tuning_config["tuning"]["allowed_parameters"] = ["cell.initial_energy"]
     tuning_config["tuning"]["ranges"]["environment.heat_dissipation_rate"] = [0.1, 0.3, 0.1]
-    
+
+    with pytest.raises(TuningValidationError):
+        run_tuning(base_config, tuning_config)
+
+def test_tune_runs_include_history_and_final_metrics(base_config, tuning_config):
     runs, ranges, profiles = run_tuning(base_config, tuning_config)
-    
-    # Ranges list should only contain the allowed parameter or mark the other as not tuned.
-    # Actually, the instructions say "the tuner ignores any parameter range in ranges if it is not explicitly listed in allowed_parameters".
-    # So environment.heat_dissipation_rate range is ignored (not varied).
-    # Thus, only cell.initial_energy is varied (3 candidates * 2 seeds = 6 runs).
-    assert len(runs) == 6
-    # Let's verify environment.heat_dissipation_rate is not in ranges, or has tested_min == tested_max (not varied)
-    param_names = [r["parameter_id"] for r in ranges]
-    assert "environment.heat_dissipation_rate" not in param_names
+
+    first = runs[0]
+    assert "history" in first
+    assert isinstance(first["history"], list)
+    assert "final_energy" in first
+    assert "final_heat" in first
+    assert "final_waste" in first
+    assert "final_state" in first
+
+def test_tuning_rejects_allowed_parameter_without_range(base_config, tuning_config):
+    tuning_config["tuning"]["allowed_parameters"] = ["cell.initial_energy", "cell.energy_capacity"]
+
+    with pytest.raises(TuningValidationError):
+        run_tuning(base_config, tuning_config)
+
+def test_tuning_rejects_unknown_non_estimate_path(base_config, tuning_config):
+    tuning_config["tuning"]["allowed_parameters"] = ["cell.unknown_field"]
+    tuning_config["tuning"]["ranges"] = {"cell.unknown_field": [1.0, 2.0, 1.0]}
+
+    with pytest.raises(TuningValidationError):
+        run_tuning(base_config, tuning_config)
 
 def test_find_conservative_stable(base_config, tuning_config):
     tuning_config["tuning"]["objective"] = "find_conservative_stable"
@@ -139,4 +154,3 @@ def test_candidate_profiles(base_config, tuning_config):
     assert profiles["best_stable"] == {"cell.initial_energy": 15.0}
     assert profiles["conservative_stable"] == {"cell.initial_energy": 15.0}
     assert profiles["fragile_edge"] == {"cell.initial_energy": 10.0}
-

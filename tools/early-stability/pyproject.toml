@@ -12,6 +12,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+early-stability = "cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
@@ -24,3 +27,17 @@ testpaths = [
     "tests",
 ]
 pythonpath = ["src"]
+
+[tool.setuptools]
+py-modules = [
+    "cli",
+    "config_loader",
+    "micro_simulator",
+    "report_writer",
+    "result_writer",
+    "static_calculator",
+    "tuner",
+]
+
+[tool.setuptools.package-dir]
+"" = "src"

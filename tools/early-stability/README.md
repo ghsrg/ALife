@@ -1,12 +1,22 @@
 # Early Stability Tool
 
-The Early Stability Tool is a deterministic micro-simulation, configuration validator, and parameter tuning utility designed to evaluate cell survival, metabolic upkeep budgets, thermal dissipation, waste accumulation, and carrying capacity constraints for the ALife Simulation project.
+The Early Stability Tool is a deterministic micro-simulation, configuration validator, static calculator, and parameter tuning utility for ALife Phase 1 stability checks.
+
+It evaluates cell survival, mandatory energy budgets, heat and waste accumulation, capacity constraints, and bounded tuning ranges before full `alife-core` implementation exists.
 
 ---
 
-## Purpose of the Tool
+## Purpose
 
-This tool serves as an execution pipeline to analyze cell configurations before launching full-scale distributed 2D simulations. By running lightweight, headless tick loops and performing grid-search optimization, it guarantees configuration stability under deterministic conditions.
+This tool is an offline implementation/research helper. It is not Canon authority and must not mutate source configs automatically.
+
+It should answer:
+
+- whether mandatory costs kill the Cell;
+- whether Energy and Resources can support growth budgets;
+- whether Heat or waste accumulates without a sink;
+- whether simple population and Joint upkeep estimates are plausible;
+- which tested parameter ranges are stable, fragile, collapsing, or invalid.
 
 ---
 
@@ -14,61 +24,96 @@ This tool serves as an execution pipeline to analyze cell configurations before 
 
 ```text
 tools/early-stability/
-├── src/
-│   ├── cli.py                  # Entrypoint, subcommands, and batch runner
-│   ├── config_loader.py        # Validates config format, types, and capacity limits
-│   ├── micro_simulator.py      # Run tick loops tracking energy, heat, and waste updates
-│   ├── report_writer.py        # Generates REPORT.md with sensitivity rankings
-│   ├── result_writer.py        # Standardizes JSON outputs (results, ranges, runs)
-│   ├── static_calculator.py    # Performs scenario-aware static bounds evaluations
-│   └── tuner.py                # Grid search Cartesian product tuning engine
-├── scenarios/                  # Collection of standard test scenario TOMLs
-├── tuning/                     # Example tuning setup configuration files
-├── tests/                      # Pytest test suite files
-├── pyproject.toml              # Project dependencies and manifest metadata
-└── README.md                   # This documentation guide
+  src/
+    cli.py                  # Entrypoint, subcommands, and batch runner
+    config_loader.py        # Validates config format, types, and capacity limits
+    micro_simulator.py      # Runs tick loops tracking energy, heat, and waste updates
+    report_writer.py        # Generates REPORT.md with sensitivity rankings
+    result_writer.py        # Standardizes JSON outputs
+    static_calculator.py    # Performs static bounds evaluations
+    tuner.py                # Deterministic grid-search tuning engine
+  scenarios/                # Standard test scenario TOMLs
+  tuning/                   # Example tuning setup TOMLs
+  tests/                    # Pytest suite
+  pyproject.toml            # Package metadata and test config
+  README.md                 # This guide
 ```
 
 ---
 
-## CLI Commands Usage
+## Install
 
-The tool exposes four subcommands via `cli.py`:
+From the repository root:
 
-### 1. `evaluate`
-Performs static budget and capacity checks without running a simulation.
-
-```bash
-python src/cli.py evaluate --scenario scenarios/single_cell_survival.toml --out out_dir
+```powershell
+python -m pip install -e .\tools\early-stability[dev]
 ```
 
-### 2. `simulate`
-Runs a headless micro-simulation tick loop up to the configured `tick_count` to track detailed state history.
+After installation, use either:
 
-```bash
-python src/cli.py simulate --scenario scenarios/single_cell_survival.toml --out out_dir
+```powershell
+early-stability --help
 ```
 
-### 3. `tune`
-Executes deterministic grid search parameter tuning.
+or direct script execution:
 
-```bash
-python src/cli.py tune --scenario scenarios/single_cell_survival.toml --tuning tuning/single_cell.toml --out out_dir
-```
-
-### 4. `batch`
-Recursively evaluates all TOML scenario files located in a target directory alphabetically.
-
-```bash
-python src/cli.py batch --scenarios scenarios/ --out out_dir
+```powershell
+python .\tools\early-stability\src\cli.py --help
 ```
 
 ---
 
-## File Format Specifications
+## CLI Commands
 
-### Scenario TOML Format
-Scenarios must include all mandatory root sections:
+### evaluate
+
+Runs static budget and capacity checks without tick simulation.
+
+```powershell
+early-stability evaluate --scenario .\tools\early-stability\scenarios\single_cell_survival.toml --out .\outputs\stability\manual_evaluate
+```
+
+Use `--with-simulation` to run micro simulation after static checks and keep the worse result:
+
+```powershell
+early-stability evaluate --scenario .\tools\early-stability\scenarios\single_cell_survival.toml --out .\outputs\stability\manual_evaluate_sim --with-simulation
+```
+
+### simulate
+
+Runs the bounded micro simulator and writes per-tick history.
+
+```powershell
+early-stability simulate --scenario .\tools\early-stability\scenarios\single_cell_survival.toml --ticks 20 --out .\outputs\stability\manual_simulate
+```
+
+### tune
+
+Runs deterministic grid-search tuning.
+
+```powershell
+early-stability tune --scenario .\tools\early-stability\scenarios\single_cell_survival.toml --tuning .\tools\early-stability\tuning\single_cell.toml --out .\outputs\stability\manual_tune
+```
+
+### batch
+
+Evaluates all `.toml` scenarios in a directory in deterministic filename order.
+
+```powershell
+early-stability batch --scenarios .\tools\early-stability\scenarios --out .\outputs\stability\manual_batch
+```
+
+Use `--with-simulation` to run the micro simulator for scenarios that pass static checks:
+
+```powershell
+early-stability batch --scenarios .\tools\early-stability\scenarios --out .\outputs\stability\manual_batch_sim --with-simulation
+```
+
+---
+
+## Scenario TOML
+
+Scenarios must include these root sections:
 
 ```toml
 scenario_id = "single_cell_survival"
@@ -85,6 +130,7 @@ spatial_grid_size = 8.0
 [resources]
 resource_type_ids = ["water", "nutrient"]
 initial_distribution = [10.0, 5.0]
+passive_energy_income_placeholder = 5.0
 
 [cell]
 initial_position = [256.0, 256.0]
@@ -115,48 +161,44 @@ waste_death_threshold = 20.0
 stress_energy_threshold = 10.0
 dormancy_allowed = true
 critical_capacity_overrun = 5.0
-
-[estimates]
-growth_cost_estimate = 10.0
-division_cost_estimate = 20.0
-resource_regeneration_or_inflow = 5.0
-population_space_limit = 100
-joint_count_estimate = 0
-joint_upkeep_cost = 0.0
 ```
 
-### Tuning TOML Format
-Configures parameters to tune via grid search:
+Optional `[estimates]` fields support static checks for growth, division, population bounds, and Joint upkeep.
+
+---
+
+## Tuning TOML
+
+Tuning configs must explicitly list `allowed_parameters`. Every allowed parameter must have a matching range, and every range must be allowed.
 
 ```toml
 [tuning]
 max_iterations = 100
 seeds = [42, 100, 2026]
-objective = "find_first_stable"  # Options: map_stable_ranges, find_first_stable, find_conservative_stable
+objective = "map_stable_ranges"
 allowed_parameters = ["cell.initial_energy", "environment.heat_dissipation_rate"]
 
 [tuning.ranges]
-"cell.initial_energy" = [5.0, 50.0, 5.0]             # Format: [start, end, step]
+"cell.initial_energy" = [5.0, 50.0, 5.0]
 "environment.heat_dissipation_rate" = [0.05, 0.5, 0.05]
 ```
 
+Supported objectives:
+
+- `map_stable_ranges`
+- `find_first_stable`
+- `find_conservative_stable`
+
 ---
 
-## Generated Output Artifacts
+## Output Artifacts
 
-The tool writes output artifacts to the specified `--out` directory:
+The tool writes artifacts to the `--out` directory:
 
-1. **`results.json`**: Core summary recording execution outcomes, seed evaluation statistics, config hash, and run results.
-2. **`REPORT.md`**: Markdown report detailing:
-   - Best stable candidate details (final energy, final heat, final waste).
-   - Recommended values table.
-   - Empirical tested & stable ranges table.
-   - Sensitivity parameter rank (evaluated by stable-to-tested range narrowness ratio).
-   - Collapse reasons summary.
-   - User warnings and limits of evidence.
-3. **`ranges.json`**: Numerical ranges mapped for tested parameters, including mid-point recommended values and evaluation confidence.
-4. **`recommended-configs/`**: TOML configuration files generated for matching profiles:
-   - `best_stable.toml`: Candidate that achieved the highest final energy/lowest heat & waste.
-   - `conservative_stable.toml`: Candidate that maximized safety margins from warning thresholds.
-   - `fragile_edge.toml`: Surviving candidate closest to collapse warnings.
-5. **`runs/`**: Detailed state step history files (`run_0001.json`, `run_0002.json`, etc.) mapping variables at every tick of execution.
+- `results.json`: summary result, config hash, seed, tick count, and metrics;
+- `REPORT.md`: readable report with recommendations, tested/stable ranges, sensitivity, warnings, and evidence limits;
+- `ranges.json`: tested and stable ranges for tuned parameters;
+- `recommended-configs/*.toml`: generated candidate configs for stable profiles;
+- `runs/run_XXXX.json`: detailed run records with parameters, seed, result, final metrics, and tick history.
+
+Generated stability outputs should go under `outputs/stability/` and should not be committed.

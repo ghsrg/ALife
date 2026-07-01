@@ -4,6 +4,28 @@ class ValidationError(Exception):
     """Exception raised for configuration validation errors."""
     pass
 
+def require_number(config: dict, path: str, non_negative: bool = True):
+    curr = config
+    for part in path.split("."):
+        if not isinstance(curr, dict) or part not in curr:
+            raise ValidationError(f"Missing required numeric field: {path}")
+        curr = curr[part]
+    if not isinstance(curr, (int, float)) or isinstance(curr, bool):
+        raise ValidationError(f"{path} must be a number")
+    if non_negative and curr < 0:
+        raise ValidationError(f"{path} cannot be negative")
+    return curr
+
+def require_bool(config: dict, path: str):
+    curr = config
+    for part in path.split("."):
+        if not isinstance(curr, dict) or part not in curr:
+            raise ValidationError(f"Missing required boolean field: {path}")
+        curr = curr[part]
+    if not isinstance(curr, bool):
+        raise ValidationError(f"{path} must be a boolean")
+    return curr
+
 def load_and_validate_config(toml_str: str) -> dict:
     # 1. Validate TOML format
     try:
@@ -26,6 +48,60 @@ def load_and_validate_config(toml_str: str) -> dict:
     for key in required_root_keys:
         if key not in config:
             raise ValidationError(f"Missing required root key: '{key}'")
+
+    require_number(config, "tick_count")
+    if config["tick_count"] <= 0:
+        raise ValidationError("tick_count must be positive")
+
+    if not isinstance(config["world"], dict):
+        raise ValidationError("Root key 'world' must be a table")
+    if config["world"].get("boundary_mode") not in {"solid_wall", "wrapped", "open"}:
+        raise ValidationError("world.boundary_mode must be solid_wall, wrapped, or open")
+
+    if not isinstance(config["space"], dict):
+        raise ValidationError("Root key 'space' must be a table")
+    require_number(config, "space.spatial_grid_size")
+    if config["space"]["spatial_grid_size"] <= 0:
+        raise ValidationError("space.spatial_grid_size must be positive")
+
+    if not isinstance(config["resources"], dict):
+        raise ValidationError("Root key 'resources' must be a table")
+    require_number(config, "resources.passive_energy_income_placeholder")
+
+    if not isinstance(config["environment"], dict):
+        raise ValidationError("Root key 'environment' must be a table")
+    for path in [
+        "environment.heat_current",
+        "environment.heat_generated_per_tick",
+        "environment.heat_dissipation_rate",
+        "environment.heat_warning_threshold",
+        "environment.heat_death_threshold",
+        "environment.waste_current",
+        "environment.waste_generated_per_tick",
+        "environment.waste_sink_rate",
+        "environment.waste_warning_threshold",
+        "environment.waste_death_threshold",
+    ]:
+        require_number(config, path)
+
+    if not isinstance(config["lifecycle"], dict):
+        raise ValidationError("Root key 'lifecycle' must be a table")
+    require_number(config, "lifecycle.stress_energy_threshold")
+    require_number(config, "lifecycle.critical_capacity_overrun")
+    require_bool(config, "lifecycle.dormancy_allowed")
+
+    if "estimates" in config:
+        if not isinstance(config["estimates"], dict):
+            raise ValidationError("Root key 'estimates' must be a table")
+        for path in [
+            "estimates.growth_cost_estimate",
+            "estimates.division_cost_estimate",
+            "estimates.resource_regeneration_or_inflow",
+            "estimates.population_space_limit",
+            "estimates.joint_count_estimate",
+            "estimates.joint_upkeep_cost",
+        ]:
+            require_number(config, path)
 
     # 3. Validate cell parameters
     cell = config["cell"]
@@ -148,4 +224,3 @@ def load_and_validate_config(toml_str: str) -> dict:
             raise ValidationError("waste_warning_threshold must be strictly less than waste_death_threshold")
 
     return config
-

@@ -188,6 +188,17 @@ They cannot feed behavior back into the same run unless a future explicit contro
 
 ---
 
+# File structure
+
+Starting structure:
+- src/lib.rs contains reusable simulation logic.
+- src/main.rs is only the executable entry point.
+- Domain modules are separated into world, physics, cell, organism, simulation, renderer.
+- Do not place domain logic directly in main.rs.
+- New code should be added to the appropriate module and exposed through lib.rs only when needed.
+
+---
+
 # Testing Strategy
 
 Each phase should keep architecture testable through:

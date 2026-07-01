@@ -2,6 +2,7 @@ import pytest
 import tomllib
 
 from config_loader import load_and_validate_config, ValidationError
+from helpers import dict_to_toml, mutate_toml
 
 VALID_TOML = """
 scenario_id = "test_scenario"
@@ -18,6 +19,7 @@ spatial_grid_size = 8.0
 [resources]
 resource_type_ids = ["nutrient_A"]
 initial_distribution = "uniform"
+passive_energy_income_placeholder = 1.0
 
 [cell]
 initial_position = [128.0, 128.0]
@@ -33,7 +35,11 @@ minimum_viability_materials = ["cell_wall_material"]
 
 [environment]
 ambient_temperature = 20.0
+heat_current = 0.0
+heat_generated_per_tick = 0.1
 heat_dissipation_rate = 1.0
+waste_current = 0.0
+waste_generated_per_tick = 0.05
 waste_sink_rate = 1.0
 heat_warning_threshold = 40.0
 heat_death_threshold = 80.0
@@ -64,6 +70,34 @@ def test_invalid_toml():
     with pytest.raises(ValidationError) as excinfo:
         load_and_validate_config(invalid_toml)
     assert "TOML" in str(excinfo.value) or "parse" in str(excinfo.value)
+
+@pytest.mark.parametrize("path", [
+    "tick_count",
+    "space.spatial_grid_size",
+    "resources.passive_energy_income_placeholder",
+    "environment.heat_current",
+    "environment.heat_generated_per_tick",
+    "environment.heat_dissipation_rate",
+    "environment.waste_current",
+    "environment.waste_generated_per_tick",
+    "environment.waste_sink_rate",
+    "lifecycle.stress_energy_threshold",
+    "lifecycle.critical_capacity_overrun",
+])
+def test_negative_required_numeric_fields_rejected(path):
+    toml_str = mutate_toml(VALID_TOML, path, -1.0)
+    with pytest.raises(ValidationError):
+        load_and_validate_config(toml_str)
+
+def test_invalid_boundary_mode_rejected():
+    toml_str = mutate_toml(VALID_TOML, "world.boundary_mode", "teleport")
+    with pytest.raises(ValidationError):
+        load_and_validate_config(toml_str)
+
+def test_dormancy_allowed_must_be_boolean():
+    toml_str = mutate_toml(VALID_TOML, "lifecycle.dormancy_allowed", "yes")
+    with pytest.raises(ValidationError):
+        load_and_validate_config(toml_str)
 
 @pytest.mark.parametrize("missing_key", [
     "scenario_id", "seed", "tick_count", "world", "space", "resources", "cell", "environment", "lifecycle"
@@ -412,4 +446,3 @@ def test_initial_resources_dict_referencing_unknown():
     with pytest.raises(ValidationError) as excinfo:
         load_and_validate_config(toml_str)
     assert "initial_resources" in str(excinfo.value).lower() or "reference" in str(excinfo.value).lower() or "unknown" in str(excinfo.value).lower()
-

@@ -12,7 +12,28 @@ from tuner import run_tuning
 from result_writer import write_results_json, write_ranges_json, write_run_detail_json
 from report_writer import write_report_markdown, write_recommended_toml
 
-def run_evaluate_mode(scenario_path: str, out_dir: str):
+RESULT_RANK = {
+    "stable": 0,
+    "fragile": 1,
+    "collapse": 2,
+    "invalid": 3,
+}
+
+def worse_result(static_result: str, static_reason: str, sim_result: str, sim_reason: str) -> tuple[str, str]:
+    if RESULT_RANK[sim_result] > RESULT_RANK[static_result]:
+        return sim_result, sim_reason
+    return static_result, static_reason
+
+def final_metrics_from_history(history: list) -> dict:
+    final_step = history[-1] if history else {}
+    return {
+        "final_energy": final_step.get("energy", 0.0),
+        "final_heat": final_step.get("heat", 0.0),
+        "final_waste": final_step.get("waste", 0.0),
+        "final_state": final_step.get("state", "unknown"),
+    }
+
+def run_evaluate_mode(scenario_path: str, out_dir: str, with_simulation: bool = False):
     try:
         with open(scenario_path, "r", encoding="utf-8") as f:
             toml_str = f.read()
@@ -25,6 +46,10 @@ def run_evaluate_mode(scenario_path: str, out_dir: str):
     try:
         config = load_and_validate_config(toml_str)
         result, reason = evaluate_static_bounds(config)
+        history = []
+        if with_simulation and result in ("stable", "fragile"):
+            history, sim_result, sim_reason = run_micro_simulation(config)
+            result, reason = worse_result(result, reason, sim_result, sim_reason)
     except ValidationError as e:
         result = "invalid"
         reason = "invalid_config"
@@ -33,6 +58,13 @@ def run_evaluate_mode(scenario_path: str, out_dir: str):
             "seed": 0,
             "tick_count": 0
         }
+        history = []
+
+    metrics_summary = {
+        "warnings_triggered": (result == "fragile")
+    }
+    if history:
+        metrics_summary.update(final_metrics_from_history(history))
 
     results_data = {
         "scenario_id": config.get("scenario_id", os.path.basename(scenario_path)),
@@ -41,9 +73,7 @@ def run_evaluate_mode(scenario_path: str, out_dir: str):
         "tick_count": config.get("tick_count", 0),
         "survival_result": result,
         "collapse_reason": reason,
-        "metrics_summary": {
-            "warnings_triggered": (result == "fragile")
-        }
+        "metrics_summary": metrics_summary
     }
     
     write_results_json(out_dir, results_data)
@@ -57,7 +87,11 @@ def run_evaluate_mode(scenario_path: str, out_dir: str):
         "collapse_count": 1 if result == "collapse" else 0,
         "invalid_count": 1 if result == "invalid" else 0,
         "warnings": [f"Evaluation returned collapse due to {reason}"] if result == "collapse" else [],
-        "limits_of_evidence": ["Evaluated with static budget calculator only."]
+        "limits_of_evidence": [
+            "Evaluated with static budget calculator and micro simulation."
+            if with_simulation else
+            "Evaluated with static budget calculator only."
+        ]
     }
     write_report_markdown(out_dir, report_data)
 
@@ -183,17 +217,32 @@ def run_tune_mode(scenario_path: str, tuning_path: str, out_dir: str):
     report_data = {
         "run_id": base_config.get("scenario_id", "tuned_scenario"),
         "mode": "tune",
+        "base_config_path": scenario_path,
         "iteration_count": len(runs),
         "stable_count": stable_count,
         "fragile_count": fragile_count,
         "collapse_count": collapse_count,
         "invalid_count": invalid_count,
+        "parameter_ranges": ranges,
+        "runs": runs,
+        "best_stable_metrics": next(
+            (
+                {
+                    "final_energy": r.get("final_energy", 0.0),
+                    "final_heat": r.get("final_heat", 0.0),
+                    "final_waste": r.get("final_waste", 0.0),
+                }
+                for r in runs
+                if r.get("survival_result") == "stable"
+            ),
+            None,
+        ),
         "warnings": ["Tuning did not find any stable configurations."] if stable_count == 0 else [],
         "limits_of_evidence": ["Evaluated with deterministic parameter grid tuner."]
     }
     write_report_markdown(out_dir, report_data)
 
-def run_batch_mode(scenarios_dir: str, out_dir: str):
+def run_batch_mode(scenarios_dir: str, out_dir: str, with_simulation: bool = False):
     if not os.path.isdir(scenarios_dir):
         print(f"Scenarios directory does not exist: {scenarios_dir}")
         sys.exit(1)
@@ -213,6 +262,9 @@ def run_batch_mode(scenarios_dir: str, out_dir: str):
                 toml_str = f.read()
             config = load_and_validate_config(toml_str)
             result, reason = evaluate_static_bounds(config)
+            if with_simulation and result in ("stable", "fragile"):
+                history, sim_result, sim_reason = run_micro_simulation(config)
+                result, reason = worse_result(result, reason, sim_result, sim_reason)
             scenario_id = config.get("scenario_id", fname)
         except Exception as e:
             result = "invalid"
@@ -278,6 +330,7 @@ def main(argv=None):
     eval_parser = subparsers.add_parser("evaluate")
     eval_parser.add_argument("--scenario", required=True)
     eval_parser.add_argument("--out", required=True)
+    eval_parser.add_argument("--with-simulation", action="store_true")
 
     # simulate
     sim_parser = subparsers.add_parser("simulate")
@@ -295,17 +348,18 @@ def main(argv=None):
     batch_parser = subparsers.add_parser("batch")
     batch_parser.add_argument("--scenarios", required=True)
     batch_parser.add_argument("--out", required=True)
+    batch_parser.add_argument("--with-simulation", action="store_true")
 
     args = parser.parse_args(argv)
 
     if args.command == "evaluate":
-        run_evaluate_mode(args.scenario, args.out)
+        run_evaluate_mode(args.scenario, args.out, args.with_simulation)
     elif args.command == "simulate":
         run_simulate_mode(args.scenario, args.ticks, args.out)
     elif args.command == "tune":
         run_tune_mode(args.scenario, args.tuning, args.out)
     elif args.command == "batch":
-        run_batch_mode(args.scenarios, args.out)
+        run_batch_mode(args.scenarios, args.out, args.with_simulation)
 
 if __name__ == "__main__":
     main()
