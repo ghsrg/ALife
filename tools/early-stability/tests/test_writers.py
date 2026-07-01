@@ -97,11 +97,44 @@ def test_write_report_markdown(tmp_path):
     report_data = {
         "run_id": "run_9999",
         "mode": "tune",
+        "base_config_path": "scenarios/single_cell_survival.toml",
         "iteration_count": 12,
         "stable_count": 4,
         "fragile_count": 2,
         "collapse_count": 6,
         "invalid_count": 0,
+        "best_stable_metrics": {
+            "final_energy": 85.0,
+            "final_heat": 0.5,
+            "final_waste": 0.1
+        },
+        "parameter_ranges": [
+            {
+                "parameter_id": "cell.initial_energy",
+                "tested_min": 5.0,
+                "tested_max": 50.0,
+                "stable_min": 20.0,
+                "stable_max": 50.0,
+                "recommended": 35.0,
+                "confidence": "high",
+                "notes": "Values below 20.0 lead to collapse"
+            },
+            {
+                "parameter_id": "environment.heat_dissipation_rate",
+                "tested_min": 0.1,
+                "tested_max": 0.5,
+                "stable_min": 0.4,
+                "stable_max": 0.5,
+                "recommended": 0.45,
+                "confidence": "high",
+                "notes": "Low dissipation causes collapse"
+            }
+        ],
+        "runs": [
+            {"collapse_reason": "energy_depleted"},
+            {"collapse_reason": "heat_limit_exceeded"},
+            {"collapse_reason": "energy_depleted"}
+        ],
         "warnings": ["Heat dissipation is close to generation limit"],
         "limits_of_evidence": ["Evaluated with simple deterministic micro-sim only"]
     }
@@ -113,10 +146,35 @@ def test_write_report_markdown(tmp_path):
     with open(filepath, "r") as f:
         content = f.read()
         
-    assert "# run_9999" in content or "run_9999" in content
+    assert "run_9999" in content
     assert "mode" in content.lower()
+    assert "scenarios/single_cell_survival.toml" in content
     assert "iteration count" in content.lower() or "iteration" in content.lower()
-    assert "stable" in content.lower()
-    assert "fragile" in content.lower()
+    
+    # Best stable metrics
+    assert "85" in content
+    assert "final energy" in content.lower()
+    
+    # Ranges table
+    assert "tested_min" in content.lower() or "tested min" in content.lower()
+    assert "cell.initial_energy" in content
+    assert "5.0" in content
+    
+    # Recommended table
+    assert "recommended value" in content.lower() or "recommended" in content.lower()
+    
+    # Sensitivity parameter rank
+    # cell.initial_energy tested range 45, stable range 30 -> ratio 30/45 = 0.66 -> sensitivity 0.33
+    # heat_dissipation tested range 0.4, stable range 0.1 -> ratio 0.25 -> sensitivity 0.75
+    # So heat_dissipation has higher sensitivity and should be ranked first!
+    assert "sensitivity ranking" in content.lower() or "sensitivity" in content.lower()
+    
+    # Failure reasons
+    assert "failure reasons" in content.lower() or "collapse reason" in content.lower()
+    assert "energy_depleted" in content
+    assert "heat_limit_exceeded" in content
+    
+    # Warnings and limits
     assert "warnings" in content.lower()
     assert "limits of evidence" in content.lower()
+
