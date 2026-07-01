@@ -1,0 +1,54 @@
+scenario_id = "single_cell_heat_stress"
+seed = 42
+tick_count = 100
+
+[world]
+size = [512.0, 512.0]
+boundary_mode = "solid_wall"
+
+[space]
+spatial_grid_size = 8.0
+
+[resources]
+resource_type_ids = ["water", "nutrient"]
+initial_distribution = [10.0, 5.0]
+optional_decay_rate = 0.01
+passive_energy_income_placeholder = 5.0
+
+[cell]
+initial_position = [256.0, 256.0]
+radius = 1.0
+initial_resources = { water = 2.0, nutrient = 1.0 }
+initial_materials = { cell_wall = 5.0 }
+initial_energy = 50.0
+energy_capacity = 100.0
+mandatory_cost_per_tick = 2.0
+dormant_mandatory_cost_modifier = 0.1
+capacity_limit = 50.0
+minimum_viability_materials = { cell_wall = 1.0 }
+
+[environment]
+ambient_temperature = 25.0
+heat_current = 0.0
+heat_generated_per_tick = 5.0
+heat_dissipation_rate = 1.0
+heat_warning_threshold = 10.0
+heat_death_threshold = 20.0
+waste_current = 0.0
+waste_generated_per_tick = 0.05
+waste_sink_rate = 0.1
+waste_warning_threshold = 10.0
+waste_death_threshold = 20.0
+
+[lifecycle]
+stress_energy_threshold = 10.0
+dormancy_allowed = true
+critical_capacity_overrun = 5.0
+
+[estimates]
+growth_cost_estimate = 10.0
+division_cost_estimate = 20.0
+resource_regeneration_or_inflow = 5.0
+population_space_limit = 100
+joint_count_estimate = 0
+joint_upkeep_cost = 0.0
