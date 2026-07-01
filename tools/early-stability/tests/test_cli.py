@@ -162,3 +162,32 @@ def test_cli_batch(setup_files):
     assert res["scenarios"][0]["survival_result"] == "invalid"
     assert res["scenarios"][1]["scenario_id"] == "test_survival"
     assert res["scenarios"][1]["survival_result"] == "stable"
+
+def test_cli_batch_on_real_scenarios(tmp_path):
+    # Locate actual scenarios directory
+    test_dir = os.path.dirname(os.path.abspath(__file__))
+    scenarios_dir = os.path.join(test_dir, "..", "scenarios")
+    
+    out_dir = str(tmp_path / "out")
+    
+    args = [
+        "batch",
+        "--scenarios", scenarios_dir,
+        "--out", out_dir
+    ]
+    main(args)
+    
+    results_json_path = os.path.join(out_dir, "results.json")
+    report_md_path = os.path.join(out_dir, "REPORT.md")
+    
+    assert os.path.exists(results_json_path)
+    assert os.path.exists(report_md_path)
+    
+    with open(results_json_path, "r") as f:
+        res = json.load(f)
+        
+    assert "scenarios" in res
+    assert len(res["scenarios"]) >= 5
+    for scenario_res in res["scenarios"]:
+        assert scenario_res["survival_result"] != "invalid", f"Scenario {scenario_res['file_name']} failed validation"
+
