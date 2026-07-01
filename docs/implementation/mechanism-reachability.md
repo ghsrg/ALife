@@ -29,6 +29,12 @@ Are planned mechanisms actually reachable, useful and not bypassed by cheaper pa
 
 This document defines a future tool/reporting mode for detecting whether planned mechanics can activate and matter before we design the Rust data model and class/module documentation.
 
+Current CLI:
+
+```powershell
+python .\tools\early-stability\src\cli.py reachability --scenario .\tools\early-stability\scenarios\single_cell_survival.toml --mechanisms .\tools\early-stability\mechanisms\phase1.toml --stability-ranges-ref .\outputs\stability\group3_capacity_revalidated --out .\outputs\reachability\phase1_smoke
+```
+
 ---
 
 # Why This Exists

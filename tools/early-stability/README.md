@@ -30,8 +30,11 @@ tools/early-stability/
     micro_simulator.py      # Runs tick loops tracking energy, heat, and waste updates
     report_writer.py        # Generates REPORT.md with sensitivity rankings
     result_writer.py        # Standardizes JSON outputs
+    reachability.py         # Evaluates observer-only mechanism reachability
+    reachability_writer.py  # Writes reachability JSON and Markdown artifacts
     static_calculator.py    # Performs static bounds evaluations
     tuner.py                # Deterministic grid-search tuning engine
+  mechanisms/               # Mechanism registries for reachability checks
   scenarios/                # Standard test scenario TOMLs
   tuning/                   # Example tuning setup TOMLs
   tests/                    # Pytest suite
@@ -108,6 +111,16 @@ Use `--with-simulation` to run the micro simulator for scenarios that pass stati
 ```powershell
 early-stability batch --scenarios .\tools\early-stability\scenarios --out .\outputs\stability\manual_batch_sim --with-simulation
 ```
+
+### reachability
+
+Runs observer-only mechanism reachability analysis after stability tuning.
+
+```powershell
+early-stability reachability --scenario .\tools\early-stability\scenarios\single_cell_survival.toml --mechanisms .\tools\early-stability\mechanisms\phase1.toml --stability-ranges-ref .\outputs\stability\group3_capacity_revalidated --out .\outputs\reachability\phase1_smoke
+```
+
+Use this after `tune`, not before it. If reachability reports bypassed or blocked mechanisms, return to parameter tuning and adjust the relevant tuning group.
 
 ---
 
@@ -201,4 +214,12 @@ The tool writes artifacts to the `--out` directory:
 - `recommended-configs/*.toml`: generated candidate configs for stable profiles;
 - `runs/run_XXXX.json`: detailed run records with parameters, seed, result, final metrics, and tick history.
 
+Reachability runs write:
+
+- `mechanisms.json`: per-mechanism counters and classification;
+- `block-reasons.json`: aggregate block reason counts;
+- `bypass.json`: mechanisms with detected bypass risk;
+- `REPORT.md`: decision line and feedback loop back to parameter tuning.
+
 Generated stability outputs should go under `outputs/stability/` and should not be committed.
+Generated reachability outputs should go under `outputs/reachability/` and should not be committed unless explicitly requested.

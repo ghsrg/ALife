@@ -11,6 +11,8 @@ from micro_simulator import run_micro_simulation
 from tuner import run_tuning
 from result_writer import write_results_json, write_ranges_json, write_run_detail_json
 from report_writer import write_report_markdown, write_recommended_toml
+from reachability import load_mechanism_registry, evaluate_mechanisms, ReachabilityValidationError
+from reachability_writer import write_reachability_outputs
 
 RESULT_RANK = {
     "stable": 0,
@@ -243,6 +245,46 @@ def run_tune_mode(scenario_path: str, tuning_path: str, out_dir: str):
     }
     write_report_markdown(out_dir, report_data)
 
+def run_reachability_mode(
+    scenario_path: str,
+    mechanisms_path: str,
+    stability_ranges_ref: str,
+    out_dir: str,
+):
+    try:
+        with open(scenario_path, "r", encoding="utf-8") as f:
+            toml_str = f.read()
+        config_hash = hashlib.sha256(toml_str.encode("utf-8")).hexdigest()
+        config = load_and_validate_config(toml_str)
+        history, result, reason = run_micro_simulation(config)
+    except ValidationError as e:
+        print(f"Scenario config is invalid: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading scenario file: {e}")
+        sys.exit(1)
+
+    try:
+        with open(mechanisms_path, "r", encoding="utf-8") as f:
+            mechanisms = load_mechanism_registry(f.read())
+    except ReachabilityValidationError as e:
+        print(f"Mechanism registry is invalid: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading mechanism registry: {e}")
+        sys.exit(1)
+
+    mechanism_results = evaluate_mechanisms(config, mechanisms, history, result, reason)
+    write_reachability_outputs(
+        out_dir,
+        config.get("scenario_id", "reachability"),
+        config_hash,
+        config.get("seed", 0),
+        config.get("tick_count", 0),
+        stability_ranges_ref,
+        mechanism_results,
+    )
+
 def run_batch_mode(scenarios_dir: str, out_dir: str, with_simulation: bool = False):
     if not os.path.isdir(scenarios_dir):
         print(f"Scenarios directory does not exist: {scenarios_dir}")
@@ -351,6 +393,13 @@ def main(argv=None):
     batch_parser.add_argument("--out", required=True)
     batch_parser.add_argument("--with-simulation", action="store_true")
 
+    # reachability
+    reach_parser = subparsers.add_parser("reachability")
+    reach_parser.add_argument("--scenario", required=True)
+    reach_parser.add_argument("--mechanisms", required=True)
+    reach_parser.add_argument("--stability-ranges-ref", required=True)
+    reach_parser.add_argument("--out", required=True)
+
     args = parser.parse_args(argv)
 
     if args.command == "evaluate":
@@ -361,6 +410,13 @@ def main(argv=None):
         run_tune_mode(args.scenario, args.tuning, args.out)
     elif args.command == "batch":
         run_batch_mode(args.scenarios, args.out, args.with_simulation)
+    elif args.command == "reachability":
+        run_reachability_mode(
+            args.scenario,
+            args.mechanisms,
+            args.stability_ranges_ref,
+            args.out,
+        )
 
 if __name__ == "__main__":
     main()

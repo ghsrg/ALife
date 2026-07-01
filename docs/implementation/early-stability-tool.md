@@ -24,7 +24,7 @@ The tool must stay synchronized with [[docs/implementation/phase-1-design|Phase 
 
 # Location
 
-Future implementation path:
+Implementation path:
 
 ```text
 tools/early-stability/
@@ -32,7 +32,7 @@ tools/early-stability/
 
 Use plural `tools/` because this area may contain multiple helper modes, fixtures and scenario runners.
 
-This documentation task does not create the directory or tool code.
+The current implementation lives there. Future modes should remain inside this tool area unless a separate implementation decision moves them.
 
 ---
 
@@ -162,6 +162,31 @@ history = []
 ```
 
 Invalid candidates must not enter the micro simulator. This keeps capacity, id, threshold and negative-value boundaries distinct from valid-but-fragile behavior.
+
+## Reachability Mode
+
+Runs after parameter tuning and checks whether planned mechanisms are actually reachable, useful and not bypassed by cheaper paths.
+
+Pipeline:
+
+```text
+accepted tuned config / scenario
+  -> mechanism registry
+  -> micro simulation history
+  -> observer-only mechanism counters
+  -> block reason and bypass analysis
+  -> reachability report
+```
+
+Reachability mode is the second calibration stage after `tune`.
+
+If it reports `warning`, `fail` or `blocked`, return to parameter tuning, adjust the relevant group and rerun reachability. Continue this loop while there are meaningful parameter ranges to move without violating Canon.
+
+Detailed contract:
+
+```text
+[[docs/implementation/mechanism-reachability|Mechanism Reachability]]
+```
 
 ---
 
@@ -466,8 +491,12 @@ tools/early-stability/
     static_calculator
     micro_simulator
     tuner
+    reachability
+    reachability_writer
     result_writer
     report_writer
+  mechanisms/
+    phase1.toml
   tests/
     static_calculator_tests
     tune_mode_tests
@@ -487,6 +516,7 @@ Future CLI shape:
 early-stability evaluate --scenario scenarios/single_cell_survival.toml --out outputs/stability/<run_id>/
 early-stability simulate --scenario scenarios/single_cell_survival.toml --ticks 1000 --out outputs/stability/<run_id>/
 early-stability tune --scenario scenarios/single_cell_survival.toml --tuning tuning/single_cell.toml --out outputs/stability/<run_id>/
+early-stability reachability --scenario scenarios/single_cell_survival.toml --mechanisms mechanisms/phase1.toml --stability-ranges-ref outputs/stability/<run_id>/ --out outputs/reachability/<run_id>/
 early-stability batch --scenarios scenarios/ --out outputs/stability/<run_id>/
 ```
 
@@ -501,6 +531,9 @@ simulate
 
 tune
   deterministic candidate search over allowed parameters
+
+reachability
+  observer-only mechanism reachability and bypass report after tuning
 
 batch
   deterministic run over scenario files sorted by path
@@ -523,7 +556,9 @@ The implementation agent for `tools/early-stability/` must:
 - keep tool-only estimates clearly separated under `estimates.*`;
 - implement evaluate mode before tune mode;
 - make tune mode deterministic and bounded by `max_iterations`;
+- run reachability after tuning before using results for data model decisions;
 - write all accumulated run artifacts to `outputs/stability/<run_id>/`;
+- write reachability artifacts to `outputs/reachability/<run_id>/`;
 - generate candidate configs as recommendations only;
 - keep scenarios small and explicit;
 - produce a report after implementation.

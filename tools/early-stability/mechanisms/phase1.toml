@@ -1,0 +1,89 @@
+[[mechanisms]]
+mechanism_id = "mandatory_energy_cost"
+status = "now"
+required_inputs = ["cell.mandatory_cost_per_tick", "cell.initial_energy"]
+expected_effect = "energy decreases when mandatory cost is paid"
+possible_blockers = ["insufficient_energy", "mandatory_cost_unpaid", "invalid_config"]
+bypass_risks = ["passive_energy_income_too_high"]
+minimum_useful_activation_rate = 1.0
+required_scenarios = ["single_cell_survival", "single_cell_starvation"]
+
+[[mechanisms]]
+mechanism_id = "passive_energy_income"
+status = "now"
+required_inputs = ["resources.passive_energy_income_placeholder"]
+expected_effect = "energy can increase before mandatory cost"
+possible_blockers = ["not_configured", "effect_zero"]
+bypass_risks = ["bypasses_resource_uptake", "bypasses_metabolism_pressure"]
+minimum_useful_activation_rate = 0.05
+required_scenarios = ["single_cell_survival"]
+
+[[mechanisms]]
+mechanism_id = "capacity_limit"
+status = "now"
+required_inputs = ["cell.capacity_limit", "cell.initial_resources", "cell.initial_materials"]
+expected_effect = "invalid or stressed states appear when stored amount exceeds capacity"
+possible_blockers = ["invalid_config", "insufficient_capacity"]
+bypass_risks = ["capacity_too_high"]
+minimum_useful_activation_rate = 0.05
+required_scenarios = ["single_cell_survival", "single_cell_over_capacity"]
+
+[[mechanisms]]
+mechanism_id = "heat_generation"
+status = "now"
+required_inputs = ["environment.heat_generated_per_tick"]
+expected_effect = "heat increases when generation exceeds dissipation"
+possible_blockers = ["not_configured", "effect_zero"]
+bypass_risks = ["heat_generated_too_low"]
+minimum_useful_activation_rate = 0.05
+required_scenarios = ["single_cell_survival", "single_cell_heat_stress"]
+
+[[mechanisms]]
+mechanism_id = "heat_dissipation"
+status = "now"
+required_inputs = ["environment.heat_dissipation_rate", "environment.heat_generated_per_tick"]
+expected_effect = "heat decreases or remains bounded"
+possible_blockers = ["not_configured", "effect_zero"]
+bypass_risks = ["dissipation_too_high_bypasses_heat_pressure"]
+minimum_useful_activation_rate = 0.05
+required_scenarios = ["single_cell_survival", "single_cell_heat_stress"]
+
+[[mechanisms]]
+mechanism_id = "waste_generation"
+status = "now"
+required_inputs = ["environment.waste_generated_per_tick"]
+expected_effect = "waste increases when generation exceeds sink"
+possible_blockers = ["not_configured", "effect_zero"]
+bypass_risks = ["waste_generated_too_low"]
+minimum_useful_activation_rate = 0.05
+required_scenarios = ["single_cell_survival", "waste_heat_balance"]
+
+[[mechanisms]]
+mechanism_id = "waste_sink"
+status = "now"
+required_inputs = ["environment.waste_sink_rate", "environment.waste_generated_per_tick"]
+expected_effect = "waste decreases or remains bounded"
+possible_blockers = ["not_configured", "effect_zero"]
+bypass_risks = ["sink_too_high_bypasses_waste_pressure"]
+minimum_useful_activation_rate = 0.05
+required_scenarios = ["single_cell_survival", "waste_heat_balance"]
+
+[[mechanisms]]
+mechanism_id = "growth_estimate"
+status = "estimate_only"
+required_inputs = ["estimates.growth_cost_estimate"]
+expected_effect = "tool-only growth budget estimate can be analyzed"
+possible_blockers = ["tool_limited", "future_only"]
+bypass_risks = ["not_consumed_by_micro_simulator"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_growth_budget"]
+
+[[mechanisms]]
+mechanism_id = "joint_upkeep_estimate"
+status = "estimate_only"
+required_inputs = ["estimates.joint_count_estimate", "estimates.joint_upkeep_cost"]
+expected_effect = "tool-only joint upkeep budget estimate can be analyzed"
+possible_blockers = ["tool_limited", "future_only"]
+bypass_risks = ["not_consumed_by_micro_simulator"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["joint_upkeep_budget"]
