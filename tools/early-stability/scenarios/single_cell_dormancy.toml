@@ -1,6 +1,6 @@
-scenario_id = "single_cell_survival"
+scenario_id = "single_cell_dormancy"
 seed = 42
-tick_count = 100
+tick_count = 10
 
 [world]
 size = [512.0, 512.0]
@@ -13,16 +13,16 @@ spatial_grid_size = 8.0
 resource_type_ids = ["water", "nutrient"]
 initial_distribution = [10.0, 5.0]
 optional_decay_rate = 0.01
-passive_energy_income_placeholder = 2.0
+passive_energy_income_placeholder = 0.0
 
 [cell]
 initial_position = [256.0, 256.0]
 radius = 1.0
 initial_resources = { water = 2.0, nutrient = 1.0 }
 initial_materials = { cell_wall = 5.0 }
-initial_energy = 50.0
+initial_energy = 1.0
 energy_capacity = 100.0
-mandatory_cost_per_tick = 2.0
+mandatory_cost_per_tick = 5.0
 dormant_mandatory_cost_modifier = 0.1
 capacity_limit = 30.0
 minimum_viability_materials = { cell_wall = 1.0 }

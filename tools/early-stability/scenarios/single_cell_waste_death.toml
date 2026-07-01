@@ -1,6 +1,6 @@
-scenario_id = "single_cell_survival"
+scenario_id = "single_cell_waste_death"
 seed = 42
-tick_count = 100
+tick_count = 20
 
 [world]
 size = [512.0, 512.0]
@@ -35,10 +35,10 @@ heat_dissipation_rate = 0.2
 heat_warning_threshold = 50.0
 heat_death_threshold = 80.0
 waste_current = 0.0
-waste_generated_per_tick = 0.05
-waste_sink_rate = 0.1
+waste_generated_per_tick = 5.0
+waste_sink_rate = 0.0
 waste_warning_threshold = 10.0
-waste_death_threshold = 20.0
+waste_death_threshold = 12.0
 
 [lifecycle]
 stress_energy_threshold = 10.0

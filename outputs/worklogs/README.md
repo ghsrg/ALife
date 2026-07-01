@@ -54,6 +54,8 @@ tags:
 - [[outputs/worklogs/2026-07-01-1255-REPORT-readme-and-verification|outputs/worklogs/2026-07-01-1255-REPORT-readme-and-verification]]
 - [[outputs/worklogs/2026-07-01-1805-REPORT-early-stability-parameter-tuning|outputs/worklogs/2026-07-01-1805-REPORT-early-stability-parameter-tuning]]
 - [[outputs/worklogs/2026-07-01-1845-REPORT-early-stability-parameter-tuning|outputs/worklogs/2026-07-01-1845-REPORT-early-stability-parameter-tuning]]
+- [[outputs/worklogs/2026-07-01-2010-REPORT-mechanism-reachability|outputs/worklogs/2026-07-01-2010-REPORT-mechanism-reachability]]
+- [[outputs/worklogs/2026-07-01-2015-REPORT-mechanism-reachability-convergence|outputs/worklogs/2026-07-01-2015-REPORT-mechanism-reachability-convergence]]
 
 
 

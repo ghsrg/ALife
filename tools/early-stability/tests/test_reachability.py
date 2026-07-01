@@ -80,6 +80,13 @@ def test_bundled_phase1_registry_loads():
     assert "mandatory_energy_cost" in ids
     assert "heat_dissipation" in ids
     assert "capacity_limit" in ids
+    assert "energy_buffer_clamp" in ids
+    assert "stress_state" in ids
+    assert "dormancy" in ids
+    assert "death_by_energy" in ids
+    assert "death_by_heat" in ids
+    assert "death_by_waste" in ids
+    assert "candidate_config_validation" in ids
 
 
 def test_evaluate_mandatory_energy_cost_passes_when_energy_changes():
@@ -116,3 +123,94 @@ required_scenarios = ["single_cell_growth_budget"]
 
     assert results[0]["reachability_result"] == "tool_limited"
     assert results[0]["top_block_reason"] == "tool_limited"
+
+
+def registry_for(mechanism_id: str, required_inputs: list[str]):
+    required = ", ".join(f'"{item}"' for item in required_inputs)
+    return f"""
+[[mechanisms]]
+mechanism_id = "{mechanism_id}"
+status = "now"
+required_inputs = [{required}]
+expected_effect = "test effect"
+possible_blockers = ["not_configured"]
+bypass_risks = []
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_survival"]
+"""
+
+
+def test_evaluate_energy_buffer_clamp_passes_when_energy_hits_capacity():
+    config = sample_config()
+    config["cell"]["energy_capacity"] = 30.0
+    mechanisms = load_mechanism_registry(
+        registry_for("energy_buffer_clamp", ["cell.energy_capacity", "cell.initial_energy"])
+    )
+    history = [
+        {"tick": 1, "state": "alive", "energy": 28.0, "heat": 0.0, "waste": 0.0},
+        {"tick": 2, "state": "alive", "energy": 30.0, "heat": 0.0, "waste": 0.0},
+    ]
+
+    results = evaluate_mechanisms(config, mechanisms, history, "stable", "none")
+
+    assert results[0]["reachability_result"] == "pass"
+    assert results[0]["effect_nonzero_count"] == 1
+
+
+def test_evaluate_stress_state_passes_when_history_contains_stressed_state():
+    mechanisms = load_mechanism_registry(
+        registry_for("stress_state", ["lifecycle.stress_energy_threshold"])
+    )
+    config = sample_config()
+    config["lifecycle"] = {"stress_energy_threshold": 10.0}
+    history = [{"tick": 1, "state": "stressed", "energy": 5.0, "heat": 0.0, "waste": 0.0}]
+
+    results = evaluate_mechanisms(config, mechanisms, history, "fragile", "none")
+
+    assert results[0]["reachability_result"] == "pass"
+    assert results[0]["effect_nonzero_count"] == 1
+
+
+def test_evaluate_dormancy_passes_when_history_contains_dormant_state():
+    mechanisms = load_mechanism_registry(
+        registry_for("dormancy", ["lifecycle.dormancy_allowed", "cell.dormant_mandatory_cost_modifier"])
+    )
+    config = sample_config()
+    config["lifecycle"] = {"dormancy_allowed": True}
+    config["cell"]["dormant_mandatory_cost_modifier"] = 0.1
+    history = [{"tick": 1, "state": "dormant", "energy": 1.5, "heat": 0.0, "waste": 0.0}]
+
+    results = evaluate_mechanisms(config, mechanisms, history, "fragile", "none")
+
+    assert results[0]["reachability_result"] == "pass"
+    assert results[0]["effect_nonzero_count"] == 1
+
+
+@pytest.mark.parametrize(
+    ("mechanism_id", "collapse_reason"),
+    [
+        ("death_by_energy", "energy_depleted"),
+        ("death_by_energy", "mandatory_cost_unpaid"),
+        ("death_by_heat", "heat_limit_exceeded"),
+        ("death_by_waste", "waste_limit_exceeded"),
+    ],
+)
+def test_evaluate_death_mechanisms_pass_when_matching_collapse_reason(mechanism_id, collapse_reason):
+    mechanisms = load_mechanism_registry(registry_for(mechanism_id, ["cell.initial_energy"]))
+
+    results = evaluate_mechanisms(sample_config(), mechanisms, [], "collapse", collapse_reason)
+
+    assert results[0]["reachability_result"] == "pass"
+    assert results[0]["effect_nonzero_count"] == 1
+    assert results[0]["top_block_reason"] == collapse_reason
+
+
+def test_evaluate_candidate_config_validation_passes_for_valid_config():
+    mechanisms = load_mechanism_registry(
+        registry_for("candidate_config_validation", ["scenario_id", "tick_count"])
+    )
+
+    results = evaluate_mechanisms(sample_config(), mechanisms, [], "stable", "none")
+
+    assert results[0]["reachability_result"] == "pass"
+    assert results[0]["effect_nonzero_count"] == 1

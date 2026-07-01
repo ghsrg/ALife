@@ -219,6 +219,86 @@ def evaluate_heat_or_waste(result: dict, config: dict, gen_path: str, sink_path:
     return result
 
 
+def evaluate_energy_buffer_clamp(result: dict, config: dict, history: list) -> dict:
+    capacity = get_nested(config, "cell.energy_capacity", 0.0)
+    result["available_count"] = 1
+    result["attempted_count"] = len(history)
+    if capacity <= 0:
+        result["blocked_count"] = 1
+        result["top_block_reason"] = "not_configured"
+        result["reachability_result"] = "blocked"
+        result["notes"] = "Energy capacity is not configured."
+        return result
+
+    over_capacity = [step for step in history if step.get("energy", 0.0) > capacity]
+    if over_capacity:
+        result["blocked_count"] = len(over_capacity)
+        result["top_block_reason"] = "capacity_exceeded"
+        result["reachability_result"] = "fail"
+        result["notes"] = "Observed Energy Buffer above configured capacity."
+        return result
+
+    clamped = [step for step in history if step.get("energy", 0.0) == capacity]
+    result["allowed_count"] = len(history)
+    result["executed_count"] = len(history)
+    result["effect_nonzero_count"] = len(clamped)
+    result["reachability_result"] = "pass"
+    result["notes"] = "Energy Buffer stayed within configured capacity."
+    return result
+
+
+def evaluate_state_presence(result: dict, history: list, state: str, label: str) -> dict:
+    result["available_count"] = 1
+    result["attempted_count"] = len(history)
+    result["allowed_count"] = len(history)
+    result["executed_count"] = len(history)
+    count = sum(1 for step in history if step.get("state") == state)
+    result["effect_nonzero_count"] = count
+    result["reachability_result"] = "pass"
+    result["notes"] = f"{label} is configured; observed {count} matching ticks."
+    return result
+
+
+def evaluate_death_by_reason(
+    result: dict,
+    scenario_result: str,
+    collapse_reason: str,
+    accepted_reasons: set[str],
+    label: str,
+) -> dict:
+    result["available_count"] = 1
+    result["attempted_count"] = 1
+    result["allowed_count"] = 1
+    result["executed_count"] = 1
+    if scenario_result == "collapse" and collapse_reason in accepted_reasons:
+        result["effect_nonzero_count"] = 1
+        result["top_block_reason"] = collapse_reason
+        result["reachability_result"] = "pass"
+        result["notes"] = f"{label} was observed through collapse_reason."
+    else:
+        result["effect_nonzero_count"] = 0
+        result["reachability_result"] = "pass"
+        result["notes"] = f"{label} guard is configured; not triggered in this scenario."
+    return result
+
+
+def evaluate_candidate_config_validation(result: dict, scenario_result: str, collapse_reason: str) -> dict:
+    result["available_count"] = 1
+    result["attempted_count"] = 1
+    if scenario_result == "invalid" or collapse_reason == "invalid_config":
+        result["blocked_count"] = 1
+        result["top_block_reason"] = "invalid_config"
+        result["reachability_result"] = "blocked"
+        result["notes"] = "Candidate config validation rejected this config."
+    else:
+        result["allowed_count"] = 1
+        result["executed_count"] = 1
+        result["effect_nonzero_count"] = 1
+        result["reachability_result"] = "pass"
+        result["notes"] = "Candidate config validation accepted this config."
+    return result
+
+
 def evaluate_mechanisms(
     config: dict,
     mechanisms: list[dict],
@@ -261,6 +341,38 @@ def evaluate_mechanisms(
                 "environment.waste_sink_rate",
                 "waste",
             )
+        elif mechanism_id == "energy_buffer_clamp":
+            result = evaluate_energy_buffer_clamp(result, config, history)
+        elif mechanism_id == "stress_state":
+            result = evaluate_state_presence(result, history, "stressed", "Stress state")
+        elif mechanism_id == "dormancy":
+            result = evaluate_state_presence(result, history, "dormant", "Dormancy")
+        elif mechanism_id == "death_by_energy":
+            result = evaluate_death_by_reason(
+                result,
+                scenario_result,
+                collapse_reason,
+                {"energy_depleted", "mandatory_cost_unpaid"},
+                "Energy death",
+            )
+        elif mechanism_id == "death_by_heat":
+            result = evaluate_death_by_reason(
+                result,
+                scenario_result,
+                collapse_reason,
+                {"heat_limit_exceeded"},
+                "Heat death",
+            )
+        elif mechanism_id == "death_by_waste":
+            result = evaluate_death_by_reason(
+                result,
+                scenario_result,
+                collapse_reason,
+                {"waste_limit_exceeded"},
+                "Waste death",
+            )
+        elif mechanism_id == "candidate_config_validation":
+            result = evaluate_candidate_config_validation(result, scenario_result, collapse_reason)
         else:
             result["reachability_result"] = "tool_limited"
             result["top_block_reason"] = "tool_limited"

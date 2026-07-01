@@ -29,6 +29,16 @@ minimum_useful_activation_rate = 0.05
 required_scenarios = ["single_cell_survival", "single_cell_over_capacity"]
 
 [[mechanisms]]
+mechanism_id = "energy_buffer_clamp"
+status = "now"
+required_inputs = ["cell.energy_capacity", "cell.initial_energy"]
+expected_effect = "Energy Buffer never exceeds configured energy capacity"
+possible_blockers = ["not_configured", "capacity_exceeded", "invalid_config"]
+bypass_risks = ["energy_capacity_too_high"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_survival"]
+
+[[mechanisms]]
 mechanism_id = "heat_generation"
 status = "now"
 required_inputs = ["environment.heat_generated_per_tick"]
@@ -67,6 +77,66 @@ possible_blockers = ["not_configured", "effect_zero"]
 bypass_risks = ["sink_too_high_bypasses_waste_pressure"]
 minimum_useful_activation_rate = 0.05
 required_scenarios = ["single_cell_survival", "waste_heat_balance"]
+
+[[mechanisms]]
+mechanism_id = "stress_state"
+status = "now"
+required_inputs = ["lifecycle.stress_energy_threshold", "environment.heat_warning_threshold", "environment.waste_warning_threshold"]
+expected_effect = "cell state becomes stressed when configured warning thresholds are crossed"
+possible_blockers = ["threshold_not_reached", "not_configured"]
+bypass_risks = ["thresholds_too_high"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_heat_stress", "waste_heat_balance", "single_cell_starvation"]
+
+[[mechanisms]]
+mechanism_id = "dormancy"
+status = "now"
+required_inputs = ["lifecycle.dormancy_allowed", "cell.dormant_mandatory_cost_modifier"]
+expected_effect = "cell may enter dormant state and pay reduced mandatory upkeep when full upkeep cannot be paid"
+possible_blockers = ["not_configured", "threshold_not_reached", "insufficient_energy"]
+bypass_risks = ["energy_budget_too_easy"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_dormancy", "single_cell_starvation"]
+
+[[mechanisms]]
+mechanism_id = "death_by_energy"
+status = "now"
+required_inputs = ["cell.initial_energy", "cell.mandatory_cost_per_tick"]
+expected_effect = "cell dies when Energy Buffer is depleted or mandatory upkeep cannot be paid"
+possible_blockers = ["threshold_not_reached", "energy_budget_too_easy"]
+bypass_risks = ["passive_energy_income_too_high"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_starvation"]
+
+[[mechanisms]]
+mechanism_id = "death_by_heat"
+status = "now"
+required_inputs = ["environment.heat_current", "environment.heat_generated_per_tick", "environment.heat_death_threshold"]
+expected_effect = "cell dies when heat exceeds death threshold"
+possible_blockers = ["threshold_not_reached", "heat_generated_too_low"]
+bypass_risks = ["dissipation_too_high_bypasses_heat_pressure"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_heat_death"]
+
+[[mechanisms]]
+mechanism_id = "death_by_waste"
+status = "now"
+required_inputs = ["environment.waste_current", "environment.waste_generated_per_tick", "environment.waste_death_threshold"]
+expected_effect = "cell dies when waste exceeds death threshold"
+possible_blockers = ["threshold_not_reached", "waste_generated_too_low"]
+bypass_risks = ["sink_too_high_bypasses_waste_pressure"]
+minimum_useful_activation_rate = 0.0
+required_scenarios = ["single_cell_waste_death"]
+
+[[mechanisms]]
+mechanism_id = "candidate_config_validation"
+status = "now"
+required_inputs = ["scenario_id", "tick_count", "world", "space", "resources", "cell", "environment", "lifecycle"]
+expected_effect = "invalid candidates are rejected before simulation"
+possible_blockers = ["invalid_config"]
+bypass_risks = []
+minimum_useful_activation_rate = 1.0
+required_scenarios = ["single_cell_survival", "single_cell_over_capacity"]
 
 [[mechanisms]]
 mechanism_id = "growth_estimate"
