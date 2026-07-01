@@ -29,11 +29,17 @@ energy_capacity = 100.0
 mandatory_cost_per_tick = 0.5
 dormant_mandatory_cost_modifier = 0.1
 capacity_limit = 10.0
+minimum_viability_materials = ["cell_wall_material"]
 
 [environment]
 ambient_temperature = 20.0
 heat_dissipation_rate = 1.0
 waste_sink_rate = 1.0
+heat_warning_threshold = 40.0
+heat_death_threshold = 80.0
+waste_warning_threshold = 10.0
+waste_death_threshold = 20.0
+
 
 [lifecycle]
 stress_energy_threshold = 2.0
@@ -230,3 +236,180 @@ def test_capacity_limit_boundary():
     toml_str = dict_to_toml(config_dict)
     config = load_and_validate_config(toml_str)
     assert config["cell"]["capacity_limit"] == 10.0
+
+def test_heat_threshold_invalid():
+    import tomllib
+    config_dict = tomllib.loads(VALID_TOML)
+    config_dict["environment"]["heat_warning_threshold"] = 50.0
+    config_dict["environment"]["heat_death_threshold"] = 40.0 # warning >= death
+    
+    def dict_to_toml(d):
+        lines = []
+        for k, v in d.items():
+            if isinstance(v, dict):
+                lines.append(f"[{k}]")
+                for subk, subv in v.items():
+                    if isinstance(subv, dict):
+                        lines.append(f"{subk} = {str(subv).replace(':', ' =').replace('{', '{ ').replace('}', ' }')}")
+                    elif isinstance(subv, str):
+                        lines.append(f'{subk} = "{subv}"')
+                    elif isinstance(subv, bool):
+                        lines.append(f'{subk} = {str(subv).lower()}')
+                    else:
+                        lines.append(f'{subk} = {subv}')
+            elif isinstance(v, list):
+                lines.append(f"{k} = {repr(v)}")
+            elif isinstance(v, str):
+                lines.append(f'{k} = "{v}"')
+            elif isinstance(v, bool):
+                lines.append(f'{k} = {str(v).lower()}')
+            else:
+                lines.append(f'{k} = {v}')
+        return "\n".join(lines)
+
+    toml_str = dict_to_toml(config_dict)
+    with pytest.raises(ValidationError) as excinfo:
+        load_and_validate_config(toml_str)
+    assert "threshold" in str(excinfo.value).lower()
+
+def test_waste_threshold_invalid():
+    import tomllib
+    config_dict = tomllib.loads(VALID_TOML)
+    config_dict["environment"]["waste_warning_threshold"] = 10.0
+    config_dict["environment"]["waste_death_threshold"] = 10.0 # warning >= death
+    
+    def dict_to_toml(d):
+        lines = []
+        for k, v in d.items():
+            if isinstance(v, dict):
+                lines.append(f"[{k}]")
+                for subk, subv in v.items():
+                    if isinstance(subv, dict):
+                        lines.append(f"{subk} = {str(subv).replace(':', ' =').replace('{', '{ ').replace('}', ' }')}")
+                    elif isinstance(subv, str):
+                        lines.append(f'{subk} = "{subv}"')
+                    elif isinstance(subv, bool):
+                        lines.append(f'{subk} = {str(subv).lower()}')
+                    else:
+                        lines.append(f'{subk} = {subv}')
+            elif isinstance(v, list):
+                lines.append(f"{k} = {repr(v)}")
+            elif isinstance(v, str):
+                lines.append(f'{k} = "{v}"')
+            elif isinstance(v, bool):
+                lines.append(f'{k} = {str(v).lower()}')
+            else:
+                lines.append(f'{k} = {v}')
+        return "\n".join(lines)
+
+    toml_str = dict_to_toml(config_dict)
+    with pytest.raises(ValidationError) as excinfo:
+        load_and_validate_config(toml_str)
+    assert "threshold" in str(excinfo.value).lower()
+
+def test_minimum_viability_materials_empty():
+    import tomllib
+    config_dict = tomllib.loads(VALID_TOML)
+    config_dict["cell"]["minimum_viability_materials"] = [] # empty list
+    
+    def dict_to_toml(d):
+        lines = []
+        for k, v in d.items():
+            if isinstance(v, dict):
+                lines.append(f"[{k}]")
+                for subk, subv in v.items():
+                    if isinstance(subv, dict):
+                        lines.append(f"{subk} = {str(subv).replace(':', ' =').replace('{', '{ ').replace('}', ' }')}")
+                    elif isinstance(subv, str):
+                        lines.append(f'{subk} = "{subv}"')
+                    elif isinstance(subv, bool):
+                        lines.append(f'{subk} = {str(subv).lower()}')
+                    else:
+                        lines.append(f'{subk} = {subv}')
+            elif isinstance(v, list):
+                lines.append(f"{k} = {repr(v)}")
+            elif isinstance(v, str):
+                lines.append(f'{k} = "{v}"')
+            elif isinstance(v, bool):
+                lines.append(f'{k} = {str(v).lower()}')
+            else:
+                lines.append(f'{k} = {v}')
+        return "\n".join(lines)
+
+    toml_str = dict_to_toml(config_dict)
+    with pytest.raises(ValidationError) as excinfo:
+        load_and_validate_config(toml_str)
+    assert "minimum_viability_materials" in str(excinfo.value).lower() or "empty" in str(excinfo.value).lower()
+
+def test_initial_resources_length_mismatch():
+    import tomllib
+    config_dict = tomllib.loads(VALID_TOML)
+    # resources.resource_type_ids has length 1 (["nutrient_A"])
+    # Let's set cell.initial_resources to a list of length 2 (mismatch)
+    config_dict["cell"]["initial_resources"] = [1.0, 2.0]
+    
+    def dict_to_toml(d):
+        lines = []
+        for k, v in d.items():
+            if isinstance(v, dict):
+                lines.append(f"[{k}]")
+                for subk, subv in v.items():
+                    if isinstance(subv, dict):
+                        lines.append(f"{subk} = {str(subv).replace(':', ' =').replace('{', '{ ').replace('}', ' }')}")
+                    elif isinstance(subv, str):
+                        lines.append(f'{subk} = "{subv}"')
+                    elif isinstance(subv, bool):
+                        lines.append(f'{subk} = {str(subv).lower()}')
+                    else:
+                        lines.append(f'{subk} = {subv}')
+            elif isinstance(v, list):
+                lines.append(f"{k} = {repr(v)}")
+            elif isinstance(v, str):
+                lines.append(f'{k} = "{v}"')
+            elif isinstance(v, bool):
+                lines.append(f'{k} = {str(v).lower()}')
+            else:
+                lines.append(f'{k} = {v}')
+        return "\n".join(lines)
+
+    toml_str = dict_to_toml(config_dict)
+    with pytest.raises(ValidationError) as excinfo:
+        load_and_validate_config(toml_str)
+    assert "initial_resources" in str(excinfo.value).lower() or "length" in str(excinfo.value).lower() or "mismatch" in str(excinfo.value).lower()
+
+def test_initial_resources_dict_referencing_unknown():
+    import tomllib
+    config_dict = tomllib.loads(VALID_TOML)
+    # resources.resource_type_ids has ["nutrient_A"]
+    # We reference "unknown_resource" which is not listed
+    config_dict["cell"]["initial_resources"] = { "unknown_resource": 1.0 }
+    
+    def dict_to_toml(d):
+        lines = []
+        for k, v in d.items():
+            if isinstance(v, dict):
+                lines.append(f"[{k}]")
+                for subk, subv in v.items():
+                    if isinstance(subv, dict):
+                        lines.append(f"{subk} = {str(subv).replace(':', ' =').replace('{', '{ ').replace('}', ' }')}")
+                    elif isinstance(subv, str):
+                        lines.append(f'{subk} = "{subv}"')
+                    elif isinstance(subv, bool):
+                        lines.append(f'{subk} = {str(subv).lower()}')
+                    else:
+                        lines.append(f'{subk} = {subv}')
+            elif isinstance(v, list):
+                lines.append(f"{k} = {repr(v)}")
+            elif isinstance(v, str):
+                lines.append(f'{k} = "{v}"')
+            elif isinstance(v, bool):
+                lines.append(f'{k} = {str(v).lower()}')
+            else:
+                lines.append(f'{k} = {v}')
+        return "\n".join(lines)
+
+    toml_str = dict_to_toml(config_dict)
+    with pytest.raises(ValidationError) as excinfo:
+        load_and_validate_config(toml_str)
+    assert "initial_resources" in str(excinfo.value).lower() or "reference" in str(excinfo.value).lower() or "unknown" in str(excinfo.value).lower()
+

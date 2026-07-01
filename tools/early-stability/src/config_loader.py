@@ -71,29 +71,58 @@ def load_and_validate_config(toml_str: str) -> dict:
 
     # 4. Resource or material capacity limit overflow (resources + materials initial amounts exceed capacity_limit)
     capacity_limit = cell.get("capacity_limit", 0.0)
+    resource_type_ids = config.get("resources", {}).get("resource_type_ids", [])
     
     initial_resources = cell.get("initial_resources", {})
-    if not isinstance(initial_resources, dict):
-        raise ValidationError("cell.initial_resources must be a table/dictionary")
+    if isinstance(initial_resources, list):
+        if len(initial_resources) != len(resource_type_ids):
+            raise ValidationError(
+                f"Length of cell.initial_resources ({len(initial_resources)}) "
+                f"must match length of resources.resource_type_ids ({len(resource_type_ids)})"
+            )
+    elif isinstance(initial_resources, dict):
+        for k in initial_resources.keys():
+            if k not in resource_type_ids:
+                raise ValidationError(
+                    f"Resource '{k}' in cell.initial_resources is not listed in resources.resource_type_ids"
+                )
+    else:
+        raise ValidationError("cell.initial_resources must be a list/array or table/dictionary")
         
     initial_materials = cell.get("initial_materials", {})
-    if not isinstance(initial_materials, dict):
-        raise ValidationError("cell.initial_materials must be a table/dictionary")
+    if not isinstance(initial_materials, (list, dict)):
+        raise ValidationError("cell.initial_materials must be a list/array or table/dictionary")
 
     total_initial_amount = 0.0
-    for k, v in initial_resources.items():
-        if not isinstance(v, (int, float)):
-            raise ValidationError(f"Resource amount for '{k}' must be a number")
-        if v < 0:
-            raise ValidationError(f"Resource amount for '{k}' cannot be negative")
-        total_initial_amount += v
+    if isinstance(initial_resources, list):
+        for v in initial_resources:
+            if not isinstance(v, (int, float)):
+                raise ValidationError("Resource amount must be a number")
+            if v < 0:
+                raise ValidationError("Resource amount cannot be negative")
+            total_initial_amount += v
+    else:
+        for k, v in initial_resources.items():
+            if not isinstance(v, (int, float)):
+                raise ValidationError(f"Resource amount for '{k}' must be a number")
+            if v < 0:
+                raise ValidationError(f"Resource amount for '{k}' cannot be negative")
+            total_initial_amount += v
 
-    for k, v in initial_materials.items():
-        if not isinstance(v, (int, float)):
-            raise ValidationError(f"Material amount for '{k}' must be a number")
-        if v < 0:
-            raise ValidationError(f"Material amount for '{k}' cannot be negative")
-        total_initial_amount += v
+    if isinstance(initial_materials, list):
+        for v in initial_materials:
+            if not isinstance(v, (int, float)):
+                raise ValidationError("Material amount must be a number")
+            if v < 0:
+                raise ValidationError("Material amount cannot be negative")
+            total_initial_amount += v
+    else:
+        for k, v in initial_materials.items():
+            if not isinstance(v, (int, float)):
+                raise ValidationError(f"Material amount for '{k}' must be a number")
+            if v < 0:
+                raise ValidationError(f"Material amount for '{k}' cannot be negative")
+            total_initial_amount += v
 
     if total_initial_amount > capacity_limit:
         raise ValidationError(
@@ -101,4 +130,22 @@ def load_and_validate_config(toml_str: str) -> dict:
             f"exceeds capacity_limit {capacity_limit}"
         )
 
+    # 5. Validate minimum_viability_materials is non-empty
+    min_materials = cell.get("minimum_viability_materials", [])
+    if not isinstance(min_materials, (list, dict)):
+        raise ValidationError("cell.minimum_viability_materials must be a list/array or table/dictionary")
+    if len(min_materials) == 0:
+        raise ValidationError("cell.minimum_viability_materials cannot be empty")
+
+    # 6. Validate environment thresholds
+    env = config.get("environment", {})
+    if "heat_warning_threshold" in env and "heat_death_threshold" in env:
+        if env["heat_warning_threshold"] >= env["heat_death_threshold"]:
+            raise ValidationError("heat_warning_threshold must be strictly less than heat_death_threshold")
+            
+    if "waste_warning_threshold" in env and "waste_death_threshold" in env:
+        if env["waste_warning_threshold"] >= env["waste_death_threshold"]:
+            raise ValidationError("waste_warning_threshold must be strictly less than waste_death_threshold")
+
     return config
+
