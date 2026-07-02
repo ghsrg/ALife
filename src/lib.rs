@@ -7,3 +7,7 @@ pub mod physics;
 pub mod renderer;
 pub mod simulation;
 pub mod world;
+
+pub mod process {
+    pub use crate::core::process::*;
+}

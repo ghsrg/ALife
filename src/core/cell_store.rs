@@ -208,11 +208,40 @@ impl CellStore {
         self.energy_buffers[index.raw()] = energy;
     }
 
+    pub fn set_position(&mut self, index: CellIndex, position: Position) {
+        self.positions[index.raw()] = position;
+    }
+
     pub(crate) fn set_lifecycle_state(&mut self, index: CellIndex, state: LifecycleState) {
         self.lifecycle_states[index.raw()] = state;
     }
 
     pub(crate) fn set_runtime_flags(&mut self, index: CellIndex, flags: RuntimeFlags) {
         self.runtime_flags[index.raw()] = flags;
+    }
+
+    pub fn has_capability(
+        &self,
+        index: CellIndex,
+        capability: crate::core::process::MaterialCapability,
+    ) -> bool {
+        use crate::core::process::MaterialCapabilityFlags;
+        if self.lifecycle_state(index) == LifecycleState::Dead {
+            return false;
+        }
+        let amount = self.materials[index.raw()];
+        if amount.raw() > 0.0 {
+            let default_flags = MaterialCapabilityFlags {
+                boundary_permeability: true,
+                resource_uptake: true,
+                metabolism: true,
+                structural_growth: true,
+                storage_capacity: true,
+                repair: true,
+            };
+            default_flags.has(capability)
+        } else {
+            false
+        }
     }
 }

@@ -46,6 +46,7 @@ fn viability_config() -> RuntimeConfig {
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
+            physics_solver_iterations: 4,
         },
         ResourceConfig::new(vec![ResourceAmount::new(10.0).unwrap()], 0.0).unwrap(),
         ResourceInteractionConfig {

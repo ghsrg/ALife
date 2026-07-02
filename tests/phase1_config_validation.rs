@@ -61,6 +61,7 @@ fn runtime_config(
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
+            physics_solver_iterations: 4,
         },
         ResourceConfig::new(
             vec![

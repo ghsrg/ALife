@@ -13,6 +13,7 @@ pub struct WorldConfig {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SpaceConfig {
     pub spatial_grid_size: f32,
+    pub physics_solver_iterations: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -132,6 +133,7 @@ pub struct RuntimeConfig {
     pub cell: CellInitialConfig,
     pub environment: EnvironmentConfig,
     pub lifecycle: LifecycleConfig,
+    pub initial_cells: Vec<CellInitialConfig>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -170,6 +172,8 @@ impl RuntimeConfig {
 
         resource_interaction.validate(&resources)?;
 
+        let initial_cells = vec![cell];
+
         Ok(Self {
             world,
             space,
@@ -178,7 +182,23 @@ impl RuntimeConfig {
             cell,
             environment,
             lifecycle,
+            initial_cells,
         })
+    }
+
+    pub fn with_cells(mut self, cells: Vec<CellInitialConfig>) -> Self {
+        for cell in &cells {
+            assert!(
+                cell.initial_energy.raw() <= cell.energy_capacity.raw(),
+                "Initial energy exceeds capacity for cell at {:?}",
+                cell.position
+            );
+        }
+        if let Some(first) = cells.first() {
+            self.cell = *first;
+        }
+        self.initial_cells = cells;
+        self
     }
 
     pub fn config_hash(&self) -> u64 {
@@ -219,6 +239,19 @@ impl RuntimeConfig {
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);
+        }
+
+        for cell in &self.initial_cells {
+            for value in [
+                cell.initial_energy.raw().to_bits() as u64,
+                cell.energy_capacity.raw().to_bits() as u64,
+                cell.mandatory_cost_per_tick.raw().to_bits() as u64,
+                cell.passive_energy_income.raw().to_bits() as u64,
+                cell.capacity_limit.raw().to_bits() as u64,
+            ] {
+                hash ^= value;
+                hash = hash.wrapping_mul(0x100000001b3);
+            }
         }
 
         hash

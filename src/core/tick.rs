@@ -4,7 +4,7 @@ use crate::core::deltas::CommitSummary;
 use crate::core::events::EventKind;
 use crate::core::resources::ResourceLayerIndex;
 use crate::core::summary::{CollapseReason, MetricsSummary, RunSummary, SurvivalResult};
-use crate::core::units::{EnergyAmount, HeatAmount, ResourceAmount, WasteAmount};
+use crate::core::units::{EnergyAmount, HeatAmount, Position, ResourceAmount, WasteAmount};
 use crate::core::world::{WorldInitError, WorldState};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,6 +36,9 @@ impl TickExecutor {
     pub fn step(&mut self) -> Result<RunSummary, TickError> {
         let config = self.world.config().clone();
         let len = self.world.cells().len();
+
+        // Rebuild Spatial Index at the start of tick
+        self.world.rebuild_spatial_index();
 
         let mut metabolism_heat_total = 0.0_f32;
         let mut metabolism_waste_total = 0.0_f32;
@@ -112,6 +115,108 @@ impl TickExecutor {
                     .saturating_add(metabolism_energy)
                     .clamp_max(current.capacity());
                 cells.set_energy(index, EnergyBuffer::new(new_current, current.capacity()));
+            }
+        }
+
+        // Positional Overlap Solver Loop
+        let mut overlap_resolved = 0.0;
+        {
+            let mut pairs = Vec::new();
+            {
+                let cells = self.world.cells();
+                self.world
+                    .spatial_index()
+                    .generate_candidate_pairs(cells, &mut pairs);
+            }
+
+            let iterations = config.space.physics_solver_iterations;
+            let world_size = config.world.size;
+
+            for _ in 0..iterations {
+                // 1. Resolve cell-cell overlaps
+                for &(idx_i, idx_j) in &pairs {
+                    let (pos_i, r_i) = {
+                        let cells = self.world.cells();
+                        if cells.lifecycle_state(idx_i) == LifecycleState::Dead
+                            || cells.lifecycle_state(idx_j) == LifecycleState::Dead
+                        {
+                            continue;
+                        }
+                        (cells.position(idx_i), cells.radius(idx_i))
+                    };
+                    let (pos_j, r_j) = {
+                        let cells = self.world.cells();
+                        (cells.position(idx_j), cells.radius(idx_j))
+                    };
+
+                    let dx = pos_i.x() - pos_j.x();
+                    let dy = pos_i.y() - pos_j.y();
+                    let dist_sq = dx * dx + dy * dy;
+                    let target_dist = r_i.raw() + r_j.raw();
+
+                    if dist_sq < target_dist * target_dist {
+                        let dist = dist_sq.sqrt();
+                        let overlap = target_dist - dist;
+                        overlap_resolved += overlap;
+
+                        let (ux, uy) = if dist > 0.0 {
+                            (dx / dist, dy / dist)
+                        } else {
+                            // If exactly overlapping, push along X axis deterministically based on ID order
+                            let sign = if idx_i.raw() < idx_j.raw() { 1.0 } else { -1.0 };
+                            (sign, 0.0)
+                        };
+
+                        // Push each cell by half of the overlap distance
+                        let push_dist = overlap * 0.5;
+                        let new_pos_i =
+                            Position::new(pos_i.x() + ux * push_dist, pos_i.y() + uy * push_dist);
+                        let new_pos_j =
+                            Position::new(pos_j.x() - ux * push_dist, pos_j.y() - uy * push_dist);
+
+                        let cells = self.world.cells_mut_for_commit();
+                        cells.set_position(idx_i, new_pos_i);
+                        cells.set_position(idx_j, new_pos_j);
+                    }
+                }
+
+                // 2. Resolve wall boundaries (solid_wall)
+                for i in 0..len {
+                    let idx = CellIndex::from_raw(i);
+                    let (pos, r) = {
+                        let cells = self.world.cells();
+                        if cells.lifecycle_state(idx) == LifecycleState::Dead {
+                            continue;
+                        }
+                        (cells.position(idx), cells.radius(idx))
+                    };
+
+                    let radius = r.raw();
+                    let mut px = pos.x();
+                    let mut py = pos.y();
+                    let mut clamped = false;
+
+                    if px - radius < 0.0 {
+                        px = radius;
+                        clamped = true;
+                    } else if px + radius > world_size.width() {
+                        px = world_size.width() - radius;
+                        clamped = true;
+                    }
+
+                    if py - radius < 0.0 {
+                        py = radius;
+                        clamped = true;
+                    } else if py + radius > world_size.height() {
+                        py = world_size.height() - radius;
+                        clamped = true;
+                    }
+
+                    if clamped {
+                        let cells = self.world.cells_mut_for_commit();
+                        cells.set_position(idx, Position::new(px, py));
+                    }
+                }
             }
         }
 
@@ -347,6 +452,7 @@ impl TickExecutor {
                 waste_next.raw(),
                 min_energy,
                 max_energy,
+                overlap_resolved,
             ),
         })
     }
@@ -403,6 +509,7 @@ impl TickExecutor {
         waste: f32,
         min_energy: f32,
         max_energy: f32,
+        overlap_resolved: f32,
     ) -> MetricsSummary {
         let first = CellIndex::from_raw(0);
         let cells = self.world.cells();
@@ -423,6 +530,7 @@ impl TickExecutor {
             final_used_capacity,
             final_free_capacity,
             growth_readiness,
+            overlap_resolved,
         }
     }
 }

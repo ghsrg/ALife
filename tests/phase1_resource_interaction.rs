@@ -16,6 +16,7 @@ fn base_interaction_config(interaction: ResourceInteractionConfig) -> RuntimeCon
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
+            physics_solver_iterations: 4,
         },
         ResourceConfig::new(vec![ResourceAmount::new(10.0).unwrap()], 0.0).unwrap(),
         interaction,
@@ -71,6 +72,7 @@ fn runtime_config_rejects_enabled_interaction_with_missing_resource_layer() {
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
+            physics_solver_iterations: 4,
         },
         ResourceConfig::new(vec![ResourceAmount::new(10.0).unwrap()], 0.0).unwrap(),
         ResourceInteractionConfig {

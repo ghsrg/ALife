@@ -17,6 +17,7 @@ pub struct RawWorld {
 #[derive(Deserialize, Debug)]
 pub struct RawSpace {
     pub spatial_grid_size: f32,
+    pub physics_solver_iterations: Option<usize>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -83,6 +84,7 @@ pub struct RawScenarioConfig {
     pub resources: RawResources,
     pub resource_interaction: Option<RawResourceInteraction>,
     pub cell: RawCell,
+    pub cells: Option<Vec<RawCell>>,
     pub environment: RawEnvironment,
     pub lifecycle: RawLifecycle,
 }
@@ -177,6 +179,7 @@ impl RawScenarioConfig {
 
         let space = SpaceConfig {
             spatial_grid_size: self.space.spatial_grid_size,
+            physics_solver_iterations: self.space.physics_solver_iterations.unwrap_or(4),
         };
 
         let passive_income = self
@@ -273,7 +276,50 @@ impl RawScenarioConfig {
             })?,
         };
 
-        RuntimeConfig::new(
+        let mut initial_cells = Vec::new();
+        if let Some(ref raw_cells) = self.cells {
+            for raw_cell in raw_cells {
+                let cell_initial_resources_sum: f32 = raw_cell.initial_resources.values().sum();
+                let cell_initial_materials_sum: f32 = raw_cell.initial_materials.values().sum();
+                let cell_conf = CellInitialConfig {
+                    position: Position::new(
+                        raw_cell.initial_position[0],
+                        raw_cell.initial_position[1],
+                    ),
+                    radius: Radius::new(raw_cell.radius).map_err(|e| {
+                        ParseError::ValidationError(format!("Invalid cell radius: {:?}", e))
+                    })?,
+                    initial_energy: EnergyAmount::new(raw_cell.initial_energy).map_err(|e| {
+                        ParseError::ValidationError(format!("Invalid initial_energy: {:?}", e))
+                    })?,
+                    energy_capacity: EnergyAmount::new(raw_cell.energy_capacity).map_err(|e| {
+                        ParseError::ValidationError(format!("Invalid energy_capacity: {:?}", e))
+                    })?,
+                    mandatory_cost_per_tick: EnergyAmount::new(raw_cell.mandatory_cost_per_tick)
+                        .map_err(|e| {
+                            ParseError::ValidationError(format!("Invalid mandatory_cost: {:?}", e))
+                        })?,
+                    passive_energy_income: EnergyAmount::zero(),
+                    capacity_limit: CapacityAmount::new(raw_cell.capacity_limit).map_err(|e| {
+                        ParseError::ValidationError(format!("Invalid capacity_limit: {:?}", e))
+                    })?,
+                    initial_resource_amount: ResourceAmount::new(cell_initial_resources_sum)
+                        .map_err(|e| {
+                            ParseError::ValidationError(format!(
+                                "Invalid initial_resource_amount: {:?}",
+                                e
+                            ))
+                        })?,
+                    initial_material_amount: MaterialAmount::new(cell_initial_materials_sum)
+                        .map_err(|e| {
+                            ParseError::ValidationError(format!("Invalid material amount: {:?}", e))
+                        })?,
+                };
+                initial_cells.push(cell_conf);
+            }
+        }
+
+        let mut runtime_config = RuntimeConfig::new(
             world,
             space,
             resources,
@@ -282,6 +328,12 @@ impl RawScenarioConfig {
             environment,
             lifecycle,
         )
-        .map_err(ParseError::ConfigValidationError)
+        .map_err(ParseError::ConfigValidationError)?;
+
+        if !initial_cells.is_empty() {
+            runtime_config = runtime_config.with_cells(initial_cells);
+        }
+
+        Ok(runtime_config)
     }
 }
