@@ -58,6 +58,7 @@ tags:
 - [[outputs/worklogs/2026-07-01-2010-REPORT-mechanism-reachability|outputs/worklogs/2026-07-01-2010-REPORT-mechanism-reachability]]
 - [[outputs/worklogs/2026-07-01-2015-REPORT-mechanism-reachability-convergence|outputs/worklogs/2026-07-01-2015-REPORT-mechanism-reachability-convergence]]
 - [[outputs/worklogs/2026-07-01-2210-REPORT-mechanism-reachability-16-mechanisms|outputs/worklogs/2026-07-01-2210-REPORT-mechanism-reachability-16-mechanisms]]
+- [[outputs/worklogs/2026-07-02-1359-REPORT-phase-1-rust-core|outputs/worklogs/2026-07-02-1359-REPORT-phase-1-rust-core]]
 
 
 

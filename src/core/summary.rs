@@ -1,0 +1,39 @@
+use crate::core::units::Tick;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SurvivalResult {
+    Stable,
+    Fragile,
+    Collapse,
+    Invalid,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CollapseReason {
+    None,
+    InvalidConfig,
+    EnergyDepleted,
+    MandatoryCostUnpaid,
+    CapacityExceeded,
+    HeatLimitExceeded,
+    WasteLimitExceeded,
+    MinimumViabilityMaterialsMissing,
+    DeterminismMismatch,
+    ViewerAuthorityViolation,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MetricsSummary {
+    pub final_energy: f32,
+    pub heat: f32,
+    pub waste: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RunSummary {
+    pub tick: Tick,
+    pub config_hash: u64,
+    pub survival_result: SurvivalResult,
+    pub collapse_reason: CollapseReason,
+    pub metrics: MetricsSummary,
+}

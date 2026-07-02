@@ -1,3 +1,3 @@
 fn main() {
-    println!("ALife simulation started");
+    println!("ALife Phase 1 core ready. Run `cargo test` for deterministic smoke checks.");
 }
