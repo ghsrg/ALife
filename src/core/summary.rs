@@ -27,6 +27,13 @@ pub struct MetricsSummary {
     pub final_energy: f32,
     pub heat: f32,
     pub waste: f32,
+    pub min_energy: f32,
+    pub max_energy: f32,
+    pub final_internal_resources: f32,
+    pub final_external_resources: f32,
+    pub final_used_capacity: f32,
+    pub final_free_capacity: f32,
+    pub growth_readiness: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

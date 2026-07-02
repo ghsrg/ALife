@@ -333,31 +333,47 @@ impl TickExecutor {
             SurvivalResult::Stable
         };
 
+        let min_energy = final_energy;
+        let max_energy = final_energy;
+
         Ok(RunSummary {
             tick: self.world.tick(),
             config_hash: config.config_hash(),
             survival_result,
             collapse_reason,
-            metrics: MetricsSummary {
+            metrics: self.build_metrics_summary(
                 final_energy,
-                heat: heat_next.raw(),
-                waste: waste_next.raw(),
-            },
+                heat_next.raw(),
+                waste_next.raw(),
+                min_energy,
+                max_energy,
+            ),
         })
     }
 
     pub fn run_until_configured_tick(&mut self) -> Result<RunSummary, TickError> {
         let target = self.world.config().world.tick_count.raw();
         let mut latest = self.step()?;
+        let mut min_energy = latest.metrics.final_energy;
+        let mut max_energy = latest.metrics.final_energy;
+
         if latest.survival_result == SurvivalResult::Collapse {
+            latest.metrics.min_energy = min_energy;
+            latest.metrics.max_energy = max_energy;
             return Ok(latest);
         }
+
         while self.world.tick().raw() < target {
             latest = self.step()?;
+            min_energy = min_energy.min(latest.metrics.final_energy);
+            max_energy = max_energy.max(latest.metrics.final_energy);
             if latest.survival_result == SurvivalResult::Collapse {
                 break;
             }
         }
+
+        latest.metrics.min_energy = min_energy;
+        latest.metrics.max_energy = max_energy;
         Ok(latest)
     }
 
@@ -365,6 +381,48 @@ impl TickExecutor {
         CommitSummary {
             ticks_committed: self.world.tick().raw(),
             events_emitted: 0,
+        }
+    }
+
+    fn aggregate_external_resources(&self) -> f32 {
+        (0..self.world.resources().layer_count())
+            .map(|layer| {
+                self.world
+                    .resources()
+                    .total_amount_for_layer(ResourceLayerIndex::from_raw(layer))
+                    .expect("layer range is derived from layer_count")
+                    .raw()
+            })
+            .sum()
+    }
+
+    fn build_metrics_summary(
+        &self,
+        final_energy: f32,
+        heat: f32,
+        waste: f32,
+        min_energy: f32,
+        max_energy: f32,
+    ) -> MetricsSummary {
+        let first = CellIndex::from_raw(0);
+        let cells = self.world.cells();
+        let final_internal_resources = cells.resource_amount(first).raw();
+        let final_used_capacity = cells.used_capacity(first).raw();
+        let final_free_capacity = cells.free_capacity(first).raw();
+        let energy_capacity = cells.energy(first).capacity().raw();
+        let growth_readiness = final_energy >= energy_capacity * 0.8 && final_free_capacity > 0.0;
+
+        MetricsSummary {
+            final_energy,
+            heat,
+            waste,
+            min_energy,
+            max_energy,
+            final_internal_resources,
+            final_external_resources: self.aggregate_external_resources(),
+            final_used_capacity,
+            final_free_capacity,
+            growth_readiness,
         }
     }
 }

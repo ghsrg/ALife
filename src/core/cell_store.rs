@@ -167,6 +167,10 @@ impl CellStore {
         CapacityAmount::new(used).expect("resource/material amounts are validated")
     }
 
+    pub fn capacity_limit(&self, index: CellIndex) -> CapacityAmount {
+        self.capacity_limits[index.raw()]
+    }
+
     pub fn free_capacity(&self, index: CellIndex) -> CapacityAmount {
         let free =
             (self.capacity_limits[index.raw()].raw() - self.used_capacity(index).raw()).max(0.0);

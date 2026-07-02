@@ -30,6 +30,10 @@ tags:
 - [[outputs/worklogs/2026-07-02-1701-PLAN-phase-1B-accounting-and-resource-grid|outputs/worklogs/2026-07-02-1701-PLAN-phase-1B-accounting-and-resource-grid]]
 - [[outputs/worklogs/2026-07-02-1747-PLAN-phase-1C-resource-interaction-smoke|outputs/worklogs/2026-07-02-1747-PLAN-phase-1C-resource-interaction-smoke]]
 - [[outputs/worklogs/2026-07-02-1810-PLAN-phase-1D-sustained-viability-gates|outputs/worklogs/2026-07-02-1810-PLAN-phase-1D-sustained-viability-gates]]
+- [[outputs/worklogs/2026-07-02-1855-PLAN-phase-2-global-roadmap|outputs/worklogs/2026-07-02-1855-PLAN-phase-2-global-roadmap]]
+- [[outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap]]
+- [[outputs/worklogs/2026-07-02-1935-PLAN-phase-3-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-3-global-roadmap]]
+- [[outputs/worklogs/2026-07-02-1935-PLAN-phase-4-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-4-global-roadmap]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents]]
@@ -71,6 +75,7 @@ tags:
 - [[outputs/worklogs/2026-07-02-1640-REPORT-over-capacity-resolution-hardening|outputs/worklogs/2026-07-02-1640-REPORT-over-capacity-resolution-hardening]]
 - [[outputs/worklogs/2026-07-02-1730-REPORT-phase-1B-accounting-and-resource-grid|outputs/worklogs/2026-07-02-1730-REPORT-phase-1B-accounting-and-resource-grid]]
 - [[outputs/worklogs/2026-07-02-1805-REPORT-phase-1C-resource-interaction-smoke|outputs/worklogs/2026-07-02-1805-REPORT-phase-1C-resource-interaction-smoke]]
+- [[outputs/worklogs/2026-07-02-1825-REPORT-phase-1D-sustained-viability-gates|outputs/worklogs/2026-07-02-1825-REPORT-phase-1D-sustained-viability-gates]]
 
 
 
@@ -80,4 +85,3 @@ tags:
 - [[outputs/worklogs/2026-07-01-1510-REPORT-early-stability-tool-completion|outputs/worklogs/2026-07-01-1510-REPORT-early-stability-tool-completion]]
 - [[outputs/worklogs/2026-07-01-1230-REPORT-robust-validation-upgrades|outputs/worklogs/2026-07-01-1230-REPORT-robust-validation-upgrades]]
 - [[outputs/worklogs/2026-07-01-1235-REPORT-advanced-static-calculator|outputs/worklogs/2026-07-01-1235-REPORT-advanced-static-calculator]]
-
