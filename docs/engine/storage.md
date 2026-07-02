@@ -86,6 +86,47 @@ debug:
 
 ---
 
+# Snapshot And Viewer I/O Scaling
+
+Small JSON snapshots are allowed for tests and tiny debug scenarios.
+
+Normal real-time or large-run output must not depend on full-world JSON frames.
+
+Required path:
+
+```text
+viewer:
+  read-only projection
+  viewport/frustum filtered Cells
+  LOD density maps when zoomed out
+  summarized resource/field tiles
+  compact binary or custom frame format when needed
+
+replay:
+  versioned binary snapshots
+  binary event logs
+  config hash + seed + engine version
+
+analytics:
+  bounded summaries
+  periodic aggregates
+  Parquet/DuckDB after run or async side path
+```
+
+Forbidden as normal path:
+
+```text
+full Cell state JSON every Tick
+full ResourceGrid dump every Tick
+full lineage tree snapshot every Tick
+viewer state as source of truth
+DB write blocking simulation Tick commit
+```
+
+If full dumps are needed for diagnostics, they must be explicit manual debug exports with size and frequency limits.
+
+---
+
 # Заборонено
 
 Не вводити:

@@ -24,7 +24,10 @@ tags:
 - [[docs/implementation/architecture|Architecture]] — базова архітектурна рамка реалізації: data-oriented deterministic core, clean/hexagonal outer shell, межі `alife-core`, runner, storage, viewer і analysis.
 - [[docs/implementation/implementation-phases|Implementation Phases]] — high-level фазовий roadmap: що будуємо в Phase 0-7, які gates має пройти кожна фаза, де починаються stability/calibration tools.
 - [[docs/implementation/phase-1-design|Phase 1 Design]] — детальніший дизайн першої runnable smoke-фази: мінімальний `WorldState`, `CellStore`, `ResourceGrid`, Tick pipeline, configs, scenarios і acceptance gates.
-- [[docs/implementation/early-stability-tool|Early Stability Tool]] — handoff-документ для окремого агента, який реалізуватиме `tools/early-stability/`: static calculator, micro headless simulator, CLI, scenarios, outputs і validation rules.
+- [[docs/implementation/phase-1-data-model|Phase 1 Data Model]] — Rust-side Phase 1 data model: typed ids, typed accounting wrappers, `WorldState`, `CellStore`, `ResourceGrid`, lifecycle state, deltas, events, snapshots and explicit future placeholders.
+- [[docs/implementation/phase-1-module-api|Phase 1 Module API]] — Rust module/API contract before coding: module ownership, public API shapes, dependency direction, Tick executor, runner boundary, errors and tests.
+- [[docs/implementation/optimization-paths|Optimization Paths]] — guardrail для майбутньої продуктивності: які storage/API рішення треба залишити відкритими, щоб не заблокувати SIMD, sparse/chunked grids, domain decomposition, LOD viewer і deterministic parallelism.
+- [[docs/implementation/early-stability-tool|Early Stability Tool]] — handoff-документ для окремого агента, який реалізує `tools/early-stability/`: static calculator, micro headless simulator, CLI, scenarios, outputs і validation rules.
 
 ---
 
@@ -43,6 +46,9 @@ tags:
 - implements: [[docs/decisions/ADR-0001-tech-stack|ADR-0001 Technology Stack]]
 - defines implementation: [[docs/implementation/architecture|Architecture]]
 - defines phase: [[docs/implementation/phase-1-design|Phase 1 Design]]
+- defines data model: [[docs/implementation/phase-1-data-model|Phase 1 Data Model]]
+- defines module API: [[docs/implementation/phase-1-module-api|Phase 1 Module API]]
+- preserves optimization paths: [[docs/implementation/optimization-paths|Optimization Paths]]
 - hands off tool: [[docs/implementation/early-stability-tool|Early Stability Tool]]
 - follows: [[docs/engine/technology-stack|Technology Stack]]
 - follows: [[docs/PRINCIPLES|Principles]]

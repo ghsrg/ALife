@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "8a95281a7a6347df",
+        "id": "da0be6f6dfd36523",
         "type": "tabs",
         "children": [
           {
-            "id": "ef9548f6b0130289",
+            "id": "e3002b83ee7ac103",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -179,8 +179,9 @@
       "bases:Створити нову базу": false
     }
   },
-  "active": "ef9548f6b0130289",
+  "active": "e3002b83ee7ac103",
   "lastOpenFiles": [
+    "outputs/reachability/single_cell_dormancy/REPORT.md",
     "outputs/worklogs/2026-06-30-1652-REPORT-readme-folder-links.md",
     "outputs/worklogs/README.md",
     "README.md",
