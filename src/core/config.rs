@@ -8,12 +8,40 @@ pub struct WorldConfig {
     pub tick_count: Tick,
     pub seed: Seed,
     pub size: WorldSize,
-    pub optional_decay_rate: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SpaceConfig {
     pub spatial_grid_size: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ResourceConfig {
+    pub initial_distribution: Vec<ResourceAmount>,
+    pub optional_decay_rate: f32,
+}
+
+impl ResourceConfig {
+    pub fn new(
+        initial_distribution: Vec<ResourceAmount>,
+        optional_decay_rate: f32,
+    ) -> Result<Self, ConfigError> {
+        if initial_distribution.is_empty() {
+            return Err(ConfigError::EmptyResourceDistribution);
+        }
+        if !optional_decay_rate.is_finite() || !(0.0..=1.0).contains(&optional_decay_rate) {
+            return Err(ConfigError::InvalidDecayRate);
+        }
+
+        Ok(Self {
+            initial_distribution,
+            optional_decay_rate,
+        })
+    }
+
+    pub fn layer_count(&self) -> usize {
+        self.initial_distribution.len()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -51,10 +79,11 @@ pub struct LifecycleConfig {
     pub critical_capacity_overrun: CapacityAmount,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
     pub world: WorldConfig,
     pub space: SpaceConfig,
+    pub resources: ResourceConfig,
     pub cell: CellInitialConfig,
     pub environment: EnvironmentConfig,
     pub lifecycle: LifecycleConfig,
@@ -66,12 +95,14 @@ pub enum ConfigError {
     InvalidSpatialGridSize,
     InvalidDormancyModifier,
     InvalidDecayRate,
+    EmptyResourceDistribution,
 }
 
 impl RuntimeConfig {
     pub fn new(
         world: WorldConfig,
         space: SpaceConfig,
+        resources: ResourceConfig,
         cell: CellInitialConfig,
         environment: EnvironmentConfig,
         lifecycle: LifecycleConfig,
@@ -88,13 +119,11 @@ impl RuntimeConfig {
         {
             return Err(ConfigError::InvalidDormancyModifier);
         }
-        if !world.optional_decay_rate.is_finite() || world.optional_decay_rate < 0.0 {
-            return Err(ConfigError::InvalidDecayRate);
-        }
 
         Ok(Self {
             world,
             space,
+            resources,
             cell,
             environment,
             lifecycle,
@@ -111,11 +140,17 @@ impl RuntimeConfig {
             self.cell.mandatory_cost_per_tick.raw().to_bits() as u64,
             self.cell.passive_energy_income.raw().to_bits() as u64,
             self.cell.capacity_limit.raw().to_bits() as u64,
-            self.world.optional_decay_rate.to_bits() as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);
         }
+        for amount in &self.resources.initial_distribution {
+            hash ^= amount.raw().to_bits() as u64;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+        hash ^= self.resources.optional_decay_rate.to_bits() as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+
         hash
     }
 }

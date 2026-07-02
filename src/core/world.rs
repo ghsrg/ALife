@@ -38,15 +38,22 @@ impl WorldState {
         let mut spatial_index = SpatialIndex::new();
         spatial_index.rebuild();
 
+        let resources = ResourceGrid::new(
+            config.world.size,
+            config.space.spatial_grid_size,
+            config.resources.initial_distribution.clone(),
+            config.resources.optional_decay_rate,
+        )
+        .map_err(|_| WorldInitError::InvalidInitialState)?;
+
+        let environment = EnvironmentState::from_config(&config.environment);
+
         Ok(Self {
             tick: Tick::from_raw(0),
             config,
             cells,
-            resources: ResourceGrid::new(
-                config.cell.initial_resource_amount,
-                config.world.optional_decay_rate,
-            ),
-            environment: EnvironmentState::from_config(&config.environment),
+            resources,
+            environment,
             spatial_index,
             events: EventBuffer::with_capacity(128),
         })

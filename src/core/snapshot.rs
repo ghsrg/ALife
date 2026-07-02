@@ -1,6 +1,7 @@
 use crate::core::cell_store::LifecycleState;
 use crate::core::ids::CellId;
-use crate::core::units::{EnergyAmount, Position, Radius, Tick};
+use crate::core::resources::ResourceLayerIndex;
+use crate::core::units::{EnergyAmount, Position, Radius, ResourceAmount, Tick};
 use crate::core::world::WorldState;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -18,6 +19,7 @@ pub struct CommittedSnapshot {
     pub cells: Vec<CellSnapshot>,
     pub heat: f32,
     pub waste: f32,
+    pub resource_layer_totals: Vec<ResourceAmount>,
 }
 
 impl CommittedSnapshot {
@@ -34,11 +36,21 @@ impl CommittedSnapshot {
             })
             .collect();
 
+        let resource_layer_totals = (0..world.resources().layer_count())
+            .map(|layer| {
+                world
+                    .resources()
+                    .total_amount_for_layer(ResourceLayerIndex::from_raw(layer))
+                    .expect("layer range is derived from layer_count")
+            })
+            .collect();
+
         Self {
             tick: world.tick(),
             cells,
             heat: world.environment().heat().raw(),
             waste: world.environment().waste().raw(),
+            resource_layer_totals,
         }
     }
 }

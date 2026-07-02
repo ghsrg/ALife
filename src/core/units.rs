@@ -176,3 +176,23 @@ impl WorldSize {
         self.height
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct GridCoord {
+    x: usize,
+    y: usize,
+}
+
+impl GridCoord {
+    pub const fn new(x: usize, y: usize) -> Self {
+        Self { x, y }
+    }
+
+    pub const fn x(self) -> usize {
+        self.x
+    }
+
+    pub const fn y(self) -> usize {
+        self.y
+    }
+}

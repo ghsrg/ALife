@@ -33,7 +33,7 @@ impl TickExecutor {
     }
 
     pub fn step(&mut self) -> Result<RunSummary, TickError> {
-        let config = *self.world.config();
+        let config = self.world.config().clone();
 
         let heat_next = HeatAmount::new(
             (self.world.environment().heat().raw()

@@ -1,6 +1,6 @@
 use crate::core::config::{
-    CellInitialConfig, ConfigError, EnvironmentConfig, LifecycleConfig, RuntimeConfig, SpaceConfig,
-    WorldConfig,
+    CellInitialConfig, ConfigError, EnvironmentConfig, LifecycleConfig, ResourceConfig,
+    RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
@@ -21,6 +21,8 @@ pub struct RawSpace {
 
 #[derive(Deserialize, Debug)]
 pub struct RawResources {
+    pub resource_type_ids: Vec<String>,
+    pub initial_distribution: Vec<f32>,
     pub optional_decay_rate: Option<f32>,
     pub passive_energy_income_placeholder: Option<f32>,
 }
@@ -106,11 +108,33 @@ impl RawScenarioConfig {
             .map_err(|e| ParseError::ValidationError(format!("Invalid world size: {:?}", e)))?;
         let optional_decay_rate = self.resources.optional_decay_rate.unwrap_or(0.0);
 
+        if self.resources.resource_type_ids.len() != self.resources.initial_distribution.len() {
+            return Err(ParseError::ValidationError(
+                "resource_type_ids length must match initial_distribution length".to_string(),
+            ));
+        }
+
+        let resource_amounts = self
+            .resources
+            .initial_distribution
+            .iter()
+            .map(|value| {
+                ResourceAmount::new(*value).map_err(|e| {
+                    ParseError::ValidationError(format!(
+                        "Invalid resource initial_distribution: {:?}",
+                        e
+                    ))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let resources = ResourceConfig::new(resource_amounts, optional_decay_rate)
+            .map_err(ParseError::ConfigValidationError)?;
+
         let world = WorldConfig {
             tick_count: Tick::from_raw(self.tick_count),
             seed: Seed::from_raw(self.seed),
             size,
-            optional_decay_rate,
         };
 
         let space = SpaceConfig {
@@ -211,7 +235,7 @@ impl RawScenarioConfig {
             })?,
         };
 
-        RuntimeConfig::new(world, space, cell, environment, lifecycle)
+        RuntimeConfig::new(world, space, resources, cell, environment, lifecycle)
             .map_err(ParseError::ConfigValidationError)
     }
 }

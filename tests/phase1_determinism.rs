@@ -1,5 +1,6 @@
 use alife::core::config::{
-    CellInitialConfig, EnvironmentConfig, LifecycleConfig, RuntimeConfig, SpaceConfig, WorldConfig,
+    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig, RuntimeConfig,
+    SpaceConfig, WorldConfig,
 };
 use alife::core::tick::TickExecutor;
 use alife::core::units::{
@@ -13,11 +14,11 @@ fn deterministic_config() -> RuntimeConfig {
             tick_count: Tick::from_raw(50),
             seed: Seed::from_raw(42),
             size: WorldSize::new(512.0, 512.0).unwrap(),
-            optional_decay_rate: 0.01,
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
         },
+        ResourceConfig::new(vec![ResourceAmount::new(10.0).unwrap()], 0.01).unwrap(),
         CellInitialConfig {
             position: Position::new(1.0, 1.0),
             radius: Radius::new(1.0).unwrap(),

@@ -1,6 +1,7 @@
 use alife::core::cell_store::{CellIndex, LifecycleState};
 use alife::core::config::{
-    CellInitialConfig, EnvironmentConfig, LifecycleConfig, RuntimeConfig, SpaceConfig, WorldConfig,
+    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig, RuntimeConfig,
+    SpaceConfig, WorldConfig,
 };
 use alife::core::summary::{CollapseReason, RunSummary, SurvivalResult};
 use alife::core::tick::TickExecutor;
@@ -57,11 +58,18 @@ fn runtime_config(
             tick_count: Tick::from_raw(tick_count),
             seed: Seed::from_raw(42),
             size: WorldSize::new(512.0, 512.0).unwrap(),
-            optional_decay_rate: 0.01,
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
         },
+        ResourceConfig::new(
+            vec![
+                ResourceAmount::new(10.0).unwrap(),
+                ResourceAmount::new(5.0).unwrap(),
+            ],
+            0.01,
+        )
+        .unwrap(),
         CellInitialConfig {
             position: Position::new(256.0, 256.0),
             radius: Radius::new(1.0).unwrap(),
