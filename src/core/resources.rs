@@ -1,4 +1,4 @@
-use crate::core::units::{GridCoord, ResourceAmount, WorldSize};
+use crate::core::units::{GridCoord, Position, ResourceAmount, WorldSize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ResourceLayerIndex(usize);
@@ -29,6 +29,7 @@ pub struct ResourceGrid {
     layer_count: usize,
     quantities: Vec<ResourceAmount>,
     optional_decay_rate: f32,
+    spatial_grid_size: f32,
 }
 
 impl ResourceGrid {
@@ -66,7 +67,17 @@ impl ResourceGrid {
             layer_count,
             quantities,
             optional_decay_rate: decay_rate,
+            spatial_grid_size,
         })
+    }
+
+    pub fn coord_for_position(&self, position: Position) -> GridCoord {
+        let max_x = self.width.saturating_sub(1);
+        let max_y = self.height.saturating_sub(1);
+        let x = (position.x() / self.spatial_grid_size).floor().max(0.0) as usize;
+        let y = (position.y() / self.spatial_grid_size).floor().max(0.0) as usize;
+
+        GridCoord::new(x.min(max_x), y.min(max_y))
     }
 
     pub const fn width(&self) -> usize {

@@ -2,8 +2,9 @@ use crate::core::cell_store::{CellIndex, EnergyBuffer, LifecycleState, RuntimeFl
 use crate::core::config::RuntimeConfig;
 use crate::core::deltas::CommitSummary;
 use crate::core::events::EventKind;
+use crate::core::resources::ResourceLayerIndex;
 use crate::core::summary::{CollapseReason, MetricsSummary, RunSummary, SurvivalResult};
-use crate::core::units::{EnergyAmount, HeatAmount, WasteAmount};
+use crate::core::units::{EnergyAmount, HeatAmount, ResourceAmount, WasteAmount};
 use crate::core::world::{WorldInitError, WorldState};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -34,10 +35,91 @@ impl TickExecutor {
 
     pub fn step(&mut self) -> Result<RunSummary, TickError> {
         let config = self.world.config().clone();
+        let len = self.world.cells().len();
 
+        let mut metabolism_heat_total = 0.0_f32;
+        let mut metabolism_waste_total = 0.0_f32;
+
+        // Phase A: Uptake and Metabolism
+        for i in 0..len {
+            let index = CellIndex::from_raw(i);
+            if self.world.cells().lifecycle_state(index) == LifecycleState::Dead {
+                continue;
+            }
+
+            // Uptake
+            if config.resource_interaction.enabled {
+                let layer =
+                    ResourceLayerIndex::from_raw(config.resource_interaction.uptake_layer_index);
+                let coord = self
+                    .world
+                    .resources()
+                    .coord_for_position(self.world.cells().position(index));
+                let external_available = self
+                    .world
+                    .resources()
+                    .amount_at(layer, coord)
+                    .expect("resource interaction layer is config-validated");
+                let requested = ResourceAmount::new(
+                    external_available
+                        .raw()
+                        .min(config.resource_interaction.max_uptake_per_tick.raw()),
+                )
+                .expect("requested uptake is clamped");
+
+                let accepted = {
+                    let cells = self.world.cells_mut_for_commit();
+                    cells.add_resources_limited_by_capacity(index, requested)
+                };
+
+                let remaining_external = external_available.saturating_sub(accepted);
+                self.world
+                    .resources_mut_for_commit()
+                    .set_amount_at(layer, coord, remaining_external)
+                    .expect("resource interaction coord is derived from grid bounds");
+            }
+
+            // Metabolism
+            let mut metabolism_heat = 0.0_f32;
+            let mut metabolism_waste = 0.0_f32;
+            let mut metabolism_energy = EnergyAmount::zero();
+
+            if config.resource_interaction.enabled {
+                let consumed = {
+                    let cells = self.world.cells_mut_for_commit();
+                    cells.consume_resources(
+                        index,
+                        config.resource_interaction.metabolism_resource_per_tick,
+                    )
+                };
+
+                metabolism_energy = EnergyAmount::new(
+                    consumed.raw() * config.resource_interaction.energy_per_resource,
+                )
+                .expect("metabolism energy is config-validated");
+                metabolism_heat = consumed.raw() * config.resource_interaction.heat_per_resource;
+                metabolism_waste = consumed.raw() * config.resource_interaction.waste_per_resource;
+            }
+
+            metabolism_heat_total += metabolism_heat;
+            metabolism_waste_total += metabolism_waste;
+
+            if metabolism_energy.raw() > 0.0 {
+                let cells = self.world.cells_mut_for_commit();
+                let current = cells.energy(index);
+                let new_current = current
+                    .current()
+                    .saturating_add(metabolism_energy)
+                    .clamp_max(current.capacity());
+                cells.set_energy(index, EnergyBuffer::new(new_current, current.capacity()));
+            }
+        }
+
+        // Phase B: Compute environment updates
         let heat_next = HeatAmount::new(
             (self.world.environment().heat().raw()
                 + config.environment.heat_generated_per_tick.raw()
+                + metabolism_heat_total
                 - config.environment.heat_dissipation_rate.raw())
             .max(0.0),
         )
@@ -46,6 +128,7 @@ impl TickExecutor {
         let waste_next = WasteAmount::new(
             (self.world.environment().waste().raw()
                 + config.environment.waste_generated_per_tick.raw()
+                + metabolism_waste_total
                 - config.environment.waste_sink_rate.raw())
             .max(0.0),
         )
@@ -60,7 +143,7 @@ impl TickExecutor {
         let mut overall_lifecycle = LifecycleState::Alive;
         let mut collapse_reason = CollapseReason::None;
 
-        let len = self.world.cells().len();
+        // Phase C: Pay cost and check lifecycle
         for i in 0..len {
             let index = CellIndex::from_raw(i);
             let cell_state_before = self.world.cells().lifecycle_state(index);

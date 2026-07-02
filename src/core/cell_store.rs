@@ -141,6 +141,10 @@ impl CellStore {
         self.positions[index.raw()]
     }
 
+    pub fn radius(&self, index: CellIndex) -> Radius {
+        self.radii[index.raw()]
+    }
+
     pub fn energy(&self, index: CellIndex) -> EnergyBuffer {
         self.energy_buffers[index.raw()]
     }
@@ -167,6 +171,33 @@ impl CellStore {
         let free =
             (self.capacity_limits[index.raw()].raw() - self.used_capacity(index).raw()).max(0.0);
         CapacityAmount::new(free).expect("free capacity is clamped")
+    }
+
+    pub fn resource_amount(&self, index: CellIndex) -> ResourceAmount {
+        self.resources[index.raw()]
+    }
+
+    pub fn add_resources_limited_by_capacity(
+        &mut self,
+        index: CellIndex,
+        requested: ResourceAmount,
+    ) -> ResourceAmount {
+        let accepted_raw = requested.raw().min(self.free_capacity(index).raw());
+        let accepted = ResourceAmount::new(accepted_raw).expect("accepted uptake is clamped");
+        self.resources[index.raw()] = self.resources[index.raw()].saturating_add(accepted);
+        accepted
+    }
+
+    pub fn consume_resources(
+        &mut self,
+        index: CellIndex,
+        requested: ResourceAmount,
+    ) -> ResourceAmount {
+        let available = self.resources[index.raw()];
+        let consumed_raw = requested.raw().min(available.raw());
+        let consumed = ResourceAmount::new(consumed_raw).expect("consumed resource is clamped");
+        self.resources[index.raw()] = available.saturating_sub(consumed);
+        consumed
     }
 
     pub(crate) fn set_energy(&mut self, index: CellIndex, energy: EnergyBuffer) {

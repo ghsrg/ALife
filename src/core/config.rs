@@ -79,11 +79,56 @@ pub struct LifecycleConfig {
     pub critical_capacity_overrun: CapacityAmount,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ResourceInteractionConfig {
+    pub enabled: bool,
+    pub uptake_layer_index: usize,
+    pub max_uptake_per_tick: ResourceAmount,
+    pub metabolism_resource_per_tick: ResourceAmount,
+    pub energy_per_resource: f32,
+    pub heat_per_resource: f32,
+    pub waste_per_resource: f32,
+}
+
+impl ResourceInteractionConfig {
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+            uptake_layer_index: 0,
+            max_uptake_per_tick: ResourceAmount::zero(),
+            metabolism_resource_per_tick: ResourceAmount::zero(),
+            energy_per_resource: 0.0,
+            heat_per_resource: 0.0,
+            waste_per_resource: 0.0,
+        }
+    }
+
+    pub fn validate(self, resources: &ResourceConfig) -> Result<(), ConfigError> {
+        if !self.enabled {
+            return Ok(());
+        }
+        if self.uptake_layer_index >= resources.layer_count() {
+            return Err(ConfigError::InvalidResourceInteractionLayer);
+        }
+        for value in [
+            self.energy_per_resource,
+            self.heat_per_resource,
+            self.waste_per_resource,
+        ] {
+            if !value.is_finite() || value < 0.0 {
+                return Err(ConfigError::InvalidResourceInteractionRate);
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
     pub world: WorldConfig,
     pub space: SpaceConfig,
     pub resources: ResourceConfig,
+    pub resource_interaction: ResourceInteractionConfig,
     pub cell: CellInitialConfig,
     pub environment: EnvironmentConfig,
     pub lifecycle: LifecycleConfig,
@@ -96,6 +141,8 @@ pub enum ConfigError {
     InvalidDormancyModifier,
     InvalidDecayRate,
     EmptyResourceDistribution,
+    InvalidResourceInteractionLayer,
+    InvalidResourceInteractionRate,
 }
 
 impl RuntimeConfig {
@@ -103,6 +150,7 @@ impl RuntimeConfig {
         world: WorldConfig,
         space: SpaceConfig,
         resources: ResourceConfig,
+        resource_interaction: ResourceInteractionConfig,
         cell: CellInitialConfig,
         environment: EnvironmentConfig,
         lifecycle: LifecycleConfig,
@@ -120,10 +168,13 @@ impl RuntimeConfig {
             return Err(ConfigError::InvalidDormancyModifier);
         }
 
+        resource_interaction.validate(&resources)?;
+
         Ok(Self {
             world,
             space,
             resources,
+            resource_interaction,
             cell,
             environment,
             lifecycle,
@@ -150,6 +201,25 @@ impl RuntimeConfig {
         }
         hash ^= self.resources.optional_decay_rate.to_bits() as u64;
         hash = hash.wrapping_mul(0x100000001b3);
+
+        for value in [
+            self.resource_interaction.enabled as u64,
+            self.resource_interaction.uptake_layer_index as u64,
+            self.resource_interaction
+                .max_uptake_per_tick
+                .raw()
+                .to_bits() as u64,
+            self.resource_interaction
+                .metabolism_resource_per_tick
+                .raw()
+                .to_bits() as u64,
+            self.resource_interaction.energy_per_resource.to_bits() as u64,
+            self.resource_interaction.heat_per_resource.to_bits() as u64,
+            self.resource_interaction.waste_per_resource.to_bits() as u64,
+        ] {
+            hash ^= value;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
 
         hash
     }

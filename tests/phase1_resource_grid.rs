@@ -80,7 +80,8 @@ fn resource_grid_rejects_out_of_bounds_access() {
 }
 
 use alife::core::config::{
-    CellInitialConfig, EnvironmentConfig, LifecycleConfig, RuntimeConfig, SpaceConfig, WorldConfig,
+    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceInteractionConfig,
+    RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use alife::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, Seed, Tick,
@@ -106,6 +107,7 @@ fn grid_config() -> RuntimeConfig {
             0.1,
         )
         .unwrap(),
+        ResourceInteractionConfig::disabled(),
         CellInitialConfig {
             position: Position::new(1.0, 1.0),
             radius: Radius::new(1.0).unwrap(),

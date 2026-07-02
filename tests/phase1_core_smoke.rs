@@ -61,7 +61,7 @@ fn spatial_wrappers_validate_basic_bounds() {
 
 use alife::core::config::{
     CellInitialConfig, ConfigError, EnvironmentConfig, LifecycleConfig, ResourceConfig,
-    RuntimeConfig, SpaceConfig, WorldConfig,
+    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use alife::core::units::Seed;
 
@@ -76,6 +76,7 @@ pub fn valid_config() -> RuntimeConfig {
             spatial_grid_size: 8.0,
         },
         ResourceConfig::new(vec![ResourceAmount::new(10.0).unwrap()], 0.01).unwrap(),
+        ResourceInteractionConfig::disabled(),
         CellInitialConfig {
             position: Position::new(1.0, 1.0),
             radius: Radius::new(1.0).unwrap(),
@@ -121,6 +122,7 @@ fn runtime_config_validates_energy_capacity() {
             spatial_grid_size: 8.0,
         },
         ResourceConfig::new(vec![ResourceAmount::new(10.0).unwrap()], 0.01).unwrap(),
+        ResourceInteractionConfig::disabled(),
         CellInitialConfig {
             position: Position::new(1.0, 1.0),
             radius: Radius::new(1.0).unwrap(),
@@ -194,4 +196,15 @@ fn snapshot_and_viewer_frame_are_read_only_projections() {
     assert_eq!(snapshot.cells.len(), 1);
     assert_eq!(frame.cells.len(), 1);
     assert_eq!(executor.world().tick().raw(), 1);
+}
+
+#[test]
+fn snapshot_uses_stored_cell_radius_from_config() {
+    let mut config = valid_config();
+    config.cell.radius = Radius::new(2.0).unwrap();
+
+    let world = WorldState::from_config(config).unwrap();
+    let snapshot = CommittedSnapshot::from_world(&world);
+
+    assert_eq!(snapshot.cells[0].radius.raw(), 2.0);
 }

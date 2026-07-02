@@ -30,7 +30,7 @@ impl CommittedSnapshot {
             .map(|index| CellSnapshot {
                 id: world.cells().id_at(index),
                 position: world.cells().position(index),
-                radius: Radius::new(1.0).expect("Phase 1 radius is validated at init"),
+                radius: world.cells().radius(index),
                 energy: world.cells().energy(index).current(),
                 lifecycle_state: world.cells().lifecycle_state(index),
             })

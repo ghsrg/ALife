@@ -1,6 +1,6 @@
 use crate::core::config::{
     CellInitialConfig, ConfigError, EnvironmentConfig, LifecycleConfig, ResourceConfig,
-    RuntimeConfig, SpaceConfig, WorldConfig,
+    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
@@ -63,6 +63,17 @@ pub struct RawLifecycle {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RawResourceInteraction {
+    pub enabled: Option<bool>,
+    pub uptake_layer_index: Option<usize>,
+    pub max_uptake_per_tick: Option<f32>,
+    pub metabolism_resource_per_tick: Option<f32>,
+    pub energy_per_resource: Option<f32>,
+    pub heat_per_resource: Option<f32>,
+    pub waste_per_resource: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RawScenarioConfig {
     pub scenario_id: String,
     pub seed: u64,
@@ -70,6 +81,7 @@ pub struct RawScenarioConfig {
     pub world: RawWorld,
     pub space: RawSpace,
     pub resources: RawResources,
+    pub resource_interaction: Option<RawResourceInteraction>,
     pub cell: RawCell,
     pub environment: RawEnvironment,
     pub lifecycle: RawLifecycle,
@@ -102,7 +114,6 @@ impl RawScenarioConfig {
 
         let initial_resources_sum: f32 = self.cell.initial_resources.values().sum();
         let initial_materials_sum: f32 = self.cell.initial_materials.values().sum();
-        let _used_capacity = initial_resources_sum + initial_materials_sum;
 
         let size = WorldSize::new(self.world.size[0], self.world.size[1])
             .map_err(|e| ParseError::ValidationError(format!("Invalid world size: {:?}", e)))?;
@@ -130,6 +141,33 @@ impl RawScenarioConfig {
 
         let resources = ResourceConfig::new(resource_amounts, optional_decay_rate)
             .map_err(ParseError::ConfigValidationError)?;
+
+        let resource_interaction = if let Some(raw_interaction) = self.resource_interaction {
+            ResourceInteractionConfig {
+                enabled: raw_interaction.enabled.unwrap_or(false),
+                uptake_layer_index: raw_interaction.uptake_layer_index.unwrap_or(0),
+                max_uptake_per_tick: ResourceAmount::new(
+                    raw_interaction.max_uptake_per_tick.unwrap_or(0.0),
+                )
+                .map_err(|e| {
+                    ParseError::ValidationError(format!("Invalid max_uptake_per_tick: {:?}", e))
+                })?,
+                metabolism_resource_per_tick: ResourceAmount::new(
+                    raw_interaction.metabolism_resource_per_tick.unwrap_or(0.0),
+                )
+                .map_err(|e| {
+                    ParseError::ValidationError(format!(
+                        "Invalid metabolism_resource_per_tick: {:?}",
+                        e
+                    ))
+                })?,
+                energy_per_resource: raw_interaction.energy_per_resource.unwrap_or(0.0),
+                heat_per_resource: raw_interaction.heat_per_resource.unwrap_or(0.0),
+                waste_per_resource: raw_interaction.waste_per_resource.unwrap_or(0.0),
+            }
+        } else {
+            ResourceInteractionConfig::disabled()
+        };
 
         let world = WorldConfig {
             tick_count: Tick::from_raw(self.tick_count),
@@ -235,7 +273,15 @@ impl RawScenarioConfig {
             })?,
         };
 
-        RuntimeConfig::new(world, space, resources, cell, environment, lifecycle)
-            .map_err(ParseError::ConfigValidationError)
+        RuntimeConfig::new(
+            world,
+            space,
+            resources,
+            resource_interaction,
+            cell,
+            environment,
+            lifecycle,
+        )
+        .map_err(ParseError::ConfigValidationError)
     }
 }

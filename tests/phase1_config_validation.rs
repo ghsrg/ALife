@@ -1,7 +1,7 @@
 use alife::core::cell_store::{CellIndex, LifecycleState};
 use alife::core::config::{
-    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig, RuntimeConfig,
-    SpaceConfig, WorldConfig,
+    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
+    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use alife::core::summary::{CollapseReason, RunSummary, SurvivalResult};
 use alife::core::tick::TickExecutor;
@@ -70,6 +70,7 @@ fn runtime_config(
             0.01,
         )
         .unwrap(),
+        ResourceInteractionConfig::disabled(),
         CellInitialConfig {
             position: Position::new(256.0, 256.0),
             radius: Radius::new(1.0).unwrap(),

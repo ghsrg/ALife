@@ -91,8 +91,8 @@ fn lifecycle_enters_dormancy_when_unpaid_but_dormant_cost_is_payable() {
 }
 
 use alife::core::config::{
-    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig, RuntimeConfig,
-    SpaceConfig, WorldConfig,
+    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
+    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use alife::core::resources::ResourceLayerIndex;
 use alife::core::units::GridCoord;
@@ -109,6 +109,7 @@ pub fn valid_config() -> RuntimeConfig {
             spatial_grid_size: 8.0,
         },
         ResourceConfig::new(vec![ResourceAmount::new(10.0).unwrap()], 0.01).unwrap(),
+        ResourceInteractionConfig::disabled(),
         CellInitialConfig {
             position: Position::new(1.0, 1.0),
             radius: Radius::new(1.0).unwrap(),
