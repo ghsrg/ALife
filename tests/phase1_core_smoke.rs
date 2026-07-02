@@ -71,6 +71,7 @@ pub fn valid_config() -> RuntimeConfig {
             tick_count: Tick::from_raw(10),
             seed: Seed::from_raw(1),
             size: WorldSize::new(512.0, 512.0).unwrap(),
+            optional_decay_rate: 0.01,
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
@@ -115,6 +116,7 @@ fn runtime_config_validates_energy_capacity() {
             tick_count: Tick::from_raw(10),
             seed: Seed::from_raw(1),
             size: WorldSize::new(512.0, 512.0).unwrap(),
+            optional_decay_rate: 0.01,
         },
         SpaceConfig {
             spatial_grid_size: 8.0,

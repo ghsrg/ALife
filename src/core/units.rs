@@ -1,4 +1,5 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct Tick(u64);
 
 impl Tick {
@@ -16,6 +17,7 @@ impl Tick {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct Seed(u64);
 
 impl Seed {
@@ -47,11 +49,17 @@ fn validate_non_negative(value: f32) -> Result<f32, AmountError> {
 macro_rules! amount_type {
     ($name:ident) => {
         #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+        #[repr(transparent)]
         pub struct $name(f32);
 
         impl $name {
             pub fn new(value: f32) -> Result<Self, AmountError> {
                 validate_non_negative(value).map(Self)
+            }
+
+            #[allow(dead_code)]
+            pub(crate) const fn new_unchecked(value: f32) -> Self {
+                Self(value)
             }
 
             pub const fn zero() -> Self {
@@ -85,6 +93,7 @@ amount_type!(HeatAmount);
 amount_type!(WasteAmount);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[repr(transparent)]
 pub struct Temperature(f32);
 
 impl Temperature {
@@ -118,6 +127,7 @@ impl Position {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[repr(transparent)]
 pub struct Radius(f32);
 
 impl Radius {
@@ -129,6 +139,11 @@ impl Radius {
             return Err(AmountError::Negative);
         }
         Ok(Self(value))
+    }
+
+    #[allow(dead_code)]
+    pub(crate) const fn new_unchecked(value: f32) -> Self {
+        Self(value)
     }
 
     pub const fn raw(self) -> f32 {

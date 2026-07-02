@@ -8,6 +8,7 @@ pub struct WorldConfig {
     pub tick_count: Tick,
     pub seed: Seed,
     pub size: WorldSize,
+    pub optional_decay_rate: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -64,6 +65,7 @@ pub enum ConfigError {
     InitialEnergyExceedsCapacity,
     InvalidSpatialGridSize,
     InvalidDormancyModifier,
+    InvalidDecayRate,
 }
 
 impl RuntimeConfig {
@@ -86,6 +88,9 @@ impl RuntimeConfig {
         {
             return Err(ConfigError::InvalidDormancyModifier);
         }
+        if !world.optional_decay_rate.is_finite() || world.optional_decay_rate < 0.0 {
+            return Err(ConfigError::InvalidDecayRate);
+        }
 
         Ok(Self {
             world,
@@ -106,6 +111,7 @@ impl RuntimeConfig {
             self.cell.mandatory_cost_per_tick.raw().to_bits() as u64,
             self.cell.passive_energy_income.raw().to_bits() as u64,
             self.cell.capacity_limit.raw().to_bits() as u64,
+            self.world.optional_decay_rate.to_bits() as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);

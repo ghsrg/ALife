@@ -42,7 +42,10 @@ impl WorldState {
             tick: Tick::from_raw(0),
             config,
             cells,
-            resources: ResourceGrid::phase1_placeholder(config.cell.initial_resource_amount),
+            resources: ResourceGrid::new(
+                config.cell.initial_resource_amount,
+                config.world.optional_decay_rate,
+            ),
             environment: EnvironmentState::from_config(&config.environment),
             spatial_index,
             events: EventBuffer::with_capacity(128),
@@ -67,6 +70,10 @@ impl WorldState {
 
     pub fn resources(&self) -> &ResourceGrid {
         &self.resources
+    }
+
+    pub fn resources_mut_for_commit(&mut self) -> &mut ResourceGrid {
+        &mut self.resources
     }
 
     pub fn environment(&self) -> EnvironmentState {

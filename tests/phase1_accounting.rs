@@ -101,6 +101,7 @@ pub fn valid_config() -> RuntimeConfig {
             tick_count: Tick::from_raw(10),
             seed: Seed::from_raw(1),
             size: WorldSize::new(512.0, 512.0).unwrap(),
+            optional_decay_rate: 0.01,
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
@@ -193,4 +194,25 @@ fn tick_executor_reports_waste_limit_collapse() {
 
     assert_eq!(summary.survival_result, SurvivalResult::Collapse);
     assert_eq!(summary.collapse_reason, CollapseReason::WasteLimitExceeded);
+}
+
+#[test]
+fn tick_executor_decays_resource_grid() {
+    let mut config = valid_config();
+    config.world.optional_decay_rate = 0.1;
+    config.cell.initial_resource_amount = ResourceAmount::new(10.0).unwrap();
+
+    let mut executor = TickExecutor::new(config).unwrap();
+    assert_eq!(executor.world().resources().layers()[0].raw(), 10.0);
+
+    let _ = executor.step().unwrap();
+    assert_eq!(executor.world().resources().layers()[0].raw(), 9.0);
+
+    let _ = executor.step().unwrap();
+    let val2 = executor.world().resources().layers()[0].raw();
+    assert!(
+        (val2 - 8.1).abs() < 1e-5,
+        "Expected approx 8.1, got {}",
+        val2
+    );
 }

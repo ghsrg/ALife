@@ -13,6 +13,7 @@ fn deterministic_config() -> RuntimeConfig {
             tick_count: Tick::from_raw(50),
             seed: Seed::from_raw(42),
             size: WorldSize::new(512.0, 512.0).unwrap(),
+            optional_decay_rate: 0.01,
         },
         SpaceConfig {
             spatial_grid_size: 8.0,

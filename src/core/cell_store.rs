@@ -154,7 +154,12 @@ impl CellStore {
     }
 
     pub fn used_capacity(&self, index: CellIndex) -> CapacityAmount {
-        let used = self.resources[index.raw()].raw() + self.materials[index.raw()].raw();
+        let genome_capacity_placeholder = 0.0;
+        let internal_fragments_capacity_used = 0.0;
+        let used = self.resources[index.raw()].raw()
+            + self.materials[index.raw()].raw()
+            + genome_capacity_placeholder
+            + internal_fragments_capacity_used;
         CapacityAmount::new(used).expect("resource/material amounts are validated")
     }
 
