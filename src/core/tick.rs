@@ -60,9 +60,9 @@ impl TickExecutor {
         let mut overall_lifecycle = LifecycleState::Alive;
         let mut collapse_reason = CollapseReason::None;
 
-        let indices: Vec<CellIndex> = self.world.cells().iter_indices().collect();
-
-        for index in indices {
+        let len = self.world.cells().len();
+        for i in 0..len {
+            let index = CellIndex::from_raw(i);
             let cell_state_before = self.world.cells().lifecycle_state(index);
             let current = self.world.cells().energy(index);
             let available = current
@@ -202,9 +202,26 @@ impl TickExecutor {
                 );
             }
 
-            if index.raw() == 0 {
-                final_energy = energy_after_clamped.raw();
-                overall_lifecycle = next_state;
+            final_energy += energy_after_clamped.raw();
+
+            match (overall_lifecycle, next_state) {
+                (LifecycleState::Dead, _) | (_, LifecycleState::Dead) => {
+                    overall_lifecycle = LifecycleState::Dead;
+                }
+                (LifecycleState::Stressed, _) | (_, LifecycleState::Stressed) => {
+                    overall_lifecycle = LifecycleState::Stressed;
+                }
+                (LifecycleState::Dormant, _) | (_, LifecycleState::Dormant) => {
+                    overall_lifecycle = LifecycleState::Dormant;
+                }
+                _ => {
+                    overall_lifecycle = LifecycleState::Alive;
+                }
+            }
+
+            if collapse_reason == CollapseReason::None
+                && cell_collapse_reason != CollapseReason::None
+            {
                 collapse_reason = cell_collapse_reason;
             }
         }

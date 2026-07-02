@@ -422,7 +422,7 @@ fn dump_current_phase1_rust_config_results() {
 
 #[test]
 fn native_toml_parser_loads_valid_scenarios() {
-    use alife::core::config_parser::RawScenarioConfig;
+    use alife::runner::config_parser::RawScenarioConfig;
     use std::fs;
 
     let scenarios = [
@@ -448,15 +448,38 @@ fn native_toml_parser_loads_valid_scenarios() {
 }
 
 #[test]
-fn native_toml_parser_rejects_over_capacity_scenario() {
-    use alife::core::config_parser::RawScenarioConfig;
+fn native_toml_parser_loads_over_capacity_scenario() {
+    use alife::runner::config_parser::RawScenarioConfig;
     use std::fs;
 
     let path = "tools/early-stability/scenarios/single_cell_over_capacity.toml";
     let content = fs::read_to_string(path).expect("Failed to read over-capacity scenario");
     let config_res = RawScenarioConfig::parse(&content);
     assert!(
-        config_res.is_err(),
-        "Expected error for over-capacity configuration, but got success"
+        config_res.is_ok(),
+        "Expected success for loading over-capacity configuration, but got error: {:?}",
+        config_res.err()
+    );
+}
+
+#[test]
+fn parsed_over_capacity_toml_collapses_in_runtime() {
+    use alife::runner::config_parser::RawScenarioConfig;
+    use std::fs;
+
+    let path = "tools/early-stability/scenarios/single_cell_over_capacity.toml";
+    let content = fs::read_to_string(path).expect("Failed to read over-capacity scenario");
+    let config =
+        RawScenarioConfig::parse(&content).expect("Failed to parse over-capacity scenario");
+
+    assert_scenario(
+        config,
+        ScenarioExpectation {
+            scenario_id: "single_cell_over_capacity",
+            expected_result: SurvivalResult::Collapse,
+            expected_reason: CollapseReason::CapacityExceeded,
+            expected_tick: 1,
+            expected_lifecycle: LifecycleState::Dead,
+        },
     );
 }

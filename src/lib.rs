@@ -1,4 +1,5 @@
 pub mod core;
+pub mod runner;
 
 pub mod cell;
 pub mod organism;

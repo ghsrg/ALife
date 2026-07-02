@@ -26,6 +26,8 @@ tags:
 - [[outputs/worklogs/2026-07-02-1225-PLAN-phase-1-rust-core-tdd|outputs/worklogs/2026-07-02-1225-PLAN-phase-1-rust-core-tdd]]
 - [[outputs/worklogs/2026-07-02-1503-PLAN-phase-1-rust-config-validation|outputs/worklogs/2026-07-02-1503-PLAN-phase-1-rust-config-validation]]
 - [[outputs/worklogs/2026-07-02-1610-PLAN-phase-1-hardening|outputs/worklogs/2026-07-02-1610-PLAN-phase-1-hardening]]
+- [[outputs/worklogs/2026-07-02-1625-PLAN-parser-boundary-and-summary-hardening|outputs/worklogs/2026-07-02-1625-PLAN-parser-boundary-and-summary-hardening]]
+- [[outputs/worklogs/2026-07-02-1701-PLAN-phase-1B-accounting-and-resource-grid|outputs/worklogs/2026-07-02-1701-PLAN-phase-1B-accounting-and-resource-grid]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents]]
@@ -63,6 +65,8 @@ tags:
 - [[outputs/worklogs/2026-07-02-1359-REPORT-phase-1-rust-core|outputs/worklogs/2026-07-02-1359-REPORT-phase-1-rust-core]]
 - [[outputs/worklogs/2026-07-02-1600-REPORT-phase-1-rust-config-validation|outputs/worklogs/2026-07-02-1600-REPORT-phase-1-rust-config-validation]]
 - [[outputs/worklogs/2026-07-02-1620-REPORT-phase-1-hardening|outputs/worklogs/2026-07-02-1620-REPORT-phase-1-hardening]]
+- [[outputs/worklogs/2026-07-02-1630-REPORT-parser-boundary-and-summary-hardening|outputs/worklogs/2026-07-02-1630-REPORT-parser-boundary-and-summary-hardening]]
+- [[outputs/worklogs/2026-07-02-1640-REPORT-over-capacity-resolution-hardening|outputs/worklogs/2026-07-02-1640-REPORT-over-capacity-resolution-hardening]]
 
 
 
@@ -72,7 +76,6 @@ tags:
 - [[outputs/worklogs/2026-07-01-1510-REPORT-early-stability-tool-completion|outputs/worklogs/2026-07-01-1510-REPORT-early-stability-tool-completion]]
 - [[outputs/worklogs/2026-07-01-1230-REPORT-robust-validation-upgrades|outputs/worklogs/2026-07-01-1230-REPORT-robust-validation-upgrades]]
 - [[outputs/worklogs/2026-07-01-1235-REPORT-advanced-static-calculator|outputs/worklogs/2026-07-01-1235-REPORT-advanced-static-calculator]]
-
 
 
 

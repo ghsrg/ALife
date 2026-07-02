@@ -100,13 +100,7 @@ impl RawScenarioConfig {
 
         let initial_resources_sum: f32 = self.cell.initial_resources.values().sum();
         let initial_materials_sum: f32 = self.cell.initial_materials.values().sum();
-        let used_capacity = initial_resources_sum + initial_materials_sum;
-        if used_capacity > self.cell.capacity_limit {
-            return Err(ParseError::ValidationError(format!(
-                "Initial resources + materials ({}) exceed capacity limit ({})",
-                used_capacity, self.cell.capacity_limit
-            )));
-        }
+        let _used_capacity = initial_resources_sum + initial_materials_sum;
 
         let size = WorldSize::new(self.world.size[0], self.world.size[1])
             .map_err(|e| ParseError::ValidationError(format!("Invalid world size: {:?}", e)))?;
