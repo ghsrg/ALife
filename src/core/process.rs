@@ -54,6 +54,7 @@ pub enum ProcessId {
     MaterialSynthesis,
     GrowthResourceAllocation,
     Division,
+    ContractileDisplacement,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -71,6 +72,7 @@ pub enum RejectionReason {
     LifecycleStateDead,
     RadiusBelowTarget,
     PressureTooHigh,
+    NoPressure,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

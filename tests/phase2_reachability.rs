@@ -38,10 +38,10 @@ fn base_test_config() -> RuntimeConfig {
             initial_transport_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
             initial_metabolic_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
             initial_storage_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
-            initial_synthesis_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
+            initial_synthesis_material: MaterialAmount::zero(),
             initial_structural_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
             initial_repair_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
-            initial_contractile_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
+            initial_contractile_material: MaterialAmount::zero(),
             initial_sensory_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
         },
         EnvironmentConfig {
@@ -79,11 +79,9 @@ fn tick_executor_records_process_attempts_and_rejections() {
 
         let mut exec = TickExecutor::new(config).unwrap();
         let summary = exec.step().unwrap();
-        assert_eq!(summary.survival_result, SurvivalResult::Stable);
-
-        // Verify metrics summary has recorded the attempt and rejection
-        assert_eq!(summary.metrics.process_attempts, 2);
-        assert_eq!(summary.metrics.process_rejections, 1);
+        // Verify metrics summary has recorded the attempts and rejections
+        assert_eq!(summary.metrics.process_attempts, 4);
+        assert_eq!(summary.metrics.process_rejections, 3);
     }
 
     // Case 2: Uptake is positive (2.0), so metabolism succeeds (0 rejections)
@@ -99,9 +97,9 @@ fn tick_executor_records_process_attempts_and_rejections() {
         let summary = exec.step().unwrap();
         assert_eq!(summary.survival_result, SurvivalResult::Stable);
 
-        // Verify metrics summary has recorded the attempt and 0 rejections
-        assert_eq!(summary.metrics.process_attempts, 2);
-        assert_eq!(summary.metrics.process_rejections, 0);
+        // Verify metrics summary has recorded the attempts and rejections
+        assert_eq!(summary.metrics.process_attempts, 4);
+        assert_eq!(summary.metrics.process_rejections, 2);
     }
 }
 

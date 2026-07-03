@@ -1,6 +1,7 @@
 use crate::core::config::{
-    CellInitialConfig, ConfigError, EnvironmentConfig, GrowthConfig, LifecycleConfig,
-    ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
+    CellInitialConfig, ConfigError, ContractilityConfig, EnvironmentConfig, GrowthConfig,
+    LifecycleConfig, ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SpaceConfig,
+    SynthesisConfig, WorldConfig,
 };
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
@@ -72,6 +73,18 @@ pub struct RawGrowth {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RawSynthesis {
+    pub cost_resource: Option<f32>,
+    pub cost_energy: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawContractility {
+    pub energy_cost: Option<f32>,
+    pub force_factor: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RawResourceInteraction {
     pub enabled: Option<bool>,
     pub uptake_layer_index: Option<usize>,
@@ -96,6 +109,8 @@ pub struct RawScenarioConfig {
     pub environment: RawEnvironment,
     pub lifecycle: RawLifecycle,
     pub growth: Option<RawGrowth>,
+    pub synthesis: Option<RawSynthesis>,
+    pub contractility: Option<RawContractility>,
 }
 
 #[derive(Debug)]
@@ -393,6 +408,33 @@ impl RawScenarioConfig {
                 max_division_pressure: raw_growth.max_division_pressure,
             };
             runtime_config.growth_enabled = true;
+        }
+
+        if let Some(ref raw_synth) = self.synthesis {
+            let cost_res = raw_synth.cost_resource.unwrap_or(1.0);
+            let cost_eng = raw_synth.cost_energy.unwrap_or(5.0);
+            runtime_config.synthesis = SynthesisConfig {
+                cost_resource: ResourceAmount::new(cost_res).map_err(|e| {
+                    ParseError::ValidationError(format!("Invalid synthesis cost_resource: {:?}", e))
+                })?,
+                cost_energy: EnergyAmount::new(cost_eng).map_err(|e| {
+                    ParseError::ValidationError(format!("Invalid synthesis cost_energy: {:?}", e))
+                })?,
+            };
+        }
+
+        if let Some(ref raw_contract) = self.contractility {
+            let cost_eng = raw_contract.energy_cost.unwrap_or(1.0);
+            let force = raw_contract.force_factor.unwrap_or(0.1);
+            runtime_config.contractility = ContractilityConfig {
+                energy_cost: EnergyAmount::new(cost_eng).map_err(|e| {
+                    ParseError::ValidationError(format!(
+                        "Invalid contractility energy_cost: {:?}",
+                        e
+                    ))
+                })?,
+                force_factor: force,
+            };
         }
 
         if !initial_cells.is_empty() {

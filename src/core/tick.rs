@@ -50,14 +50,14 @@ impl TickExecutor {
         let mut process_attempts = 0_u32;
         let mut process_rejections = 0_u32;
 
-        // Phase A: Uptake and Metabolism
+        // Phase A: Uptake, Metabolism, Synthesis, Growth, and Displacement Reflex Loop
         for i in 0..len {
             let index = CellIndex::from_raw(i);
             if self.world.cells().lifecycle_state(index) == LifecycleState::Dead {
                 continue;
             }
 
-            // Uptake
+            // 1. Uptake
             if config.resource_interaction.enabled {
                 let candidate_uptake = ActionCandidate {
                     process_id: ProcessId::LocalResourceUptake,
@@ -94,7 +94,6 @@ impl TickExecutor {
                         let cells = self.world.cells_mut_for_commit();
                         cells.add_resources_limited_by_capacity(index, requested)
                     };
-
                     let remaining_external = external_available.saturating_sub(accepted);
                     self.world
                         .resources_mut_for_commit()
@@ -105,7 +104,7 @@ impl TickExecutor {
                 }
             }
 
-            // Metabolism
+            // 2. Metabolism
             let mut metabolism_heat = 0.0_f32;
             let mut metabolism_waste = 0.0_f32;
             let mut metabolism_energy = EnergyAmount::zero();
@@ -158,19 +157,54 @@ impl TickExecutor {
                 cells.set_energy(index, EnergyBuffer::new(new_current, current.capacity()));
             }
 
-            // Growth Process
+            // 3. Material Synthesis
+            let candidate_synthesis = ActionCandidate {
+                process_id: ProcessId::MaterialSynthesis,
+                requested_amount: 1.0,
+            };
+            process_attempts += 1;
+            if self
+                .world
+                .validate_feasibility(index, &candidate_synthesis)
+                .is_feasible()
+            {
+                let _ = self.world.execute_synthesis(index);
+            } else {
+                process_rejections += 1;
+            }
+
+            // 4. Structural Growth
             if config.growth_enabled && config.resource_interaction.enabled {
                 let candidate_growth = ActionCandidate {
                     process_id: ProcessId::GrowthResourceAllocation,
                     requested_amount: 1.0,
                 };
+                process_attempts += 1;
                 if self
                     .world
                     .validate_feasibility(index, &candidate_growth)
                     .is_feasible()
                 {
                     let _ = self.world.execute_growth_for_test(index, &candidate_growth);
+                } else {
+                    process_rejections += 1;
                 }
+            }
+
+            // 5. Contractile Displacement
+            let candidate_displacement = ActionCandidate {
+                process_id: ProcessId::ContractileDisplacement,
+                requested_amount: 1.0,
+            };
+            process_attempts += 1;
+            if self
+                .world
+                .validate_feasibility(index, &candidate_displacement)
+                .is_feasible()
+            {
+                let _ = self.world.execute_displacement(index);
+            } else {
+                process_rejections += 1;
             }
         }
 
@@ -407,17 +441,19 @@ impl TickExecutor {
                 }
             } else {
                 // Determine state for alive cell
-                let is_stressed = energy_after.raw()
-                    < config.lifecycle.stress_energy_threshold.raw()
-                    || heat_warning
-                    || waste_warning
-                    || over_capacity;
-                if is_stressed {
-                    next_state = LifecycleState::Stressed;
-                } else if current_state == LifecycleState::Dormant {
+                if current_state == LifecycleState::Dormant {
                     next_state = LifecycleState::Dormant;
                 } else {
-                    next_state = LifecycleState::Alive;
+                    let is_stressed = energy_after.raw()
+                        < config.lifecycle.stress_energy_threshold.raw()
+                        || heat_warning
+                        || waste_warning
+                        || over_capacity;
+                    if is_stressed {
+                        next_state = LifecycleState::Stressed;
+                    } else {
+                        next_state = LifecycleState::Alive;
+                    }
                 }
             }
 

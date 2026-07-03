@@ -36,6 +36,8 @@ tags:
 - [[outputs/worklogs/2026-07-03-1025-PLAN-phase-2B-reachability-validation|outputs/worklogs/2026-07-03-1025-PLAN-phase-2B-reachability-validation]]
 - [[outputs/worklogs/2026-07-03-1105-PLAN-phase-2C-growth-and-division-prep|outputs/worklogs/2026-07-03-1105-PLAN-phase-2C-growth-and-division-prep]]
 - [[outputs/worklogs/2026-07-03-1320-PLAN-phase-2B-resolving-material-stubs|outputs/worklogs/2026-07-03-1320-PLAN-phase-2B-resolving-material-stubs]]
+- [[outputs/worklogs/2026-07-03-1650-PLAN-phase-2c-reflexive-actions-growth|outputs/worklogs/2026-07-03-1650-PLAN-phase-2c-reflexive-actions-growth]]
+- [[outputs/worklogs/2026-07-03-1810-PLAN-phase-2c-stability-bounds|outputs/worklogs/2026-07-03-1810-PLAN-phase-2c-stability-bounds]]
 - [[outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap]]
 - [[outputs/worklogs/2026-07-02-1935-PLAN-phase-3-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-3-global-roadmap]]
 - [[outputs/worklogs/2026-07-02-1935-PLAN-phase-4-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-4-global-roadmap]]
@@ -93,6 +95,13 @@ tags:
 - [[outputs/worklogs/2026-07-03-1335-REPORT-phase-2b-material-stubs-task-2|outputs/worklogs/2026-07-03-1335-REPORT-phase-2b-material-stubs-task-2]]
 - [[outputs/worklogs/2026-07-03-1345-REPORT-phase-2b-material-stubs-task-3|outputs/worklogs/2026-07-03-1345-REPORT-phase-2b-material-stubs-task-3]]
 - [[outputs/worklogs/2026-07-03-1350-REPORT-phase-2b-material-stubs-resolution|outputs/worklogs/2026-07-03-1350-REPORT-phase-2b-material-stubs-resolution]]
+- [[outputs/worklogs/2026-07-03-1700-REPORT-phase-2c-task-1|outputs/worklogs/2026-07-03-1700-REPORT-phase-2c-task-1]]
+- [[outputs/worklogs/2026-07-03-1710-REPORT-phase-2c-task-2|outputs/worklogs/2026-07-03-1710-REPORT-phase-2c-task-2]]
+- [[outputs/worklogs/2026-07-03-1720-REPORT-phase-2c-task-3|outputs/worklogs/2026-07-03-1720-REPORT-phase-2c-task-3]]
+- [[outputs/worklogs/2026-07-03-1730-REPORT-phase-2c-task-4|outputs/worklogs/2026-07-03-1730-REPORT-phase-2c-task-4]]
+- [[outputs/worklogs/2026-07-03-1740-REPORT-phase-2c-reflexive-actions-growth|outputs/worklogs/2026-07-03-1740-REPORT-phase-2c-reflexive-actions-growth]]
+- [[outputs/worklogs/2026-07-03-1815-REPORT-phase-2c-stability-bounds|outputs/worklogs/2026-07-03-1815-REPORT-phase-2c-stability-bounds]]
+- [[outputs/worklogs/2026-07-03-1850-REPORT-phase2c-stability-analysis|outputs/worklogs/2026-07-03-1850-REPORT-phase2c-stability-analysis]]
 
 
 

@@ -242,7 +242,7 @@ impl CellStore {
         consumed
     }
 
-    pub(crate) fn set_energy(&mut self, index: CellIndex, energy: EnergyBuffer) {
+    pub fn set_energy(&mut self, index: CellIndex, energy: EnergyBuffer) {
         self.energy_buffers[index.raw()] = energy;
     }
 

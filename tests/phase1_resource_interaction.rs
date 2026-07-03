@@ -33,10 +33,10 @@ fn base_interaction_config(interaction: ResourceInteractionConfig) -> RuntimeCon
             initial_transport_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
             initial_metabolic_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
             initial_storage_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
-            initial_synthesis_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
+            initial_synthesis_material: MaterialAmount::zero(),
             initial_structural_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
             initial_repair_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
-            initial_contractile_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
+            initial_contractile_material: MaterialAmount::zero(),
             initial_sensory_material: MaterialAmount::new(4.0 / 9.0).unwrap(),
         },
         EnvironmentConfig {

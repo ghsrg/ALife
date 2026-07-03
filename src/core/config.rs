@@ -151,6 +151,36 @@ impl Default for GrowthConfig {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SynthesisConfig {
+    pub cost_resource: ResourceAmount,
+    pub cost_energy: EnergyAmount,
+}
+
+impl Default for SynthesisConfig {
+    fn default() -> Self {
+        Self {
+            cost_resource: ResourceAmount::new(1.0).unwrap(),
+            cost_energy: EnergyAmount::new(5.0).unwrap(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ContractilityConfig {
+    pub energy_cost: EnergyAmount,
+    pub force_factor: f32,
+}
+
+impl Default for ContractilityConfig {
+    fn default() -> Self {
+        Self {
+            energy_cost: EnergyAmount::new(1.0).unwrap(),
+            force_factor: 0.1,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
     pub world: WorldConfig,
@@ -163,6 +193,8 @@ pub struct RuntimeConfig {
     pub growth: GrowthConfig,
     pub growth_enabled: bool,
     pub initial_cells: Vec<CellInitialConfig>,
+    pub synthesis: SynthesisConfig,
+    pub contractility: ContractilityConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -214,6 +246,8 @@ impl RuntimeConfig {
             growth: GrowthConfig::default(),
             growth_enabled: false,
             initial_cells,
+            synthesis: SynthesisConfig::default(),
+            contractility: ContractilityConfig::default(),
         })
     }
 
@@ -255,6 +289,10 @@ impl RuntimeConfig {
             self.growth.growth_cost_energy.raw().to_bits() as u64,
             self.growth.growth_target_radius.raw().to_bits() as u64,
             self.growth.max_division_pressure.to_bits() as u64,
+            self.synthesis.cost_resource.raw().to_bits() as u64,
+            self.synthesis.cost_energy.raw().to_bits() as u64,
+            self.contractility.energy_cost.raw().to_bits() as u64,
+            self.contractility.force_factor.to_bits() as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);

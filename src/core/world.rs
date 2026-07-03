@@ -7,7 +7,7 @@ use crate::core::events::EventBuffer;
 use crate::core::resources::ResourceGrid;
 use crate::core::spatial::SpatialIndex;
 use crate::core::units::{
-    CapacityAmount, EnergyAmount, MaterialAmount, Radius, ResourceAmount, Tick,
+    CapacityAmount, EnergyAmount, MaterialAmount, Position, Radius, ResourceAmount, Tick,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -215,7 +215,50 @@ impl WorldState {
                     FeasibilityResult::Feasible
                 }
             }
-            ProcessId::MaterialSynthesis => FeasibilityResult::Feasible,
+            ProcessId::MaterialSynthesis => {
+                if !self
+                    .cells
+                    .has_capability(cell_idx, MaterialCapability::MaterialSynthesis)
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingCapability(
+                        MaterialCapability::MaterialSynthesis,
+                    ));
+                }
+                let cost_res = self.config.synthesis.cost_resource.raw();
+                let cost_eng = self.config.synthesis.cost_energy.raw();
+                let current_res = self.cells.resource_amount(cell_idx).raw();
+                let current_eng = self.cells.energy(cell_idx).current().raw();
+
+                if current_res < cost_res {
+                    FeasibilityResult::Rejected(RejectionReason::InsufficientResources)
+                } else if current_eng < cost_eng {
+                    FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy)
+                } else {
+                    FeasibilityResult::Feasible
+                }
+            }
+            ProcessId::ContractileDisplacement => {
+                if !self
+                    .cells
+                    .has_capability(cell_idx, MaterialCapability::Contractility)
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingCapability(
+                        MaterialCapability::Contractility,
+                    ));
+                }
+                let pressure = self.cells.contact_pressure(cell_idx);
+                if pressure <= 0.0 {
+                    return FeasibilityResult::Rejected(RejectionReason::NoPressure);
+                }
+                let cost_eng = self.config.contractility.energy_cost.raw();
+                let current_eng = self.cells.energy(cell_idx).current().raw();
+
+                if current_eng < cost_eng {
+                    FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy)
+                } else {
+                    FeasibilityResult::Feasible
+                }
+            }
             ProcessId::GrowthResourceAllocation => {
                 if !self
                     .cells
@@ -311,6 +354,96 @@ impl WorldState {
         self.cells
             .set_capacity_limit(cell_idx, CapacityAmount::new(new_cap_val).unwrap());
 
+        Ok(())
+    }
+
+    pub fn execute_synthesis(&mut self, cell_idx: CellIndex) -> Result<(), String> {
+        let cost_res = self.config.synthesis.cost_resource.raw();
+        let cost_eng = self.config.synthesis.cost_energy.raw();
+        let current_res = self.cells.resource_amount(cell_idx).raw();
+        let current_eng = self.cells.energy(cell_idx).current().raw();
+
+        if current_res < cost_res || current_eng < cost_eng {
+            return Err("Insufficient resources or energy".to_string());
+        }
+
+        self.cells.set_resources(
+            cell_idx,
+            ResourceAmount::new(current_res - cost_res).unwrap(),
+        );
+        let next_energy = EnergyAmount::new(current_eng - cost_eng).unwrap();
+        self.cells.set_energy(
+            cell_idx,
+            EnergyBuffer::new(next_energy, self.cells.energy(cell_idx).capacity()),
+        );
+
+        // Synthesize structural material by default
+        let old_structural = self.cells.structural_material(cell_idx).raw();
+        self.cells
+            .set_structural_material(cell_idx, MaterialAmount::new(old_structural + 1.0).unwrap());
+
+        Ok(())
+    }
+
+    pub fn execute_displacement(&mut self, cell_idx: CellIndex) -> Result<(), String> {
+        let cost_eng = self.config.contractility.energy_cost.raw();
+        let current_eng = self.cells.energy(cell_idx).current().raw();
+        if current_eng < cost_eng {
+            return Err("Insufficient energy".to_string());
+        }
+
+        let pressure = self.cells.contact_pressure(cell_idx);
+        if pressure <= 0.0 {
+            return Err("No pressure present".to_string());
+        }
+
+        // Deduct energy
+        let next_energy = EnergyAmount::new(current_eng - cost_eng).unwrap();
+        self.cells.set_energy(
+            cell_idx,
+            EnergyBuffer::new(next_energy, self.cells.energy(cell_idx).capacity()),
+        );
+
+        // Calculate push vector away from colliding neighbors
+        let cell_pos = self.cells.position(cell_idx);
+        let cell_rad = self.cells.radius(cell_idx).raw();
+        let mut push_x = 0.0;
+        let mut push_y = 0.0;
+
+        for i in 0..self.cells.len() {
+            let other_idx = CellIndex::from_raw(i);
+            if other_idx == cell_idx
+                || self.cells.lifecycle_state(other_idx) == LifecycleState::Dead
+            {
+                continue;
+            }
+            let other_pos = self.cells.position(other_idx);
+            let other_rad = self.cells.radius(other_idx).raw();
+            let dx = cell_pos.x() - other_pos.x();
+            let dy = cell_pos.y() - other_pos.y();
+            let dist = (dx * dx + dy * dy).sqrt();
+            let sum_rad = cell_rad + other_rad;
+            if dist < sum_rad && dist > 0.001 {
+                let overlap = sum_rad - dist;
+                push_x += (dx / dist) * overlap;
+                push_y += (dy / dist) * overlap;
+            }
+        }
+
+        // Scale by contractile capability (mass) and force factor config
+        let contractility_mass = self.cells.contractile_material(cell_idx).raw();
+        let shift_factor = contractility_mass * self.config.contractility.force_factor;
+        let final_x = cell_pos.x() + push_x * shift_factor;
+        let final_y = cell_pos.y() + push_y * shift_factor;
+
+        // Clamp to world boundaries
+        let max_w = self.config.world.size.width();
+        let max_h = self.config.world.size.height();
+        let clamped_x = final_x.clamp(cell_rad, max_w - cell_rad);
+        let clamped_y = final_y.clamp(cell_rad, max_h - cell_rad);
+
+        self.cells
+            .set_position(cell_idx, Position::new(clamped_x, clamped_y));
         Ok(())
     }
 }
