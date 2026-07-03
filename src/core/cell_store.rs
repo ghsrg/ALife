@@ -61,7 +61,15 @@ pub struct InitialCellState {
     pub radius: Radius,
     pub energy: EnergyBuffer,
     pub resources: ResourceAmount,
-    pub materials: MaterialAmount,
+    pub boundary_material: MaterialAmount,
+    pub transport_material: MaterialAmount,
+    pub metabolic_material: MaterialAmount,
+    pub storage_material: MaterialAmount,
+    pub synthesis_material: MaterialAmount,
+    pub structural_material: MaterialAmount,
+    pub repair_material: MaterialAmount,
+    pub contractile_material: MaterialAmount,
+    pub sensory_material: MaterialAmount,
     pub capacity_limit: CapacityAmount,
     pub temperature: Temperature,
 }
@@ -73,11 +81,21 @@ pub struct CellStore {
     radii: Vec<Radius>,
     energy_buffers: Vec<EnergyBuffer>,
     resources: Vec<ResourceAmount>,
-    materials: Vec<MaterialAmount>,
+    boundary_materials: Vec<MaterialAmount>,
+    transport_materials: Vec<MaterialAmount>,
+    metabolic_materials: Vec<MaterialAmount>,
+    storage_materials: Vec<MaterialAmount>,
+    synthesis_materials: Vec<MaterialAmount>,
+    structural_materials: Vec<MaterialAmount>,
+    repair_materials: Vec<MaterialAmount>,
+    contractile_materials: Vec<MaterialAmount>,
+    sensory_materials: Vec<MaterialAmount>,
     capacity_limits: Vec<CapacityAmount>,
     temperatures: Vec<Temperature>,
     lifecycle_states: Vec<LifecycleState>,
     runtime_flags: Vec<RuntimeFlags>,
+    disabled_capabilities: Vec<u16>,
+    pressures: Vec<f32>,
     next_cell_id: u32,
 }
 
@@ -89,11 +107,21 @@ impl CellStore {
             radii: Vec::with_capacity(capacity),
             energy_buffers: Vec::with_capacity(capacity),
             resources: Vec::with_capacity(capacity),
-            materials: Vec::with_capacity(capacity),
+            boundary_materials: Vec::with_capacity(capacity),
+            transport_materials: Vec::with_capacity(capacity),
+            metabolic_materials: Vec::with_capacity(capacity),
+            storage_materials: Vec::with_capacity(capacity),
+            synthesis_materials: Vec::with_capacity(capacity),
+            structural_materials: Vec::with_capacity(capacity),
+            repair_materials: Vec::with_capacity(capacity),
+            contractile_materials: Vec::with_capacity(capacity),
+            sensory_materials: Vec::with_capacity(capacity),
             capacity_limits: Vec::with_capacity(capacity),
             temperatures: Vec::with_capacity(capacity),
             lifecycle_states: Vec::with_capacity(capacity),
             runtime_flags: Vec::with_capacity(capacity),
+            disabled_capabilities: Vec::with_capacity(capacity),
+            pressures: Vec::with_capacity(capacity),
             next_cell_id: 1,
         }
     }
@@ -106,11 +134,21 @@ impl CellStore {
         self.radii.push(cell.radius);
         self.energy_buffers.push(cell.energy);
         self.resources.push(cell.resources);
-        self.materials.push(cell.materials);
+        self.boundary_materials.push(cell.boundary_material);
+        self.transport_materials.push(cell.transport_material);
+        self.metabolic_materials.push(cell.metabolic_material);
+        self.storage_materials.push(cell.storage_material);
+        self.synthesis_materials.push(cell.synthesis_material);
+        self.structural_materials.push(cell.structural_material);
+        self.repair_materials.push(cell.repair_material);
+        self.contractile_materials.push(cell.contractile_material);
+        self.sensory_materials.push(cell.sensory_material);
         self.capacity_limits.push(cell.capacity_limit);
         self.temperatures.push(cell.temperature);
         self.lifecycle_states.push(LifecycleState::Alive);
         self.runtime_flags.push(RuntimeFlags::default());
+        self.disabled_capabilities.push(0);
+        self.pressures.push(0.0);
         id
     }
 
@@ -161,7 +199,7 @@ impl CellStore {
         let genome_capacity_placeholder = 0.0;
         let internal_fragments_capacity_used = 0.0;
         let used = self.resources[index.raw()].raw()
-            + self.materials[index.raw()].raw()
+            + self.total_materials(index).raw()
             + genome_capacity_placeholder
             + internal_fragments_capacity_used;
         CapacityAmount::new(used).expect("resource/material amounts are validated")
@@ -225,23 +263,169 @@ impl CellStore {
         index: CellIndex,
         capability: crate::core::process::MaterialCapability,
     ) -> bool {
-        use crate::core::process::MaterialCapabilityFlags;
         if self.lifecycle_state(index) == LifecycleState::Dead {
             return false;
         }
-        let amount = self.materials[index.raw()];
-        if amount.raw() > 0.0 {
-            let default_flags = MaterialCapabilityFlags {
-                boundary_permeability: true,
-                resource_uptake: true,
-                metabolism: true,
-                structural_growth: true,
-                storage_capacity: true,
-                repair: true,
-            };
-            default_flags.has(capability)
-        } else {
-            false
+        let disabled = self.disabled_capabilities[index.raw()];
+        let bit = capability_bit(capability);
+        if (disabled & bit) != 0 {
+            return false;
         }
+
+        use crate::core::process::MaterialCapability;
+        match capability {
+            MaterialCapability::BoundaryPermeability => {
+                self.boundary_materials[index.raw()].raw() > 0.0
+            }
+            MaterialCapability::ResourceUptake => self.transport_materials[index.raw()].raw() > 0.0,
+            MaterialCapability::Metabolism => self.metabolic_materials[index.raw()].raw() > 0.0,
+            MaterialCapability::StorageCapacity => self.storage_materials[index.raw()].raw() > 0.0,
+            MaterialCapability::MaterialSynthesis => {
+                self.synthesis_materials[index.raw()].raw() > 0.0
+            }
+            MaterialCapability::StructuralGrowth => {
+                self.structural_materials[index.raw()].raw() > 0.0
+            }
+            MaterialCapability::Repair => self.repair_materials[index.raw()].raw() > 0.0,
+            MaterialCapability::Contractility => {
+                self.contractile_materials[index.raw()].raw() > 0.0
+            }
+            MaterialCapability::ResourceSensing
+            | MaterialCapability::PressureSensing
+            | MaterialCapability::DamageSensing => self.sensory_materials[index.raw()].raw() > 0.0,
+        }
+    }
+
+    pub fn strip_capability_for_test(
+        &mut self,
+        index: CellIndex,
+        capability: crate::core::process::MaterialCapability,
+    ) {
+        let bit = capability_bit(capability);
+        self.disabled_capabilities[index.raw()] |= bit;
+    }
+
+    pub fn contact_pressure(&self, index: CellIndex) -> f32 {
+        self.pressures[index.raw()]
+    }
+
+    pub fn set_contact_pressure(&mut self, index: CellIndex, pressure: f32) {
+        self.pressures[index.raw()] = pressure;
+    }
+
+    pub fn material_amount(&self, index: CellIndex) -> MaterialAmount {
+        self.total_materials(index)
+    }
+
+    pub fn set_radius(&mut self, index: CellIndex, radius: Radius) {
+        self.radii[index.raw()] = radius;
+    }
+
+    pub fn set_capacity_limit(&mut self, index: CellIndex, limit: CapacityAmount) {
+        self.capacity_limits[index.raw()] = limit;
+    }
+
+    pub fn set_materials(&mut self, index: CellIndex, amount: MaterialAmount) {
+        let share = MaterialAmount::new_unchecked(amount.raw() / 9.0);
+        self.boundary_materials[index.raw()] = share;
+        self.transport_materials[index.raw()] = share;
+        self.metabolic_materials[index.raw()] = share;
+        self.storage_materials[index.raw()] = share;
+        self.synthesis_materials[index.raw()] = share;
+        self.structural_materials[index.raw()] = share;
+        self.repair_materials[index.raw()] = share;
+        self.contractile_materials[index.raw()] = share;
+        self.sensory_materials[index.raw()] = share;
+    }
+
+    pub fn set_resources(&mut self, index: CellIndex, amount: ResourceAmount) {
+        self.resources[index.raw()] = amount;
+    }
+
+    // Getters for specific materials
+    pub fn boundary_material(&self, index: CellIndex) -> MaterialAmount {
+        self.boundary_materials[index.raw()]
+    }
+    pub fn transport_material(&self, index: CellIndex) -> MaterialAmount {
+        self.transport_materials[index.raw()]
+    }
+    pub fn metabolic_material(&self, index: CellIndex) -> MaterialAmount {
+        self.metabolic_materials[index.raw()]
+    }
+    pub fn storage_material(&self, index: CellIndex) -> MaterialAmount {
+        self.storage_materials[index.raw()]
+    }
+    pub fn synthesis_material(&self, index: CellIndex) -> MaterialAmount {
+        self.synthesis_materials[index.raw()]
+    }
+    pub fn structural_material(&self, index: CellIndex) -> MaterialAmount {
+        self.structural_materials[index.raw()]
+    }
+    pub fn repair_material(&self, index: CellIndex) -> MaterialAmount {
+        self.repair_materials[index.raw()]
+    }
+    pub fn contractile_material(&self, index: CellIndex) -> MaterialAmount {
+        self.contractile_materials[index.raw()]
+    }
+    pub fn sensory_material(&self, index: CellIndex) -> MaterialAmount {
+        self.sensory_materials[index.raw()]
+    }
+
+    // Setters for specific materials
+    pub fn set_boundary_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.boundary_materials[index.raw()] = amount;
+    }
+    pub fn set_transport_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.transport_materials[index.raw()] = amount;
+    }
+    pub fn set_metabolic_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.metabolic_materials[index.raw()] = amount;
+    }
+    pub fn set_storage_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.storage_materials[index.raw()] = amount;
+    }
+    pub fn set_synthesis_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.synthesis_materials[index.raw()] = amount;
+    }
+    pub fn set_structural_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.structural_materials[index.raw()] = amount;
+    }
+    pub fn set_repair_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.repair_materials[index.raw()] = amount;
+    }
+    pub fn set_contractile_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.contractile_materials[index.raw()] = amount;
+    }
+    pub fn set_sensory_material(&mut self, index: CellIndex, amount: MaterialAmount) {
+        self.sensory_materials[index.raw()] = amount;
+    }
+
+    pub fn total_materials(&self, index: CellIndex) -> MaterialAmount {
+        let total = self.boundary_materials[index.raw()].raw()
+            + self.transport_materials[index.raw()].raw()
+            + self.metabolic_materials[index.raw()].raw()
+            + self.storage_materials[index.raw()].raw()
+            + self.synthesis_materials[index.raw()].raw()
+            + self.structural_materials[index.raw()].raw()
+            + self.repair_materials[index.raw()].raw()
+            + self.contractile_materials[index.raw()].raw()
+            + self.sensory_materials[index.raw()].raw();
+        MaterialAmount::new_unchecked(total)
+    }
+}
+
+const fn capability_bit(capability: crate::core::process::MaterialCapability) -> u16 {
+    match capability {
+        crate::core::process::MaterialCapability::BoundaryPermeability => 1 << 0,
+        crate::core::process::MaterialCapability::ResourceUptake => 1 << 1,
+        crate::core::process::MaterialCapability::Metabolism => 1 << 2,
+        crate::core::process::MaterialCapability::StorageCapacity => 1 << 3,
+        crate::core::process::MaterialCapability::MaterialSynthesis => 1 << 4,
+        crate::core::process::MaterialCapability::StructuralGrowth => 1 << 5,
+        crate::core::process::MaterialCapability::Repair => 1 << 6,
+        crate::core::process::MaterialCapability::Contractility => 1 << 7,
+        crate::core::process::MaterialCapability::ResourceSensing => 1 << 8,
+        crate::core::process::MaterialCapability::PressureSensing => 1 << 9,
+        crate::core::process::MaterialCapability::DamageSensing => 1 << 10,
     }
 }

@@ -35,6 +35,8 @@ pub struct MetricsSummary {
     pub final_free_capacity: f32,
     pub growth_readiness: bool,
     pub overlap_resolved: f32,
+    pub process_attempts: u32,
+    pub process_rejections: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -81,7 +81,17 @@ fn runtime_config(
             passive_energy_income: EnergyAmount::new(passive_income).unwrap(),
             capacity_limit: CapacityAmount::new(capacity_limit).unwrap(),
             initial_resource_amount: ResourceAmount::new(initial_resources_total).unwrap(),
-            initial_material_amount: MaterialAmount::new(initial_materials_total).unwrap(),
+            initial_boundary_material: MaterialAmount::new(initial_materials_total / 9.0).unwrap(),
+            initial_transport_material: MaterialAmount::new(initial_materials_total / 9.0).unwrap(),
+            initial_metabolic_material: MaterialAmount::new(initial_materials_total / 9.0).unwrap(),
+            initial_storage_material: MaterialAmount::new(initial_materials_total / 9.0).unwrap(),
+            initial_synthesis_material: MaterialAmount::new(initial_materials_total / 9.0).unwrap(),
+            initial_structural_material: MaterialAmount::new(initial_materials_total / 9.0)
+                .unwrap(),
+            initial_repair_material: MaterialAmount::new(initial_materials_total / 9.0).unwrap(),
+            initial_contractile_material: MaterialAmount::new(initial_materials_total / 9.0)
+                .unwrap(),
+            initial_sensory_material: MaterialAmount::new(initial_materials_total / 9.0).unwrap(),
         },
         EnvironmentConfig {
             heat_current: HeatAmount::new(heat_current).unwrap(),
@@ -441,6 +451,7 @@ fn native_toml_parser_loads_valid_scenarios() {
         "single_cell_dormancy.toml",
         "single_cell_heat_death.toml",
         "single_cell_waste_death.toml",
+        "phase2_biochemistry.toml",
     ];
 
     for name in scenarios {

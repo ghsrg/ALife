@@ -2,6 +2,7 @@ use crate::core::cell_store::{CellIndex, EnergyBuffer, LifecycleState, RuntimeFl
 use crate::core::config::RuntimeConfig;
 use crate::core::deltas::CommitSummary;
 use crate::core::events::EventKind;
+use crate::core::process::{ActionCandidate, ProcessId};
 use crate::core::resources::ResourceLayerIndex;
 use crate::core::summary::{CollapseReason, MetricsSummary, RunSummary, SurvivalResult};
 use crate::core::units::{EnergyAmount, HeatAmount, Position, ResourceAmount, WasteAmount};
@@ -33,6 +34,10 @@ impl TickExecutor {
         &self.world
     }
 
+    pub fn world_mut(&mut self) -> &mut WorldState {
+        &mut self.world
+    }
+
     pub fn step(&mut self) -> Result<RunSummary, TickError> {
         let config = self.world.config().clone();
         let len = self.world.cells().len();
@@ -42,6 +47,8 @@ impl TickExecutor {
 
         let mut metabolism_heat_total = 0.0_f32;
         let mut metabolism_waste_total = 0.0_f32;
+        let mut process_attempts = 0_u32;
+        let mut process_rejections = 0_u32;
 
         // Phase A: Uptake and Metabolism
         for i in 0..len {
@@ -52,34 +59,50 @@ impl TickExecutor {
 
             // Uptake
             if config.resource_interaction.enabled {
-                let layer =
-                    ResourceLayerIndex::from_raw(config.resource_interaction.uptake_layer_index);
-                let coord = self
-                    .world
-                    .resources()
-                    .coord_for_position(self.world.cells().position(index));
-                let external_available = self
-                    .world
-                    .resources()
-                    .amount_at(layer, coord)
-                    .expect("resource interaction layer is config-validated");
-                let requested = ResourceAmount::new(
-                    external_available
-                        .raw()
-                        .min(config.resource_interaction.max_uptake_per_tick.raw()),
-                )
-                .expect("requested uptake is clamped");
-
-                let accepted = {
-                    let cells = self.world.cells_mut_for_commit();
-                    cells.add_resources_limited_by_capacity(index, requested)
+                let candidate_uptake = ActionCandidate {
+                    process_id: ProcessId::LocalResourceUptake,
+                    requested_amount: config.resource_interaction.max_uptake_per_tick.raw(),
                 };
+                process_attempts += 1;
+                if self
+                    .world
+                    .validate_feasibility(index, &candidate_uptake)
+                    .is_feasible()
+                {
+                    let layer = ResourceLayerIndex::from_raw(
+                        config.resource_interaction.uptake_layer_index,
+                    );
+                    let coord = self
+                        .world
+                        .resources()
+                        .coord_for_position(self.world.cells().position(index));
+                    let external_available = self
+                        .world
+                        .resources()
+                        .amount_at(layer, coord)
+                        .expect("resource interaction layer is config-validated");
+                    let free_cap = self.world.cells().free_capacity(index).raw();
+                    let max_uptake = config
+                        .resource_interaction
+                        .max_uptake_per_tick
+                        .raw()
+                        .min(free_cap);
+                    let requested = ResourceAmount::new(external_available.raw().min(max_uptake))
+                        .expect("requested uptake is clamped");
 
-                let remaining_external = external_available.saturating_sub(accepted);
-                self.world
-                    .resources_mut_for_commit()
-                    .set_amount_at(layer, coord, remaining_external)
-                    .expect("resource interaction coord is derived from grid bounds");
+                    let accepted = {
+                        let cells = self.world.cells_mut_for_commit();
+                        cells.add_resources_limited_by_capacity(index, requested)
+                    };
+
+                    let remaining_external = external_available.saturating_sub(accepted);
+                    self.world
+                        .resources_mut_for_commit()
+                        .set_amount_at(layer, coord, remaining_external)
+                        .expect("resource interaction coord is derived from grid bounds");
+                } else {
+                    process_rejections += 1;
+                }
             }
 
             // Metabolism
@@ -88,20 +111,38 @@ impl TickExecutor {
             let mut metabolism_energy = EnergyAmount::zero();
 
             if config.resource_interaction.enabled {
-                let consumed = {
-                    let cells = self.world.cells_mut_for_commit();
-                    cells.consume_resources(
-                        index,
-                        config.resource_interaction.metabolism_resource_per_tick,
-                    )
+                let candidate_metabolism = ActionCandidate {
+                    process_id: ProcessId::MetabolismEnergyConversion,
+                    requested_amount: config
+                        .resource_interaction
+                        .metabolism_resource_per_tick
+                        .raw(),
                 };
+                process_attempts += 1;
+                if self
+                    .world
+                    .validate_feasibility(index, &candidate_metabolism)
+                    .is_feasible()
+                {
+                    let consumed = {
+                        let cells = self.world.cells_mut_for_commit();
+                        cells.consume_resources(
+                            index,
+                            config.resource_interaction.metabolism_resource_per_tick,
+                        )
+                    };
 
-                metabolism_energy = EnergyAmount::new(
-                    consumed.raw() * config.resource_interaction.energy_per_resource,
-                )
-                .expect("metabolism energy is config-validated");
-                metabolism_heat = consumed.raw() * config.resource_interaction.heat_per_resource;
-                metabolism_waste = consumed.raw() * config.resource_interaction.waste_per_resource;
+                    metabolism_energy = EnergyAmount::new(
+                        consumed.raw() * config.resource_interaction.energy_per_resource,
+                    )
+                    .expect("metabolism energy is config-validated");
+                    metabolism_heat =
+                        consumed.raw() * config.resource_interaction.heat_per_resource;
+                    metabolism_waste =
+                        consumed.raw() * config.resource_interaction.waste_per_resource;
+                } else {
+                    process_rejections += 1;
+                }
             }
 
             metabolism_heat_total += metabolism_heat;
@@ -116,11 +157,34 @@ impl TickExecutor {
                     .clamp_max(current.capacity());
                 cells.set_energy(index, EnergyBuffer::new(new_current, current.capacity()));
             }
+
+            // Growth Process
+            if config.growth_enabled && config.resource_interaction.enabled {
+                let candidate_growth = ActionCandidate {
+                    process_id: ProcessId::GrowthResourceAllocation,
+                    requested_amount: 1.0,
+                };
+                if self
+                    .world
+                    .validate_feasibility(index, &candidate_growth)
+                    .is_feasible()
+                {
+                    let _ = self.world.execute_growth_for_test(index, &candidate_growth);
+                }
+            }
         }
 
         // Positional Overlap Solver Loop
         let mut overlap_resolved = 0.0;
         {
+            // Reset contact pressures at the start of physics solver
+            {
+                let cells = self.world.cells_mut_for_commit();
+                for i in 0..cells.len() {
+                    cells.set_contact_pressure(CellIndex::from_raw(i), 0.0);
+                }
+            }
+
             let mut pairs = Vec::new();
             {
                 let cells = self.world.cells();
@@ -177,6 +241,10 @@ impl TickExecutor {
                         let cells = self.world.cells_mut_for_commit();
                         cells.set_position(idx_i, new_pos_i);
                         cells.set_position(idx_j, new_pos_j);
+                        let p_i = cells.contact_pressure(idx_i) + overlap;
+                        let p_j = cells.contact_pressure(idx_j) + overlap;
+                        cells.set_contact_pressure(idx_i, p_i);
+                        cells.set_contact_pressure(idx_j, p_j);
                     }
                 }
 
@@ -453,6 +521,8 @@ impl TickExecutor {
                 min_energy,
                 max_energy,
                 overlap_resolved,
+                process_attempts,
+                process_rejections,
             ),
         })
     }
@@ -502,6 +572,7 @@ impl TickExecutor {
             .sum()
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn build_metrics_summary(
         &self,
         final_energy: f32,
@@ -510,6 +581,8 @@ impl TickExecutor {
         min_energy: f32,
         max_energy: f32,
         overlap_resolved: f32,
+        process_attempts: u32,
+        process_rejections: u32,
     ) -> MetricsSummary {
         let first = CellIndex::from_raw(0);
         let cells = self.world.cells();
@@ -531,6 +604,8 @@ impl TickExecutor {
             final_free_capacity,
             growth_readiness,
             overlap_resolved,
+            process_attempts,
+            process_rejections,
         }
     }
 }

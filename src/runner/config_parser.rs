@@ -1,6 +1,6 @@
 use crate::core::config::{
-    CellInitialConfig, ConfigError, EnvironmentConfig, LifecycleConfig, ResourceConfig,
-    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
+    CellInitialConfig, ConfigError, EnvironmentConfig, GrowthConfig, LifecycleConfig,
+    ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
@@ -64,6 +64,14 @@ pub struct RawLifecycle {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RawGrowth {
+    pub growth_cost_resource: f32,
+    pub growth_cost_energy: f32,
+    pub growth_target_radius: f32,
+    pub max_division_pressure: f32,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RawResourceInteraction {
     pub enabled: Option<bool>,
     pub uptake_layer_index: Option<usize>,
@@ -87,6 +95,7 @@ pub struct RawScenarioConfig {
     pub cells: Option<Vec<RawCell>>,
     pub environment: RawEnvironment,
     pub lifecycle: RawLifecycle,
+    pub growth: Option<RawGrowth>,
 }
 
 #[derive(Debug)]
@@ -115,7 +124,17 @@ impl RawScenarioConfig {
         }
 
         let initial_resources_sum: f32 = self.cell.initial_resources.values().sum();
-        let initial_materials_sum: f32 = self.cell.initial_materials.values().sum();
+        let (
+            boundary,
+            transport,
+            metabolic,
+            storage,
+            synthesis,
+            structural,
+            repair,
+            contractile,
+            sensory,
+        ) = parse_materials_inventory(&self.cell.initial_materials)?;
 
         let size = WorldSize::new(self.world.size[0], self.world.size[1])
             .map_err(|e| ParseError::ValidationError(format!("Invalid world size: {:?}", e)))?;
@@ -211,9 +230,15 @@ impl RawScenarioConfig {
             initial_resource_amount: ResourceAmount::new(initial_resources_sum).map_err(|e| {
                 ParseError::ValidationError(format!("Invalid initial_resource_amount: {:?}", e))
             })?,
-            initial_material_amount: MaterialAmount::new(initial_materials_sum).map_err(|e| {
-                ParseError::ValidationError(format!("Invalid initial_material_amount: {:?}", e))
-            })?,
+            initial_boundary_material: boundary,
+            initial_transport_material: transport,
+            initial_metabolic_material: metabolic,
+            initial_storage_material: storage,
+            initial_synthesis_material: synthesis,
+            initial_structural_material: structural,
+            initial_repair_material: repair,
+            initial_contractile_material: contractile,
+            initial_sensory_material: sensory,
         };
 
         let environment = EnvironmentConfig {
@@ -280,7 +305,17 @@ impl RawScenarioConfig {
         if let Some(ref raw_cells) = self.cells {
             for raw_cell in raw_cells {
                 let cell_initial_resources_sum: f32 = raw_cell.initial_resources.values().sum();
-                let cell_initial_materials_sum: f32 = raw_cell.initial_materials.values().sum();
+                let (
+                    boundary_c,
+                    transport_c,
+                    metabolic_c,
+                    storage_c,
+                    synthesis_c,
+                    structural_c,
+                    repair_c,
+                    contractile_c,
+                    sensory_c,
+                ) = parse_materials_inventory(&raw_cell.initial_materials)?;
                 let cell_conf = CellInitialConfig {
                     position: Position::new(
                         raw_cell.initial_position[0],
@@ -310,10 +345,15 @@ impl RawScenarioConfig {
                                 e
                             ))
                         })?,
-                    initial_material_amount: MaterialAmount::new(cell_initial_materials_sum)
-                        .map_err(|e| {
-                            ParseError::ValidationError(format!("Invalid material amount: {:?}", e))
-                        })?,
+                    initial_boundary_material: boundary_c,
+                    initial_transport_material: transport_c,
+                    initial_metabolic_material: metabolic_c,
+                    initial_storage_material: storage_c,
+                    initial_synthesis_material: synthesis_c,
+                    initial_structural_material: structural_c,
+                    initial_repair_material: repair_c,
+                    initial_contractile_material: contractile_c,
+                    initial_sensory_material: sensory_c,
                 };
                 initial_cells.push(cell_conf);
             }
@@ -330,10 +370,126 @@ impl RawScenarioConfig {
         )
         .map_err(ParseError::ConfigValidationError)?;
 
+        if let Some(ref raw_growth) = self.growth {
+            runtime_config.growth = GrowthConfig {
+                growth_cost_resource: ResourceAmount::new(raw_growth.growth_cost_resource)
+                    .map_err(|e| {
+                        ParseError::ValidationError(format!(
+                            "Invalid growth_cost_resource: {:?}",
+                            e
+                        ))
+                    })?,
+                growth_cost_energy: EnergyAmount::new(raw_growth.growth_cost_energy).map_err(
+                    |e| ParseError::ValidationError(format!("Invalid growth_cost_energy: {:?}", e)),
+                )?,
+                growth_target_radius: Radius::new(raw_growth.growth_target_radius).map_err(
+                    |e| {
+                        ParseError::ValidationError(format!(
+                            "Invalid growth_target_radius: {:?}",
+                            e
+                        ))
+                    },
+                )?,
+                max_division_pressure: raw_growth.max_division_pressure,
+            };
+            runtime_config.growth_enabled = true;
+        }
+
         if !initial_cells.is_empty() {
             runtime_config = runtime_config.with_cells(initial_cells);
         }
 
         Ok(runtime_config)
     }
+}
+
+#[allow(clippy::type_complexity)]
+fn parse_materials_inventory(
+    initial_materials: &std::collections::HashMap<String, f32>,
+) -> Result<
+    (
+        MaterialAmount,
+        MaterialAmount,
+        MaterialAmount,
+        MaterialAmount,
+        MaterialAmount,
+        MaterialAmount,
+        MaterialAmount,
+        MaterialAmount,
+        MaterialAmount,
+    ),
+    ParseError,
+> {
+    let mut boundary = 0.0;
+    let mut transport = 0.0;
+    let mut metabolic = 0.0;
+    let mut storage = 0.0;
+    let mut synthesis = 0.0;
+    let mut structural = 0.0;
+    let mut repair = 0.0;
+    let mut contractile = 0.0;
+    let mut sensory = 0.0;
+
+    let has_specific = initial_materials.keys().any(|k| {
+        matches!(
+            k.as_str(),
+            "boundary"
+                | "transport"
+                | "metabolic"
+                | "storage"
+                | "synthesis"
+                | "structural"
+                | "repair"
+                | "contractile"
+                | "sensory"
+        )
+    });
+
+    let initial_materials_sum: f32 = initial_materials.values().sum();
+
+    if !has_specific && initial_materials_sum > 0.0 {
+        let share = initial_materials_sum / 9.0;
+        boundary = share;
+        transport = share;
+        metabolic = share;
+        storage = share;
+        synthesis = share;
+        structural = share;
+        repair = share;
+        contractile = share;
+        sensory = share;
+    } else {
+        for (k, &v) in initial_materials {
+            match k.as_str() {
+                "boundary" | "membrane" | "envelope" => boundary = v,
+                "transport" | "pump" => transport = v,
+                "metabolic" | "metabolism" | "converter" => metabolic = v,
+                "storage" | "vacuolar" => storage = v,
+                "synthesis" | "producer" => synthesis = v,
+                "structural" | "skeleton" | "wall" | "cell_wall" => structural = v,
+                "repair" => repair = v,
+                "contractile" | "motor" => contractile = v,
+                "sensory" | "receptor" => sensory = v,
+                _ => structural = v,
+            }
+        }
+    }
+
+    let wrap = |val: f32, name: &str| {
+        MaterialAmount::new(val).map_err(|e| {
+            ParseError::ValidationError(format!("Invalid initial {} material: {:?}", name, e))
+        })
+    };
+
+    Ok((
+        wrap(boundary, "boundary")?,
+        wrap(transport, "transport")?,
+        wrap(metabolic, "metabolic")?,
+        wrap(storage, "storage")?,
+        wrap(synthesis, "synthesis")?,
+        wrap(structural, "structural")?,
+        wrap(repair, "repair")?,
+        wrap(contractile, "contractile")?,
+        wrap(sensory, "sensory")?,
+    ))
 }

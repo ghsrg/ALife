@@ -55,7 +55,15 @@ pub struct CellInitialConfig {
     pub passive_energy_income: EnergyAmount,
     pub capacity_limit: CapacityAmount,
     pub initial_resource_amount: ResourceAmount,
-    pub initial_material_amount: MaterialAmount,
+    pub initial_boundary_material: MaterialAmount,
+    pub initial_transport_material: MaterialAmount,
+    pub initial_metabolic_material: MaterialAmount,
+    pub initial_storage_material: MaterialAmount,
+    pub initial_synthesis_material: MaterialAmount,
+    pub initial_structural_material: MaterialAmount,
+    pub initial_repair_material: MaterialAmount,
+    pub initial_contractile_material: MaterialAmount,
+    pub initial_sensory_material: MaterialAmount,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -124,6 +132,25 @@ impl ResourceInteractionConfig {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GrowthConfig {
+    pub growth_cost_resource: ResourceAmount,
+    pub growth_cost_energy: EnergyAmount,
+    pub growth_target_radius: Radius,
+    pub max_division_pressure: f32,
+}
+
+impl Default for GrowthConfig {
+    fn default() -> Self {
+        Self {
+            growth_cost_resource: ResourceAmount::new(2.0).unwrap(),
+            growth_cost_energy: EnergyAmount::new(1.0).unwrap(),
+            growth_target_radius: Radius::new(2.0).unwrap(),
+            max_division_pressure: 0.5,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
     pub world: WorldConfig,
@@ -133,6 +160,8 @@ pub struct RuntimeConfig {
     pub cell: CellInitialConfig,
     pub environment: EnvironmentConfig,
     pub lifecycle: LifecycleConfig,
+    pub growth: GrowthConfig,
+    pub growth_enabled: bool,
     pub initial_cells: Vec<CellInitialConfig>,
 }
 
@@ -182,6 +211,8 @@ impl RuntimeConfig {
             cell,
             environment,
             lifecycle,
+            growth: GrowthConfig::default(),
+            growth_enabled: false,
             initial_cells,
         })
     }
@@ -211,6 +242,19 @@ impl RuntimeConfig {
             self.cell.mandatory_cost_per_tick.raw().to_bits() as u64,
             self.cell.passive_energy_income.raw().to_bits() as u64,
             self.cell.capacity_limit.raw().to_bits() as u64,
+            self.cell.initial_boundary_material.raw().to_bits() as u64,
+            self.cell.initial_transport_material.raw().to_bits() as u64,
+            self.cell.initial_metabolic_material.raw().to_bits() as u64,
+            self.cell.initial_storage_material.raw().to_bits() as u64,
+            self.cell.initial_synthesis_material.raw().to_bits() as u64,
+            self.cell.initial_structural_material.raw().to_bits() as u64,
+            self.cell.initial_repair_material.raw().to_bits() as u64,
+            self.cell.initial_contractile_material.raw().to_bits() as u64,
+            self.cell.initial_sensory_material.raw().to_bits() as u64,
+            self.growth.growth_cost_resource.raw().to_bits() as u64,
+            self.growth.growth_cost_energy.raw().to_bits() as u64,
+            self.growth.growth_target_radius.raw().to_bits() as u64,
+            self.growth.max_division_pressure.to_bits() as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);
@@ -248,6 +292,15 @@ impl RuntimeConfig {
                 cell.mandatory_cost_per_tick.raw().to_bits() as u64,
                 cell.passive_energy_income.raw().to_bits() as u64,
                 cell.capacity_limit.raw().to_bits() as u64,
+                cell.initial_boundary_material.raw().to_bits() as u64,
+                cell.initial_transport_material.raw().to_bits() as u64,
+                cell.initial_metabolic_material.raw().to_bits() as u64,
+                cell.initial_storage_material.raw().to_bits() as u64,
+                cell.initial_synthesis_material.raw().to_bits() as u64,
+                cell.initial_structural_material.raw().to_bits() as u64,
+                cell.initial_repair_material.raw().to_bits() as u64,
+                cell.initial_contractile_material.raw().to_bits() as u64,
+                cell.initial_sensory_material.raw().to_bits() as u64,
             ] {
                 hash ^= value;
                 hash = hash.wrapping_mul(0x100000001b3);
