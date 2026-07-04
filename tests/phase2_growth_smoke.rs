@@ -161,7 +161,7 @@ fn division_readiness_and_pressure_gating_work() {
 
     // 2. Division should now be feasible
     let res = exec.world().validate_feasibility(idx, &candidate_division);
-    assert!(matches!(res, FeasibilityResult::Feasible));
+    assert!(matches!(res, FeasibilityResult::Allowed { .. }));
 
     // Set high contact pressure
     exec.world_mut()

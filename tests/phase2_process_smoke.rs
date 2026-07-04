@@ -128,7 +128,7 @@ fn feasibility_validates_uptake_and_metabolism() {
         requested_amount: 1.0,
     };
     let result = exec.world().validate_feasibility(idx, &candidate_uptake);
-    assert!(matches!(result, FeasibilityResult::Feasible));
+    assert!(matches!(result, FeasibilityResult::Allowed { .. }));
 
     let candidate_metabolism = ActionCandidate {
         process_id: ProcessId::MetabolismEnergyConversion,
@@ -248,7 +248,7 @@ fn test_synthesis_process_feasibility_and_execution() {
         );
     }
     let result = exec.world().validate_feasibility(idx, &candidate);
-    assert_eq!(result, FeasibilityResult::Feasible);
+    assert!(matches!(result, FeasibilityResult::Allowed { .. }));
 
     let old_structural = exec.world().cells().structural_material(idx).raw();
 
@@ -356,7 +356,7 @@ fn test_displacement_feasibility_and_execution() {
         );
     }
     let result = exec.world().validate_feasibility(idx, &candidate);
-    assert_eq!(result, FeasibilityResult::Feasible);
+    assert!(matches!(result, FeasibilityResult::Allowed { .. }));
 
     // Execute displacement
     exec.world_mut().execute_displacement(idx).unwrap();

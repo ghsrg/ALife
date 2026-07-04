@@ -180,7 +180,11 @@ impl WorldState {
                 if current_energy.raw() <= 0.0 {
                     FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy)
                 } else {
-                    FeasibilityResult::Feasible
+                    FeasibilityResult::Allowed {
+                        accepted_amount: 0.0,
+                        energy_cost: 0.0,
+                        resource_cost: 0.0,
+                    }
                 }
             }
             ProcessId::LocalResourceUptake => {
@@ -192,11 +196,26 @@ impl WorldState {
                         MaterialCapability::ResourceUptake,
                     ));
                 }
-                let free_capacity = self.cells.free_capacity(cell_idx);
-                if free_capacity.raw() <= 0.0 {
-                    FeasibilityResult::Rejected(RejectionReason::InsufficientCapacity)
-                } else {
-                    FeasibilityResult::Feasible
+                let free_cap = self.cells.free_capacity(cell_idx).raw();
+                if free_cap <= 0.0 {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientCapacity);
+                }
+                let grid_coord = self
+                    .resources
+                    .coord_for_position(self.cells.position(cell_idx));
+                let layer = crate::core::resources::ResourceLayerIndex::from_raw(
+                    self.config.resource_interaction.uptake_layer_index,
+                );
+                let external = self
+                    .resources
+                    .amount_at(layer, grid_coord)
+                    .map(|a| a.raw())
+                    .unwrap_or(0.0);
+                let accepted = action.requested_amount.min(free_cap).min(external);
+                FeasibilityResult::Allowed {
+                    accepted_amount: accepted,
+                    energy_cost: 0.0,
+                    resource_cost: 0.0,
                 }
             }
             ProcessId::MetabolismEnergyConversion => {
@@ -212,7 +231,12 @@ impl WorldState {
                 if internal_res.raw() < action.requested_amount {
                     FeasibilityResult::Rejected(RejectionReason::InsufficientResources)
                 } else {
-                    FeasibilityResult::Feasible
+                    let accepted = internal_res.raw().min(action.requested_amount);
+                    FeasibilityResult::Allowed {
+                        accepted_amount: accepted,
+                        energy_cost: 0.0,
+                        resource_cost: 0.0,
+                    }
                 }
             }
             ProcessId::MaterialSynthesis => {
@@ -234,7 +258,11 @@ impl WorldState {
                 } else if current_eng < cost_eng {
                     FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy)
                 } else {
-                    FeasibilityResult::Feasible
+                    FeasibilityResult::Allowed {
+                        accepted_amount: 1.0,
+                        energy_cost: cost_eng,
+                        resource_cost: cost_res,
+                    }
                 }
             }
             ProcessId::ContractileDisplacement => {
@@ -256,7 +284,11 @@ impl WorldState {
                 if current_eng < cost_eng {
                     FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy)
                 } else {
-                    FeasibilityResult::Feasible
+                    FeasibilityResult::Allowed {
+                        accepted_amount: 1.0,
+                        energy_cost: cost_eng,
+                        resource_cost: 0.0,
+                    }
                 }
             }
             ProcessId::GrowthResourceAllocation => {
@@ -279,7 +311,11 @@ impl WorldState {
                 } else if current_eng < cost_eng {
                     FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy)
                 } else {
-                    FeasibilityResult::Feasible
+                    FeasibilityResult::Allowed {
+                        accepted_amount: 1.0,
+                        energy_cost: cost_eng,
+                        resource_cost: cost_res,
+                    }
                 }
             }
             ProcessId::Division => {
@@ -295,7 +331,11 @@ impl WorldState {
                     return FeasibilityResult::Rejected(RejectionReason::PressureTooHigh);
                 }
 
-                FeasibilityResult::Feasible
+                FeasibilityResult::Allowed {
+                    accepted_amount: 0.0,
+                    energy_cost: 0.0,
+                    resource_cost: 0.0,
+                }
             }
         }
     }

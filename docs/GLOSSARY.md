@@ -609,6 +609,236 @@ Stability Bound є емпіричним результатом калібрув�
 
 ---
 
+
+# Спостереження, аналітика та UI
+
+## UI
+
+Повна користувацька оболонка системи.
+
+UI може містити:
+
+* Viewer;
+* inspectors;
+* dashboards;
+* editors;
+* controls;
+* libraries;
+* experiment tools.
+
+UI працює через Observer Layer, Projection та approved command APIs.
+
+UI не є джерелом істини про стан симуляції та не повинна змінювати `WorldState` напряму.
+
+---
+
+## Viewer
+
+Центральна просторова візуалізація World або його частини.
+
+Viewer відображає:
+
+* Cells;
+* OrganismView;
+* Resources;
+* Materials;
+* Fields;
+* події;
+* observer-side overlays.
+
+Viewer є частиною UI, а не всією користувацькою оболонкою.
+
+Viewer читає лише Projection та не є simulation authority.
+
+---
+
+## Projection
+
+Read-only представлення частини simulation state, підготовлене для Observer Layer, analytics або UI.
+
+Projection може:
+
+* агрегувати дані;
+* приховувати внутрішні технічні деталі;
+* додавати похідні показники;
+* мати власну schema version.
+
+Projection не є копією `WorldState`.
+
+Projection не повинна змінювати simulation state.
+
+---
+
+## Viewport
+
+Область UI, у якій Viewer відображає просторову Projection World або його частини.
+
+Viewport може мати власні:
+
+* zoom;
+* pan;
+* selected layers;
+* filters;
+* screen-space transform.
+
+Розмір Viewport та його стан не впливають на simulation behavior або Tick execution.
+
+---
+
+## Analysis Level
+
+Активний рівень спостереження, на якому UI організовує Projection, filters, inspectors і analytics.
+
+Canonical Analysis Levels:
+
+```text
+World
+Cells
+Organisms
+Lineages
+Evolution
+Analytics
+```
+
+Analysis Level змінює представлення та навігацію.
+
+Analysis Level не змінює simulation state і не впливає на behavior.
+
+---
+
+## Derived Classification
+
+Детермінована observer-side класифікація Cell, OrganismView, Genome, lineage або population на основі фактичного стану, подій і виміряної поведінки.
+
+Derived Classification:
+
+* формується Observer Layer або analytics module;
+* не є прихованим типом simulation entity;
+* не входить до `WorldState`;
+* не є input для Genome Runtime або Process selection;
+* може мати кілька одночасних labels;
+* повинна зберігати confidence, classifier version і часовий контекст.
+
+Derived Classification може обчислюватися:
+
+* за запитом;
+* через налаштований інтервал у N Ticks;
+* після завершення run;
+* для окремого вибраного проміжку часу.
+
+Результат може зберігатися як derived analytics result.
+
+---
+
+## Functional Cell Role
+
+Derived Classification функціонального внеску Cell.
+
+Functional Cell Role може визначатися на основі:
+
+* Materials;
+* Capabilities;
+* Genome regulation potential;
+* Process activity;
+* signal connectivity;
+* Resource flow;
+* положення в OrganismView;
+* force generation;
+* взаємодії з іншими Cells та Environment.
+
+Functional Cell Role є multi-label classification.
+
+Cell може мати:
+
+* primary role;
+* secondary roles;
+* confidence для кожної ролі;
+* components, що пояснюють результат.
+
+Functional Cell Role не є hardcoded Cell type і не керує поведінкою Cell.
+
+---
+
+## Potential Functional Role
+
+Functional Cell Role, що описує, які функції Cell здатна виконувати.
+
+Визначається переважно через:
+
+* Materials;
+* Capabilities;
+* Genome regulation potential;
+* connectivity;
+* положення в OrganismView.
+
+Potential Functional Role не означає, що Cell фактично виконувала відповідну функцію у вибраному часовому інтервалі.
+
+---
+
+## Observed Functional Role
+
+Functional Cell Role, що описує, які функції Cell фактично виконувала у вибраному часовому інтервалі.
+
+Визначається переважно через:
+
+* Process executions;
+* Resource flows;
+* signal activity;
+* force generation;
+* movement;
+* repair;
+* interaction history.
+
+Observed Functional Role завжди має часовий контекст.
+
+---
+
+## Behavior Profile
+
+Derived Classification повторюваного способу використання Resources, Energy, Materials, movement, interaction, repair, growth і reproduction.
+
+Behavior Profile може визначатися для:
+
+* Cell;
+* OrganismView;
+* Genome;
+* lineage;
+* population.
+
+Трактування залежить від рівня:
+
+```text
+Cell:
+  фактична поведінка конкретної Cell
+
+OrganismView:
+  агрегована поведінка пов'язаної групи Cells
+
+Genome:
+  статистично типовий профіль носіїв Genome
+
+lineage:
+  агрегований профіль lineage
+
+population:
+  розподіл профілів у population
+```
+
+Behavior Profile є multi-label classification.
+
+Behavior Profile може мати:
+
+* primary profile;
+* secondary profiles;
+* confidence;
+* components;
+* часовий інтервал;
+* classifier version.
+
+Behavior Profile не є параметром рушія і не повинен безпосередньо впливати на Process selection або Genome Runtime.
+
+---
+
 # Документація
 
 ## Canon

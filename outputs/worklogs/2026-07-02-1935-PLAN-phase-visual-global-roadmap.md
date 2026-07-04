@@ -180,7 +180,14 @@ show tick, run state and simulation time
 show total Energy, Resources, Materials, Heat and Waste summaries
 pause/play recorded frames
 scrub recorded frames
+viewport-scaled rendering instead of fixed 1:1 world-to-pixel mapping
+fit world to current viewport
+responsive window resize
+full-screen view
 zoom and pan
+reset view
+focus selected Cell
+basic zoom-dependent Cell detail
 select a Cell
 export screenshot
 ```
@@ -217,7 +224,11 @@ recent events
 viewer cannot change simulation state
 headless result and viewed result are identical
 10-100 Cells are readable visually
+small simulation worlds can scale to fill a large viewport
+window resize and full-screen preserve spatial alignment
+Cells scale correctly with zoom and are not permanently limited to one-pixel markers
 ResourceGrid and Cells align spatially
+zoom and viewport size change presentation only
 selected Cell data matches committed snapshot
 screenshot export does not affect simulation
 ```
@@ -341,6 +352,88 @@ reproductive success
 ```
 
 Color modes are observer projections only.
+
+### Multi-Scale Cell Detail
+
+The viewer must use semantic zoom: increasing zoom reveals progressively richer Cell structure instead of only enlarging an unchanged dot or flat circle.
+
+Detail selection should depend primarily on the Cell's current screen-space diameter.
+
+```text
+overview:
+  Cell position
+  Cell size
+  selected color metric
+  population-level aggregation where needed
+
+intermediate:
+  boundary or membrane
+  lifecycle state
+  dormancy
+  damage
+  current dominant process
+  contact or movement indicators
+
+close:
+  relative Material composition
+  relative internal Resource composition
+  Energy state
+  growth readiness
+  division readiness
+
+very close:
+  detailed Material proportions
+  detailed Resource proportions
+  active process overlays
+  contact directions
+  movement or force vectors
+  damage and repair visualization
+  other internal projections supported by core data
+```
+
+Possible rendering forms:
+
+```text
+rings
+wedges
+segmented discs
+layered boundaries
+internal regions
+small bars
+icons
+directional overlays
+```
+
+Starting screen-space thresholds may be configurable:
+
+```text
+less than 3 px:
+  simplified point or aggregated marker
+
+3-12 px:
+  filled disc
+
+12-32 px:
+  boundary and primary overlays
+
+32-96 px:
+  Material, Resource and Energy composition
+
+more than 96 px:
+  detailed internal projection
+```
+
+These are starting defaults, not permanent hardcoded rules.
+
+LOD transitions should be stable:
+
+```text
+avoid rapid flickering between detail levels
+use hysteresis or smooth transitions where useful
+preserve Cell identity and selected color mode during LOD changes
+```
+
+The viewer must not invent internal structures that are absent from core projections.
 
 ### Cell Inspector
 
@@ -1212,6 +1305,127 @@ separate low-frequency metrics stream
 separate event stream
 ```
 
+### Viewport Scaling And Multi-Scale Rendering
+
+The visual representation of the world must not use a fixed 1:1 mapping between simulation units and screen pixels.
+
+A simulation world such as `100x100` may be rendered across a viewport such as `1920x1080`, while preserving spatial relationships and deterministic visual positioning.
+
+Core principles:
+
+```text
+world coordinates remain simulation-space coordinates
+viewport rendering uses an independent world-to-screen transform
+window dimensions do not define simulation dimensions
+window resize changes presentation only
+zoom changes visible detail only
+the same world remains meaningful across multiple scales
+```
+
+Required viewport behavior:
+
+```text
+fit world to viewport
+responsive resize
+full-screen view
+zoom in and out
+pan
+reset view
+focus selected Cell or Organism
+preserve aspect ratio or use explicit letterboxing rules
+maintain stable world-to-screen mapping
+```
+
+Example:
+
+```text
+simulation world:
+  100x100
+
+viewer:
+  1920x1080
+
+The world is scaled to the available viewport.
+A Cell is not permanently limited to one screen pixel.
+Zooming in increases its screen-space size and reveals additional detail.
+```
+
+Semantic zoom must expose additional information by scale:
+
+```text
+far zoom:
+  simplified Cells or aggregated population markers
+  high-level color metric
+
+medium zoom:
+  Cell radius
+  membrane or boundary
+  lifecycle, damage, dormancy and process overlays
+
+close zoom:
+  Material proportions
+  Resource proportions
+  Energy state
+
+very close zoom:
+  detailed Materials and Resources
+  active processes
+  local contacts
+  movement or force vectors
+  damage and repair
+```
+
+For Organisms:
+
+```text
+far zoom:
+  Organism marker or outline
+
+medium zoom:
+  Organism boundary and member Cell distribution
+
+close zoom:
+  individual Cells
+  Joints or topology
+  Energy, Resource or signal flows
+
+very close zoom:
+  per-Cell Materials, Resources and processes
+```
+
+Performance rules:
+
+```text
+distant entities use simplified or aggregated rendering
+nearby visible entities use individual rendering
+fine internal detail is requested and rendered only when screen-space size justifies it
+labels appear only when readable or explicitly requested
+world-to-screen transforms must not rebuild or mutate simulation state
+```
+
+Observer boundary:
+
+```text
+zoom level must not affect behavior
+window size must not affect Tick execution
+screen visibility must not affect simulation priority
+hidden entities continue to simulate normally
+viewer detail selection never becomes Genome or process input
+```
+
+Acceptance expectations:
+
+```text
+a small simulation world can fill a large viewport
+window resizing preserves correct world alignment
+full-screen mode preserves spatial proportions
+Cells are not permanently represented as one-pixel objects
+zooming reveals additional meaningful detail
+zooming out restores simplified population rendering
+Material and Resource proportions match snapshot data
+render scale does not affect deterministic core results
+```
+
 ### Scale Targets
 
 ```text
@@ -1254,31 +1468,45 @@ The viewer will require stable read models.
 
 ### World Frame Projection
 
+The normal world frame should remain lightweight.
+
 ```text
 Tick
 world bounds
+Cell ids
 Cell positions/radii
 lifecycle
 selected color metrics
 Resource layers
 Environment layers
 Organism ids when available
+LOD or aggregation metadata when required
 ```
 
 ### Cell Detail Projection
 
+Rich Cell detail should be requested only for selected Cells or Cells whose screen-space size justifies it.
+
 ```text
 identity
 physical state
-Energy
-Resources
-Materials
+boundary or membrane projection
+Energy and Energy ratio
+Resources and Resource proportions by type
+Materials and Material proportions by type
+damage ratio
 capabilities
 processes
+dominant active process
+movement or force vector
+contact directions
+growth readiness
+division readiness
 Genome
 lineage
 evaluation
 history summary
+available visual-detail flags
 ```
 
 ### Organism Detail Projection
@@ -1416,6 +1644,10 @@ Phase Visual is complete when:
 
 ```text
 the user can observe Cells and Organisms spatially
+the simulation world can scale to the available viewport and full-screen mode
+Cells remain meaningful across multiple zoom levels
+zooming in reveals membrane, Materials, Resources, Energy and process detail
+zooming out provides efficient population-level rendering
 the user can color entities by Energy, Resources, Materials, Genome, lineage, behavior and evaluation
 the user can inspect exact Resource and Material composition
 the user can see Resource distribution by type across the world
@@ -1455,6 +1687,10 @@ At which Tick are user placement commands applied?
 Which checkpoints are full state and which are lightweight references?
 Which metrics must be streamed live and which may be computed after the run?
 Which screenshot formats and maximum resolutions are required?
+Which default screen-space thresholds should select each Cell LOD level?
+Should semantic-zoom transitions use hard thresholds, hysteresis, smooth interpolation, or a hybrid?
+Should detailed Cell projections be pushed automatically for visible Cells or requested on demand?
+Should viewport fitting preserve the full world with letterboxing or allow optional cropping?
 ```
 
 ## Recommended Implementation Order
@@ -1489,6 +1725,16 @@ Visual I:
 
 Visual J:
   checkpoints + branching experiments
+```
+
+## Rendering Architecture Principle
+
+```text
+simulation-space defines where entities exist
+screen-space defines how they are displayed
+semantic zoom defines how much detail is visible
+LOD defines how much rendering work is justified
+alife-core remains the only simulation authority
 ```
 
 ## Main Risk

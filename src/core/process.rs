@@ -75,9 +75,15 @@ pub enum RejectionReason {
     NoPressure,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FeasibilityResult {
-    Feasible,
+    /// Execution MUST use `accepted_amount`/`energy_cost`/`resource_cost` from this payload.
+    /// Never re-read config constants independently after a feasibility check passes.
+    Allowed {
+        accepted_amount: f32,
+        energy_cost: f32,
+        resource_cost: f32,
+    },
     Rejected(RejectionReason),
 }
 
@@ -89,7 +95,7 @@ pub struct FeasibilityInput<'a> {
 
 impl FeasibilityResult {
     pub fn is_feasible(&self) -> bool {
-        matches!(self, Self::Feasible)
+        matches!(self, Self::Allowed { .. })
     }
 }
 
