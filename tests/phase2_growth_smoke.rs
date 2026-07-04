@@ -116,9 +116,7 @@ fn structural_growth_increases_cell_radius_and_capacity() {
         process_id: ProcessId::GrowthResourceAllocation,
         requested_amount: 1.0,
     };
-    let res = exec
-        .world_mut()
-        .execute_growth_for_test(idx, &candidate_growth);
+    let res = exec.world_mut().execute_growth(idx, &candidate_growth);
     assert!(res.is_ok());
 
     let final_radius = exec.world().cells().radius(idx).raw();

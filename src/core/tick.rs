@@ -185,7 +185,7 @@ impl TickExecutor {
                     .validate_feasibility(index, &candidate_growth)
                     .is_feasible()
                 {
-                    let _ = self.world.execute_growth_for_test(index, &candidate_growth);
+                    let _ = self.world.execute_growth(index, &candidate_growth);
                 } else {
                     process_rejections += 1;
                 }

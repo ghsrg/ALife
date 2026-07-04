@@ -340,7 +340,7 @@ impl WorldState {
         }
     }
 
-    pub fn execute_growth_for_test(
+    pub fn execute_growth(
         &mut self,
         cell_idx: CellIndex,
         _action: &crate::core::process::ActionCandidate,
@@ -368,23 +368,23 @@ impl WorldState {
             EnergyBuffer::new(next_energy, self.cells.energy(cell_idx).capacity()),
         );
 
-        // Synthesize materials (mass)
-        let old_materials = self.cells.material_amount(cell_idx).raw();
-        let new_materials = old_materials + 1.0;
+        // Only structural material increases — capability derives from material amount only
+        let old_structural = self.cells.structural_material(cell_idx).raw();
+        let new_structural = old_structural + 1.0;
         self.cells
-            .set_materials(cell_idx, MaterialAmount::new(new_materials).unwrap());
+            .set_structural_material(cell_idx, MaterialAmount::new(new_structural).unwrap());
 
-        // Update radius based on mass scaling: radius = base_radius * sqrt(new_mass / old_mass)
+        // Update radius based on structural mass scaling: radius = old_radius * sqrt(new_structural / old_structural)
         let old_radius = self.cells.radius(cell_idx).raw();
-        let new_radius_val = if old_materials > 0.0 {
-            old_radius * (new_materials / old_materials).sqrt()
+        let new_radius_val = if old_structural > 0.0 {
+            old_radius * (new_structural / old_structural).sqrt()
         } else {
             old_radius
         };
         let new_radius = Radius::new(new_radius_val).unwrap();
         self.cells.set_radius(cell_idx, new_radius);
 
-        // Update capacity limit scaling with radius area increase: capacity = old_cap * (new_radius / old_radius)^2
+        // Update capacity limit scaling with radius area increase
         let old_cap = self.cells.capacity_limit(cell_idx).raw();
         let new_cap_val = if old_radius > 0.0 {
             old_cap * (new_radius_val / old_radius).powi(2)
