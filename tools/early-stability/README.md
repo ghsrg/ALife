@@ -223,3 +223,114 @@ Reachability runs write:
 
 Generated stability outputs should go under `outputs/stability/` and should not be committed.
 Generated reachability outputs should go under `outputs/reachability/` and should not be committed unless explicitly requested.
+
+---
+
+## Rust Sweep Analyzer (`cargo run --bin sweep_analyzer`)
+
+The Sweep Analyzer is a **Rust binary** that runs high-resolution parametric sweeps of the live simulation engine directly (not the Python micro-simulator). It is intended for research and balance calibration rather than CI verification.
+
+Key differences from `cargo test`:
+
+| | `cargo test` | `sweep_analyzer` |
+|---|---|---|
+| Engine | Full Rust core | Full Rust core |
+| Purpose | Correctness / regression | Balance exploration |
+| Scale | Minimal (fast) | Configurable (deep) |
+| Output | Pass / fail | CSV tables + Markdown report |
+
+### Quick start
+
+```powershell
+# Default: reads sweep_analyzer.toml in the project root
+cargo run --bin sweep_analyzer
+
+# Custom config path
+cargo run --bin sweep_analyzer -- path/to/my_sweep.toml
+
+# Release mode (10-20× faster for large sweeps)
+cargo run --release --bin sweep_analyzer
+```
+
+### Configuration (`sweep_analyzer.toml`)
+
+Located at the project root. Key sections:
+
+```toml
+[run]
+output_dir = "outputs/raw_data"   # where CSV and report are written
+seed       = 42                    # deterministic seed
+ticks      = 2000                  # ticks per point
+
+[cell]
+mandatory_cost_per_tick    = 2.0
+dormant_mandatory_cost_modifier  = 0.1
+# ... other fixed cell parameters
+
+[[sweep]]                          # 1-D sweep
+name  = "viability_threshold"
+param = "resource_density"
+from  = 0.0
+to    = 20.0
+steps = 40                         # 40 evenly-spaced points
+
+[[matrix]]                         # 2-D sweep
+name    = "transport_metabolism"
+param_x = "max_uptake_per_tick"
+from_x  = 0.1
+to_x    = 3.0
+steps_x = 10
+param_y = "metabolism_resource_per_tick"
+from_y  = 0.1
+to_y    = 3.0
+steps_y = 10
+```
+
+Supported `param` names for `[[sweep]]` and `[[matrix]]`:
+
+| Param name | Description |
+|---|---|
+| `resource_density` | Initial world resource amount |
+| `passive_energy_income` | Constant energy income per tick |
+| `mandatory_cost_per_tick` | Active upkeep energy cost |
+| `dormant_mandatory_cost_modifier` | Multiplier for upkeep in dormancy |
+| `max_uptake_per_tick` | Max resource absorbed per tick |
+| `metabolism_resource_per_tick` | Resource converted to energy per tick |
+
+### Output files (`outputs/raw_data/`)
+
+**Per 1-D sweep** (`<name>.csv`):
+```
+param_value, zone, collapsed, collapse_tick,
+dormant_ticks, active_ticks, stressed_ticks,
+min_energy, max_energy, final_energy, mean_energy,
+resource_consumed, metabolism_count
+```
+
+**Per 2-D matrix** (`<name>_matrix.csv`):
+```
+param_x, param_y, zone, collapsed, dormant_pct, active_pct,
+min_energy, max_energy, final_energy
+```
+
+Both files include a `# SUMMARY` block at the bottom with aggregate `min`, `max`, `mean`, and `ideal_range` computed across all points.
+
+**Markdown report** (`sweep_report_<timestamp>.md`): links all generated CSV files, zone legend, and run parameters.
+
+### Zone classification
+
+| Zone | Meaning |
+|---|---|
+| `collapse` | Cell died before the run ended |
+| `dormancy` | > 80 % of ticks in dormancy |
+| `dormancy_survival` | 20–80 % dormancy — fragile |
+| `stable` | Active with steady energy |
+| `accumulates` | Active and building energy buffer |
+
+### Tips
+
+- Use `ticks = 200` during early exploration, then raise to `10000` for drift detection.
+- `steps = 50` in a sweep gives reasonable resolution; `steps = 100` for publication-quality phase diagrams.
+- For matrix, start with `steps_x = steps_y = 8` and zoom in on interesting zones.
+- Committed configs in `tools/early-stability/scenarios/` remain the source of truth for `cargo test`; the sweep TOML is a **separate research config**.
+

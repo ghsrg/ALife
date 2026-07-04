@@ -1,0 +1,98 @@
+# sweep_analyzer.toml
+# Конфіг для `cargo run --bin sweep_analyzer`
+#
+# Кожен `[[sweep]]` описує один тип параметричного сканування.
+# Параметри `from`, `to`, `steps` задають рівномірну сітку значень.
+# `ticks` — кількість тіків симуляції для кожної точки.
+
+[run]
+output_dir = "outputs/raw_data"
+seed       = 42
+ticks      = 2000    # кількість тіків для кожної точки сканування
+
+# ─────────────────────────────────────────────
+# Базові параметри клітини (fixed для всіх sweep)
+# ─────────────────────────────────────────────
+[cell]
+radius                    = 1.0
+initial_energy            = 50.0
+energy_capacity           = 100.0
+mandatory_cost_per_tick   = 2.0
+passive_energy_income     = 0.0
+capacity_limit            = 30.0
+initial_metabolic_material= 1.0
+initial_transport_material= 1.0
+initial_boundary_material = 1.0
+initial_structural_material=1.0
+
+[lifecycle]
+stress_energy_threshold       = 10.0
+dormancy_allowed              = true
+dormant_mandatory_cost_modifier = 0.1
+critical_capacity_overrun     = 5.0
+
+[resource_interaction]
+energy_per_resource           = 10.0
+heat_per_resource             = 0.1
+waste_per_resource            = 0.1
+decay_rate                    = 0.01
+# базова щільність ресурсу при sweep'ах, де ресурс НЕ є sweep-параметром
+default_resource_density      = 10.0
+# базова швидкість поглинання при sweep'ах, де uptake НЕ є sweep-параметром
+default_max_uptake_per_tick   = 1.0
+# базовий метаболізм при sweep'ах, де metabolism НЕ є sweep-параметром
+default_metabolism_resource_per_tick = 0.5
+
+[environment]
+heat_dissipation_rate   = 0.2
+heat_warning_threshold  = 50.0
+heat_death_threshold    = 80.0
+waste_sink_rate         = 0.1
+waste_warning_threshold = 10.0
+waste_death_threshold   = 20.0
+
+# ─────────────────────────────────────────────
+# Описи параметричних сканувань
+# ─────────────────────────────────────────────
+
+[[sweep]]
+name  = "viability_threshold"
+param = "resource_density"  # початкова щільність ресурсу у світі
+from  = 0.0
+to    = 20.0
+steps = 40                   # 40 точок → крок 0.5
+
+[[sweep]]
+name  = "passive_income_equilibrium"
+param = "passive_energy_income"
+from  = 0.05
+to    = 0.50
+steps = 18
+
+[[sweep]]
+name  = "upkeep_sensitivity"
+param = "mandatory_cost_per_tick"
+from  = 0.05
+to    = 5.0
+steps = 20
+
+[[sweep]]
+name  = "dormant_modifier"
+param = "dormant_mandatory_cost_modifier"
+from  = 0.02
+to    = 0.50
+steps = 16
+
+# ─────────────────────────────────────────────
+# Двовимірне сканування
+# ─────────────────────────────────────────────
+[[matrix]]
+name      = "transport_metabolism"
+param_x   = "max_uptake_per_tick"
+from_x    = 0.1
+to_x      = 3.0
+steps_x   = 10
+param_y   = "metabolism_resource_per_tick"
+from_y    = 0.1
+to_y      = 3.0
+steps_y   = 10

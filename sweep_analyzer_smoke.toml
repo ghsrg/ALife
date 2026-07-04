@@ -1,0 +1,65 @@
+# Smoke-test config — 100 ticks, small sweeps
+[run]
+output_dir = "outputs/raw_data/smoke"
+seed       = 42
+ticks      = 100
+
+[cell]
+radius                    = 1.0
+initial_energy            = 50.0
+energy_capacity           = 100.0
+mandatory_cost_per_tick   = 2.0
+passive_energy_income     = 0.0
+capacity_limit            = 30.0
+initial_metabolic_material = 1.0
+initial_transport_material = 1.0
+initial_boundary_material  = 1.0
+initial_structural_material= 1.0
+
+[lifecycle]
+stress_energy_threshold         = 10.0
+dormancy_allowed                = true
+dormant_mandatory_cost_modifier = 0.1
+critical_capacity_overrun       = 5.0
+
+[resource_interaction]
+energy_per_resource              = 10.0
+heat_per_resource                = 0.1
+waste_per_resource               = 0.1
+decay_rate                       = 0.01
+default_resource_density         = 10.0
+default_max_uptake_per_tick      = 1.0
+default_metabolism_resource_per_tick = 0.5
+
+[environment]
+heat_dissipation_rate   = 0.2
+heat_warning_threshold  = 50.0
+heat_death_threshold    = 80.0
+waste_sink_rate         = 0.1
+waste_warning_threshold = 10.0
+waste_death_threshold   = 20.0
+
+[[sweep]]
+name  = "viability_threshold"
+param = "resource_density"
+from  = 0.0
+to    = 20.0
+steps = 6
+
+[[sweep]]
+name  = "passive_income_equilibrium"
+param = "passive_energy_income"
+from  = 0.10
+to    = 0.50
+steps = 5
+
+[[matrix]]
+name      = "transport_metabolism"
+param_x   = "max_uptake_per_tick"
+from_x    = 0.1
+to_x      = 2.0
+steps_x   = 4
+param_y   = "metabolism_resource_per_tick"
+from_y    = 0.1
+to_y      = 2.0
+steps_y   = 4

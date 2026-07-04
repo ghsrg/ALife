@@ -38,6 +38,7 @@ tags:
 - [[outputs/worklogs/2026-07-03-1320-PLAN-phase-2B-resolving-material-stubs|outputs/worklogs/2026-07-03-1320-PLAN-phase-2B-resolving-material-stubs]]
 - [[outputs/worklogs/2026-07-03-1650-PLAN-phase-2c-reflexive-actions-growth|outputs/worklogs/2026-07-03-1650-PLAN-phase-2c-reflexive-actions-growth]]
 - [[outputs/worklogs/2026-07-03-1810-PLAN-phase-2c-stability-bounds|outputs/worklogs/2026-07-03-1810-PLAN-phase-2c-stability-bounds]]
+- [[outputs/worklogs/2026-07-03-2136-PLAN-phase-2c-review-fixes|outputs/worklogs/2026-07-03-2136-PLAN-phase-2c-review-fixes]]
 - [[outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap]]
 - [[outputs/worklogs/2026-07-02-1935-PLAN-phase-3-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-3-global-roadmap]]
 - [[outputs/worklogs/2026-07-02-1935-PLAN-phase-4-global-roadmap|outputs/worklogs/2026-07-02-1935-PLAN-phase-4-global-roadmap]]
