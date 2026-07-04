@@ -1,8 +1,7 @@
 use alife::core::cell_store::{CellIndex, LifecycleState};
 use alife::core::config::{
-    CellInitialConfig, EnvironmentConfig, LifecycleConfig,
-    ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SpaceConfig,
-    WorldConfig,
+    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
+    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use alife::core::summary::SurvivalResult;
 use alife::core::tick::TickExecutor;
@@ -122,10 +121,7 @@ struct SimResult {
 // Build RuntimeConfig, patching one or two parameters
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn build_config(
-    cfg: &AnalyzerConfig,
-    overrides: &HashMap<&str, f32>,
-) -> RuntimeConfig {
+fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> RuntimeConfig {
     let cell_cfg = &cfg.cell;
     let lc = &cfg.lifecycle;
     let ri = &cfg.resource_interaction;
@@ -182,11 +178,14 @@ fn build_config(
         capacity_limit: CapacityAmount::new(cell_cfg.capacity_limit.max(1.0)).unwrap(),
         initial_resource_amount: ResourceAmount::zero(),
         initial_boundary_material: MaterialAmount::new(cell_cfg.initial_boundary_material).unwrap(),
-        initial_transport_material: MaterialAmount::new(cell_cfg.initial_transport_material).unwrap(),
-        initial_metabolic_material: MaterialAmount::new(cell_cfg.initial_metabolic_material).unwrap(),
+        initial_transport_material: MaterialAmount::new(cell_cfg.initial_transport_material)
+            .unwrap(),
+        initial_metabolic_material: MaterialAmount::new(cell_cfg.initial_metabolic_material)
+            .unwrap(),
         initial_storage_material: MaterialAmount::zero(),
         initial_synthesis_material: MaterialAmount::zero(),
-        initial_structural_material: MaterialAmount::new(cell_cfg.initial_structural_material).unwrap(),
+        initial_structural_material: MaterialAmount::new(cell_cfg.initial_structural_material)
+            .unwrap(),
         initial_repair_material: MaterialAmount::zero(),
         initial_contractile_material: MaterialAmount::zero(),
         initial_sensory_material: MaterialAmount::zero(),
@@ -209,7 +208,8 @@ fn build_config(
         stress_energy_threshold: EnergyAmount::new(lc.stress_energy_threshold).unwrap(),
         dormancy_allowed: lc.dormancy_allowed,
         dormant_mandatory_cost_modifier: dormant_mod.clamp(0.0, 1.0),
-        critical_capacity_overrun: CapacityAmount::new(lc.critical_capacity_overrun.max(0.1)).unwrap(),
+        critical_capacity_overrun: CapacityAmount::new(lc.critical_capacity_overrun.max(0.1))
+            .unwrap(),
     };
 
     RuntimeConfig::new(
@@ -250,7 +250,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 final_energy: 0.0,
                 total_resource_consumed: 0.0,
                 metabolism_count: 0,
-            }
+            };
         }
     };
 
@@ -373,7 +373,13 @@ struct Stats {
 
 fn compute_stats(values: &[f32]) -> Stats {
     if values.is_empty() {
-        return Stats { min: 0.0, max: 0.0, mean: 0.0, ideal_range_lo: 0.0, ideal_range_hi: 0.0 };
+        return Stats {
+            min: 0.0,
+            max: 0.0,
+            mean: 0.0,
+            ideal_range_lo: 0.0,
+            ideal_range_hi: 0.0,
+        };
     }
     let min = values.iter().copied().fold(f32::MAX, f32::min);
     let max = values.iter().copied().fold(f32::MIN, f32::max);
@@ -394,8 +400,10 @@ fn compute_stats(values: &[f32]) -> Stats {
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
-    println!("\n▶ Sweep «{}» — {} from {:.3} to {:.3} in {} steps ({} ticks each)",
-        sweep.name, sweep.param, sweep.from, sweep.to, sweep.steps, cfg.run.ticks);
+    println!(
+        "\n▶ Sweep «{}» — {} from {:.3} to {:.3} in {} steps ({} ticks each)",
+        sweep.name, sweep.param, sweep.from, sweep.to, sweep.steps, cfg.run.ticks
+    );
 
     let step_size = if sweep.steps <= 1 {
         0.0
@@ -405,12 +413,14 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
 
     let csv_path = format!("{}/{}.csv", out_dir, sweep.name);
     let mut csv = std::fs::File::create(&csv_path).expect("cannot create CSV");
-    writeln!(csv,
+    writeln!(
+        csv,
         "param_value,zone,collapsed,collapse_tick,\
          dormant_ticks,active_ticks,stressed_ticks,\
          min_energy,max_energy,final_energy,mean_energy,\
          resource_consumed,metabolism_count"
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut final_energies: Vec<f32> = Vec::new();
     let mut zone_counts: HashMap<&str, usize> = HashMap::new();
@@ -434,31 +444,51 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
 
         final_energies.push(res.final_energy);
 
-        writeln!(csv,
+        writeln!(
+            csv,
             "{:.4},{},{},{},{},{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{}",
-            val, zone,
+            val,
+            zone,
             res.collapsed,
-            res.collapse_tick.map(|t| t.to_string()).unwrap_or_else(|| "-".to_string()),
-            res.dormant_ticks, res.active_ticks, res.stressed_ticks,
-            res.min_energy, res.max_energy, res.final_energy, mean_e,
-            res.total_resource_consumed, res.metabolism_count,
-        ).unwrap();
+            res.collapse_tick
+                .map(|t| t.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+            res.dormant_ticks,
+            res.active_ticks,
+            res.stressed_ticks,
+            res.min_energy,
+            res.max_energy,
+            res.final_energy,
+            mean_e,
+            res.total_resource_consumed,
+            res.metabolism_count,
+        )
+        .unwrap();
 
         // console progress
-        let collapse_str = res.collapse_tick
+        let collapse_str = res
+            .collapse_tick
             .map(|t| format!("tick {}", t))
             .unwrap_or_else(|| "—".to_string());
-        println!("  {:>8.4} │ {:20} │ energy [{:.1}..{:.1}] final={:.1} | collapsed={} @{}",
-            val, zone,
-            res.min_energy, res.max_energy, res.final_energy,
-            res.collapsed, collapse_str);
+        println!(
+            "  {:>8.4} │ {:20} │ energy [{:.1}..{:.1}] final={:.1} | collapsed={} @{}",
+            val,
+            zone,
+            res.min_energy,
+            res.max_energy,
+            res.final_energy,
+            res.collapsed,
+            collapse_str
+        );
     }
 
     // aggregate statistics
     let stats = compute_stats(&final_energies);
     println!("\n  ── Aggregate (final_energy) ──────────────────────────");
-    println!("  min={:.2}  max={:.2}  mean={:.2}  ideal=[{:.2}..{:.2}]",
-        stats.min, stats.max, stats.mean, stats.ideal_range_lo, stats.ideal_range_hi);
+    println!(
+        "  min={:.2}  max={:.2}  mean={:.2}  ideal=[{:.2}..{:.2}]",
+        stats.min, stats.max, stats.mean, stats.ideal_range_lo, stats.ideal_range_hi
+    );
     println!("  Zone distribution: {:?}", zone_counts);
     println!("  CSV → {}", csv_path);
 
@@ -468,7 +498,12 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
     writeln!(csv, "# min_final_energy,{:.3}", stats.min).unwrap();
     writeln!(csv, "# max_final_energy,{:.3}", stats.max).unwrap();
     writeln!(csv, "# mean_final_energy,{:.3}", stats.mean).unwrap();
-    writeln!(csv, "# ideal_range,{:.3},{:.3}", stats.ideal_range_lo, stats.ideal_range_hi).unwrap();
+    writeln!(
+        csv,
+        "# ideal_range,{:.3},{:.3}",
+        stats.ideal_range_lo, stats.ideal_range_hi
+    )
+    .unwrap();
     for (zone, count) in &zone_counts {
         writeln!(csv, "# zone_{},{}", zone, count).unwrap();
     }
@@ -479,22 +514,36 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
-    println!("\n▶ Matrix «{}» — {} × {} ({} × {} = {} runs, {} ticks each)",
+    println!(
+        "\n▶ Matrix «{}» — {} × {} ({} × {} = {} runs, {} ticks each)",
         mat.name,
-        mat.param_x, mat.param_y,
-        mat.steps_x, mat.steps_y,
+        mat.param_x,
+        mat.param_y,
+        mat.steps_x,
+        mat.steps_y,
         mat.steps_x * mat.steps_y,
-        cfg.run.ticks);
+        cfg.run.ticks
+    );
 
-    let step_x = if mat.steps_x <= 1 { 0.0 } else { (mat.to_x - mat.from_x) / (mat.steps_x - 1) as f32 };
-    let step_y = if mat.steps_y <= 1 { 0.0 } else { (mat.to_y - mat.from_y) / (mat.steps_y - 1) as f32 };
+    let step_x = if mat.steps_x <= 1 {
+        0.0
+    } else {
+        (mat.to_x - mat.from_x) / (mat.steps_x - 1) as f32
+    };
+    let step_y = if mat.steps_y <= 1 {
+        0.0
+    } else {
+        (mat.to_y - mat.from_y) / (mat.steps_y - 1) as f32
+    };
 
     let csv_path = format!("{}/{}_matrix.csv", out_dir, mat.name);
     let mut csv = std::fs::File::create(&csv_path).expect("cannot create matrix CSV");
-    writeln!(csv,
+    writeln!(
+        csv,
         "{},{},zone,collapsed,dormant_pct,active_pct,min_energy,max_energy,final_energy",
         mat.param_x, mat.param_y
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut all_finals: Vec<f32> = Vec::new();
     let mut zone_counts: HashMap<&str, usize> = HashMap::new();
@@ -514,17 +563,33 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
             *zone_counts.entry(zone).or_insert(0) += 1;
 
             let total_alive = res.dormant_ticks + res.active_ticks + res.stressed_ticks;
-            let dormant_pct = if total_alive > 0 { res.dormant_ticks as f32 / total_alive as f32 } else { 0.0 };
-            let active_pct  = if total_alive > 0 { res.active_ticks  as f32 / total_alive as f32 } else { 0.0 };
+            let dormant_pct = if total_alive > 0 {
+                res.dormant_ticks as f32 / total_alive as f32
+            } else {
+                0.0
+            };
+            let active_pct = if total_alive > 0 {
+                res.active_ticks as f32 / total_alive as f32
+            } else {
+                0.0
+            };
 
             all_finals.push(res.final_energy);
 
-            writeln!(csv,
+            writeln!(
+                csv,
                 "{:.4},{:.4},{},{},{:.3},{:.3},{:.3},{:.3},{:.3}",
-                vx, vy, zone, res.collapsed,
-                dormant_pct, active_pct,
-                res.min_energy, res.max_energy, res.final_energy,
-            ).unwrap();
+                vx,
+                vy,
+                zone,
+                res.collapsed,
+                dormant_pct,
+                active_pct,
+                res.min_energy,
+                res.max_energy,
+                res.final_energy,
+            )
+            .unwrap();
         }
         print!(".");
         let _ = std::io::stdout().flush();
@@ -533,8 +598,10 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
     println!();
     let stats = compute_stats(&all_finals);
     println!("  ── Aggregate (final_energy across matrix) ────────────");
-    println!("  min={:.2}  max={:.2}  mean={:.2}  ideal=[{:.2}..{:.2}]",
-        stats.min, stats.max, stats.mean, stats.ideal_range_lo, stats.ideal_range_hi);
+    println!(
+        "  min={:.2}  max={:.2}  mean={:.2}  ideal=[{:.2}..{:.2}]",
+        stats.min, stats.max, stats.mean, stats.ideal_range_lo, stats.ideal_range_hi
+    );
     println!("  Zone distribution: {:?}", zone_counts);
     println!("  CSV → {}", csv_path);
 
@@ -543,7 +610,12 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
     writeln!(csv, "# min_final_energy,{:.3}", stats.min).unwrap();
     writeln!(csv, "# max_final_energy,{:.3}", stats.max).unwrap();
     writeln!(csv, "# mean_final_energy,{:.3}", stats.mean).unwrap();
-    writeln!(csv, "# ideal_range,{:.3},{:.3}", stats.ideal_range_lo, stats.ideal_range_hi).unwrap();
+    writeln!(
+        csv,
+        "# ideal_range,{:.3},{:.3}",
+        stats.ideal_range_lo, stats.ideal_range_hi
+    )
+    .unwrap();
     for (zone, count) in &zone_counts {
         writeln!(csv, "# zone_{},{}", zone, count).unwrap();
     }
@@ -573,8 +645,16 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
     writeln!(f, "| Zone | Meaning |").unwrap();
     writeln!(f, "|---|---|").unwrap();
     writeln!(f, "| `collapse` | Cell died before end of run |").unwrap();
-    writeln!(f, "| `dormancy` | > 80 % ticks in dormancy, survival only |").unwrap();
-    writeln!(f, "| `dormancy_survival` | 20–80 % dormancy, fragile active periods |").unwrap();
+    writeln!(
+        f,
+        "| `dormancy` | > 80 % ticks in dormancy, survival only |"
+    )
+    .unwrap();
+    writeln!(
+        f,
+        "| `dormancy_survival` | 20–80 % dormancy, fragile active periods |"
+    )
+    .unwrap();
     writeln!(f, "| `stable` | Active with steady energy |").unwrap();
     writeln!(f, "| `accumulates` | Active and growing energy buffer |").unwrap();
     writeln!(f, "").unwrap();
@@ -582,8 +662,12 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
 
     if let Some(sweeps) = &cfg.sweep {
         for s in sweeps {
-            writeln!(f, "- **{}**: param `{}` from `{:.3}` to `{:.3}` in {} steps → `{}/{}.csv`",
-                s.name, s.param, s.from, s.to, s.steps, out_dir, s.name).unwrap();
+            writeln!(
+                f,
+                "- **{}**: param `{}` from `{:.3}` to `{:.3}` in {} steps → `{}/{}.csv`",
+                s.name, s.param, s.from, s.to, s.steps, out_dir, s.name
+            )
+            .unwrap();
         }
     }
 
@@ -592,8 +676,12 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
 
     if let Some(matrices) = &cfg.matrix {
         for m in matrices {
-            writeln!(f, "- **{}**: `{}` × `{}`, grid {}×{} → `{}/{}_matrix.csv`",
-                m.name, m.param_x, m.param_y, m.steps_x, m.steps_y, out_dir, m.name).unwrap();
+            writeln!(
+                f,
+                "- **{}**: `{}` × `{}`, grid {}×{} → `{}/{}_matrix.csv`",
+                m.name, m.param_x, m.param_y, m.steps_x, m.steps_y, out_dir, m.name
+            )
+            .unwrap();
         }
     }
 
@@ -619,13 +707,15 @@ fn main() {
     let raw = std::fs::read_to_string(&config_path)
         .unwrap_or_else(|e| panic!("Cannot read {}: {}", config_path, e));
 
-    let cfg: AnalyzerConfig = toml::from_str(&raw)
-        .unwrap_or_else(|e| panic!("Cannot parse {}: {}", config_path, e));
+    let cfg: AnalyzerConfig =
+        toml::from_str(&raw).unwrap_or_else(|e| panic!("Cannot parse {}: {}", config_path, e));
 
     std::fs::create_dir_all(&cfg.run.output_dir).expect("cannot create output_dir");
 
-    println!("ticks={} seed={} output={}",
-        cfg.run.ticks, cfg.run.seed, cfg.run.output_dir);
+    println!(
+        "ticks={} seed={} output={}",
+        cfg.run.ticks, cfg.run.seed, cfg.run.output_dir
+    );
 
     if let Some(sweeps) = &cfg.sweep {
         let out = cfg.run.output_dir.clone();
@@ -645,5 +735,8 @@ fn main() {
 
     write_report(&cfg, &cfg.run.output_dir.clone());
 
-    println!("\n✓ Sweep Analyzer finished. Results in: {}/", cfg.run.output_dir);
+    println!(
+        "\n✓ Sweep Analyzer finished. Results in: {}/",
+        cfg.run.output_dir
+    );
 }

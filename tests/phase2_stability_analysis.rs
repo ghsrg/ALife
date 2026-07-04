@@ -404,7 +404,8 @@ fn test_dormancy_wakeup_hysteresis() {
     let mut tick_executor = TickExecutor::new(config).unwrap();
 
     std::fs::create_dir_all("outputs/raw_data").unwrap();
-    let mut file = std::fs::File::create("outputs/raw_data/phase2_dormancy_transitions.csv").unwrap();
+    let mut file =
+        std::fs::File::create("outputs/raw_data/phase2_dormancy_transitions.csv").unwrap();
     writeln!(file, "tick,energy,state").unwrap();
 
     // Cell must enter dormancy
@@ -529,7 +530,8 @@ fn test_transport_metabolism_balance_matrix() {
     let uptake_rates = &[0.1, 0.5, 1.0, 2.0];
     let metabolism_rates = &[0.1, 0.5, 1.0, 2.0];
     std::fs::create_dir_all("outputs/raw_data").unwrap();
-    let mut file = std::fs::File::create("outputs/raw_data/phase2_transport_metabolism_matrix.csv").unwrap();
+    let mut file =
+        std::fs::File::create("outputs/raw_data/phase2_transport_metabolism_matrix.csv").unwrap();
     writeln!(file, "uptake,metabolism,outcome").unwrap();
 
     for &uptake in uptake_rates {
@@ -543,7 +545,12 @@ fn test_transport_metabolism_balance_matrix() {
 
             let mut collapsed = false;
             let mut dormant_ticks = 0;
-            let initial_energy = tick_executor.world().cells().energy(CellIndex::from_raw(0)).current().raw();
+            let initial_energy = tick_executor
+                .world()
+                .cells()
+                .energy(CellIndex::from_raw(0))
+                .current()
+                .raw();
             let mut final_energy = initial_energy;
 
             for _ in 0..50 {
@@ -559,7 +566,12 @@ fn test_transport_metabolism_balance_matrix() {
                 if lifecycle == LifecycleState::Dormant {
                     dormant_ticks += 1;
                 }
-                final_energy = tick_executor.world().cells().energy(CellIndex::from_raw(0)).current().raw();
+                final_energy = tick_executor
+                    .world()
+                    .cells()
+                    .energy(CellIndex::from_raw(0))
+                    .current()
+                    .raw();
             }
 
             let outcome = if collapsed {
