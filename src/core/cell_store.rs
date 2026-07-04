@@ -53,6 +53,8 @@ pub struct RuntimeFlags {
     pub stalled: bool,
     pub over_capacity: bool,
     pub inert: bool,
+    /// Set after contact sensing: radius >= growth_target_radius AND contact_pressure <= max_division_pressure.
+    pub division_ready: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
