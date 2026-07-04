@@ -99,7 +99,7 @@ pub enum ProcessStatus {
     Future,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProcessSpec {
     pub process_id: ProcessId,
     pub status: ProcessStatus,
@@ -112,7 +112,7 @@ impl ProcessSpec {
         PROCESS_REGISTRY
             .iter()
             .find(|s| s.process_id == id)
-            .expect("every ProcessId must have a registry entry")
+            .unwrap_or_else(|| panic!("no registry entry for {:?}", id))
     }
 }
 
