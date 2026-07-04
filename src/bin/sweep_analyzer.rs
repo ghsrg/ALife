@@ -493,7 +493,7 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
     println!("  CSV → {}", csv_path);
 
     // append summary block at the end of CSV
-    writeln!(csv, "").unwrap();
+    writeln!(csv).unwrap();
     writeln!(csv, "# SUMMARY").unwrap();
     writeln!(csv, "# min_final_energy,{:.3}", stats.min).unwrap();
     writeln!(csv, "# max_final_energy,{:.3}", stats.max).unwrap();
@@ -605,7 +605,7 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
     println!("  Zone distribution: {:?}", zone_counts);
     println!("  CSV → {}", csv_path);
 
-    writeln!(csv, "").unwrap();
+    writeln!(csv).unwrap();
     writeln!(csv, "# SUMMARY").unwrap();
     writeln!(csv, "# min_final_energy,{:.3}", stats.min).unwrap();
     writeln!(csv, "# max_final_energy,{:.3}", stats.max).unwrap();
@@ -636,11 +636,11 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
     let mut f = std::fs::File::create(&report_path).expect("cannot create report");
 
     writeln!(f, "# Sweep Analyzer Report").unwrap();
-    writeln!(f, "").unwrap();
+    writeln!(f).unwrap();
     writeln!(f, "- **seed**: {}", cfg.run.seed).unwrap();
     writeln!(f, "- **ticks per run**: {}", cfg.run.ticks).unwrap();
     writeln!(f, "- **output_dir**: `{}`", cfg.run.output_dir).unwrap();
-    writeln!(f, "").unwrap();
+    writeln!(f).unwrap();
     writeln!(f, "## Zone Legend").unwrap();
     writeln!(f, "| Zone | Meaning |").unwrap();
     writeln!(f, "|---|---|").unwrap();
@@ -657,7 +657,7 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
     .unwrap();
     writeln!(f, "| `stable` | Active with steady energy |").unwrap();
     writeln!(f, "| `accumulates` | Active and growing energy buffer |").unwrap();
-    writeln!(f, "").unwrap();
+    writeln!(f).unwrap();
     writeln!(f, "## Sweeps").unwrap();
 
     if let Some(sweeps) = &cfg.sweep {
@@ -671,7 +671,7 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
         }
     }
 
-    writeln!(f, "").unwrap();
+    writeln!(f).unwrap();
     writeln!(f, "## Matrices").unwrap();
 
     if let Some(matrices) = &cfg.matrix {
@@ -685,7 +685,7 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
         }
     }
 
-    writeln!(f, "").unwrap();
+    writeln!(f).unwrap();
     writeln!(f, "> Summary rows in each CSV are prefixed with `#` and contain `min`, `max`, `mean`, and `ideal_range`.").unwrap();
 
     println!("\n  Report → {}", report_path);

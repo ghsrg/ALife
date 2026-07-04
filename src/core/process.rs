@@ -92,3 +92,71 @@ impl FeasibilityResult {
         matches!(self, Self::Feasible)
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProcessStatus {
+    Now,
+    Future,
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcessSpec {
+    pub process_id: ProcessId,
+    pub status: ProcessStatus,
+    pub required_capabilities: &'static [MaterialCapability],
+    pub description: &'static str,
+}
+
+impl ProcessSpec {
+    pub fn for_id(id: ProcessId) -> &'static ProcessSpec {
+        PROCESS_REGISTRY
+            .iter()
+            .find(|s| s.process_id == id)
+            .expect("every ProcessId must have a registry entry")
+    }
+}
+
+static PROCESS_REGISTRY: &[ProcessSpec] = &[
+    ProcessSpec {
+        process_id: ProcessId::MandatoryUpkeep,
+        status: ProcessStatus::Now,
+        required_capabilities: &[],
+        description: "Deducts mandatory energy cost every tick.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::LocalResourceUptake,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::ResourceUptake],
+        description: "Absorbs external resources from local grid cell.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::MetabolismEnergyConversion,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::Metabolism],
+        description: "Converts internal resources to energy.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::MaterialSynthesis,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::MaterialSynthesis],
+        description: "Converts resource+energy into structural material.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::GrowthResourceAllocation,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::StructuralGrowth],
+        description: "Grows cell radius using resource+energy budget.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::ContractileDisplacement,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::Contractility],
+        description: "Displaces cell away from collision neighbors when contact_pressure > 0.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::Division,
+        status: ProcessStatus::Future,
+        required_capabilities: &[],
+        description: "Reserved for Phase 2D: splits cell into two daughters.",
+    },
+];
