@@ -106,7 +106,6 @@ fn tick_executor_records_process_attempts_and_rejections() {
 #[test]
 fn cell_collapses_if_metabolism_capability_is_missing() {
     use alife::core::cell_store::CellIndex;
-    use alife::core::process::MaterialCapability;
     use alife::core::summary::SurvivalResult;
     use alife::core::tick::TickExecutor;
 
@@ -119,10 +118,9 @@ fn cell_collapses_if_metabolism_capability_is_missing() {
     let mut exec = TickExecutor::new(config).unwrap();
     let cell_idx = CellIndex::from_raw(0);
 
-    // Strip metabolism capability
     exec.world_mut()
         .cells_mut_for_commit()
-        .strip_capability_for_test(cell_idx, MaterialCapability::Metabolism);
+        .set_metabolic_material(cell_idx, alife::core::units::MaterialAmount::zero());
 
     // Run until collapse (or max configured tick of 10)
     let summary = exec.run_until_configured_tick().unwrap();
@@ -136,7 +134,6 @@ fn cell_collapses_if_metabolism_capability_is_missing() {
 #[test]
 fn cell_collapses_if_resource_uptake_capability_is_missing() {
     use alife::core::cell_store::CellIndex;
-    use alife::core::process::MaterialCapability;
     use alife::core::summary::SurvivalResult;
     use alife::core::tick::TickExecutor;
 
@@ -149,10 +146,10 @@ fn cell_collapses_if_resource_uptake_capability_is_missing() {
     let mut exec = TickExecutor::new(config).unwrap();
     let cell_idx = CellIndex::from_raw(0);
 
-    // Strip resource uptake capability
+    // Zero out transport material to remove ResourceUptake capability
     exec.world_mut()
         .cells_mut_for_commit()
-        .strip_capability_for_test(cell_idx, MaterialCapability::ResourceUptake);
+        .set_transport_material(cell_idx, alife::core::units::MaterialAmount::zero());
 
     // Run until collapse (or max configured tick of 10)
     let summary = exec.run_until_configured_tick().unwrap();

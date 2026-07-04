@@ -94,7 +94,6 @@ pub struct CellStore {
     temperatures: Vec<Temperature>,
     lifecycle_states: Vec<LifecycleState>,
     runtime_flags: Vec<RuntimeFlags>,
-    disabled_capabilities: Vec<u16>,
     pressures: Vec<f32>,
     next_cell_id: u32,
 }
@@ -120,7 +119,6 @@ impl CellStore {
             temperatures: Vec::with_capacity(capacity),
             lifecycle_states: Vec::with_capacity(capacity),
             runtime_flags: Vec::with_capacity(capacity),
-            disabled_capabilities: Vec::with_capacity(capacity),
             pressures: Vec::with_capacity(capacity),
             next_cell_id: 1,
         }
@@ -147,7 +145,6 @@ impl CellStore {
         self.temperatures.push(cell.temperature);
         self.lifecycle_states.push(LifecycleState::Alive);
         self.runtime_flags.push(RuntimeFlags::default());
-        self.disabled_capabilities.push(0);
         self.pressures.push(0.0);
         id
     }
@@ -266,12 +263,6 @@ impl CellStore {
         if self.lifecycle_state(index) == LifecycleState::Dead {
             return false;
         }
-        let disabled = self.disabled_capabilities[index.raw()];
-        let bit = capability_bit(capability);
-        if (disabled & bit) != 0 {
-            return false;
-        }
-
         use crate::core::process::MaterialCapability;
         match capability {
             MaterialCapability::BoundaryPermeability => {
@@ -294,15 +285,6 @@ impl CellStore {
             | MaterialCapability::PressureSensing
             | MaterialCapability::DamageSensing => self.sensory_materials[index.raw()].raw() > 0.0,
         }
-    }
-
-    pub fn strip_capability_for_test(
-        &mut self,
-        index: CellIndex,
-        capability: crate::core::process::MaterialCapability,
-    ) {
-        let bit = capability_bit(capability);
-        self.disabled_capabilities[index.raw()] |= bit;
     }
 
     pub fn contact_pressure(&self, index: CellIndex) -> f32 {
@@ -411,21 +393,5 @@ impl CellStore {
             + self.contractile_materials[index.raw()].raw()
             + self.sensory_materials[index.raw()].raw();
         MaterialAmount::new_unchecked(total)
-    }
-}
-
-const fn capability_bit(capability: crate::core::process::MaterialCapability) -> u16 {
-    match capability {
-        crate::core::process::MaterialCapability::BoundaryPermeability => 1 << 0,
-        crate::core::process::MaterialCapability::ResourceUptake => 1 << 1,
-        crate::core::process::MaterialCapability::Metabolism => 1 << 2,
-        crate::core::process::MaterialCapability::StorageCapacity => 1 << 3,
-        crate::core::process::MaterialCapability::MaterialSynthesis => 1 << 4,
-        crate::core::process::MaterialCapability::StructuralGrowth => 1 << 5,
-        crate::core::process::MaterialCapability::Repair => 1 << 6,
-        crate::core::process::MaterialCapability::Contractility => 1 << 7,
-        crate::core::process::MaterialCapability::ResourceSensing => 1 << 8,
-        crate::core::process::MaterialCapability::PressureSensing => 1 << 9,
-        crate::core::process::MaterialCapability::DamageSensing => 1 << 10,
     }
 }
