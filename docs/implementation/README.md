@@ -7,6 +7,8 @@ tags:
 
 # implementation
 
+Agent index: [[docs/implementation/INDEX|Implementation Index]]. Mechanics pre-flight: [[docs/mechanics/INDEX|Mechanics Index]].
+
 > Implementation planning — високорівневі плани реалізації, фазування, архітектурні нотатки та майбутні інтерфейси.
 
 ---
@@ -35,6 +37,7 @@ tags:
 # Правила
 
 - High-level фазовий план тримається тут.
+- Before TDD planning, use [[docs/mechanics/INDEX|Mechanics Index]] and read relevant mechanics cards.
 - Детальний план кожної фази створюється окремо перед початком цієї фази.
 - Архітектура, класи, інтерфейси, storage format і test strategy можуть бути додані сюди після затвердження фаз.
 - Early Stability Tool є допоміжним implementation/research tool і не є частиною simulation hot path.
@@ -56,4 +59,5 @@ tags:
 - follows UI canon: [[docs/ui/README|UI Layer]]
 - follows: [[docs/engine/technology-stack|Technology Stack]]
 - follows: [[docs/PRINCIPLES|Principles]]
+- uses pre-flight cards: [[docs/mechanics/INDEX|Mechanics Index]]
 - bounded by: [[docs/config/stability_bounds|Stability Bounds]]

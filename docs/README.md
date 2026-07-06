@@ -1,4 +1,4 @@
-﻿---
+---
 tags:
   - alife
   - docs/readme
@@ -13,7 +13,7 @@ tags:
 
 Документація є джерелом істини для проєкту. Якщо код суперечить документації, потрібно або виправити код, або змінити документацію через явне рішення.
 
-Для швидкої агентської навігації використовується окремий індекс: [[docs/INDEX|Agent Index]].
+Для швидкої агентської навігації використовується окремий індекс: [[docs/INDEX|Documentation Index]]. Для перехресних взаємодій між документами використовується [[docs/mechanics/INDEX|Mechanics Index]].
 
 Робочі плани й звіти зібрані окремо: [[outputs/worklogs/index|Worklogs]].
 
@@ -40,7 +40,8 @@ tags:
 
 Використовуйте:
 
-- [[docs/INDEX|Agent Index]] — компактний зміст з тегами та ключовими словами;
+- [[docs/INDEX|Documentation Index]] — ієрархічний агентський роутер по локальних індексах;
+- [[docs/mechanics/INDEX|Mechanics Index]] — pre-flight cards для взаємодій, constraints і TDD checks;
 - [[docs/GLOSSARY|Glossary]] — якщо незрозумілий термін;
 - [[docs/ROADMAP|Roadmap]] — якщо потрібно зрозуміти статус;
 - [[outputs/worklogs/index|Worklogs]] — якщо потрібна історія планів і звітів.
@@ -52,11 +53,10 @@ tags:
 ```text
 Principles
   -> Canon
+  -> accepted ADR
   -> Implementation
-  -> ADR
-  -> Research
-  -> Examples
-  -> Worklogs
+  -> Mechanics cards
+  -> Research / Examples / Worklogs
 ```
 
 ## Principles
@@ -79,15 +79,19 @@ Canon описує прийняті правила світу та моделі.
 
 ## Implementation
 
-[[docs/implementation/README|Implementation]] описує, як прийняті правила планується реалізувати в коді: фази, архітектуру, моделі даних, API, інструменти й UI-плани.
+[[docs/implementation/INDEX|Implementation Index]] і [[docs/implementation/README|Implementation]] описують, як прийняті правила планується реалізувати в коді: фази, архітектуру, моделі даних, API, інструменти й UI-плани.
 
 Implementation-документи не змінюють Canon.
 
 ## ADR
 
-[[docs/decisions/README|Decisions]] містить прийняті архітектурні рішення.
+[[docs/decisions/INDEX|Decisions Index]] і [[docs/decisions/README|Decisions]] містять прийняті архітектурні рішення.
 
 ADR потрібен, коли є реальний вибір між альтернативами або фундаментальна зміна напряму.
+
+## Mechanics Cards
+
+[[docs/mechanics/INDEX|Mechanics Index]] містить agent-facing routing checklists для взаємодій між Canon-документами. Mechanics cards не є джерелом істини й не вводять нових правил.
 
 ## Research
 
@@ -107,6 +111,8 @@ Research не є вимогою до реалізації, доки рішенн
 
 ## `world/`
 
+Agent index: [[docs/world/INDEX|World Index]].
+
 Закони світу: простір, час, поля, ресурси, матеріали, реакції, енергія, фізика та одиниці виміру.
 
 Ключові входи:
@@ -120,6 +126,8 @@ Research не є вимогою до реалізації, доки рішенн
 - [[docs/world/physics|Physics]]
 
 ## `biology/`
+
+Agent index: [[docs/biology/INDEX|Biology Index]].
 
 Механіка живих сутностей: клітина, мембрана, процеси, capability, feasibility, життєвий цикл, поділ, Joint, комунікація, organism view і спеціалізація.
 
@@ -137,6 +145,8 @@ Research не є вимогою до реалізації, доки рішенн
 
 ## `genetics/`
 
+Agent index: [[docs/genetics/INDEX|Genetics Index]].
+
 Геном, спадковість, мутації, genome runtime, regulatory graph, epigenetics, recombination і horizontal transfer.
 
 Ключові входи:
@@ -149,6 +159,8 @@ Research не є вимогою до реалізації, доки рішенн
 
 ## `evolution/`
 
+Agent index: [[docs/evolution/INDEX|Evolution Index]].
+
 Observer-side еволюційна аналітика: adaptation, population dynamics, selection і species-like clusters.
 
 Ключові входи:
@@ -159,6 +171,8 @@ Observer-side еволюційна аналітика: adaptation, population dy
 - [[docs/evolution/species-like-clusters|Species-like Clusters]]
 
 ## `config/`
+
+Agent index: [[docs/config/INDEX|Config Index]].
 
 Майбутні конфігурації світу, ресурсів, матеріалів, реакцій, полів і stability bounds.
 
@@ -171,6 +185,8 @@ Observer-side еволюційна аналітика: adaptation, population dy
 
 ## `engine/`
 
+Agent index: [[docs/engine/INDEX|Engine Index]].
+
 Технічна архітектура рушія: scheduler, performance, storage, serialization, physics, rendering, chemistry, ECS та technology stack.
 
 Ключові входи:
@@ -182,6 +198,8 @@ Observer-side еволюційна аналітика: adaptation, population dy
 - [[docs/engine/rendering|Rendering]]
 
 ## `ui/`
+
+Agent index: [[docs/ui/INDEX|UI Index]].
 
 UI Canon для `ALife Control Center`: принципи, архітектура, навігація, візуалізація, аналітика, exploration, presentation, interaction і quality.
 
@@ -196,6 +214,8 @@ UI Canon для `ALife Control Center`: принципи, архітектура
 - [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
 
 ## `implementation/`
+
+Agent index: [[docs/implementation/INDEX|Implementation Index]].
 
 Плани реалізації, фазування, архітектура, data model, module API, optimization paths, stability tools і UI implementation plan.
 
@@ -213,9 +233,13 @@ UI Canon для `ALife Control Center`: принципи, архітектура
 
 ## `decisions/`
 
+Agent index: [[docs/decisions/INDEX|Decisions Index]].
+
 ADR-журнал прийнятих рішень.
 
 ## `examples/`
+
+Agent index: [[docs/examples/INDEX|Examples Index]].
 
 Приклади, які допомагають читати Canon.
 
@@ -236,7 +260,8 @@ ADR-журнал прийнятих рішень.
 
 # Semantic Links
 
-- agent index: [[docs/INDEX|Agent Index]]
+- agent index: [[docs/INDEX|Documentation Index]]
+- mechanics router: [[docs/mechanics/INDEX|Mechanics Index]]
 - governed by: [[docs/PRINCIPLES|Principles]]
 - uses terms from: [[docs/GLOSSARY|Glossary]]
 - tracks status in: [[docs/ROADMAP|Roadmap]]

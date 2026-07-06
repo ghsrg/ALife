@@ -11,10 +11,10 @@
             "id": "b2e5d4980be0138b",
             "type": "leaf",
             "state": {
-              "type": "empty",
+              "type": "graph",
               "state": {},
-              "icon": "lucide-file",
-              "title": "Нова вкладка"
+              "icon": "lucide-git-fork",
+              "title": "Граф"
             }
           }
         ]
@@ -181,6 +181,19 @@
   },
   "active": "b2e5d4980be0138b",
   "lastOpenFiles": [
+    "docs/mechanics/INDEX.md",
+    "outputs/worklogs/2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links.md",
+    "docs/examples/INDEX.md",
+    "docs/decisions/INDEX.md",
+    "docs/ui/INDEX.md",
+    "docs/implementation/INDEX.md",
+    "docs/engine/INDEX.md",
+    "docs/config/INDEX.md",
+    "docs/evolution/INDEX.md",
+    "docs/genetics/INDEX.md",
+    "docs/biology/INDEX.md",
+    "docs/world/INDEX.md",
+    "docs/mechanics/action-feasibility.md",
     "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working/work-products.bin",
     "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working/query-cache.bin",
     "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working/dep-graph.part.bin",
@@ -191,7 +204,6 @@
     "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/work-products.bin",
     "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/query-cache.bin",
     "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/dep-graph.bin",
-    "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/dep-graph.part.bin",
     "outputs/worklogs/2026-07-06-1151-REPORT-worklog-index-completeness.md",
     "outputs/worklogs/2026-07-04-1404-PLAN-sweep_scenario-analyzer-refactor.md",
     "outputs/worklogs/2026-07-02-1116-REPORT-realtime-architecture-algorithms.md",
@@ -204,18 +216,6 @@
     "outputs/worklogs/README.md",
     "docs/INDEX.md",
     "outputs/reachability/single_cell_dormancy/REPORT.md",
-    "outputs/worklogs/2026-06-30-1652-REPORT-readme-folder-links.md",
-    "README.md",
-    "docs/README.md",
-    "docs/engine.md",
-    "outputs/worklogs/2026-06-30-1646-REPORT-semantic-obsidian-edges.md",
-    "docs/PRINCIPLES.md",
-    "docs/engine/ecs.md",
-    "docs/biology/cell.md",
-    "docs/config.md",
-    "MAP.md",
-    "world/resources.md",
-    "world/fields.md",
-    "STYLE_GUIDE.md"
+    "outputs/worklogs/2026-06-30-1652-REPORT-readme-folder-links.md"
   ]
 }

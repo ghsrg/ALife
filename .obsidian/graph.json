@@ -69,6 +69,13 @@
         "a": 1,
         "rgb": 14745410
       }
+    },
+    {
+      "query": "tag:#mechanics  ",
+      "color": {
+        "a": 1,
+        "rgb": 14048348
+      }
     }
   ],
   "collapse-display": true,
@@ -81,6 +88,6 @@
   "repelStrength": 9.79166666666667,
   "linkStrength": 0.708333333333333,
   "linkDistance": 236,
-  "scale": 0.3628873693012109,
+  "scale": 0.25883865621816204,
   "close": false
 }
