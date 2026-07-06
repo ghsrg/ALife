@@ -43,3 +43,9 @@ tags:
 
 - Existing `AGENTS.MD` remains untracked from the previous task.
 - This task intentionally skipped a PLAN file per user instruction.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

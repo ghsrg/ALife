@@ -447,3 +447,9 @@ Before class/object modeling, every edge in the graph should answer:
 - `WorldConfig -> stable environment`.
 
 Якщо спочатку описати ці transition contracts, модель класів і ECS-об'єктів вийде з вимог природно, без вигадування поведінки під час реалізації.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

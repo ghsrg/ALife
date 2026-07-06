@@ -66,3 +66,9 @@ Remaining expected matches:
 Broad wording cleanup touched many Markdown files because stale MVP/first-implementation language was spread across Canon, Research, Config, and Engine docs.
 
 Link audit was intentionally not performed here; it remains part of the later Obsidian/linking audit.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

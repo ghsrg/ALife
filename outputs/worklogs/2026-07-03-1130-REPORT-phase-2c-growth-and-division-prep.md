@@ -1,4 +1,4 @@
-# REPORT: Phase 2C Material Growth and Division Prep
+﻿# REPORT: Phase 2C Material Growth and Division Prep
 
 ## Goal
 Implement cell growth as physical material synthesis, scaling cell physical radius and capacity limit, and implement local pressure/contact tracking to gate division readiness and feasibility.
@@ -17,7 +17,7 @@ Implement cell growth as physical material synthesis, scaling cell physical radi
 - `src/core/tick.rs`
 - `src/core/process.rs`
 - `tests/phase2_growth_smoke.rs` [NEW]
-- `outputs/worklogs/README.md`
+- `outputs/worklogs/index.md`
 
 ## Verification
 - **Rust Core Suite**: `cargo test` -> **PASS (75 tests)**.
@@ -26,3 +26,9 @@ Implement cell growth as physical material synthesis, scaling cell physical radi
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

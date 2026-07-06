@@ -287,3 +287,9 @@ Engine-документ коректно вводить `OrganismView` як deri
 - Перевірено ключові файли: `PRINCIPLES`, `GLOSSARY`, `ROADMAP`, `world/*`, `biology/*`, `genetics/*`, `engine/*`, `research/*`, `decisions/README.md`.
 - Перевірено патерни: `Open Questions`, `ADR-000X`, `MVP`, `Energy`, `Heat`, `Genome`, `Recombination`, `HGT`, `Neuron`, dead links.
 - Canon-документи не змінювалися в межах цього аудиту.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

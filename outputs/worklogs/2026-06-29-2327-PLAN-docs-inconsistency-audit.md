@@ -34,3 +34,9 @@ Find and clarify contradictions, mismatches, and non-aligned descriptions in the
 - Refactoring documentation placement.
 - Physics/chemistry feasibility audit.
 - MVP implementation planning.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

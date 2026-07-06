@@ -1,4 +1,4 @@
-# Phase 2B Process Registry and Feasibility Implementation Plan
+﻿# Phase 2B Process Registry and Feasibility Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -456,3 +456,9 @@ Phase 2B is complete when:
 - Processes (uptake, metabolism) are registered and validated via `FeasibilityResult`.
 - All legacy Phase 1 survival/reachability integration tests pass.
 - Linter and formatter checks are green.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

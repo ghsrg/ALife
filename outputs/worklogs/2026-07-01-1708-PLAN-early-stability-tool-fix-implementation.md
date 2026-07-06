@@ -1,4 +1,4 @@
-# Early Stability Tool Fix Implementation Plan
+﻿# Early Stability Tool Fix Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -840,3 +840,9 @@ Implementation is acceptable when:
 - `.gitignore` clearly tracks worklogs but ignores generated stability outputs;
 - `python -m pytest .\tools\early-stability` passes;
 - generated stability artifacts are not committed.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

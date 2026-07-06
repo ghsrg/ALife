@@ -1,4 +1,4 @@
-# PLAN: Phase 3 Global Roadmap
+﻿# PLAN: Phase 3 Global Roadmap
 
 ## Goal
 
@@ -174,3 +174,8 @@ What is the first mutation operator for direct regulatory graph?
 How much epigenetic state enters Phase 3 versus later science experiments?
 ```
 
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

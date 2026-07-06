@@ -1,4 +1,4 @@
-# Mechanism Reachability Implementation Plan
+﻿# Mechanism Reachability Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -1290,3 +1290,9 @@ Spec coverage:
 Placeholder scan:
 
 - Placeholder scan completed; all steps contain concrete files, commands, expected results and code snippets where needed.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

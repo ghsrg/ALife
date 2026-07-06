@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - implementation
@@ -1538,7 +1538,7 @@ Task steps використовують:
 Нові `PLAN` і `REPORT` додаються до:
 
 ```text
-outputs/worklogs/README.md
+outputs/worklogs/index.md
 ```
 
 ## Worklog Scope Rule
@@ -1712,7 +1712,7 @@ Research:
 - `docs/implementation/architecture.md`
 - `docs/engine/technology-stack.md`
 - `outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap.md`
-- `outputs/worklogs/README.md`
+- `outputs/worklogs/index.md`
 
 # Semantic Links
 

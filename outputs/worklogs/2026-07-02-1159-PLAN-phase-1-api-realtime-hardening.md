@@ -1,4 +1,4 @@
-# PLAN: Phase 1 API Realtime Hardening
+﻿# PLAN: Phase 1 API Realtime Hardening
 
 Date: 2026-07-02 11:59
 
@@ -199,3 +199,8 @@ Proposal:
 2. Add P1 scale-up requirements to `phase-1-data-model.md`, `performance.md`, and possibly `storage.md`.
 3. Create a short report after applying changes.
 
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

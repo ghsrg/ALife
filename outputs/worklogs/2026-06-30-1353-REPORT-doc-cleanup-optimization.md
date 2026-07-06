@@ -243,3 +243,9 @@ Obsidian-сумісні links/backlinks не перевірялися в цьо�
 - Провести окремий link-audit і привести посилання до Obsidian-сумісної схеми.
 - Окремо вирішити line endings policy.
 - За потреби повторити аналогічну стислу чистку `evolution/`, `research/`, `world/laws.md`, `world/philosophy.md`, `PRINCIPLES.md`, `GLOSSARY.md`.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

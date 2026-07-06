@@ -560,3 +560,9 @@ Space більше не є ResourceType. Згадки узгоджені.
 8. P2 Organism wording у `PRINCIPLES.md`.
 9. P2 GLOSSARY/ROADMAP sync.
 10. P2 Stability bounds hard invalid/warning rules.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

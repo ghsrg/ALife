@@ -407,5 +407,5 @@ negative scenarios stop failing
 - supports: [[docs/implementation/phase-1-design|Phase 1 Design]]
 - prepares: [[docs/implementation/architecture|Architecture]]
 - uses: [[docs/biology/action-process-registry|Action Process Registry]]
-- uses: [[docs/engine/feasibility|Feasibility]]
+- uses: [[docs/biology/feasibility|Feasibility]]
 - bounded by: [[docs/config/stability_bounds|Stability Bounds]]

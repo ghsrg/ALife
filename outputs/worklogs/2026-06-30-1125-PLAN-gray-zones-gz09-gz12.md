@@ -760,3 +760,9 @@ Recommended resolution:
 - keep `reaction_profile` as lightweight local shorthand or reference;
 - move complete reaction semantics and balanced rules to `world/reactions.md` and `config/reactions_config.md`;
 - avoid duplicating full reaction rules inside every Resource definition.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

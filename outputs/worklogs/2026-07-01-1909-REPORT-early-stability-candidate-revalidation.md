@@ -1,4 +1,4 @@
-# REPORT: Early Stability Candidate Revalidation
+﻿# REPORT: Early Stability Candidate Revalidation
 
 Date: 2026-07-01 19:09
 
@@ -70,3 +70,9 @@ This makes future min/max parameter ranges more useful for:
 - config warnings before simulation starts;
 - Rust model/data-structure documentation;
 - boundary test fixtures.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

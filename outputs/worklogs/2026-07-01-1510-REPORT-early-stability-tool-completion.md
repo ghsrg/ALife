@@ -1,4 +1,4 @@
-# Worklog: Early Stability Tool Completion
+﻿# Worklog: Early Stability Tool Completion
 
 *   **Date:** 2026-07-01
 *   **Goal:** Implement the Early Stability Tool (`tools/early-stability`) offline calibration tool to validate scenario configurations and verify cell viability before full simulation runtime exists.
@@ -36,9 +36,15 @@
     *   `tools/early-stability/tests/test_writers.py`
     *   `tools/early-stability/tests/test_cli.py`
     *   `.gitignore` (Modified)
-    *   `outputs/worklogs/README.md` (Modified)
+    *   `outputs/worklogs/index.md` (Modified)
 *   **Verification:**
     *   Ran unit tests: all 44 tests pass successfully.
     *   Verified manually through CLI subcommands `evaluate`, `simulate`, and `batch` executing correctly and writing output files under `outputs/stability/` as expected.
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

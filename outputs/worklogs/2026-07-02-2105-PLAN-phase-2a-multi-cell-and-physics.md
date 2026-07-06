@@ -1,4 +1,4 @@
-# Phase 2A Multi-Cell and Physics Solver Implementation Plan
+﻿# Phase 2A Multi-Cell and Physics Solver Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -995,3 +995,9 @@ The Phase 2A plan is complete when:
 - Overlaps between cells and solid walls are resolved deterministically.
 - Determinism replay runs perfectly for multi-cell setups.
 - Formatter, linter, and all cargo tests are green.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

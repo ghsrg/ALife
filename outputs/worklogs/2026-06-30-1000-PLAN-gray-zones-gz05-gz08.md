@@ -660,3 +660,9 @@ Recommended resolution:
 - default: ProcessProgress is not inherited during division;
 - exception must be process-specific and documented in `division-partition.md`;
 - no hidden copy of progress to daughters.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

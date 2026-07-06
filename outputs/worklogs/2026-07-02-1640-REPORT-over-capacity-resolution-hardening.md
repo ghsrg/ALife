@@ -1,4 +1,4 @@
-# REPORT: Over-Capacity Scenario Resolution Hardening
+﻿# REPORT: Over-Capacity Scenario Resolution Hardening
 
 ## Goal
 Resolve conflict between the TOML parser preflight rejection of over-capacity scenario configs and the runtime collapse expectations. Over-capacity scenarios must successfully parse and resolve dynamically as a collapse in runtime.
@@ -16,3 +16,9 @@ Resolve conflict between the TOML parser preflight rejection of over-capacity sc
 
 ## Status
 All modifications remain uncommitted in the workspace as requested.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

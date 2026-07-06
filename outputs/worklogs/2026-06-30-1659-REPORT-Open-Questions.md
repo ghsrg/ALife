@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -1237,3 +1237,9 @@ Documentation changes:
 
 - None in domain documentation.
 - `docs/STYLE_GUIDE.md` still has a non-domain `Open Questions` section.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# Worklog: Task 3 Bounded Micro Simulator
+﻿# Worklog: Task 3 Bounded Micro Simulator
 
 *   **Date:** 2026-07-01
 *   **Goal:** Implement a headless micro simulator to trace cell states and evaluate dynamic collapse and warning triggers.
@@ -23,3 +23,9 @@
     *   All 31 tests passed.
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

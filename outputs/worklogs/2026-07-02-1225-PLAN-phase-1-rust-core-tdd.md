@@ -1,4 +1,4 @@
-# Phase 1 Rust Core Implementation Plan
+﻿# Phase 1 Rust Core Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -2552,3 +2552,9 @@ Risk notes:
 - `ResourceGrid` is a placeholder boundary, not final metabolism or diffusion.
 - `SpatialIndex` is a placeholder counter boundary in this slice; scalable prefix-sum implementation is a later focused task after the one-cell smoke is stable.
 - The provided code is minimal by design. Do not add Phase 2+ concepts while executing this plan.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# REPORT: Phase 1D Sustained Viability Gates
+﻿# REPORT: Phase 1D Sustained Viability Gates
 
 ## Goal
 Closed Phase 1 with deterministic sustained-viability gates and observer-only run metrics.
@@ -51,3 +51,9 @@ single_cell_over_capacity,Collapse,CapacityExceeded,1,53.000,0.000,0.000,Dead
 - Division remains Phase 2+.
 - Process Registry and Feasibility remain Phase 2+.
 - Multi-resource internal inventories remain future work.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

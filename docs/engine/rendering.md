@@ -59,9 +59,15 @@ metrics overlays
 - visualizes: [[docs/biology/joint|Joint]]
 - visualizes: [[docs/world/resources|Resources]]
 - visualizes derived: [[docs/biology/organism|Organism View]]
+- constrained by: [[docs/ui/visualization|UI Visualization]]
+- presented through: [[docs/ui/presentation|UI Presentation]]
+- validated by: [[docs/ui/quality|UI Quality]]
+- implemented by plan: [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
 
 # Пов'язані документи
 
 - `engine/storage.md`
 - `engine/serialization.md`
 - `biology/organism.md`
+- `docs/ui/visualization.md`
+- `docs/implementation/implementation-plan-ui.md`

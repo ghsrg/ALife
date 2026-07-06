@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -22,3 +22,9 @@ tags:
 ## Open Questions
 
 - Немає.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

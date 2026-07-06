@@ -1,4 +1,4 @@
-# Worklog: Task 2 Advanced Static Calculator Upgrades
+﻿# Worklog: Task 2 Advanced Static Calculator Upgrades
 
 *   **Date:** 2026-07-01
 *   **Goal:** Improve the static calculator to project heat and waste accumulation over the entire simulation duration (`tick_count`), preventing premature collapse classification for configurations where generation exceeds sink rate slightly.
@@ -16,3 +16,9 @@
     *   Verified passing test cases for short-term survival with high thresholds and long-term collapse using pytest.
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

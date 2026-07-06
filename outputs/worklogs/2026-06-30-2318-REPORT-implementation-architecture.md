@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -74,3 +74,9 @@ Broken local links: 0
 Немає блокуючих питань.
 
 Детальні crate names, module boundaries, interfaces і data layouts мають бути уточнені в Phase 0 detailed plan.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/plan
@@ -550,3 +550,9 @@ The fix is complete when:
 - No viewer changes.
 
 These remain Phase 2D, Phase 2E, Phase 3, or Phase View work.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# Phase 2B Mechanism Reachability Verification Plan
+﻿# Phase 2B Mechanism Reachability Verification Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -332,3 +332,9 @@ Generate the walkthrough and report summarizing the findings.
 - Capability gating successfully drives survival or collapse.
 - Process metrics (attempts and rejections) are tracked.
 - All integration tests pass cleanly.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -82,3 +82,9 @@ tools/early-stability not created
 Немає блокуючих питань.
 
 Наступний логічний крок: деталізувати Phase 1 implementation plan або передати `docs/implementation/early-stability-tool.md` окремому агенту для планування реалізації `tools/early-stability/`.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

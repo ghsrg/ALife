@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -76,3 +76,9 @@ tools/early-stability not created
 Немає блокуючих питань.
 
 Перед реалізацією tool можна створити окремий implementation plan для `tools/early-stability/`.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

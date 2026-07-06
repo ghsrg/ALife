@@ -1,4 +1,4 @@
-# Phase 1 Rust Config Validation Implementation Plan
+﻿# Phase 1 Rust Config Validation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -85,7 +85,7 @@ outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1-rust-config-validation.md
 Modify:
 
 ```text
-outputs/worklogs/README.md
+outputs/worklogs/index.md
 ```
 
 Do not modify unless a compile error shows a missing public accessor:
@@ -760,7 +760,7 @@ If Python sanity was not used and no Python files changed, this command is optio
 **Files:**
 
 - Create: `outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1-rust-config-validation.md`
-- Modify: `outputs/worklogs/README.md`
+- Modify: `outputs/worklogs/index.md`
 
 - [ ] **Step 1: Create report**
 
@@ -838,7 +838,7 @@ Fill every `Actual` cell before finishing the report.
 
 - [ ] **Step 2: Add report to worklog index**
 
-Add one line under `## Reports` in `outputs/worklogs/README.md`:
+Add one line under `## Reports` in `outputs/worklogs/index.md`:
 
 ```markdown
 - [[outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1-rust-config-validation|outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1-rust-config-validation]]
@@ -867,7 +867,7 @@ Expected changed files:
 ```text
 tests/phase1_config_validation.rs
 outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1-rust-config-validation.md
-outputs/worklogs/README.md
+outputs/worklogs/index.md
 ```
 
 Optional generated Python sanity artifacts may appear under:
@@ -903,7 +903,7 @@ Rust result dump table is captured in the report.
 Python is not treated as oracle.
 Python sanity comparison is used only when needed.
 Report exists in outputs/worklogs.
-outputs/worklogs/README.md links the report.
+outputs/worklogs/index.md links the report.
 No Rust behavior is changed without a separate bugfix plan.
 ```
 
@@ -923,3 +923,9 @@ Known limits:
 - This plan does not implement TOML parsing in Rust.
 - Scenario fixtures manually mirror current TOML values.
 - Estimate/post-Phase1 scenarios are excluded from Rust Phase 1 validation.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

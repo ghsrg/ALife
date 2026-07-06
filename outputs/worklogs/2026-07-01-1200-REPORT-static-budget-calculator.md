@@ -1,4 +1,4 @@
-# Worklog: Task 2 Static Budget Calculator
+﻿# Worklog: Task 2 Static Budget Calculator
 
 *   **Date:** 2026-07-01
 *   **Goal:** Implement static stability budget checks.
@@ -19,3 +19,9 @@
     *   All 6 new test scenarios passed (raising total passing tests from 19 to 25).
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

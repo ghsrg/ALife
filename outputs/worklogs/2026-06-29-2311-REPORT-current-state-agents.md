@@ -36,3 +36,9 @@ tags:
 
 - Whether to create `docs/decisions/` and ADR templates during the next audit phase.
 - Whether `docs/README.md` should describe the desired future structure or only the current actual structure.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

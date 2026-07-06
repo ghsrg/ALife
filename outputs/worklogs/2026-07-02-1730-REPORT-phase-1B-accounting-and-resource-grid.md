@@ -1,4 +1,4 @@
-# REPORT: Phase 1B Accounting And ResourceGrid
+﻿# REPORT: Phase 1B Accounting And ResourceGrid
 
 ## Goal
 Hardened Phase 1B accounting by replacing the single-layer ResourceGrid placeholder with a flat, indexed, deterministic multi-layer resource grid storage, separating external resources from internal cell inventory, and preserving current scenario behaviors.
@@ -34,3 +34,9 @@ single_cell_over_capacity,Collapse,CapacityExceeded,1,53.000,0.000,0.000,Dead
 
 ## Open Questions
 - Resource uptake/export and diffusion are intentionally left unimplemented for Phase 1B, keeping the world static except for resource decay.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

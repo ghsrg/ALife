@@ -458,3 +458,9 @@ Recommended resolution:
 - stored Energy may have a configured capacity limit but should not be counted as an additional material volume unless a future rule explicitly adds that.
 
 This can be confirmed before applying `docs/world/units.md`.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

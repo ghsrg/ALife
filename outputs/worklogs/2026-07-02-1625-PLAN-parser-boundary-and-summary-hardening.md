@@ -1,4 +1,4 @@
-# PLAN: Refining Core Boundaries and Executor Summary Hardening
+﻿# PLAN: Refining Core Boundaries and Executor Summary Hardening
 
 ## Goal
 Address key feedback on Phase 1 core boundaries and executor scaling risks:
@@ -56,3 +56,9 @@ Address key feedback on Phase 1 core boundaries and executor scaling risks:
   cargo fmt --check
   cargo clippy --workspace --all-targets --all-features -- -D warnings
   ```
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

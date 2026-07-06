@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -71,3 +71,9 @@ MandatoryCostPaid remains only as a negative/optional debug example, not as a de
 No blocking questions.
 
 Future implementation must benchmark before enabling Rayon/SIMD/GPU or compact numeric representations.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

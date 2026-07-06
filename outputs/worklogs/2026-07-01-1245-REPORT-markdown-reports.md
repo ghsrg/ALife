@@ -1,4 +1,4 @@
-# Worklog: Task 4 Refinement Plan - Detailed Markdown Reports
+﻿# Worklog: Task 4 Refinement Plan - Detailed Markdown Reports
 
 *   **Date:** 2026-07-01
 *   **Goal:** Upgrade markdown report generation with comprehensive metadata, parameter tables, sensitivity rankings, and failure lists.
@@ -18,3 +18,9 @@
     *   Pytest asserts that all new layout headers, tables, ranks, and failure summaries are written correctly.
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

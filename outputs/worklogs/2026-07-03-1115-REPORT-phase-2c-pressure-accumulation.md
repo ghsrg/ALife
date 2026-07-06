@@ -1,4 +1,4 @@
-# Phase 2C Task 2 Implementation Report - Pressure Accumulation in Physics Solver
+﻿# Phase 2C Task 2 Implementation Report - Pressure Accumulation in Physics Solver
 
 ## Goal
 Implement Task 2 of Phase 2C: track local contact pressure accumulation on overlapping cells during the physics solver execution.
@@ -29,3 +29,9 @@ Implement Task 2 of Phase 2C: track local contact pressure accumulation on overl
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

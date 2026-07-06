@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/plan
@@ -680,3 +680,9 @@ and add an `#[ignore]` gate required before Phase 2D division scale tests.
 - Daughter-cell creation (Phase 2D)
 - Death/decomposition (Phase 2E)
 - Joints, Genome Runtime, viewer changes
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

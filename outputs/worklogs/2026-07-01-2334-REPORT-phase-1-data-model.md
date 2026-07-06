@@ -1,4 +1,4 @@
-# REPORT: Phase 1 Data Model
+﻿# REPORT: Phase 1 Data Model
 
 Date: 2026-07-01 23:34
 
@@ -34,3 +34,9 @@ Create `docs/implementation/phase-1-data-model.md` using the approved brainstorm
 
 - Exact Rust module names and public APIs should be defined in the next implementation document or plan.
 - Fixed-point vs integer-scaled amount representation remains an implementation choice behind typed wrappers.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

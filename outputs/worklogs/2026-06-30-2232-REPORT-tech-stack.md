@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -75,3 +75,9 @@ Numeric:
 
 - Use this stack decision as input for the implementation roadmap phases.
 - Define initial stability/calibration calculator and seed configs after roadmap planning.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

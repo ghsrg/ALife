@@ -1,4 +1,4 @@
-# Worklog: Task 5 Result & Report Exporters
+﻿# Worklog: Task 5 Result & Report Exporters
 
 *   **Date:** 2026-07-01
 *   **Goal:** Implement result, range, run details, and markdown report exporters.
@@ -17,3 +17,9 @@
     *   Ran pytest tests. All 5 new test cases passed successfully (total 40 tests passing).
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

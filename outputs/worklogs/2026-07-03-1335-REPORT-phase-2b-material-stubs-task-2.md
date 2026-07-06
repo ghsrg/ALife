@@ -1,4 +1,4 @@
-# REPORT: Phase 2B Material Stubs Resolution - Task 2
+﻿# REPORT: Phase 2B Material Stubs Resolution - Task 2
 
 ## Goal
 Implement a 9-material inventory in `CellStore` mapping to capability checks, maintaining backward compatibility.
@@ -23,3 +23,9 @@ Implement a 9-material inventory in `CellStore` mapping to capability checks, ma
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# REPORT: Early Stability Parameter Tuning (Multi-Group Sweeps)
+﻿# REPORT: Early Stability Parameter Tuning (Multi-Group Sweeps)
 
 ## Commands Run
 - `python cli.py batch --scenarios ../scenarios --out ../../../outputs/stability/baseline-batch-sim --with-simulation`
@@ -75,3 +75,9 @@
 ## Do Not Change
 - Canon rules unchanged.
 - Source configs unchanged unless explicitly requested.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

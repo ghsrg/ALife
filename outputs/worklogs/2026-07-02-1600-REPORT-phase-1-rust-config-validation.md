@@ -1,4 +1,4 @@
-# REPORT: Phase 1 Rust Config Validation
+﻿# REPORT: Phase 1 Rust Config Validation
 
 ## Goal
 Validate Phase 1 tuned/stability scenarios against the authoritative Rust Phase 1 core, and compare behavior against the Python preflight estimator.
@@ -53,3 +53,9 @@ single_cell_over_capacity,Collapse,CapacityExceeded,1,53.000,0.000,0.000,Dead
 - Clippy completed successfully with no warnings.
 - All Python tools/early-stability pytest checks (93 passed) remain fully functional.
 - No files have been committed to Git.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1036,3 +1036,9 @@ Before implementation, provide:
 3. mapping of each current sweep to its scenario;
 4. proposed CSV and report schemas;
 5. separate TDD implementation plan.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -661,3 +661,9 @@ unregistered Genome output
 literal scheduler order in tick.md
 unbounded capacity for small Cell
 ```
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

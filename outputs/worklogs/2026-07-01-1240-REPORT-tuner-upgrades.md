@@ -1,4 +1,4 @@
-# Worklog: Task 3 Refinement Plan - Tuner Upgrades
+﻿# Worklog: Task 3 Refinement Plan - Tuner Upgrades
 
 *   **Date:** 2026-07-01
 *   **Goal:** Upgrade parameter tuner with schema filtering, conservative search, and profile extraction.
@@ -25,3 +25,9 @@
     *   Unit tests assert correct filtering, conservative selection, and profile extraction.
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

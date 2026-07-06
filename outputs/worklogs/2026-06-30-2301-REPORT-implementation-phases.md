@@ -53,3 +53,9 @@ phase report
 
 - Local link check: `Broken local links: 0`.
 - Targeted search confirmed links from `docs/README.md` and `docs/ROADMAP.md` to `docs/implementation/implementation-phases.md`.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

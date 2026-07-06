@@ -1,4 +1,4 @@
-# REPORT: Phase 2C Reflexive Actions, Growth, and Contractility
+﻿# REPORT: Phase 2C Reflexive Actions, Growth, and Contractility
 
 ## Goal
 Implement Phase 2C reflexive material actions, dynamic structural material synthesis, and contractile physical displacement under deterministic accounting, replacing manual process triggers with an autonomous Reflex Policy.
@@ -21,7 +21,7 @@ Implement Phase 2C reflexive material actions, dynamic structural material synth
 - `tests/phase2_process_smoke.rs`
 - `tests/phase2_reachability.rs`
 - `tests/phase2_reflex_smoke.rs` [NEW]
-- `outputs/worklogs/README.md`
+- `outputs/worklogs/index.md`
 
 ## Verification
 - **Rust Core Suite**: `cargo test` -> **PASS (87 tests)**.
@@ -30,3 +30,9 @@ Implement Phase 2C reflexive material actions, dynamic structural material synth
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

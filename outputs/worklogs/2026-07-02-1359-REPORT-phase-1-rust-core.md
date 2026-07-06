@@ -1,4 +1,4 @@
-# REPORT: Phase 1 Rust Core
+﻿# REPORT: Phase 1 Rust Core
 
 ## Goal
 
@@ -50,3 +50,9 @@ python -m pytest .\tools\early-stability
 - **Single-Cell Dormancy Math:** To match the early stability parameter tuning logic, we implemented the transition from alive/stressed to dormant and from dormant to dead correctly by properly deducting the dormant mandatory upkeep cost and evaluating the post-upkeep state.
 - **Uncommitted Status:** All modifications remain uncommitted in the workspace as requested.
 - **Pure SoA Structure:** State properties of Cells are organized in contiguous parallel vectors in `CellStore`, keeping memory layouts cache-friendly and avoiding per-entity heap allocations.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

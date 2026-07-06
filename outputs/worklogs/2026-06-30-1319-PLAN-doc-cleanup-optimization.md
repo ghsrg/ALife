@@ -463,3 +463,8 @@ After applying this plan:
 - Some old files use duplicated text to reinforce project principles; remove repetition only when the remaining rule is still explicit.
 - Link paths may remain inconsistent until the dedicated Obsidian link-audit.
 
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

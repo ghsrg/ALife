@@ -100,3 +100,8 @@ tags:
 - Нові файли збережені в UTF-8; PowerShell без `-Encoding utf8` може показувати кирилицю як mojibake, але `Get-Content -Encoding utf8` читає коректно.
 - Link-аудит показав існуюче змішання стилів посилань (`biology/...`, `world/...`, `docs/...`) у старій документації. Це не виправлялось у межах цього завдання, бо окремий Obsidian link-audit запланований пунктом 7.
 
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

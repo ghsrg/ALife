@@ -1,4 +1,4 @@
-# Phase 1C Resource Interaction Smoke Implementation Plan
+﻿# Phase 1C Resource Interaction Smoke Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -83,7 +83,7 @@ tests/phase1_config_validation.rs
 tests/phase1_core_smoke.rs
 tests/phase1_determinism.rs
 tests/phase1_resource_grid.rs
-outputs/worklogs/README.md
+outputs/worklogs/index.md
 ```
 
 Create:
@@ -1678,7 +1678,7 @@ Python tool code and scenario files were not changed; Rust Phase 1C behavior was
 **Files:**
 
 - Create: `outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1C-resource-interaction-smoke.md`
-- Modify: `outputs/worklogs/README.md`
+- Modify: `outputs/worklogs/index.md`
 
 - [ ] **Step 1: Create report**
 
@@ -1757,7 +1757,7 @@ Python tool code and scenario files were not changed; Python tests were not requ
 
 - [ ] **Step 2: Add report to worklog index**
 
-Add under `## Reports` in `outputs/worklogs/README.md`:
+Add under `## Reports` in `outputs/worklogs/index.md`:
 
 ```markdown
 - [[outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1C-resource-interaction-smoke|outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1C-resource-interaction-smoke]]
@@ -1788,7 +1788,7 @@ no Genome/Process/Joints/division/diffusion/growth behavior is added
 cargo fmt --check passes
 cargo clippy --workspace --all-targets --all-features -- -D warnings passes
 cargo test passes
-implementation report exists and is linked from outputs/worklogs/README.md
+implementation report exists and is linked from outputs/worklogs/index.md
 ```
 
 ---
@@ -1809,3 +1809,9 @@ Known limits:
 - Uptake uses only one configured ResourceGrid layer.
 - No diffusion, Resource capability matrix, process registry, Feasibility or active transport.
 - No stability tuner integration in this plan; this is a Rust core behavior slice.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

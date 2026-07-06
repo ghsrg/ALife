@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -72,3 +72,8 @@ Cross-sweeping `uptake` rate and `metabolism` rate at density `10.0` produced th
 - **Uptake = 0.1, Metabolism = 0.5**: Stable (`stable`).
 - **Uptake >= 0.5, Metabolism >= 0.5**: Stably active (`stable`).
 
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

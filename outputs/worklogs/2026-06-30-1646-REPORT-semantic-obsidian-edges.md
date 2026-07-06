@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -15,7 +15,7 @@ tags:
 - Кореневі навігатори: `README.md`, `AGENTS.MD`.
 - Навігатор документації: `docs/README.md`.
 - Canon, Config, Engine, Genetics, Evolution, Research, Examples і ADR README.
-- Worklog index: `outputs/worklogs/README.md`.
+- Worklog index: `outputs/worklogs/index.md`.
 
 ## Changes
 
@@ -42,3 +42,9 @@ tags:
 ## Open Questions
 
 - Немає.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

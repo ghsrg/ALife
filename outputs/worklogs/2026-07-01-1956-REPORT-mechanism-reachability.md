@@ -1,4 +1,4 @@
-# REPORT: Mechanism Reachability
+﻿# REPORT: Mechanism Reachability
 
 Date: 2026-07-01 19:56
 
@@ -61,3 +61,9 @@ The first smoke run correctly reports tuning feedback:
 
 - Future process-level mechanisms will need richer event counters after `alife-core` starts exposing process/feasibility events.
 - Current Phase 1 reachability is intentionally limited to the early stability tool state: energy, capacity, heat, waste and estimate-only growth/joint placeholders.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

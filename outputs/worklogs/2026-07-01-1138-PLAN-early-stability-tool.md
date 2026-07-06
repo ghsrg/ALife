@@ -1,4 +1,4 @@
-# Early Stability Tool Implementation Plan
+﻿# Early Stability Tool Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -349,3 +349,9 @@ Command: `git add tools/early-stability/src/cli.py && git commit -m "feat(stabil
 3.  **Strict Determinism**: Re-running the tool with the same seed, config, and parameters produces identical byte-for-byte outputs (excluding run timestamp and path references in logs).
 4.  **Static Bounds Validation**: Static validation marks configs as `invalid` immediately for negative values, footprint mismatch, or initial capacity overrun.
 5.  **Preservation of Source TOML**: The tool must never overwrite source configuration TOML files in-place; all candidates must be saved under the `outputs/stability/<run_id>/` directory.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

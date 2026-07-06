@@ -1,4 +1,4 @@
-# Early Stability Tool Refinement Plan
+﻿# Early Stability Tool Refinement Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -220,3 +220,9 @@ pytest tools/early-stability/tests/
 python tools/early-stability/src/cli.py batch --scenarios tools/early-stability/scenarios/ --out outputs/stability/final_batch/
 ```
 Verify generated aggregated reports and tables.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

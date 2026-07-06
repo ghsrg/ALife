@@ -28,6 +28,7 @@ tags:
 - [[docs/implementation/phase-1-module-api|Phase 1 Module API]] — Rust module/API contract before coding: module ownership, public API shapes, dependency direction, Tick executor, runner boundary, errors and tests.
 - [[docs/implementation/optimization-paths|Optimization Paths]] — guardrail для майбутньої продуктивності: які storage/API рішення треба залишити відкритими, щоб не заблокувати SIMD, sparse/chunked grids, domain decomposition, LOD viewer і deterministic parallelism.
 - [[docs/implementation/early-stability-tool|Early Stability Tool]] — handoff-документ для окремого агента, який реалізує `tools/early-stability/`: static calculator, micro headless simulator, CLI, scenarios, outputs і validation rules.
+- [[docs/implementation/implementation-plan-ui|UI Implementation Plan]] — high-level parent plan для `ALife Control Center`: Start, Debug, Research, projection gateway, shared viewer, command boundary, worklog model і UI acceptance gates.
 
 ---
 
@@ -37,6 +38,7 @@ tags:
 - Детальний план кожної фази створюється окремо перед початком цієї фази.
 - Архітектура, класи, інтерфейси, storage format і test strategy можуть бути додані сюди після затвердження фаз.
 - Early Stability Tool є допоміжним implementation/research tool і не є частиною simulation hot path.
+- UI Implementation Plan спирається на [[docs/ui/README|UI Canon]] і не надає UI simulation authority.
 - Worklogs лишаються в `outputs/worklogs/`.
 
 ---
@@ -50,6 +52,8 @@ tags:
 - defines module API: [[docs/implementation/phase-1-module-api|Phase 1 Module API]]
 - preserves optimization paths: [[docs/implementation/optimization-paths|Optimization Paths]]
 - hands off tool: [[docs/implementation/early-stability-tool|Early Stability Tool]]
+- plans UI: [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
+- follows UI canon: [[docs/ui/README|UI Layer]]
 - follows: [[docs/engine/technology-stack|Technology Stack]]
 - follows: [[docs/PRINCIPLES|Principles]]
 - bounded by: [[docs/config/stability_bounds|Stability Bounds]]

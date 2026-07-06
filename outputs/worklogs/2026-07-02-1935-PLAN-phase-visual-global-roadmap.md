@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - plan
@@ -1750,3 +1750,9 @@ Core applies.
 Core records.
 Viewer observes.
 ```
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# Phase 1B Accounting And ResourceGrid Implementation Plan
+﻿# Phase 1B Accounting And ResourceGrid Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -76,7 +76,7 @@ tests/phase1_accounting.rs
 tests/phase1_core_smoke.rs
 tests/phase1_config_validation.rs
 tests/phase1_determinism.rs
-outputs/worklogs/README.md
+outputs/worklogs/index.md
 ```
 
 Create:
@@ -1287,7 +1287,7 @@ Python tool code was not changed; Rust Phase 1 behavior was verified with Cargo 
 **Files:**
 
 - Create: `outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1B-accounting-and-resource-grid.md`
-- Modify: `outputs/worklogs/README.md`
+- Modify: `outputs/worklogs/index.md`
 
 - [ ] **Step 1: Create report**
 
@@ -1354,7 +1354,7 @@ Python tool code was not changed; Python tests were not required for this Rust-o
 
 - [ ] **Step 2: Add report to worklog index**
 
-Add under `## Reports` in `outputs/worklogs/README.md`:
+Add under `## Reports` in `outputs/worklogs/index.md`:
 
 ```markdown
 - [[outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1B-accounting-and-resource-grid|outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1B-accounting-and-resource-grid]]
@@ -1365,7 +1365,7 @@ Use the actual report timestamp.
 - [ ] **Step 3: Commit report**
 
 ```bash
-git add outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1B-accounting-and-resource-grid.md outputs/worklogs/README.md
+git add outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1B-accounting-and-resource-grid.md outputs/worklogs/index.md
 git commit -m "docs: report phase 1B accounting and resource grid"
 ```
 
@@ -1386,7 +1386,7 @@ No Genome/Process/Joints/division/diffusion/metabolism behavior is added.
 cargo fmt --check passes.
 cargo clippy --workspace --all-targets --all-features -- -D warnings passes.
 cargo test passes.
-Implementation report exists and is linked from outputs/worklogs/README.md.
+Implementation report exists and is linked from outputs/worklogs/index.md.
 ```
 
 ---
@@ -1407,3 +1407,9 @@ Known limits:
 - This plan does not implement Resource uptake/export.
 - This plan does not add typed resource registries beyond layer order.
 - This plan does not introduce performance benchmarks; that belongs to a later Phase 1 performance smoke plan.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

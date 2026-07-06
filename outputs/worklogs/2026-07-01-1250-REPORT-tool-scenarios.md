@@ -1,4 +1,4 @@
-# Worklog: Task 5 Refinement Plan - Tool-Only Scenarios
+﻿# Worklog: Task 5 Refinement Plan - Tool-Only Scenarios
 
 *   **Date:** 2026-07-01
 *   **Goal:** Create and validate standard scenario files for testing simulation constraints.
@@ -23,3 +23,9 @@
     *   Added integration test verifying no scenarios raise `ValidationError` or return `"invalid"`.
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

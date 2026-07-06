@@ -1,4 +1,4 @@
-# Worklog: Phase 2B Reachability Validation - Task 1
+﻿# Worklog: Phase 2B Reachability Validation - Task 1
 
 ## Goal
 Implement Task 1 of the Phase 2B reachability validation plan: add tracking of feasibility attempts and rejections for local resource uptake and metabolism.
@@ -26,3 +26,9 @@ Implement Task 1 of the Phase 2B reachability validation plan: add tracking of f
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

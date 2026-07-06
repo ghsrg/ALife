@@ -1,4 +1,4 @@
-# REPORT: Mechanism Reachability with 16 Mechanisms
+﻿# REPORT: Mechanism Reachability with 16 Mechanisms
 
 ## Goal
 Evaluate mechanism reachability on the expanded 16-mechanisms registry and verify that baseline parameters are properly tuned to prevent warnings and bypasses.
@@ -46,3 +46,9 @@ Proceed to data model docs: **yes** (for all evaluated 14 core Phase 1 mechanism
 ## Do Not Change
 - Canon rules unchanged.
 - Source configs unchanged unless explicitly requested.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -28,6 +28,7 @@ Roadmap не є специфікацією світу, біології або �
 | --- | --- |
 | `README.md` | Current |
 | `docs/README.md` | Current |
+| `docs/INDEX.md` | Current |
 | `docs/PRINCIPLES.md` | Base requirements |
 | `docs/GLOSSARY.md` | Current |
 | `docs/STYLE_GUIDE.md` | Current |
@@ -38,6 +39,7 @@ Roadmap не є специфікацією світу, біології або �
 | `docs/config/` | Draft / P0-P2 synced |
 | `docs/engine/` | Draft / tech stack accepted |
 | `docs/implementation/` | Phase roadmap and architecture created |
+| `docs/ui/` | Draft / UI Canon added |
 | `docs/research/` | Reference / future options |
 | `docs/decisions/` | ADR-0001 accepted |
 
@@ -58,6 +60,8 @@ Roadmap не є специфікацією світу, біології або �
 * лише після цього планувати реалізацію.
 
 P0-P2 уточнення після повторного physics/logic audit внесені в Canon. Технологічний стек прийнято в `docs/decisions/ADR-0001-tech-stack.md` і деталізовано в `docs/engine/technology-stack.md`. High-level план реалізації створено в `docs/implementation/implementation-phases.md`. Implementation architecture зафіксовано в `docs/implementation/architecture.md`.
+
+UI Canon додано в `docs/ui/`. High-level план реалізації UI зафіксовано в `docs/implementation/implementation-plan-ui.md`.
 
 ---
 
@@ -115,3 +119,5 @@ Phase 7: Advanced Evolution Capability
 - tracks accepted: [[docs/decisions/ADR-0001-tech-stack|ADR-0001 Technology Stack]]
 - tracks architecture: [[docs/implementation/architecture|Architecture]]
 - tracks plan: [[docs/implementation/implementation-phases|Implementation Phases]]
+- tracks UI canon: [[docs/ui/README|UI Layer]]
+- tracks UI plan: [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]

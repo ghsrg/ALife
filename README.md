@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - index/root
@@ -33,6 +33,7 @@ tags:
 Основний навігатор:
 
 * [docs/README.md](docs/README.md)
+* [docs/INDEX.md](docs/INDEX.md) — компактний агентський індекс документації
 * [LICENSE](LICENSE)
 
 Рекомендований маршрут читання:
@@ -46,9 +47,11 @@ tags:
 7. `docs/evolution/`
 8. `docs/config/`
 9. `docs/engine/`
-10. `docs/research/`
-11. `docs/decisions/`
+10. `docs/ui/`
+11. `docs/implementation/`
+12. `docs/research/`
+13. `docs/decisions/`
 
 Поточні статуси, пріоритети та етапи розвитку ведуться тільки в [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Службові правила для агентів описані в [[AGENTS|AGENTS.MD]], а робочі плани й звіти зібрані в [[outputs/worklogs/README|outputs/worklogs]].
+Службові правила для агентів описані в [[AGENTS|AGENTS.MD]], швидка навігація для агентів зібрана в [[docs/INDEX|docs/INDEX]], а робочі плани й звіти зібрані в [[outputs/worklogs/index|outputs/worklogs]].

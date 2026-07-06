@@ -1,4 +1,4 @@
-# REPORT: Phase 2B Process Registry and Feasibility
+﻿# REPORT: Phase 2B Process Registry and Feasibility
 
 ## Goal
 Replace Phase 1 direct hardcoded actions with a material-capability-driven process registry and explicit feasibility checks.
@@ -16,7 +16,7 @@ Replace Phase 1 direct hardcoded actions with a material-capability-driven proce
 - `src/core/world.rs`
 - `src/core/tick.rs`
 - `tests/phase2_process_smoke.rs` [NEW]
-- `outputs/worklogs/README.md`
+- `outputs/worklogs/index.md`
 
 ## Verification
 - **Rust Core Suite**: `cargo test` -> **PASS (68 tests)**.
@@ -26,3 +26,9 @@ Replace Phase 1 direct hardcoded actions with a material-capability-driven proce
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

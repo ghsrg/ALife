@@ -347,6 +347,8 @@ UI Canon визначає:
 
 Якщо Plan суперечить UI Canon, правильним вважається UI Canon, а Plan потрібно оновити.
 
+Поточний high-level план реалізації UI: [[docs/implementation/implementation-plan-ui|UI Implementation Plan]].
+
 ### Research
 
 Research містить:
@@ -385,12 +387,18 @@ Research не є вимогою до реалізації, доки рішенн
 - `docs/ui/presentation.md`
 - `docs/ui/interaction.md`
 - `docs/ui/quality.md`
+- `docs/implementation/implementation-plan-ui.md`
+- `docs/engine/rendering.md`
+- `docs/engine/technology-stack.md`
 
 # Semantic Links
 
 - governed by: [[docs/PRINCIPLES|Principles]]
 - uses terms from: [[docs/GLOSSARY|Glossary]]
 - follows: [[docs/STYLE_GUIDE|Documentation Style Guide]]
+- planned by: [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
+- uses stack from: [[docs/engine/technology-stack|Technology Stack]]
+- renders through: [[docs/engine/rendering|Rendering]]
 - defines index for: [[docs/ui/principles|UI Principles]]
 - defines index for: [[docs/ui/architecture|UI Architecture]]
 - defines index for: [[docs/ui/navigation|UI Navigation]]

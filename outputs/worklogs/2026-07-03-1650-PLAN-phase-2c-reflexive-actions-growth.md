@@ -1,4 +1,4 @@
-# Phase 2C Reflexive Actions, Growth, and Contractility Implementation Plan
+﻿# Phase 2C Reflexive Actions, Growth, and Contractility Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -338,3 +338,9 @@ Expected: PASS
 - Cells autonomously execute synthesis and displacement based on reflexes.
 - Contractile displacement resolves collision pressure deterministically.
 - All workspace tests pass.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

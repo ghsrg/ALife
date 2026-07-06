@@ -12,7 +12,7 @@ This repository is currently documentation-first. Treat `docs/` as the source of
 
 Documentation language is Ukrainian. Code identifiers and technical class-like terms may stay in English when already used by the docs.
 
-Use [[docs/README]] as the documentation navigator and [[outputs/worklogs/README]] as the worklog index.
+Use [[docs/README]] as the human documentation entry, [[docs/INDEX]] as the agent navigation index, and [[outputs/worklogs/index]] as the worklog index.
 
 ## Required Reading
 
@@ -24,7 +24,7 @@ Before changing requirements, architecture, or future code, read:
 4. Relevant Canon document under `docs/`
 5. Relevant ADR, if it exists
 
-Obsidian shortcuts: [[docs/PRINCIPLES]], [[docs/GLOSSARY]], [[docs/ROADMAP]], [[docs/README]].
+Obsidian shortcuts: [[docs/PRINCIPLES]], [[docs/GLOSSARY]], [[docs/ROADMAP]], [[docs/README]], [[docs/INDEX]].
 
 If a required rule is missing, do not invent it silently. Record it as an open question, TODO, or proposed ADR.
 

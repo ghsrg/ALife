@@ -24,3 +24,9 @@ tags:
 - Full contradiction audit across all documentation.
 - Rewriting documentation content.
 - Planning item 1 from the user's roadmap; that starts after confirmation.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

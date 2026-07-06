@@ -1,4 +1,4 @@
-# Phase 1D Sustained Viability Gates Implementation Plan
+﻿# Phase 1D Sustained Viability Gates Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -108,7 +108,7 @@ src/core/tick.rs
 src/core/cell_store.rs
 tests/phase1_config_validation.rs
 tests/phase1_resource_interaction.rs
-outputs/worklogs/README.md
+outputs/worklogs/index.md
 ```
 
 Create:
@@ -958,7 +958,7 @@ Python tool code and scenario files were not changed; Rust Phase 1D behavior was
 **Files:**
 
 - Create: `outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1D-sustained-viability-gates.md`
-- Modify: `outputs/worklogs/README.md`
+- Modify: `outputs/worklogs/index.md`
 
 - [ ] **Step 1: Create report**
 
@@ -1037,7 +1037,7 @@ Python tool code and scenario files were not changed; Python tests were not requ
 
 - [ ] **Step 2: Add report to worklog index**
 
-Add under `## Reports` in `outputs/worklogs/README.md`:
+Add under `## Reports` in `outputs/worklogs/index.md`:
 
 ```markdown
 - [[outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1D-sustained-viability-gates|outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-phase-1D-sustained-viability-gates]]
@@ -1066,7 +1066,7 @@ No active growth, division, Genome, Process Registry, Feasibility, Joints, signa
 cargo fmt --check passes.
 cargo clippy --workspace --all-targets --all-features -- -D warnings passes.
 cargo test passes.
-Implementation report exists and is linked from outputs/worklogs/README.md.
+Implementation report exists and is linked from outputs/worklogs/index.md.
 ```
 
 ---
@@ -1087,3 +1087,9 @@ Known limits:
 - No growth progress, mass increase or division occurs in Phase 1D.
 - Internal Cell Resources remain one aggregate amount.
 - No resource diffusion or resource-type-specific metabolism is added.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

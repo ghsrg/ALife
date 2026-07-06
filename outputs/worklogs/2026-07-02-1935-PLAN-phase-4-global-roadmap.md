@@ -1,4 +1,4 @@
-# PLAN: Phase 4 Global Roadmap
+﻿# PLAN: Phase 4 Global Roadmap
 
 ## Goal
 
@@ -157,3 +157,8 @@ When do we introduce Parquet exports?
 Which research question is the first formal report target?
 ```
 
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

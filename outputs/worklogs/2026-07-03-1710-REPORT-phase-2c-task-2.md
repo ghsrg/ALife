@@ -1,4 +1,4 @@
-# Worklog Report: Phase 2C Task 2 — Contractile Displacement (Movement)
+﻿# Worklog Report: Phase 2C Task 2 — Contractile Displacement (Movement)
 
 ## Goal
 Implement the Contractile Displacement (Movement) process as described in Task 2 of Phase 2C Reflexive Actions plan.
@@ -34,3 +34,9 @@ Implement the Contractile Displacement (Movement) process as described in Task 2
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

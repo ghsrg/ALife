@@ -1,4 +1,4 @@
-# REPORT: Phase 2B Mechanism Reachability Verification
+﻿# REPORT: Phase 2B Mechanism Reachability Verification
 
 ## Goal
 Extend Rust-side Mechanism Reachability tests to cover Phase 2 material capabilities, process registries, and feasibility diagnostics.
@@ -13,7 +13,7 @@ Extend Rust-side Mechanism Reachability tests to cover Phase 2 material capabili
 - `src/core/tick.rs`
 - `src/core/cell_store.rs`
 - `tests/phase2_reachability.rs` [NEW]
-- `outputs/worklogs/README.md`
+- `outputs/worklogs/index.md`
 
 ## Verification
 - **Rust Core Suite**: `cargo test` -> **PASS (71 tests)**.
@@ -23,3 +23,9 @@ Extend Rust-side Mechanism Reachability tests to cover Phase 2 material capabili
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

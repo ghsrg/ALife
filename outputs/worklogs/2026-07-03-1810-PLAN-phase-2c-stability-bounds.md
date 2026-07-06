@@ -1,4 +1,4 @@
-# Phase 2C Stability Bounds and Sweep Analysis Implementation Plan
+﻿# Phase 2C Stability Bounds and Sweep Analysis Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -22,7 +22,7 @@ Modify:
 - [phase2_stability_analysis.rs](file:///c:/Users/korsr/PycharmProjects/ALife/tests/phase2_stability_analysis.rs): Integration test suite containing sweeps, dormancy strategies, and pressure escaping parameters.
 
 Modify:
-- [README.md](file:///c:/Users/korsr/PycharmProjects/ALife/outputs/worklogs/README.md): Register the plan and report.
+- [README.md](file:///c:/Users/korsr/PycharmProjects/ALife/outputs/worklogs/index.md): Register the plan and report.
 
 ---
 
@@ -233,3 +233,9 @@ fn test_dormancy_below_equal_above_equilibrium() {
         assert!(woke_up, "Cell should wake up when energy accumulates above threshold");
     }
 }
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

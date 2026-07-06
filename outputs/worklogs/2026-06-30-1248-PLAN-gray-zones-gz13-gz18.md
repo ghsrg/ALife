@@ -873,3 +873,9 @@ Recommended resolution:
 - put these in `stability_bounds.md` as initial defaults;
 - later configs may override scenario horizon;
 - never treat "stable" without scenario + tick horizon.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

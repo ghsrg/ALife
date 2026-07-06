@@ -1,4 +1,4 @@
-# Worklog Report: Phase 2C Task 4 — Integration Verification & Tests
+﻿# Worklog Report: Phase 2C Task 4 — Integration Verification & Tests
 
 ## Goal
 Implement the Integration Verification & Tests as described in Task 4 of Phase 2C Reflexive Actions plan.
@@ -15,7 +15,7 @@ Implement the Integration Verification & Tests as described in Task 4 of Phase 2
 
 ## Files Changed/Created
 - Created: [`tests/phase2_reflex_smoke.rs`](file:///c:/Users/korsr/PycharmProjects/ALife/tests/phase2_reflex_smoke.rs)
-- Modified: [`outputs/worklogs/README.md`](file:///c:/Users/korsr/PycharmProjects/ALife/outputs/worklogs/README.md)
+- Modified: [`outputs/worklogs/index.md`](file:///c:/Users/korsr/PycharmProjects/ALife/outputs/worklogs/index.md)
 
 ## Verification
 - Cargo test suite (all tests pass):
@@ -29,3 +29,9 @@ Implement the Integration Verification & Tests as described in Task 4 of Phase 2
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

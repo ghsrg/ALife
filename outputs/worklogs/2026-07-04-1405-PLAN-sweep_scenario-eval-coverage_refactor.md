@@ -1,4 +1,4 @@
-# CRITICAL REQUIREMENT: Evolutionary Test Coverage
+﻿# CRITICAL REQUIREMENT: Evolutionary Test Coverage
 
 Balance Analyzer не повинен залишатися набором тестів для механік, створених у перших фазах.
 
@@ -818,3 +818,9 @@ implement new mechanic
 ```
 
 Before implementation, update the TDD plan so that registry-driven coverage and the phase increment contract are implemented before adding more manually listed strategy profiles.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

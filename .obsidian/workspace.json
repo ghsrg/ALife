@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "da0be6f6dfd36523",
+        "id": "01d2760322d81f6f",
         "type": "tabs",
         "children": [
           {
-            "id": "e3002b83ee7ac103",
+            "id": "b2e5d4980be0138b",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Граф"
+              "icon": "lucide-file",
+              "title": "Нова вкладка"
             }
           }
         ]
@@ -179,11 +179,32 @@
       "bases:Створити нову базу": false
     }
   },
-  "active": "e3002b83ee7ac103",
+  "active": "b2e5d4980be0138b",
   "lastOpenFiles": [
+    "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working/work-products.bin",
+    "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working/query-cache.bin",
+    "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working/dep-graph.part.bin",
+    "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working/dep-graph.bin",
+    "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy-working",
+    "target/debug/incremental/alife-3ku95rktoxnpa/s-hk4xiw5zig-0wwcxcy.lock",
+    "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/metadata.rmeta",
+    "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/work-products.bin",
+    "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/query-cache.bin",
+    "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/dep-graph.bin",
+    "target/debug/incremental/alife-14adioxsaexe4/s-hk4xiw5pml-18odegm-working/dep-graph.part.bin",
+    "outputs/worklogs/2026-07-06-1151-REPORT-worklog-index-completeness.md",
+    "outputs/worklogs/2026-07-04-1404-PLAN-sweep_scenario-analyzer-refactor.md",
+    "outputs/worklogs/2026-07-02-1116-REPORT-realtime-architecture-algorithms.md",
+    "outputs/worklogs/2026-06-30-2301-REPORT-implementation-phases.md",
+    "outputs/stability/review_evaluate_sim/REPORT.md",
+    "outputs/worklogs/2026-07-06-1143-REPORT-worklog-index-rename.md",
+    "outputs/worklogs/index.md",
+    "outputs/worklogs/2026-07-02-1204-REPORT-phase-1-api-realtime-hardening.md",
+    "docs/implementation/phase-1-module-api.md",
+    "outputs/worklogs/README.md",
+    "docs/INDEX.md",
     "outputs/reachability/single_cell_dormancy/REPORT.md",
     "outputs/worklogs/2026-06-30-1652-REPORT-readme-folder-links.md",
-    "outputs/worklogs/README.md",
     "README.md",
     "docs/README.md",
     "docs/engine.md",
@@ -195,11 +216,6 @@
     "MAP.md",
     "world/resources.md",
     "world/fields.md",
-    "STYLE_GUIDE.md",
-    "ROADMAP.md",
-    "PRINCIPLES.md",
-    "GLOSSARY.md",
-    "world/tick.md",
-    "world/philosophy.md"
+    "STYLE_GUIDE.md"
   ]
 }

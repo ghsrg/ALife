@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -26,7 +26,7 @@ Implement stability, sweep, dormancy, and stress push escape tests in a new test
 
 ## Files Changed
 - `tests/phase2_stability_analysis.rs` (NEW)
-- `outputs/worklogs/README.md` (MODIFIED)
+- `outputs/worklogs/index.md` (MODIFIED)
 - `outputs/worklogs/2026-07-03-1815-REPORT-phase-2c-stability-bounds.md` (NEW)
 
 ## Verification
@@ -37,3 +37,9 @@ Implement stability, sweep, dormancy, and stress push escape tests in a new test
 
 ## Open Questions
 None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

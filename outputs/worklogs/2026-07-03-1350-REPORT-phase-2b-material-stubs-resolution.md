@@ -1,4 +1,4 @@
-# REPORT: Phase 2B Material Stubs Resolution
+﻿# REPORT: Phase 2B Material Stubs Resolution
 
 ## Goal
 Eliminate material and capability stubs/placeholders by implementing 9 distinct material types in `CellStore` and mapping them 1-to-1 to 11 capabilities while maintaining full backwards compatibility with legacy scenarios.
@@ -17,7 +17,7 @@ Eliminate material and capability stubs/placeholders by implementing 9 distinct 
 - `tests/phase1_accounting.rs`
 - `tests/phase1_config_validation.rs`
 - `tests/phase2_materials_smoke.rs` [NEW]
-- `outputs/worklogs/README.md`
+- `outputs/worklogs/index.md`
 
 ## Verification
 - **Rust Core Suite**: `cargo test` -> **PASS (82 tests)**.
@@ -26,3 +26,9 @@ Eliminate material and capability stubs/placeholders by implementing 9 distinct 
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

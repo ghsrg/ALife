@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/plan
@@ -244,7 +244,7 @@ outputs/
 
 ```text
 outputs/worklogs/*.md
-outputs/worklogs/README.md
+outputs/worklogs/index.md
 ```
 
 ## Вплив
@@ -368,3 +368,9 @@ Expected:
 - run files include history or explicit summary mode;
 - README has no mojibake;
 - git status does not include unwanted outputs or `.idea/`.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

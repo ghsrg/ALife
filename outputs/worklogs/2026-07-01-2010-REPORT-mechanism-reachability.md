@@ -1,4 +1,4 @@
-# REPORT: Mechanism Reachability
+﻿# REPORT: Mechanism Reachability
 
 ## Run Summary
 - **Stability Ranges Reference**: `outputs/stability/` (Group 1 - 5 sweeps)
@@ -36,3 +36,9 @@
 Proceed to data model docs: **partial**
 - Revisit **Energy Budget Sweep** (Group 1) to test low/zero passive income and introduce resource uptake mechanisms.
 - Revisit **Capacity And Material Sweep** (Group 3) to test tighter capacity limits.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

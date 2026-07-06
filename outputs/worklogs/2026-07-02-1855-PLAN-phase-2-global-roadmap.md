@@ -1,4 +1,4 @@
-# PLAN: Phase 2 Global Roadmap
+﻿# PLAN: Phase 2 Global Roadmap
 
 ## Goal
 
@@ -769,3 +769,9 @@ Should Phase 2E include a minimal adhesion primitive, or only contact exchange/s
 Do full Joints belong in late Phase 2E or early Phase 3/4 after Genome?
 Do we create the first viewer immediately after 2A, or run 2B first and then viewer?
 ```
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# Worklog Report: Phase 2C Task 3 — Material-Driven Reflex Policy
+﻿# Worklog Report: Phase 2C Task 3 — Material-Driven Reflex Policy
 
 ## Goal
 Implement the Material-Driven Reflex Policy as described in Task 3 of Phase 2C Reflexive Actions plan.
@@ -32,3 +32,9 @@ Implement the Material-Driven Reflex Policy as described in Task 3 of Phase 2C R
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

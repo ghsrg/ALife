@@ -1,4 +1,4 @@
-# REPORT: Phase 1 Module API
+﻿# REPORT: Phase 1 Module API
 
 Date: 2026-07-02 11:21
 
@@ -35,3 +35,9 @@ Create `docs/implementation/phase-1-module-api.md` as the final implementation d
 ## Next Step
 
 Create a Phase 1 Foundation implementation plan and then begin Rust TDD with ids, units, config and world initialization.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

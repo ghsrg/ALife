@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -95,3 +95,9 @@ capacity_limits, heat_dissipation_placeholder, waste_sink_placeholder.
 Немає блокуючих питань.
 
 Наступний крок: або деталізувати Phase 1 implementation plan, або передати `early-stability-tool.md` іншому агенту для планування/реалізації `tools/early-stability/`.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

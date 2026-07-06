@@ -1,4 +1,4 @@
-# Phase 2B Resolving Material Stubs Implementation Plan
+﻿# Phase 2B Resolving Material Stubs Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -251,3 +251,9 @@ Expected: PASS
 - All 11 capabilities are resolved from specific material amounts.
 - Legacy scenario compatibility is preserved.
 - All workspace tests pass.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

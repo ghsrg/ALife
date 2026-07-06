@@ -1,4 +1,4 @@
-# REPORT: Stable Ranges And Next Tuning Groups
+﻿# REPORT: Stable Ranges And Next Tuning Groups
 
 Date: 2026-07-01 18:34
 
@@ -41,3 +41,9 @@ Source scenario configs were not changed.
 ## Notes
 
 An attempted direct patch to `docs/implementation/README.md` was skipped because the file currently displays mojibake in PowerShell and exact-line patching was unsafe in this task.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

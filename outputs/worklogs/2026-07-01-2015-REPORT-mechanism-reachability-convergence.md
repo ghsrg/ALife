@@ -1,4 +1,4 @@
-# REPORT: Mechanism Reachability Convergence
+﻿# REPORT: Mechanism Reachability Convergence
 
 ## Goal
 Achieve full convergence between early-stability parameter tuning and mechanism reachability by removing all warnings and bypasses in the survival baseline scenario.
@@ -36,3 +36,9 @@ Proceed to data model docs: **yes** (for all evaluated core Phase 1 mechanisms).
 ## Do Not Change
 - Canon rules unchanged.
 - Source configs unchanged unless explicitly requested.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

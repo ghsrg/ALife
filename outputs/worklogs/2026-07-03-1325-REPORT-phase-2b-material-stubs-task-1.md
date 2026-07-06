@@ -1,4 +1,4 @@
-# REPORT: Phase 2B Material Stubs Resolution - Task 1
+﻿# REPORT: Phase 2B Material Stubs Resolution - Task 1
 
 ## Goal
 Extend the capability registry and update `CellStore` capability helper to support all 11 capabilities: `BoundaryPermeability`, `ResourceUptake`, `Metabolism`, `StorageCapacity`, `MaterialSynthesis`, `StructuralGrowth`, `Repair`, `Contractility`, `ResourceSensing`, `PressureSensing`, `DamageSensing`.
@@ -21,3 +21,9 @@ Extend the capability registry and update `CellStore` capability helper to suppo
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# REPORT: Phase 2A Multi-Cell and Physics Solver Baseline
+﻿# REPORT: Phase 2A Multi-Cell and Physics Solver Baseline
 
 ## Goal
 Implement support for multiple cells and a deterministic physical solver loop using a rebuildable uniform SpatialIndex.
@@ -26,7 +26,7 @@ Implement support for multiple cells and a deterministic physical solver loop us
 - `tests/phase1_resource_interaction.rs`
 - `tests/phase1_sustained_viability.rs`
 - `tests/phase2_core_smoke.rs` [NEW]
-- `outputs/worklogs/README.md`
+- `outputs/worklogs/index.md`
 
 ## Verification
 - **Rust Core Suite**: `cargo test` -> **PASS (61 tests)**.
@@ -36,3 +36,9 @@ Implement support for multiple cells and a deterministic physical solver loop us
 
 ## Open Questions
 - None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,4 +1,4 @@
-# REPORT: Refining Core Boundaries and Executor Summary Hardening
+﻿# REPORT: Refining Core Boundaries and Executor Summary Hardening
 
 ## Goal
 Harden core boundaries, eliminate hot-path heap allocations, and implement deterministic multi-cell summary aggregation.
@@ -17,3 +17,9 @@ Harden core boundaries, eliminate hot-path heap allocations, and implement deter
 
 ## Status
 All modifications remain uncommitted in the workspace as requested.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

@@ -1,32 +1,49 @@
----
+﻿---
 tags:
   - alife
-  - docs/index
+  - docs/readme
+  - audience/human
 ---
 
-# Документація Artificial Life Engine
+# Документація ALife
 
-> Навігатор по поточній документації проєкту.
+`docs/` — головний каталог знань про Artificial Life Engine.
+
+Тут описані не лише майбутні модулі програми, а й правила світу: фізика, ресурси, матеріали, клітини, процеси, геном, еволюція, рушій, UI, конфігурації та дослідницькі припущення.
+
+Документація є джерелом істини для проєкту. Якщо код суперечить документації, потрібно або виправити код, або змінити документацію через явне рішення.
+
+Для швидкої агентської навігації використовується окремий індекс: [[docs/INDEX|Agent Index]].
+
+Робочі плани й звіти зібрані окремо: [[outputs/worklogs/index|Worklogs]].
 
 ---
 
-# Obsidian
+# Як читати
 
-Цей файл лишається навігатором, але предметний граф має будуватися з семантичних ребер у самих документах.
+## Якщо ви вперше відкрили проєкт
 
-Робочі плани й звіти зібрані окремо: [[outputs/worklogs/README|outputs/worklogs]].
+Починайте з базових документів:
 
----
+1. [[docs/PRINCIPLES|Principles]] — верхній рівень правил.
+2. [[docs/GLOSSARY|Glossary]] — єдині терміни.
+3. [[docs/ROADMAP|Roadmap]] — поточні статуси документації та фокус робіт.
+4. [[docs/world/laws|World Laws]] — фундаментальні закони світу.
+5. [[docs/biology/cell|Cell]] — базова сутність життя.
+6. [[docs/biology/processes|Processes]] і [[docs/biology/feasibility|Feasibility]] — як клітина може діяти.
+7. [[docs/genetics/genome-representation|Genome Representation]] і [[docs/genetics/genome-runtime|Genome Runtime]] — як геном регулює поведінку.
+8. [[docs/evolution/population-dynamics|Population Dynamics]] — як аналізуються популяції.
+9. [[docs/engine/technology-stack|Technology Stack]] — прийнятий стек.
+10. [[docs/implementation/implementation-phases|Implementation Phases]] — порядок розробки.
 
-# Призначення
+## Якщо шукаєте конкретну тему
 
-Каталог `docs/` містить специфікацію світу, біології, генетики, еволюції, конфігурацій, рушія та дослідницьких напрямків Artificial Life Engine.
+Використовуйте:
 
-Документація є основним джерелом істини для майбутньої реалізації.
-
-Якщо майбутній код суперечить документації, спочатку треба виправити код або змінити документацію через прийняте рішення.
-
-Поточні статуси документів, етапи розвитку та пріоритети ведуться в `docs/ROADMAP.md`.
+- [[docs/INDEX|Agent Index]] — компактний зміст з тегами та ключовими словами;
+- [[docs/GLOSSARY|Glossary]] — якщо незрозумілий термін;
+- [[docs/ROADMAP|Roadmap]] — якщо потрібно зрозуміти статус;
+- [[outputs/worklogs/index|Worklogs]] — якщо потрібна історія планів і звітів.
 
 ---
 
@@ -34,216 +51,55 @@ tags:
 
 ```text
 Principles
-    ↓
-Canon
-    ↓
-Research
-    ↓
-ADR
-    ↓
-Implementation
+  -> Canon
+  -> Implementation
+  -> ADR
+  -> Research
+  -> Examples
+  -> Worklogs
 ```
 
 ## Principles
 
-`PRINCIPLES.md` — верхній рівень правил.
-
-Жоден нижчий документ не повинен йому суперечити.
+[[docs/PRINCIPLES|Principles]] — найвищий рівень правил. Нижчі документи не повинні їм суперечити.
 
 ## Canon
 
-Canon-документи описують поточні правила світу та майбутньої реалізації.
+Canon описує прийняті правила світу та моделі.
 
 До Canon належать основні документи в:
 
-* `world/`
-* `biology/`
-* `genetics/`
-* `evolution/`
-* `config/`
-* `engine/`
-
-## Research
-
-`research/` містить гіпотези, альтернативи, відкладені ідеї та майбутні напрямки.
-
-Research не є специфікацією для реалізації.
-
-## ADR
-
-`decisions/` містить Architecture Decision Records.
-
-ADR створюється лише тоді, коли є реальна причина зафіксувати рішення: фундаментальна зміна, вибір між альтернативами, відхилення важливої ідеї або перенесення Research-рішення в Canon.
-
-Неіснуючий ADR не вважається знанням проєкту.
+- `world/`
+- `biology/`
+- `genetics/`
+- `evolution/`
+- `config/`
+- `engine/`
+- `ui/`
 
 ## Implementation
 
-`implementation/` містить high-level implementation roadmap, майбутні фазові плани, архітектурні нотатки та інтерфейси реалізації.
+[[docs/implementation/README|Implementation]] описує, як прийняті правила планується реалізувати в коді: фази, архітектуру, моделі даних, API, інструменти й UI-плани.
 
-Implementation-документи не змінюють Canon або ADR. Вони показують, як прийняті правила будуть реалізовуватись у коді.
+Implementation-документи не змінюють Canon.
 
----
+## ADR
 
-# Як читати документацію
+[[docs/decisions/README|Decisions]] містить прийняті архітектурні рішення.
 
-## Новий учасник проєкту
+ADR потрібен, коли є реальний вибір між альтернативами або фундаментальна зміна напряму.
 
-```text
-README.md
-    ↓
-docs/PRINCIPLES.md
-    ↓
-docs/GLOSSARY.md
-    ↓
-docs/ROADMAP.md
-    ↓
-docs/world/
-    ↓
-docs/biology/
-    ↓
-docs/genetics/
-    ↓
-docs/evolution/
-    ↓
-docs/config/
-    ↓
-docs/engine/
-```
+## Research
 
-## Перед зміною документації або реалізацією
+`research/` містить ідеї, альтернативи й майбутні варіанти.
 
-1. Прочитати `PRINCIPLES.md`.
-2. Перевірити терміни в `GLOSSARY.md`.
-3. Прочитати відповідний Canon-документ.
-4. Перевірити пов'язані Research-документи.
-5. Перевірити наявні ADR у `decisions/`.
+Research не є вимогою до реалізації, доки рішення не перенесене в Canon або ADR.
 
-Якщо потрібного правила немає, його не можна вигадувати мовчки. Треба створити TODO, Open Question або ADR-пропозицію.
+## Examples
 
----
+[[docs/examples/README|Examples]] ілюструють правила.
 
-# Поточна структура
-
-```text
-docs/
-├── README.md
-├── PRINCIPLES.md
-├── GLOSSARY.md
-├── ROADMAP.md
-├── STYLE_GUIDE.md
-│
-├── world/
-│   ├── philosophy.md
-│   ├── laws.md
-│   ├── tick.md
-│   ├── tick-semantics.md
-│   ├── space.md
-│   ├── units.md
-│   ├── fields.md
-│   ├── field-semantics.md
-│   ├── resources.md
-│   ├── reactions.md
-│   ├── materials.md
-│   ├── energy.md
-│   └── physics.md
-│
-├── biology/
-│   ├── action-process-registry.md
-│   ├── cell.md
-│   ├── cell-state.md
-│   ├── communication.md
-│   ├── division-partition.md
-│   ├── feasibility.md
-│   ├── genome.md
-│   ├── joint.md
-│   ├── lifecycle.md
-│   ├── membrane.md
-│   ├── organism.md
-│   ├── process-capabilities.md
-│   ├── process-progress.md
-│   ├── processes.md
-│   └── specialization.md
-│
-├── genetics/
-│   ├── epigenetics.md
-│   ├── genome-representation.md
-│   ├── genome-runtime.md
-│   ├── heredity.md
-│   ├── horizontal-transfer.md
-│   ├── inheritance.md
-│   ├── mutation.md
-│   ├── regulatory-interface.md
-│   ├── recombination.md
-│   └── regulatory-network.md
-│
-├── evolution/
-│   ├── adaptation.md
-│   ├── population-dynamics.md
-│   ├── selection.md
-│   └── species-like-clusters.md
-│
-├── config/
-│   ├── fields_config.md
-│   ├── materials_config.md
-│   ├── reactions_config.md
-│   ├── resources_config.md
-│   ├── stability_bounds.md
-│   └── world_config.md
-│
-├── engine/
-│   ├── chemistry.md
-│   ├── ecs.md
-│   ├── performance.md
-│   ├── physics.md
-│   ├── rendering.md
-│   ├── scheduler.md
-│   ├── serialization.md
-│   └── storage.md
-│
-├── examples/
-│   ├── README.md
-│   ├── biology-examples.md
-│   ├── config-examples.md
-│   ├── engine-examples.md
-│   └── genetics-examples.md
-│
-├── research/
-│   ├── genome-representation-options.md
-│   ├── graph-recombination-options.md
-│   ├── mobile-genetic-elements.md
-│   ├── rejected-ideas.md
-│   └── reproduction-strategy-options.md
-│
-└── decisions/
-    └── README.md
-```
-
----
-
-# Основні документи
-
-## `PRINCIPLES.md`
-
-Конституція світу.
-
-Містить фундаментальні принципи, які визначають усю архітектуру проєкту.
-
-## `GLOSSARY.md`
-
-Єдиний словник термінів.
-
-Кожне поняття повинно мати одне офіційне визначення.
-
-## `ROADMAP.md`
-
-Поточний стан проєкту.
-
-Саме тут ведуться статуси, етапи, ризики, відкриті дослідження та базова модель-напрямок.
-
-## `STYLE_GUIDE.md`
-
-Правила написання й підтримки документації.
+Приклад не створює нового правила. Якщо приклад суперечить Canon, правильним вважається Canon.
 
 ---
 
@@ -251,92 +107,140 @@ docs/
 
 ## `world/`
 
-Універсальні закони симуляції: час, простір, фізика, поля, ресурси, матеріали та енергія.
+Закони світу: простір, час, поля, ресурси, матеріали, реакції, енергія, фізика та одиниці виміру.
+
+Ключові входи:
+
+- [[docs/world/laws|World Laws]]
+- [[docs/world/space|Space]]
+- [[docs/world/tick-semantics|Tick Semantics]]
+- [[docs/world/resources|Resources]]
+- [[docs/world/materials|Materials]]
+- [[docs/world/energy|Energy]]
+- [[docs/world/physics|Physics]]
 
 ## `biology/`
 
-Механіка життя: клітина, мембрана, Joint, організм, процеси, реєстр actions/processes, комунікація, спеціалізація та життєвий цикл.
+Механіка живих сутностей: клітина, мембрана, процеси, capability, feasibility, життєвий цикл, поділ, Joint, комунікація, organism view і спеціалізація.
+
+Ключові входи:
+
+- [[docs/biology/cell|Cell]]
+- [[docs/biology/cell-state|Cell State]]
+- [[docs/biology/membrane|Membrane]]
+- [[docs/biology/processes|Processes]]
+- [[docs/biology/action-process-registry|Action Process Registry]]
+- [[docs/biology/feasibility|Feasibility]]
+- [[docs/biology/lifecycle|Lifecycle]]
+- [[docs/biology/joint|Joint]]
+- [[docs/biology/organism|Organism View]]
 
 ## `genetics/`
 
-Модель спадковості, геному, регуляторної мережі, мутацій, рекомбінації, епігенетики та горизонтального переносу.
+Геном, спадковість, мутації, genome runtime, regulatory graph, epigenetics, recombination і horizontal transfer.
+
+Ключові входи:
+
+- [[docs/genetics/genome-representation|Genome Representation]]
+- [[docs/genetics/genome-runtime|Genome Runtime]]
+- [[docs/genetics/inheritance|Inheritance]]
+- [[docs/genetics/mutation|Mutation]]
+- [[docs/genetics/regulatory-network|Regulatory Network]]
 
 ## `evolution/`
 
-Оглядовий рівень очікуваних еволюційних явищ на рівні популяцій.
+Observer-side еволюційна аналітика: adaptation, population dynamics, selection і species-like clusters.
 
-Цей каталог не повинен дублювати механіки `genetics/`.
+Ключові входи:
+
+- [[docs/evolution/adaptation|Adaptation]]
+- [[docs/evolution/population-dynamics|Population Dynamics]]
+- [[docs/evolution/selection|Selection]]
+- [[docs/evolution/species-like-clusters|Species-like Clusters]]
 
 ## `config/`
 
-Документація майбутніх конфігурацій світу, ресурсів, матеріалів і полів.
+Майбутні конфігурації світу, ресурсів, матеріалів, реакцій, полів і stability bounds.
+
+Ключові входи:
+
+- [[docs/config/world_config|World Config]]
+- [[docs/config/resources_config|Resources Config]]
+- [[docs/config/materials_config|Materials Config]]
+- [[docs/config/stability_bounds|Stability Bounds]]
 
 ## `engine/`
 
-Технічна архітектура майбутнього рушія.
+Технічна архітектура рушія: scheduler, performance, storage, serialization, physics, rendering, chemistry, ECS та technology stack.
 
-Engine не визначає законів світу, а реалізує їх.
+Ключові входи:
 
-## `examples/`
+- [[docs/engine/technology-stack|Technology Stack]]
+- [[docs/engine/performance|Performance]]
+- [[docs/engine/scheduler|Scheduler]]
+- [[docs/engine/storage|Storage]]
+- [[docs/engine/rendering|Rendering]]
 
-Ілюстративні сценарії для читання разом із Canon.
+## `ui/`
 
-Examples не створюють нових правил. Якщо приклад суперечить Canon, правильним вважається Canon.
+UI Canon для `ALife Control Center`: принципи, архітектура, навігація, візуалізація, аналітика, exploration, presentation, interaction і quality.
 
-## `research/`
+Ключові входи:
 
-Лабораторія ідей.
-
-Тут можна зберігати альтернативи, відкладені рішення, rejected ideas і майбутні напрямки, але не реалізаційні правила.
-
-## `decisions/`
-
-Журнал ADR.
-
-Порожній журнал не означає, що рішення вже прийняті. Якщо ADR-файл відсутній, його не можна цитувати як джерело істини.
+- [[docs/ui/README|UI Layer]]
+- [[docs/ui/principles|UI Principles]]
+- [[docs/ui/architecture|UI Architecture]]
+- [[docs/ui/visualization|UI Visualization]]
+- [[docs/ui/interaction|UI Interaction]]
+- [[docs/ui/quality|UI Quality]]
+- [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
 
 ## `implementation/`
 
-High-level плани реалізації, фазування розробки, майбутня архітектура, класи та інтерфейси.
+Плани реалізації, фазування, архітектура, data model, module API, optimization paths, stability tools і UI implementation plan.
 
-Поточний фазовий план: [[docs/implementation/implementation-phases|Implementation Phases]].
+Ключові входи:
 
----
+- [[docs/implementation/README|Implementation]]
+- [[docs/implementation/implementation-phases|Implementation Phases]]
+- [[docs/implementation/architecture|Architecture]]
+- [[docs/implementation/optimization-paths|Optimization Paths]]
+- [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
 
-# Правила ведення документації
+## `research/`
 
-## Canon
+Гіпотези, альтернативи та відкладені ідеї.
 
-Містить актуальні правила.
+## `decisions/`
 
-Не повинен містити неперевірені гіпотези або альтернативи.
+ADR-журнал прийнятих рішень.
 
-## Research
+## `examples/`
 
-Містить дослідження й альтернативи.
-
-Може суперечити поточній архітектурі.
-
-## ADR
-
-Фіксує причину прийнятого рішення.
-
-ADR потрібен для фундаментальних змін, вибору між альтернативами або відхилення важливої ідеї.
+Приклади, які допомагають читати Canon.
 
 ---
 
-# Правила для AI-агентів
+# Правила змін
 
-Перед зміною документації або майбутнього коду агент повинен:
+Перед зміною документації або коду:
 
-1. прочитати `PRINCIPLES.md`;
-2. перевірити `GLOSSARY.md`;
-3. прочитати відповідний Canon-документ;
-4. перевірити пов'язані Research-документи;
-5. перевірити наявні ADR.
+1. прочитайте [[docs/PRINCIPLES|Principles]];
+2. перевірте терміни в [[docs/GLOSSARY|Glossary]];
+3. знайдіть відповідний Canon-документ;
+4. перевірте пов'язані implementation-документи;
+5. перевірте ADR, якщо зміна архітектурна;
+6. якщо правила немає, не вигадуйте його мовчки: створіть питання, план або ADR-пропозицію.
 
-Якщо правило відсутнє:
+---
 
-* не вигадувати його самостійно;
-* додати TODO або Open Question;
-* або запропонувати ADR, якщо є реальна причина для рішення.
+# Semantic Links
+
+- agent index: [[docs/INDEX|Agent Index]]
+- governed by: [[docs/PRINCIPLES|Principles]]
+- uses terms from: [[docs/GLOSSARY|Glossary]]
+- tracks status in: [[docs/ROADMAP|Roadmap]]
+- implements through: [[docs/implementation/README|Implementation]]
+- includes UI canon: [[docs/ui/README|UI Layer]]
+- records decisions in: [[docs/decisions/README|Decisions]]
+- records work in: [[outputs/worklogs/index|Worklogs]]

@@ -313,6 +313,8 @@ Architecture requirement:
 - constrains: [[docs/engine/storage|Storage]]
 - preserves: [[docs/world/tick-semantics|Tick Semantics]]
 - configured through: [[docs/config/stability_bounds|Stability Bounds]]
+- constrains UI implementation: [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
+- supports viewer canon: [[docs/ui/visualization|UI Visualization]]
 
 # Пов'язані документи
 
@@ -321,6 +323,8 @@ Architecture requirement:
 - `engine/storage.md`
 - `engine/ecs.md`
 - `engine/rendering.md`
+- `docs/ui/README.md`
+- `docs/implementation/implementation-plan-ui.md`
 - `world/tick-semantics.md`
 - `world/space.md`
 - `docs/decisions/ADR-0001-tech-stack.md`

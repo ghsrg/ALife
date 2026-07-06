@@ -190,3 +190,9 @@ D docs/.obsidian/workspace.json
 `docs/examples/` також лишається untracked з попереднього кроку чистки документації.
 
 Git продовжує показувати CRLF/LF warnings для markdown-файлів при `git diff --stat`; line endings policy ще не нормалізовано.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

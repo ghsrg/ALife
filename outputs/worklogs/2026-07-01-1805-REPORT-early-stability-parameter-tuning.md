@@ -1,4 +1,4 @@
-# REPORT: Early Stability Parameter Tuning
+﻿# REPORT: Early Stability Parameter Tuning
 
 ## Commands Run
 - `python cli.py batch --scenarios ../scenarios --out ../../../outputs/stability/baseline-batch --with-simulation`
@@ -50,3 +50,9 @@
 ## Do Not Change
 - Canon rules unchanged
 - Source configs unchanged unless explicitly requested
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

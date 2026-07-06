@@ -40,3 +40,9 @@ Updated:
 ## Next Step
 
 Continue with Phase 1 module/API documentation, using the data model and performance constraints as implementation gates.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

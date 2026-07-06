@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - alife
   - worklog/report
@@ -20,8 +20,8 @@ tags:
 ## Changes
 
 - Додано кореневий `MAP.md` як Obsidian graph hub для всіх Markdown-документів.
-- Додано `outputs/worklogs/README.md` як окремий хаб для планів і звітів.
-- Додано посилання з `README.md` на `MAP.md`, `AGENTS.MD`, `outputs/worklogs/README.md` і `LICENSE`.
+- Додано `outputs/worklogs/index.md` як окремий хаб для планів і звітів.
+- Додано посилання з `README.md` на `MAP.md`, `AGENTS.MD`, `outputs/worklogs/index.md` і `LICENSE`.
 - Додано посилання з `docs/README.md` на `MAP.md` і worklogs.
 - Додано службові Obsidian-посилання в `AGENTS.MD`.
 - Додано YAML frontmatter `tags` до Markdown-файлів за типом і областю: `area/world`, `area/biology`, `area/genetics`, `area/evolution`, `area/config`, `area/engine`, `area/research`, `worklog/plan`, `worklog/report` тощо.
@@ -35,3 +35,9 @@ tags:
 ## Open Questions
 
 - Немає.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

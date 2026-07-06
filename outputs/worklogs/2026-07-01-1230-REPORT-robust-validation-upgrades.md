@@ -1,4 +1,4 @@
-# Worklog: Task 1 Robust Input Validation Upgrades
+﻿# Worklog: Task 1 Robust Input Validation Upgrades
 
 *   **Date:** 2026-07-01
 *   **Goal:** Refine configuration validation logic to handle threshold consistency, non-empty minimum viability materials, and proper resource mapping.
@@ -16,3 +16,9 @@
     *   All 5 unit tests pass, checking invalid thresholds, empty material requirements, and mismatched resource lists.
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

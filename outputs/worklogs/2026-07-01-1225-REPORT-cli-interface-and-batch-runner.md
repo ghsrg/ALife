@@ -1,4 +1,4 @@
-# Worklog: Task 6 CLI Interface & Batch Runner
+﻿# Worklog: Task 6 CLI Interface & Batch Runner
 
 *   **Date:** 2026-07-01
 *   **Goal:** Implement the CLI entrypoint, batch runner, and populate default scenarios.
@@ -21,3 +21,9 @@
     *   Ran pytest checks. All 4 new CLI test cases passed (raising the total suite to 44 passing tests).
 *   **Open Questions:**
     *   None.
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]

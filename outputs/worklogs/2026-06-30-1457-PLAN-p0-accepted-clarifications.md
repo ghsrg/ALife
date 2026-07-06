@@ -245,3 +245,9 @@ Genome copy from Energy only
 same-phase feedback
 Feasibility using pre-mandatory state
 ```
+
+---
+
+# Worklog Navigation
+
+- index: [[outputs/worklogs/index|Worklogs Index]]
