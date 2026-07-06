@@ -130,3 +130,4 @@ tags:
 - [[outputs/worklogs/2026-07-06-1143-REPORT-worklog-index-rename|2026-07-06-1143-REPORT-worklog-index-rename]]
 - [[outputs/worklogs/2026-07-06-1151-REPORT-worklog-index-completeness|2026-07-06-1151-REPORT-worklog-index-completeness]]
 - [[outputs/worklogs/2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links|2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links]]
+- [[outputs/worklogs/2026-07-06-1548-REPORT-agents-md-trim|2026-07-06-1548-REPORT-agents-md-trim]]

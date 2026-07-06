@@ -181,6 +181,7 @@
   },
   "active": "b2e5d4980be0138b",
   "lastOpenFiles": [
+    "outputs/worklogs/2026-07-06-1548-REPORT-agents-md-trim.md",
     "docs/mechanics/INDEX.md",
     "outputs/worklogs/2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links.md",
     "docs/examples/INDEX.md",
@@ -215,7 +216,6 @@
     "docs/implementation/phase-1-module-api.md",
     "outputs/worklogs/README.md",
     "docs/INDEX.md",
-    "outputs/reachability/single_cell_dormancy/REPORT.md",
-    "outputs/worklogs/2026-06-30-1652-REPORT-readme-folder-links.md"
+    "outputs/reachability/single_cell_dormancy/REPORT.md"
   ]
 }

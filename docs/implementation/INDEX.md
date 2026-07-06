@@ -15,7 +15,7 @@ tags:
 1. Open [[docs/INDEX|Documentation Index]].
 2. Select relevant [[docs/mechanics/INDEX|mechanics cards]].
 3. Read the Must Read sources listed in those cards.
-4. Check relevant [[docs/decisions/README|ADR]] and implementation documents.
+4. Check relevant [[docs/decisions/INDEX|ADR]] and implementation documents.
 
 Mechanics cards are routing checklists, not sources of truth.
 
@@ -37,6 +37,7 @@ Mechanics cards are routing checklists, not sources of truth.
 ## UI Implementation
 
 - [[docs/implementation/implementation-plan-ui|UI Implementation Plan]] `#ui`
+- [[docs/implementation/ui-technology-stack.md|UI Implementation technology Stack]] `#technology-stack`
 
 ## Local README
 
