@@ -3,8 +3,8 @@ use alife::core::config::{
     ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use alife::core::units::{
-    CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius,
-    ResourceAmount, Seed, Tick, WasteAmount, WorldSize,
+    CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
+    Seed, Tick, WasteAmount, WorldSize,
 };
 
 fn base_config() -> RuntimeConfig {
