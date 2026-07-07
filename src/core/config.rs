@@ -271,6 +271,13 @@ impl RuntimeConfig {
         for value in [
             self.world.tick_count.raw(),
             self.world.seed.raw(),
+            self.world.size.width().to_bits() as u64,
+            self.world.size.height().to_bits() as u64,
+            self.space.spatial_grid_size.to_bits() as u64,
+            self.space.physics_solver_iterations as u64,
+            self.cell.position.x().to_bits() as u64,
+            self.cell.position.y().to_bits() as u64,
+            self.cell.radius.raw().to_bits() as u64,
             self.cell.initial_energy.raw().to_bits() as u64,
             self.cell.energy_capacity.raw().to_bits() as u64,
             self.cell.mandatory_cost_per_tick.raw().to_bits() as u64,
@@ -293,6 +300,21 @@ impl RuntimeConfig {
             self.synthesis.cost_energy.raw().to_bits() as u64,
             self.contractility.energy_cost.raw().to_bits() as u64,
             self.contractility.force_factor.to_bits() as u64,
+            self.lifecycle.stress_energy_threshold.raw().to_bits() as u64,
+            self.lifecycle.dormancy_allowed as u64,
+            self.lifecycle.dormant_mandatory_cost_modifier.to_bits() as u64,
+            self.lifecycle.critical_capacity_overrun.raw().to_bits() as u64,
+            self.environment.heat_current.raw().to_bits() as u64,
+            self.environment.heat_generated_per_tick.raw().to_bits() as u64,
+            self.environment.heat_dissipation_rate.raw().to_bits() as u64,
+            self.environment.heat_warning_threshold.raw().to_bits() as u64,
+            self.environment.heat_death_threshold.raw().to_bits() as u64,
+            self.environment.waste_current.raw().to_bits() as u64,
+            self.environment.waste_generated_per_tick.raw().to_bits() as u64,
+            self.environment.waste_sink_rate.raw().to_bits() as u64,
+            self.environment.waste_warning_threshold.raw().to_bits() as u64,
+            self.environment.waste_death_threshold.raw().to_bits() as u64,
+            self.growth_enabled as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);
@@ -325,6 +347,9 @@ impl RuntimeConfig {
 
         for cell in &self.initial_cells {
             for value in [
+                cell.position.x().to_bits() as u64,
+                cell.position.y().to_bits() as u64,
+                cell.radius.raw().to_bits() as u64,
                 cell.initial_energy.raw().to_bits() as u64,
                 cell.energy_capacity.raw().to_bits() as u64,
                 cell.mandatory_cost_per_tick.raw().to_bits() as u64,
