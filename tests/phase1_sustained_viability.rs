@@ -109,7 +109,9 @@ fn viability_config() -> RuntimeConfig {
 
 #[test]
 fn run_summary_reports_resource_capacity_and_growth_readiness_metrics() {
-    let mut executor = TickExecutor::new(viability_config()).unwrap();
+    let mut config = viability_config();
+    config.growth.growth_target_radius = Radius::new(1.0).unwrap();
+    let mut executor = TickExecutor::new(config).unwrap();
     let summary = executor.run_until_configured_tick().unwrap();
 
     assert_eq!(summary.survival_result, SurvivalResult::Stable);

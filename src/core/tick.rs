@@ -626,13 +626,24 @@ impl TickExecutor {
         process_attempts: u32,
         process_rejections: u32,
     ) -> MetricsSummary {
-        let first = CellIndex::from_raw(0);
         let cells = self.world.cells();
-        let final_internal_resources = cells.resource_amount(first).raw();
-        let final_used_capacity = cells.used_capacity(first).raw();
-        let final_free_capacity = cells.free_capacity(first).raw();
-        let energy_capacity = cells.energy(first).capacity().raw();
-        let growth_readiness = final_energy >= energy_capacity * 0.8 && final_free_capacity > 0.0;
+        let mut final_internal_resources = 0.0_f32;
+        let mut final_used_capacity = 0.0_f32;
+        let mut final_free_capacity = 0.0_f32;
+        let mut growth_readiness = false;
+
+        for i in 0..cells.len() {
+            let idx = CellIndex::from_raw(i);
+            if cells.lifecycle_state(idx) == LifecycleState::Dead {
+                continue;
+            }
+            final_internal_resources += cells.resource_amount(idx).raw();
+            final_used_capacity += cells.used_capacity(idx).raw();
+            final_free_capacity += cells.free_capacity(idx).raw();
+            if cells.runtime_flags(idx).division_ready {
+                growth_readiness = true;
+            }
+        }
 
         MetricsSummary {
             final_energy,
