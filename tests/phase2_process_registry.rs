@@ -176,10 +176,7 @@ fn test_feasibility_clamps_to_available_resource() {
 
 #[test]
 fn test_diagnostics_records_metabolism_rejection_when_metabolic_material_zero() {
-    use alife::core::{
-        process::ProcessId,
-        tick::TickExecutor,
-    };
+    use alife::core::{process::ProcessId, tick::TickExecutor};
     let mut config = minimal_config_with_resource(5.0);
     config.cell.initial_metabolic_material = alife::core::units::MaterialAmount::zero();
     let mut executor = TickExecutor::new(config).unwrap();
@@ -197,4 +194,3 @@ fn test_diagnostics_records_metabolism_rejection_when_metabolic_material_zero() 
         rejections
     );
 }
-

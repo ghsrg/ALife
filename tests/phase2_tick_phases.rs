@@ -1,4 +1,4 @@
-﻿// Task 6 — tick phase order: contact sensing BEFORE material reflex loop
+// Task 6 — tick phase order: contact sensing BEFORE material reflex loop
 
 fn two_cell_config_with_overlap() -> alife::core::config::RuntimeConfig {
     use alife::core::{
@@ -109,7 +109,10 @@ fn test_overlapping_contractile_cells_move_without_manual_pressure_injection() {
     assert!(
         moved,
         "Cell A must have moved after 2 ticks with overlapping neighbor: before=({}, {}) after=({}, {})",
-        pos_a_before.x(), pos_a_before.y(), pos_a_after.x(), pos_a_after.y()
+        pos_a_before.x(),
+        pos_a_before.y(),
+        pos_a_after.x(),
+        pos_a_after.y()
     );
 }
 
@@ -266,7 +269,10 @@ fn single_cell_config(radius: f32, target: f32) -> alife::core::config::RuntimeC
             seed: Seed::from_raw(1),
             size: WorldSize::new(64.0, 64.0).unwrap(),
         },
-        SpaceConfig { spatial_grid_size: 8.0, physics_solver_iterations: 1 },
+        SpaceConfig {
+            spatial_grid_size: 8.0,
+            physics_solver_iterations: 1,
+        },
         ResourceConfig::new(vec![ResourceAmount::new(0.0).unwrap()], 0.0).unwrap(),
         ResourceInteractionConfig {
             enabled: false,
@@ -296,7 +302,8 @@ fn single_cell_config(radius: f32, target: f32) -> alife::core::config::RuntimeC
             dormant_mandatory_cost_modifier: 1.0,
             critical_capacity_overrun: CapacityAmount::new(10.0).unwrap(),
         },
-    ).unwrap();
+    )
+    .unwrap();
     config.growth = GrowthConfig {
         growth_cost_resource: ResourceAmount::new(999.0).unwrap(),
         growth_cost_energy: EnergyAmount::new(999.0).unwrap(),

@@ -112,7 +112,10 @@ impl TickExecutor {
             let mut metabolism_energy = EnergyAmount::zero();
 
             if config.resource_interaction.enabled {
-                let req_amount = config.resource_interaction.metabolism_resource_per_tick.raw();
+                let req_amount = config
+                    .resource_interaction
+                    .metabolism_resource_per_tick
+                    .raw();
                 let (feasible, _) = run_process(
                     &self.world,
                     index,
@@ -688,12 +691,8 @@ fn run_process(
                 .rejections_by_process
                 .entry(process_id)
                 .or_insert(0) += 1;
-            *diagnostics
-                .rejections_by_reason
-                .entry(reason)
-                .or_insert(0) += 1;
+            *diagnostics.rejections_by_reason.entry(reason).or_insert(0) += 1;
             (false, feasibility)
         }
     }
 }
-

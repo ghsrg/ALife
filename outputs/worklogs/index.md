@@ -50,6 +50,7 @@ tags:
 - [[outputs/worklogs/2026-07-04-1003-PLAN-phase-2c-tdd-fixes|2026-07-04-1003-PLAN-phase-2c-tdd-fixes]]
 - [[outputs/worklogs/2026-07-04-1404-PLAN-sweep_scenario-analyzer-refactor|2026-07-04-1404-PLAN-sweep_scenario-analyzer-refactor]]
 - [[outputs/worklogs/2026-07-04-1405-PLAN-sweep_scenario-eval-coverage_refactor|2026-07-04-1405-PLAN-sweep_scenario-eval-coverage_refactor]]
+- [[outputs/worklogs/2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit|2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
@@ -131,3 +132,4 @@ tags:
 - [[outputs/worklogs/2026-07-06-1151-REPORT-worklog-index-completeness|2026-07-06-1151-REPORT-worklog-index-completeness]]
 - [[outputs/worklogs/2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links|2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links]]
 - [[outputs/worklogs/2026-07-06-1548-REPORT-agents-md-trim|2026-07-06-1548-REPORT-agents-md-trim]]
+- [[outputs/worklogs/2026-07-07-2149-REPORT-ui-docs-pre-tdd-cleanup|2026-07-07-2149-REPORT-ui-docs-pre-tdd-cleanup]]

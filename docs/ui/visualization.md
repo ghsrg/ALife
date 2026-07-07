@@ -365,6 +365,37 @@ Smooth mode:
 
 Inspector і tooltip повинні показувати actual sampled value, а не лише visual interpolation result.
 
+## Composite Resource Concentration
+
+Primary World mode for displaying several Resource types in one spatial view.
+
+```text
+hue        = dominant or blended Resource types
+brightness = total Resource concentration
+saturation = dominance of the leading Resource
+texture    = Resource gradient or flow
+```
+
+Default Overview presentation:
+
+```text
+Composite Resource Concentration · Smooth
+```
+
+Rules:
+
+- visualizes Resources, not Materials;
+- low concentrations fade into the neutral background;
+- `Smooth` interpolation does not create simulation values;
+- Inspector and tooltip show actual sampled values;
+- texture may represent bounded gradient, diffusion or configured flow;
+- Fields require separate explicitly enabled overlays;
+- Resource colors and blending rules are versioned and reproducible;
+- active Resources, units, scale, normalization and interpolation mode appear in the legend;
+- `Exact` mode shows the original grid, sparse-grid or sample structure;
+- decorative particles must not be confused with Resource data;
+- visualization does not affect Resources, diffusion or simulation behavior.
+
 ## Default Visualization State
 
 Default Cell color mode:
@@ -761,6 +792,16 @@ Pseudo-3D presentation поточної 2D simulation не вважається 
 - змінювати physical Cell radius лише для clickability;
 - створювати різні spatial semantics у різних workspaces;
 - використовувати UI classification як authoritative entity type.
+
+## Приклад
+
+Visual reference:
+
+[[docs/ui/control-center-monitor-v3.png|Control Center Monitor v3]]
+
+Це цільова композиція `Monitor`: application shell, layer controls, central Viewer, contextual Inspector і нижні data panels.
+
+Reference визначає бажаний напрямок композиції та visual density, але не є pixel-perfect specification. Реалізація повинна слідувати UI Canon, responsive rules, data-bound rendering і performance constraints.
 
 ## Пов'язані документи
 

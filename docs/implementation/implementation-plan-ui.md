@@ -386,7 +386,7 @@ Simulation rate і visualization frame rate показуються окремо.
 ```text
 Cells
 World bounds
-one Resource heatmap
+Composite Resource Concentration · Smooth
 lifecycle color mode
 selection highlight
 basic event markers
@@ -1631,13 +1631,13 @@ Core-approved commands only
 
 В окремих detailed plans можна визначити:
 
-- frontend framework;
-- component library;
-- chart library;
 - binary frame codec details;
 - exact WebSocket protocol;
-- state-management library;
 - exact design tokens;
+- exact package manager and Node runtime pinning;
+- exact PixiJS batch, mesh and shader strategy;
+- exact asset pipeline;
+- exact screenshot comparison tolerances;
 - exact FPS adaptation thresholds;
 - exact LOD thresholds;
 - keyframe cadence;
@@ -1647,6 +1647,8 @@ Core-approved commands only
 - 3D research.
 
 Deferred decision не повинно порушувати UI Canon або accepted technology stack.
+
+Frontend framework, component primitives, charting library and state-management baseline are defined in [[docs/implementation/ui-technology-stack|UI Technology Stack]].
 
 # Recommended Immediate Next Plan
 
@@ -1664,7 +1666,7 @@ Chromium application starts
 Monitor workspace opens
 deterministic fixture loads
 WebGL2 Viewer draws World and Cells
-one Resource heatmap is visible
+one Resource heatmap is visible and Composite Resource Concentration · Smooth 
 zoom/pan/full-screen work
 Cell can be selected
 Inspector shows fixture data
