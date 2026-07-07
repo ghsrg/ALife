@@ -100,6 +100,7 @@ pub struct RawScenarioConfig {
     pub scenario_id: String,
     pub seed: u64,
     pub tick_count: u64,
+    pub legacy_material_distribution: Option<bool>,
     pub world: RawWorld,
     pub space: RawSpace,
     pub resources: RawResources,
@@ -118,6 +119,7 @@ pub enum ParseError {
     TomlError(toml::de::Error),
     ConfigValidationError(ConfigError),
     ValidationError(String),
+    UnknownMaterialName(String),
 }
 
 impl RawScenarioConfig {
@@ -138,6 +140,7 @@ impl RawScenarioConfig {
             ));
         }
 
+        let legacy = self.legacy_material_distribution.unwrap_or(false);
         let initial_resources_sum: f32 = self.cell.initial_resources.values().sum();
         let (
             boundary,
@@ -149,7 +152,7 @@ impl RawScenarioConfig {
             repair,
             contractile,
             sensory,
-        ) = parse_materials_inventory(&self.cell.initial_materials)?;
+        ) = parse_materials_inventory(&self.cell.initial_materials, legacy)?;
 
         let size = WorldSize::new(self.world.size[0], self.world.size[1])
             .map_err(|e| ParseError::ValidationError(format!("Invalid world size: {:?}", e)))?;
@@ -330,7 +333,7 @@ impl RawScenarioConfig {
                     repair_c,
                     contractile_c,
                     sensory_c,
-                ) = parse_materials_inventory(&raw_cell.initial_materials)?;
+                ) = parse_materials_inventory(&raw_cell.initial_materials, legacy)?;
                 let cell_conf = CellInitialConfig {
                     position: Position::new(
                         raw_cell.initial_position[0],
@@ -448,6 +451,7 @@ impl RawScenarioConfig {
 #[allow(clippy::type_complexity)]
 fn parse_materials_inventory(
     initial_materials: &std::collections::HashMap<String, f32>,
+    legacy: bool,
 ) -> Result<
     (
         MaterialAmount,
@@ -490,16 +494,22 @@ fn parse_materials_inventory(
     let initial_materials_sum: f32 = initial_materials.values().sum();
 
     if !has_specific && initial_materials_sum > 0.0 {
-        let share = initial_materials_sum / 9.0;
-        boundary = share;
-        transport = share;
-        metabolic = share;
-        storage = share;
-        synthesis = share;
-        structural = share;
-        repair = share;
-        contractile = share;
-        sensory = share;
+        if legacy {
+            let share = initial_materials_sum / 9.0;
+            boundary = share;
+            transport = share;
+            metabolic = share;
+            storage = share;
+            synthesis = share;
+            structural = share;
+            repair = share;
+            contractile = share;
+            sensory = share;
+        } else {
+            if let Some(k) = initial_materials.keys().next() {
+                return Err(ParseError::UnknownMaterialName(k.clone()));
+            }
+        }
     } else {
         for (k, &v) in initial_materials {
             match k.as_str() {
@@ -512,7 +522,13 @@ fn parse_materials_inventory(
                 "repair" => repair = v,
                 "contractile" | "motor" => contractile = v,
                 "sensory" | "receptor" => sensory = v,
-                _ => structural = v,
+                other => {
+                    if legacy {
+                        structural = v;
+                    } else {
+                        return Err(ParseError::UnknownMaterialName(other.to_string()));
+                    }
+                }
             }
         }
     }

@@ -363,6 +363,7 @@ fn parser_maps_resource_interaction_block() {
 scenario_id = "resource_interaction"
 seed = 42
 tick_count = 10
+legacy_material_distribution = true
 
 [world]
 size = [16.0, 16.0]

@@ -1,6 +1,7 @@
 scenario_id = "phase2_biochemistry"
 seed = 42
 tick_count = 100
+legacy_material_distribution = true
 
 [world]
 size = [512.0, 512.0]

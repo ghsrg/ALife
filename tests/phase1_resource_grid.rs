@@ -183,6 +183,7 @@ fn parser_maps_initial_distribution_to_resource_config_layers() {
 scenario_id = "resource_mapping"
 seed = 42
 tick_count = 10
+legacy_material_distribution = true
 
 [world]
 size = [16.0, 16.0]

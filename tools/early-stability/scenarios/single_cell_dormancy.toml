@@ -1,6 +1,7 @@
 scenario_id = "single_cell_dormancy"
 seed = 42
 tick_count = 10
+legacy_material_distribution = true
 
 [world]
 size = [512.0, 512.0]

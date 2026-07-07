@@ -104,6 +104,7 @@ fn test_legacy_config_backward_compatibility() {
 scenario_id = "legacy_test"
 seed = 42
 tick_count = 10
+legacy_material_distribution = true
 
 [world]
 size = [16.0, 16.0]
@@ -303,4 +304,115 @@ critical_capacity_overrun = 5.0
             .cells()
             .has_capability(idx, MaterialCapability::StructuralGrowth)
     );
+}
+
+#[test]
+fn test_unknown_material_name_fails_parse() {
+    use alife::runner::config_parser::RawScenarioConfig;
+
+    let toml = r#"
+scenario_id = "unknown_material_test"
+seed = 42
+tick_count = 10
+
+[world]
+size = [16.0, 16.0]
+boundary_mode = "solid_wall"
+
+[space]
+spatial_grid_size = 8.0
+
+[resources]
+resource_type_ids = ["nutrient"]
+initial_distribution = [10.0]
+
+[cell]
+initial_position = [1.0, 1.0]
+radius = 1.0
+initial_resources = {}
+initial_materials = { unknown_goop = 3.5 }
+initial_energy = 5.0
+energy_capacity = 10.0
+mandatory_cost_per_tick = 2.0
+capacity_limit = 20.0
+
+[environment]
+ambient_temperature = 25.0
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.0
+heat_warning_threshold = 10.0
+heat_death_threshold = 20.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.0
+waste_warning_threshold = 10.0
+waste_death_threshold = 20.0
+
+[lifecycle]
+stress_energy_threshold = 2.0
+dormancy_allowed = true
+critical_capacity_overrun = 5.0
+"#;
+
+    let res = RawScenarioConfig::parse(toml);
+    assert!(
+        res.is_err(),
+        "Expected parsing to fail for unknown material name"
+    );
+}
+
+#[test]
+fn test_legacy_flag_allows_generic_material() {
+    use alife::runner::config_parser::RawScenarioConfig;
+
+    let toml = r#"
+scenario_id = "legacy_material_test"
+seed = 42
+tick_count = 10
+legacy_material_distribution = true
+
+[world]
+size = [16.0, 16.0]
+boundary_mode = "solid_wall"
+
+[space]
+spatial_grid_size = 8.0
+
+[resources]
+resource_type_ids = ["nutrient"]
+initial_distribution = [10.0]
+
+[cell]
+initial_position = [1.0, 1.0]
+radius = 1.0
+initial_resources = {}
+initial_materials = { unknown_goop = 9.0 }
+initial_energy = 5.0
+energy_capacity = 10.0
+mandatory_cost_per_tick = 2.0
+capacity_limit = 20.0
+
+[environment]
+ambient_temperature = 25.0
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.0
+heat_warning_threshold = 10.0
+heat_death_threshold = 20.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.0
+waste_warning_threshold = 10.0
+waste_death_threshold = 20.0
+
+[lifecycle]
+stress_energy_threshold = 2.0
+dormancy_allowed = true
+critical_capacity_overrun = 5.0
+"#;
+
+    let config = RawScenarioConfig::parse(toml).unwrap();
+    assert_eq!(config.cell.initial_boundary_material.raw(), 1.0);
+    assert_eq!(config.cell.initial_structural_material.raw(), 1.0);
 }
