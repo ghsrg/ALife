@@ -51,6 +51,7 @@ tags:
 - [[outputs/worklogs/2026-07-04-1404-PLAN-sweep_scenario-analyzer-refactor|2026-07-04-1404-PLAN-sweep_scenario-analyzer-refactor]]
 - [[outputs/worklogs/2026-07-04-1405-PLAN-sweep_scenario-eval-coverage_refactor|2026-07-04-1405-PLAN-sweep_scenario-eval-coverage_refactor]]
 - [[outputs/worklogs/2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit|2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit]]
+- [[outputs/worklogs/2026-07-07-2313-PLAN-phase-2D-division-death-decomposition|2026-07-07-2313-PLAN-phase-2D-division-death-decomposition]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
