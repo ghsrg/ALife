@@ -25,6 +25,8 @@ struct AnalyzerConfig {
     environment: EnvironmentRaw,
     sweep: Option<Vec<SweepDef>>,
     matrix: Option<Vec<MatrixDef>>,
+    #[allow(dead_code)]
+    scenarios: Option<std::collections::HashMap<String, RawScenarioPreset>>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -97,6 +99,32 @@ struct MatrixDef {
     from_y: f32,
     to_y: f32,
     steps_y: usize,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, serde::Deserialize, Clone)]
+struct RawScenarioPreset {
+    world_size: Vec<f32>,
+    initial_resources: Vec<f32>,
+    decay_rate: f32,
+    cell_position: Vec<f32>,
+    cell_radius: f32,
+    initial_energy: f32,
+    energy_capacity: f32,
+    mandatory_cost_per_tick: f32,
+    passive_energy_income: f32,
+    capacity_limit: f32,
+    stress_energy_threshold: f32,
+    dormancy_allowed: bool,
+    dormant_mandatory_cost_modifier: f32,
+    critical_capacity_overrun: f32,
+    heat_dissipation_rate: f32,
+    heat_warning_threshold: f32,
+    heat_death_threshold: f32,
+    waste_sink_rate: f32,
+    waste_warning_threshold: f32,
+    waste_death_threshold: f32,
+    growth_enabled: bool,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
