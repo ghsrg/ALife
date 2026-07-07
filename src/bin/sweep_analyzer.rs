@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use alife::core::cell_store::{CellIndex, LifecycleState};
 use alife::core::config::{
     CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
@@ -17,114 +19,116 @@ use std::io::Write;
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, serde::Deserialize)]
-struct AnalyzerConfig {
-    run: RunConfig,
-    cell: CellConfig,
-    lifecycle: LifecycleRaw,
-    resource_interaction: ResourceInteractionRaw,
-    environment: EnvironmentRaw,
-    sweep: Option<Vec<SweepDef>>,
-    matrix: Option<Vec<MatrixDef>>,
+pub struct AnalyzerConfig {
+    pub run: RunConfig,
+    pub cell: CellConfig,
+    pub lifecycle: LifecycleRaw,
+    pub resource_interaction: ResourceInteractionRaw,
+    pub environment: EnvironmentRaw,
+    pub sweep: Option<Vec<SweepDef>>,
+    pub matrix: Option<Vec<MatrixDef>>,
     #[allow(dead_code)]
-    scenarios: Option<std::collections::HashMap<String, RawScenarioPreset>>,
+    pub scenarios: Option<std::collections::HashMap<String, RawScenarioPreset>>,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct RunConfig {
-    output_dir: String,
-    seed: u64,
-    ticks: u32,
+pub struct RunConfig {
+    pub output_dir: String,
+    pub seed: u64,
+    pub ticks: u32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct CellConfig {
-    radius: f32,
-    initial_energy: f32,
-    energy_capacity: f32,
-    mandatory_cost_per_tick: f32,
-    passive_energy_income: f32,
-    capacity_limit: f32,
-    initial_metabolic_material: f32,
-    initial_transport_material: f32,
-    initial_boundary_material: f32,
-    initial_structural_material: f32,
+pub struct CellConfig {
+    pub radius: f32,
+    pub initial_energy: f32,
+    pub energy_capacity: f32,
+    pub mandatory_cost_per_tick: f32,
+    pub passive_energy_income: f32,
+    pub capacity_limit: f32,
+    pub initial_metabolic_material: f32,
+    pub initial_transport_material: f32,
+    pub initial_boundary_material: f32,
+    pub initial_structural_material: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct LifecycleRaw {
-    stress_energy_threshold: f32,
-    dormancy_allowed: bool,
-    dormant_mandatory_cost_modifier: f32,
-    critical_capacity_overrun: f32,
+pub struct LifecycleRaw {
+    pub stress_energy_threshold: f32,
+    pub dormancy_allowed: bool,
+    pub dormant_mandatory_cost_modifier: f32,
+    pub critical_capacity_overrun: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct ResourceInteractionRaw {
-    energy_per_resource: f32,
-    heat_per_resource: f32,
-    waste_per_resource: f32,
-    decay_rate: f32,
-    default_resource_density: f32,
-    default_max_uptake_per_tick: f32,
-    default_metabolism_resource_per_tick: f32,
+pub struct ResourceInteractionRaw {
+    pub energy_per_resource: f32,
+    pub heat_per_resource: f32,
+    pub waste_per_resource: f32,
+    pub decay_rate: f32,
+    pub default_resource_density: f32,
+    pub default_max_uptake_per_tick: f32,
+    pub default_metabolism_resource_per_tick: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct EnvironmentRaw {
-    heat_dissipation_rate: f32,
-    heat_warning_threshold: f32,
-    heat_death_threshold: f32,
-    waste_sink_rate: f32,
-    waste_warning_threshold: f32,
-    waste_death_threshold: f32,
+pub struct EnvironmentRaw {
+    pub heat_dissipation_rate: f32,
+    pub heat_warning_threshold: f32,
+    pub heat_death_threshold: f32,
+    pub waste_sink_rate: f32,
+    pub waste_warning_threshold: f32,
+    pub waste_death_threshold: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct SweepDef {
-    name: String,
-    param: String,
-    from: f32,
-    to: f32,
-    steps: usize,
+pub struct SweepDef {
+    pub name: String,
+    pub param: String,
+    pub from: f32,
+    pub to: f32,
+    pub steps: usize,
+    pub scenario: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct MatrixDef {
-    name: String,
-    param_x: String,
-    from_x: f32,
-    to_x: f32,
-    steps_x: usize,
-    param_y: String,
-    from_y: f32,
-    to_y: f32,
-    steps_y: usize,
+pub struct MatrixDef {
+    pub name: String,
+    pub param_x: String,
+    pub from_x: f32,
+    pub to_x: f32,
+    pub steps_x: usize,
+    pub param_y: String,
+    pub from_y: f32,
+    pub to_y: f32,
+    pub steps_y: usize,
+    pub scenario: Option<String>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, serde::Deserialize, Clone)]
-struct RawScenarioPreset {
-    world_size: Vec<f32>,
-    initial_resources: Vec<f32>,
-    decay_rate: f32,
-    cell_position: Vec<f32>,
-    cell_radius: f32,
-    initial_energy: f32,
-    energy_capacity: f32,
-    mandatory_cost_per_tick: f32,
-    passive_energy_income: f32,
-    capacity_limit: f32,
-    stress_energy_threshold: f32,
-    dormancy_allowed: bool,
-    dormant_mandatory_cost_modifier: f32,
-    critical_capacity_overrun: f32,
-    heat_dissipation_rate: f32,
-    heat_warning_threshold: f32,
-    heat_death_threshold: f32,
-    waste_sink_rate: f32,
-    waste_warning_threshold: f32,
-    waste_death_threshold: f32,
-    growth_enabled: bool,
+pub struct RawScenarioPreset {
+    pub world_size: Vec<f32>,
+    pub initial_resources: Vec<f32>,
+    pub decay_rate: f32,
+    pub cell_position: Vec<f32>,
+    pub cell_radius: f32,
+    pub initial_energy: f32,
+    pub energy_capacity: f32,
+    pub mandatory_cost_per_tick: f32,
+    pub passive_energy_income: f32,
+    pub capacity_limit: f32,
+    pub stress_energy_threshold: f32,
+    pub dormancy_allowed: bool,
+    pub dormant_mandatory_cost_modifier: f32,
+    pub critical_capacity_overrun: f32,
+    pub heat_dissipation_rate: f32,
+    pub heat_warning_threshold: f32,
+    pub heat_death_threshold: f32,
+    pub waste_sink_rate: f32,
+    pub waste_warning_threshold: f32,
+    pub waste_death_threshold: f32,
+    pub growth_enabled: bool,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,28 +153,201 @@ struct SimResult {
 // Build RuntimeConfig, patching one or two parameters
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> RuntimeConfig {
+pub fn build_config(
+    cfg: &AnalyzerConfig,
+    preset: Option<&RawScenarioPreset>,
+    overrides: &std::collections::HashMap<&str, f32>,
+) -> RuntimeConfig {
     let cell_cfg = &cfg.cell;
     let lc = &cfg.lifecycle;
     let ri = &cfg.resource_interaction;
     let env = &cfg.environment;
 
+    let (world_w, world_h) = if let Some(p) = preset {
+        (p.world_size[0], p.world_size[1])
+    } else {
+        (512.0, 512.0)
+    };
+
+    let (cell_x, cell_y) = if let Some(p) = preset {
+        (p.cell_position[0], p.cell_position[1])
+    } else {
+        (256.0, 256.0)
+    };
+
+    let cell_radius_base = if let Some(p) = preset {
+        p.cell_radius
+    } else {
+        cell_cfg.radius
+    };
+    let cell_radius = overrides
+        .get("cell_radius")
+        .copied()
+        .unwrap_or(cell_radius_base);
+
+    let initial_energy_base = if let Some(p) = preset {
+        p.initial_energy
+    } else {
+        cell_cfg.initial_energy
+    };
+    let initial_energy = overrides
+        .get("initial_energy")
+        .copied()
+        .unwrap_or(initial_energy_base);
+
+    let energy_capacity_base = if let Some(p) = preset {
+        p.energy_capacity
+    } else {
+        cell_cfg.energy_capacity
+    };
+    let energy_capacity = overrides
+        .get("energy_capacity")
+        .copied()
+        .unwrap_or(energy_capacity_base);
+
+    let capacity_limit_base = if let Some(p) = preset {
+        p.capacity_limit
+    } else {
+        cell_cfg.capacity_limit
+    };
+    let capacity_limit = overrides
+        .get("capacity_limit")
+        .copied()
+        .unwrap_or(capacity_limit_base);
+
+    let decay_rate_base = if let Some(p) = preset {
+        p.decay_rate
+    } else {
+        ri.decay_rate
+    };
+    let decay_rate = overrides
+        .get("decay_rate")
+        .copied()
+        .unwrap_or(decay_rate_base);
+
+    let stress_energy_threshold_base = if let Some(p) = preset {
+        p.stress_energy_threshold
+    } else {
+        lc.stress_energy_threshold
+    };
+    let stress_energy_threshold = overrides
+        .get("stress_energy_threshold")
+        .copied()
+        .unwrap_or(stress_energy_threshold_base);
+
+    let critical_capacity_overrun_base = if let Some(p) = preset {
+        p.critical_capacity_overrun
+    } else {
+        lc.critical_capacity_overrun
+    };
+    let critical_capacity_overrun = overrides
+        .get("critical_capacity_overrun")
+        .copied()
+        .unwrap_or(critical_capacity_overrun_base);
+
+    let heat_dissipation_rate_base = if let Some(p) = preset {
+        p.heat_dissipation_rate
+    } else {
+        env.heat_dissipation_rate
+    };
+    let heat_dissipation_rate = overrides
+        .get("heat_dissipation_rate")
+        .copied()
+        .unwrap_or(heat_dissipation_rate_base);
+
+    let heat_warning_threshold_base = if let Some(p) = preset {
+        p.heat_warning_threshold
+    } else {
+        env.heat_warning_threshold
+    };
+    let heat_warning_threshold = overrides
+        .get("heat_warning_threshold")
+        .copied()
+        .unwrap_or(heat_warning_threshold_base);
+
+    let heat_death_threshold_base = if let Some(p) = preset {
+        p.heat_death_threshold
+    } else {
+        env.heat_death_threshold
+    };
+    let heat_death_threshold = overrides
+        .get("heat_death_threshold")
+        .copied()
+        .unwrap_or(heat_death_threshold_base);
+
+    let waste_sink_rate_base = if let Some(p) = preset {
+        p.waste_sink_rate
+    } else {
+        env.waste_sink_rate
+    };
+    let waste_sink_rate = overrides
+        .get("waste_sink_rate")
+        .copied()
+        .unwrap_or(waste_sink_rate_base);
+
+    let waste_warning_threshold_base = if let Some(p) = preset {
+        p.waste_warning_threshold
+    } else {
+        env.waste_warning_threshold
+    };
+    let waste_warning_threshold = overrides
+        .get("waste_warning_threshold")
+        .copied()
+        .unwrap_or(waste_warning_threshold_base);
+
+    let waste_death_threshold_base = if let Some(p) = preset {
+        p.waste_death_threshold
+    } else {
+        env.waste_death_threshold
+    };
+    let waste_death_threshold = overrides
+        .get("waste_death_threshold")
+        .copied()
+        .unwrap_or(waste_death_threshold_base);
+
+    let resource_density_base = if let Some(p) = preset {
+        p.initial_resources
+            .first()
+            .copied()
+            .unwrap_or(ri.default_resource_density)
+    } else {
+        ri.default_resource_density
+    };
     let resource_density = overrides
         .get("resource_density")
         .copied()
-        .unwrap_or(ri.default_resource_density);
+        .unwrap_or(resource_density_base);
+
+    let passive_income_base = if let Some(p) = preset {
+        p.passive_energy_income
+    } else {
+        cell_cfg.passive_energy_income
+    };
     let passive_income = overrides
         .get("passive_energy_income")
         .copied()
-        .unwrap_or(cell_cfg.passive_energy_income);
+        .unwrap_or(passive_income_base);
+
+    let upkeep_base = if let Some(p) = preset {
+        p.mandatory_cost_per_tick
+    } else {
+        cell_cfg.mandatory_cost_per_tick
+    };
     let upkeep = overrides
         .get("mandatory_cost_per_tick")
         .copied()
-        .unwrap_or(cell_cfg.mandatory_cost_per_tick);
+        .unwrap_or(upkeep_base);
+
+    let dormant_mod_base = if let Some(p) = preset {
+        p.dormant_mandatory_cost_modifier
+    } else {
+        lc.dormant_mandatory_cost_modifier
+    };
     let dormant_mod = overrides
         .get("dormant_mandatory_cost_modifier")
         .copied()
-        .unwrap_or(lc.dormant_mandatory_cost_modifier);
+        .unwrap_or(dormant_mod_base);
+
     let uptake = overrides
         .get("max_uptake_per_tick")
         .copied()
@@ -182,7 +359,7 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
 
     let resources = ResourceConfig::new(
         vec![ResourceAmount::new(resource_density.max(0.001)).unwrap()],
-        ri.decay_rate.clamp(0.0, 1.0),
+        decay_rate.clamp(0.0, 1.0),
     )
     .unwrap();
 
@@ -197,13 +374,13 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
     };
 
     let cell = CellInitialConfig {
-        position: Position::new(256.0, 256.0),
-        radius: Radius::new(cell_cfg.radius.max(0.1)).unwrap(),
-        initial_energy: EnergyAmount::new(cell_cfg.initial_energy).unwrap(),
-        energy_capacity: EnergyAmount::new(cell_cfg.energy_capacity).unwrap(),
+        position: Position::new(cell_x, cell_y),
+        radius: Radius::new(cell_radius.max(0.1)).unwrap(),
+        initial_energy: EnergyAmount::new(initial_energy).unwrap(),
+        energy_capacity: EnergyAmount::new(energy_capacity).unwrap(),
         mandatory_cost_per_tick: EnergyAmount::new(upkeep.max(0.0)).unwrap(),
         passive_energy_income: EnergyAmount::new(passive_income.max(0.0)).unwrap(),
-        capacity_limit: CapacityAmount::new(cell_cfg.capacity_limit.max(1.0)).unwrap(),
+        capacity_limit: CapacityAmount::new(capacity_limit.max(1.0)).unwrap(),
         initial_resource_amount: ResourceAmount::zero(),
         initial_boundary_material: MaterialAmount::new(cell_cfg.initial_boundary_material).unwrap(),
         initial_transport_material: MaterialAmount::new(cell_cfg.initial_transport_material)
@@ -222,29 +399,34 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
     let environment = EnvironmentConfig {
         heat_current: HeatAmount::zero(),
         heat_generated_per_tick: HeatAmount::zero(),
-        heat_dissipation_rate: HeatAmount::new(env.heat_dissipation_rate).unwrap(),
-        heat_warning_threshold: HeatAmount::new(env.heat_warning_threshold).unwrap(),
-        heat_death_threshold: HeatAmount::new(env.heat_death_threshold).unwrap(),
+        heat_dissipation_rate: HeatAmount::new(heat_dissipation_rate).unwrap(),
+        heat_warning_threshold: HeatAmount::new(heat_warning_threshold).unwrap(),
+        heat_death_threshold: HeatAmount::new(heat_death_threshold).unwrap(),
         waste_current: WasteAmount::zero(),
         waste_generated_per_tick: WasteAmount::zero(),
-        waste_sink_rate: WasteAmount::new(env.waste_sink_rate).unwrap(),
-        waste_warning_threshold: WasteAmount::new(env.waste_warning_threshold).unwrap(),
-        waste_death_threshold: WasteAmount::new(env.waste_death_threshold).unwrap(),
+        waste_sink_rate: WasteAmount::new(waste_sink_rate).unwrap(),
+        waste_warning_threshold: WasteAmount::new(waste_warning_threshold).unwrap(),
+        waste_death_threshold: WasteAmount::new(waste_death_threshold).unwrap(),
+    };
+
+    let dormancy_allowed = if let Some(p) = preset {
+        p.dormancy_allowed
+    } else {
+        lc.dormancy_allowed
     };
 
     let lifecycle = LifecycleConfig {
-        stress_energy_threshold: EnergyAmount::new(lc.stress_energy_threshold).unwrap(),
-        dormancy_allowed: lc.dormancy_allowed,
+        stress_energy_threshold: EnergyAmount::new(stress_energy_threshold).unwrap(),
+        dormancy_allowed,
         dormant_mandatory_cost_modifier: dormant_mod.clamp(0.0, 1.0),
-        critical_capacity_overrun: CapacityAmount::new(lc.critical_capacity_overrun.max(0.1))
-            .unwrap(),
+        critical_capacity_overrun: CapacityAmount::new(critical_capacity_overrun.max(0.1)).unwrap(),
     };
 
-    RuntimeConfig::new(
+    let mut rt = RuntimeConfig::new(
         WorldConfig {
             tick_count: Tick::from_raw(cfg.run.ticks.into()),
             seed: Seed::from_raw(cfg.run.seed),
-            size: WorldSize::new(512.0, 512.0).unwrap(),
+            size: WorldSize::new(world_w, world_h).unwrap(),
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
@@ -256,7 +438,13 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
         environment,
         lifecycle,
     )
-    .unwrap()
+    .unwrap();
+
+    rt.growth = alife::core::config::GrowthConfig::default();
+    rt.synthesis = alife::core::config::SynthesisConfig::default();
+    rt.contractility = alife::core::config::ContractilityConfig::default();
+    rt.growth_enabled = preset.map(|p| p.growth_enabled).unwrap_or(false);
+    rt
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -427,7 +615,12 @@ fn compute_stats(values: &[f32]) -> Stats {
 // Run a 1-D sweep and write results
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
+fn run_sweep(
+    cfg: &AnalyzerConfig,
+    sweep: &SweepDef,
+    preset: Option<&RawScenarioPreset>,
+    out_dir: &str,
+) {
     println!(
         "\n▶ Sweep «{}» — {} from {:.3} to {:.3} in {} steps ({} ticks each)",
         sweep.name, sweep.param, sweep.from, sweep.to, sweep.steps, cfg.run.ticks
@@ -458,7 +651,7 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
         let mut overrides = HashMap::new();
         overrides.insert(sweep.param.as_str(), val);
 
-        let rt = build_config(cfg, &overrides);
+        let rt = build_config(cfg, preset, &overrides);
         let res = run_simulation(rt, cfg.run.ticks);
         let zone = classify(&res, cfg.run.ticks);
         *zone_counts.entry(zone).or_insert(0) += 1;
@@ -541,7 +734,12 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
 // Run a 2-D matrix sweep and write results
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
+fn run_matrix(
+    cfg: &AnalyzerConfig,
+    mat: &MatrixDef,
+    preset: Option<&RawScenarioPreset>,
+    out_dir: &str,
+) {
     println!(
         "\n▶ Matrix «{}» — {} × {} ({} × {} = {} runs, {} ticks each)",
         mat.name,
@@ -585,7 +783,7 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
             overrides.insert(mat.param_x.as_str(), vx);
             overrides.insert(mat.param_y.as_str(), vy);
 
-            let rt = build_config(cfg, &overrides);
+            let rt = build_config(cfg, preset, &overrides);
             let res = run_simulation(rt, cfg.run.ticks);
             let zone = classify(&res, cfg.run.ticks);
             *zone_counts.entry(zone).or_insert(0) += 1;
@@ -747,17 +945,25 @@ fn main() {
 
     if let Some(sweeps) = &cfg.sweep {
         let out = cfg.run.output_dir.clone();
-        let sweeps_cloned: Vec<_> = sweeps.iter().collect();
-        for sweep in sweeps_cloned {
-            run_sweep(&cfg, sweep, &out);
+        for sweep in sweeps {
+            let preset = sweep.scenario.as_ref().and_then(|name| {
+                cfg.scenarios
+                    .as_ref()
+                    .and_then(|scenarios| scenarios.get(name))
+            });
+            run_sweep(&cfg, sweep, preset, &out);
         }
     }
 
     if let Some(matrices) = &cfg.matrix {
         let out = cfg.run.output_dir.clone();
-        let matrices_cloned: Vec<_> = matrices.iter().collect();
-        for mat in matrices_cloned {
-            run_matrix(&cfg, mat, &out);
+        for mat in matrices {
+            let preset = mat.scenario.as_ref().and_then(|name| {
+                cfg.scenarios
+                    .as_ref()
+                    .and_then(|scenarios| scenarios.get(name))
+            });
+            run_matrix(&cfg, mat, preset, &out);
         }
     }
 

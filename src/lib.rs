@@ -1,3 +1,5 @@
+extern crate self as alife;
+
 pub mod core;
 pub mod runner;
 
@@ -10,4 +12,8 @@ pub mod world;
 
 pub mod process {
     pub use crate::core::process::*;
+}
+
+pub mod bin {
+    pub mod sweep_analyzer;
 }
