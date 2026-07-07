@@ -41,3 +41,4 @@ tags:
 
 - [[docs/mechanics/joint-interaction|Joint Interaction]]
 - [[docs/mechanics/signal-propagation|Signal -> Propagation -> Runtime Input]]
+- [[docs/mechanics/sequential-bias|Sequential Allocation Bias]]
