@@ -459,6 +459,11 @@ impl TickExecutor {
 
             // Commit cell state changes
             let energy_after_clamped = energy_after.clamp_max(current.capacity());
+            let radius_val = self.world.cells().radius(index).raw();
+            let pressure_val = self.world.cells().contact_pressure(index);
+            let division_ready = radius_val >= config.growth.growth_target_radius.raw()
+                && pressure_val <= config.growth.max_division_pressure;
+
             {
                 let cells = self.world.cells_mut_for_commit();
                 cells.set_energy(
@@ -473,6 +478,7 @@ impl TickExecutor {
                         stalled: !mandatory_paid,
                         over_capacity,
                         inert: is_dead,
+                        division_ready,
                     },
                 );
             }
