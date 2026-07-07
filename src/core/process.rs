@@ -63,7 +63,7 @@ pub struct ActionCandidate {
     pub requested_amount: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum RejectionReason {
     MissingCapability(MaterialCapability),
     InsufficientResources,

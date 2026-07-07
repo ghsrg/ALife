@@ -39,11 +39,22 @@ pub struct MetricsSummary {
     pub process_rejections: u32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+use crate::core::process::{ProcessId, RejectionReason};
+use std::collections::HashMap;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ProcessDiagnostics {
+    pub attempts_by_process: HashMap<ProcessId, u32>,
+    pub rejections_by_process: HashMap<ProcessId, u32>,
+    pub rejections_by_reason: HashMap<RejectionReason, u32>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct RunSummary {
     pub tick: Tick,
     pub config_hash: u64,
     pub survival_result: SurvivalResult,
     pub collapse_reason: CollapseReason,
     pub metrics: MetricsSummary,
+    pub diagnostics: ProcessDiagnostics,
 }

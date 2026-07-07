@@ -19,7 +19,7 @@ struct ScenarioExpectation {
     expected_lifecycle: LifecycleState,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct ScenarioRun {
     summary: RunSummary,
     lifecycle: LifecycleState,

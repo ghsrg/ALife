@@ -173,3 +173,28 @@ fn test_feasibility_clamps_to_available_resource() {
         r => panic!("Expected Allowed, got {:?}", r),
     }
 }
+
+#[test]
+fn test_diagnostics_records_metabolism_rejection_when_metabolic_material_zero() {
+    use alife::core::{
+        process::ProcessId,
+        tick::TickExecutor,
+    };
+    let mut config = minimal_config_with_resource(5.0);
+    config.cell.initial_metabolic_material = alife::core::units::MaterialAmount::zero();
+    let mut executor = TickExecutor::new(config).unwrap();
+    let summary = executor.step().unwrap();
+
+    let rejections = summary
+        .diagnostics
+        .rejections_by_process
+        .get(&ProcessId::MetabolismEnergyConversion)
+        .copied()
+        .unwrap_or(0);
+    assert!(
+        rejections > 0,
+        "Expected metabolism rejections, got {}",
+        rejections
+    );
+}
+

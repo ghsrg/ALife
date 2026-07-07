@@ -2,9 +2,11 @@ use crate::core::cell_store::{CellIndex, EnergyBuffer, LifecycleState, RuntimeFl
 use crate::core::config::RuntimeConfig;
 use crate::core::deltas::CommitSummary;
 use crate::core::events::EventKind;
-use crate::core::process::{ActionCandidate, ProcessId};
+use crate::core::process::{ActionCandidate, FeasibilityResult, ProcessId};
 use crate::core::resources::ResourceLayerIndex;
-use crate::core::summary::{CollapseReason, MetricsSummary, RunSummary, SurvivalResult};
+use crate::core::summary::{
+    CollapseReason, MetricsSummary, ProcessDiagnostics, RunSummary, SurvivalResult,
+};
 use crate::core::units::{EnergyAmount, HeatAmount, Position, ResourceAmount, WasteAmount};
 use crate::core::world::{WorldInitError, WorldState};
 
@@ -49,6 +51,7 @@ impl TickExecutor {
         let mut metabolism_waste_total = 0.0_f32;
         let mut process_attempts = 0_u32;
         let mut process_rejections = 0_u32;
+        let mut diagnostics = ProcessDiagnostics::default();
 
         // Phase A: Uptake, Metabolism, Synthesis, Growth, and Displacement Reflex Loop
         for i in 0..len {
@@ -59,16 +62,17 @@ impl TickExecutor {
 
             // 1. Uptake
             if config.resource_interaction.enabled {
-                let candidate_uptake = ActionCandidate {
-                    process_id: ProcessId::LocalResourceUptake,
-                    requested_amount: config.resource_interaction.max_uptake_per_tick.raw(),
-                };
-                process_attempts += 1;
-                if self
-                    .world
-                    .validate_feasibility(index, &candidate_uptake)
-                    .is_feasible()
-                {
+                let max_uptake = config.resource_interaction.max_uptake_per_tick.raw();
+                let (feasible, _) = run_process(
+                    &self.world,
+                    index,
+                    ProcessId::LocalResourceUptake,
+                    max_uptake,
+                    &mut diagnostics,
+                    &mut process_attempts,
+                    &mut process_rejections,
+                );
+                if feasible {
                     let layer = ResourceLayerIndex::from_raw(
                         config.resource_interaction.uptake_layer_index,
                     );
@@ -99,8 +103,6 @@ impl TickExecutor {
                         .resources_mut_for_commit()
                         .set_amount_at(layer, coord, remaining_external)
                         .expect("resource interaction coord is derived from grid bounds");
-                } else {
-                    process_rejections += 1;
                 }
             }
 
@@ -110,19 +112,17 @@ impl TickExecutor {
             let mut metabolism_energy = EnergyAmount::zero();
 
             if config.resource_interaction.enabled {
-                let candidate_metabolism = ActionCandidate {
-                    process_id: ProcessId::MetabolismEnergyConversion,
-                    requested_amount: config
-                        .resource_interaction
-                        .metabolism_resource_per_tick
-                        .raw(),
-                };
-                process_attempts += 1;
-                if self
-                    .world
-                    .validate_feasibility(index, &candidate_metabolism)
-                    .is_feasible()
-                {
+                let req_amount = config.resource_interaction.metabolism_resource_per_tick.raw();
+                let (feasible, _) = run_process(
+                    &self.world,
+                    index,
+                    ProcessId::MetabolismEnergyConversion,
+                    req_amount,
+                    &mut diagnostics,
+                    &mut process_attempts,
+                    &mut process_rejections,
+                );
+                if feasible {
                     let consumed = {
                         let cells = self.world.cells_mut_for_commit();
                         cells.consume_resources(
@@ -139,8 +139,6 @@ impl TickExecutor {
                         consumed.raw() * config.resource_interaction.heat_per_resource;
                     metabolism_waste =
                         consumed.raw() * config.resource_interaction.waste_per_resource;
-                } else {
-                    process_rejections += 1;
                 }
             }
 
@@ -158,53 +156,51 @@ impl TickExecutor {
             }
 
             // 3. Material Synthesis
-            let candidate_synthesis = ActionCandidate {
-                process_id: ProcessId::MaterialSynthesis,
-                requested_amount: 1.0,
-            };
-            process_attempts += 1;
-            if self
-                .world
-                .validate_feasibility(index, &candidate_synthesis)
-                .is_feasible()
-            {
+            let (feasible, _) = run_process(
+                &self.world,
+                index,
+                ProcessId::MaterialSynthesis,
+                1.0,
+                &mut diagnostics,
+                &mut process_attempts,
+                &mut process_rejections,
+            );
+            if feasible {
                 let _ = self.world.execute_synthesis(index);
-            } else {
-                process_rejections += 1;
             }
 
             // 4. Structural Growth
             if config.growth_enabled && config.resource_interaction.enabled {
-                let candidate_growth = ActionCandidate {
-                    process_id: ProcessId::GrowthResourceAllocation,
-                    requested_amount: 1.0,
-                };
-                process_attempts += 1;
-                if self
-                    .world
-                    .validate_feasibility(index, &candidate_growth)
-                    .is_feasible()
-                {
+                let (feasible, _) = run_process(
+                    &self.world,
+                    index,
+                    ProcessId::GrowthResourceAllocation,
+                    1.0,
+                    &mut diagnostics,
+                    &mut process_attempts,
+                    &mut process_rejections,
+                );
+                if feasible {
+                    let candidate_growth = ActionCandidate {
+                        process_id: ProcessId::GrowthResourceAllocation,
+                        requested_amount: 1.0,
+                    };
                     let _ = self.world.execute_growth(index, &candidate_growth);
-                } else {
-                    process_rejections += 1;
                 }
             }
 
             // 5. Contractile Displacement
-            let candidate_displacement = ActionCandidate {
-                process_id: ProcessId::ContractileDisplacement,
-                requested_amount: 1.0,
-            };
-            process_attempts += 1;
-            if self
-                .world
-                .validate_feasibility(index, &candidate_displacement)
-                .is_feasible()
-            {
+            let (feasible, _) = run_process(
+                &self.world,
+                index,
+                ProcessId::ContractileDisplacement,
+                1.0,
+                &mut diagnostics,
+                &mut process_attempts,
+                &mut process_rejections,
+            );
+            if feasible {
                 let _ = self.world.execute_displacement(index);
-            } else {
-                process_rejections += 1;
             }
         }
 
@@ -566,6 +562,7 @@ impl TickExecutor {
                 process_attempts,
                 process_rejections,
             ),
+            diagnostics,
         })
     }
 
@@ -662,3 +659,41 @@ impl TickExecutor {
         }
     }
 }
+
+fn run_process(
+    world: &WorldState,
+    index: CellIndex,
+    process_id: ProcessId,
+    requested_amount: f32,
+    diagnostics: &mut ProcessDiagnostics,
+    process_attempts: &mut u32,
+    process_rejections: &mut u32,
+) -> (bool, FeasibilityResult) {
+    let candidate = ActionCandidate {
+        process_id,
+        requested_amount,
+    };
+    *process_attempts += 1;
+    *diagnostics
+        .attempts_by_process
+        .entry(process_id)
+        .or_insert(0) += 1;
+
+    let feasibility = world.validate_feasibility(index, &candidate);
+    match feasibility {
+        FeasibilityResult::Allowed { .. } => (true, feasibility),
+        FeasibilityResult::Rejected(reason) => {
+            *process_rejections += 1;
+            *diagnostics
+                .rejections_by_process
+                .entry(process_id)
+                .or_insert(0) += 1;
+            *diagnostics
+                .rejections_by_reason
+                .entry(reason)
+                .or_insert(0) += 1;
+            (false, feasibility)
+        }
+    }
+}
+
