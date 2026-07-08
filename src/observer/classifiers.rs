@@ -55,7 +55,11 @@ pub fn classify_cell_roles_potential(
     let mut evidence = Vec::new();
     let mut max_fraction = 0.0;
 
-    for (role_name, rule) in &config.rules {
+    let mut sorted_rules: Vec<(&String, &crate::observer::config::RoleRule)> =
+        config.rules.iter().collect();
+    sorted_rules.sort_by_key(|(name, _)| *name);
+
+    for (role_name, rule) in sorted_rules {
         let feature_name = format!("{}_fraction", rule.required_material);
         let fraction = window.features.get(&feature_name).copied().unwrap_or(0.0);
         let matched = fraction >= rule.min_fraction;
@@ -101,8 +105,12 @@ pub fn classify_cell_roles_observed(
     let mut evidence = Vec::new();
     let mut max_fraction = 0.0;
 
+    let mut sorted_rules: Vec<(&String, &crate::observer::config::RoleRule)> =
+        config.rules.iter().collect();
+    sorted_rules.sort_by_key(|(name, _)| *name);
+
     // For Observed role, check if related action was actually executed
-    for (role_name, rule) in &config.rules {
+    for (role_name, rule) in sorted_rules {
         let feature_name = format!("{}_fraction", rule.required_material);
         let fraction = window.features.get(&feature_name).copied().unwrap_or(0.0);
 
@@ -113,6 +121,7 @@ pub fn classify_cell_roles_observed(
             "storage_material" => "Storage_executed",
             "synthesis_material" => "MaterialSynthesis_executed",
             "structural_material" => "Growth_executed",
+            "contractile_material" => "ContractileDisplacement_executed",
             _ => "unknown_action",
         };
         let executed = window.features.get(action_feature).copied().unwrap_or(0.0);
