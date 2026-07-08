@@ -42,6 +42,168 @@ UNTESTED_REGISTERED_MECHANISM
 
 ---
 
+# 0A. Behavior Profile And Survival Style Balance
+
+Registry-driven mechanism coverage is necessary but not sufficient.
+
+Final sweep evaluation must produce balance conclusions about observer-only behavior profiles:
+
+```text
+Mechanism Coverage
+  -> Behavior Profile
+  -> Balance Finding
+```
+
+`Behavior Profile` is a derived survival-style label inferred from measured usage patterns.
+
+It is not:
+
+```text
+Canon organism type
+species
+Cell class
+Genome input
+hardcoded behavior script
+```
+
+Initial observer-only profile labels may include:
+
+```text
+storage-heavy
+fast-growth
+movement-foraging
+repair-heavy
+metabolism-efficient
+heat-tolerant
+waste-tolerant
+dormancy-survival
+balanced-generalist
+```
+
+The analyzer should derive these labels from:
+
+```text
+process_usage_profile
+material_usage_profile
+resource_usage_profile
+energy_cost_profile
+heat_waste_profile
+movement_profile
+growth_profile
+repair_profile
+survival_profile
+environment_context
+```
+
+## Equal Requirements Contract
+
+Balance comparisons are valid only when requirements are explicitly equalized.
+
+Required comparison context:
+
+```text
+same initial energy
+same initial materials/resources when relevant
+same world size and boundary mode
+same resource density or patch model
+same mandatory cost
+same tick count
+same hazard level
+same seed set or declared seed policy
+same enabled mechanism set
+same phase/runtime version
+```
+
+If requirements are not equalized, the analyzer may report observations but must not claim that a style is balanced or unbalanced.
+
+## Balance Finding Contract
+
+The analyzer should produce findings such as:
+
+```text
+Under equal requirements, storage-heavy dominates fast-growth.
+Reason: storage has similar cost but higher scarcity survival and weak growth/upkeep penalty.
+Recommendation: increase storage upkeep or add growth penalty, then rerun Storage x Growth and Storage x Upkeep.
+```
+
+Minimum fields:
+
+```text
+finding_id
+compared_profiles
+equal_requirements
+result
+evidence_metrics
+dominance_rate
+affected_scenarios
+suspected_cause
+recommendation
+recommended_reruns
+confidence
+```
+
+Allowed `result` values:
+
+```text
+balanced
+not_balanced
+inconclusive
+insufficient_coverage
+```
+
+Example report shape:
+
+```text
+Balance Finding:
+  compared_styles:
+    - storage-heavy
+    - fast-growth
+
+  equal_requirements:
+    - same initial energy
+    - same resource density
+    - same mandatory cost
+    - same tick count
+    - same hazard level
+
+  result:
+    not_balanced
+
+  evidence:
+    survival_ticks +41%
+    collapse_rate -35%
+    division_readiness -8%
+    energy_cost similar
+
+  suspected_cause:
+    storage has capacity benefit but weak upkeep/growth penalty
+
+  recommendation:
+    increase storage material upkeep
+    or add growth penalty from stored mass
+    rerun Storage x Growth and Storage x Upkeep matrices
+```
+
+Required artifacts:
+
+```text
+outputs/raw_data/behavior_profiles.csv
+outputs/reports/behavior-profiles-<timestamp>.json
+outputs/reports/behavior-profiles-<timestamp>.md
+outputs/reports/balance-findings-<timestamp>.json
+outputs/reports/balance-findings-<timestamp>.md
+```
+
+Coverage-only reports must say they are coverage-only and must not claim survival-style balance.
+
+Reference contract:
+
+```text
+[[docs/observer/behavior-profile-balance|Behavior Profile Balance]]
+```
+
+---
+
 # 0. Current Sweep Suite Stabilization
 
 Before registry-driven coverage is implemented, the existing analytical sweeps must pass their scenario and accounting contracts.
@@ -140,6 +302,9 @@ zones reached
 parameter effect
 conservation result
 warning codes
+behavior profile labels when supported
+equal requirements context when comparing profiles
+balance findings or explicit coverage-only limitation
 interpretation
 recommended correction
 ```
@@ -620,6 +785,7 @@ phase_balance_impact.md
 які старі сценарії могли змінитися
 які конфіги варто повторно прогнати
 чи виникла нова домінантна стратегія
+чи derived behavior profile домінує інший profile under equal requirements
 ```
 
 ---
@@ -907,6 +1073,9 @@ isolated mechanic sweeps remain available
 cross-mechanic matrices are supported
 full-system integration scenarios exist
 reports distinguish config imbalance from missing mechanic trade-off
+reports distinguish mechanism coverage from behavior-profile balance
+reports produce balance findings for survival styles when profile metrics exist
+reports avoid balance claims when requirements are not equalized
 reports propose candidate config changes
 reports may recommend mechanic changes when tuning is insufficient
 candidate configs are saved separately
@@ -928,6 +1097,8 @@ implement new mechanic
 → run cross-mechanic matrices
 → run full integration scenarios
 → detect imbalance
+→ derive behavior profiles
+→ compare survival styles under equal requirements
 → propose config or mechanic changes
 → rerun affected scenarios
 → preserve regression coverage

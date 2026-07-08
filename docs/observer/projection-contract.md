@@ -50,6 +50,8 @@ MetricsProjection
 OrganismViewProjection
 LineageProjection
 CoverageProjection
+BehaviorProfileProjection
+BalanceFindingProjection
 DebugTraceProjection
 ```
 
@@ -85,6 +87,23 @@ source_report
 ```
 
 It mirrors files produced by [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]].
+
+## Behavior Balance Projection
+
+Behavior balance projection exposes observer-only survival style findings:
+
+```text
+profile_labels
+compared_profiles
+equal_requirements
+result
+evidence_metrics
+dominance_rate
+recommendation
+source_report
+```
+
+It mirrors [[docs/observer/behavior-profile-balance|Behavior Profile Balance]] outputs.
 
 ## Command Boundary
 

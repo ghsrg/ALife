@@ -12,6 +12,8 @@ Mechanism Coverage is an Observer responsibility. It proves that registered mech
 
 It does not prove that a configuration is biologically interesting. It prevents silent gaps where a new mechanism exists but is never activated or measured.
 
+Mechanism coverage is the lower-level gate for [[docs/observer/behavior-profile-balance|Behavior Profile Balance]]. A mechanism can be covered while the survival style that uses it is still unbalanced.
+
 ## Source Inputs
 
 The analyzer should combine:
@@ -87,6 +89,24 @@ Level 4: integration
 Full coverage requires all relevant levels.
 
 For early phases, a mechanism can be accepted as `partially_covered` if the implementation phase only exposes reachability and the report explicitly names the missing higher levels.
+
+## Relation To Balance Findings
+
+Coverage answers:
+
+```text
+is this mechanism reachable, measurable and tested?
+```
+
+Balance findings answer:
+
+```text
+under equal requirements, are derived survival styles balanced against each other?
+```
+
+The analyzer should not hardcode organism types. It should derive behavior profiles from measured usage patterns and then compare those profiles.
+
+If a report only writes mechanism coverage, it must mark itself as coverage-only and avoid claims such as `storage-heavy dominates fast-growth`.
 
 ## Warning Codes
 
@@ -178,3 +198,4 @@ Analyzer must not overwrite accepted baseline configs.
 - current implementation docs: [[docs/implementation/mechanism-reachability|Mechanism Reachability]]
 - stability tool: [[docs/implementation/early-stability-tool|Early Stability Tool]]
 - process registry: [[docs/biology/action-process-registry|Action Process Registry]]
+- behavior balance: [[docs/observer/behavior-profile-balance|Behavior Profile Balance]]

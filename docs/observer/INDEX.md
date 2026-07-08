@@ -23,6 +23,7 @@ tags:
 - [[docs/observer/README|Observer README]] `#human-summary`
 - [[docs/observer/observer-layer|Observer Layer]] `#contract` `#authority`
 - [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]] `#coverage` `#analyzer`
+- [[docs/observer/behavior-profile-balance|Behavior Profile Balance]] `#balance` `#survival-style`
 - [[docs/observer/projection-contract|Projection Contract]] `#projection` `#ui`
 
 ## Related Canon

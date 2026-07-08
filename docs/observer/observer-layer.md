@@ -19,6 +19,7 @@ It exists because several project concepts are intentionally not Core behavior:
 - specialization labels
 - fitness-like metrics
 - mechanism coverage and balance analysis
+- behavior profile balance findings
 - UI projections
 
 These are useful for humans and agents, but cells must not read them.
@@ -96,6 +97,8 @@ OrganismView projections
 lineage and population summaries
 selection/drift interpretation reports
 mechanism coverage manifests
+behavior profile summaries
+balance findings
 balance analyzer reports
 recommended rerun lists
 candidate config recommendations
@@ -149,6 +152,41 @@ UNTESTED_REGISTERED_MECHANISM
 ```
 
 This does not stop Core execution by itself. It blocks claiming the phase is fully covered by balance analysis.
+
+## Behavior Profile Balance Requirement
+
+Mechanism coverage is not the final analytical result.
+
+For sweep evaluation, Observer should eventually produce a higher-level balance conclusion:
+
+```text
+Mechanism Coverage
+  -> Behavior Profile
+  -> Balance Finding
+```
+
+Behavior profiles are observer-only survival-style labels inferred from measured process, Material, Resource, cost and benefit patterns. They are not organism types, species, Cell classes or Genome inputs.
+
+The analyzer may report labels such as:
+
+```text
+storage-heavy
+fast-growth
+movement-foraging
+repair-heavy
+metabolism-efficient
+dormancy-survival
+balanced-generalist
+```
+
+The final balance report should be able to state:
+
+```text
+under equal requirements, profile A dominates profile B
+because evidence metrics show lower cost, higher survival or missing trade-off
+```
+
+See [[docs/observer/behavior-profile-balance|Behavior Profile Balance]] for the detailed contract.
 
 ## Minimum Mechanism Record
 
@@ -248,6 +286,7 @@ Observer documentation is sufficient when an implementation agent can answer:
 - which Core registries must be visible to coverage analysis;
 - which outputs are observer-only;
 - which warnings indicate missing analyzer coverage;
+- how coverage, behavior profiles and balance findings differ;
 - where coverage artifacts are written;
 - why UI, analytics and recommendations cannot affect behavior;
 - how to extend coverage when a new phase adds mechanics.
