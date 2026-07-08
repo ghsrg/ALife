@@ -1,4 +1,4 @@
-use crate::observer::config::CellRoleClassifierConfig;
+use crate::observer::config::{CellRoleClassifierConfig, OrganismArchetypeClassifierConfig};
 use crate::observer::projection::ObservationWindow;
 use serde::Serialize;
 
@@ -210,6 +210,64 @@ pub fn classify_behavior_profiles(
 
     ClassificationResult {
         dimension_id: "behavior-profile".to_string(),
+        entity_id: window.entity_id.clone(),
+        mode: ClassificationMode::Observed,
+        primary_label,
+        secondary_labels: vec![],
+        status: if is_classified {
+            ClassificationStatus::Classified
+        } else {
+            ClassificationStatus::Unknown
+        },
+        confidence: if is_classified { 0.9 } else { 0.0 },
+        tick_start: window.tick_start,
+        tick_end: window.tick_end,
+        classifier_version: config.version.clone(),
+        evidence,
+        data_completeness: window.data_completeness,
+    }
+}
+
+pub fn classify_organism_archetypes(
+    window: &ObservationWindow,
+    config: &OrganismArchetypeClassifierConfig,
+) -> ClassificationResult {
+    let mut evidence = Vec::new();
+    let mut matched_archetypes = Vec::new();
+
+    // Sort archetypes alphabetically to ensure deterministic tie-breaking
+    let mut sorted_archetypes: Vec<(&String, &crate::observer::config::ArchetypeRule)> =
+        config.archetypes.iter().collect();
+    sorted_archetypes.sort_by_key(|(name, _)| *name);
+
+    for (archetype_name, rule) in sorted_archetypes {
+        let mut archetype_matched = true;
+        for clause in &rule.clauses {
+            let actual_value = window.features.get(&clause.feature).copied().unwrap_or(0.0);
+            let matched = evaluate_clause(clause, actual_value);
+
+            evidence.push(EvidenceRecord {
+                feature: clause.feature.clone(),
+                expected: format!("{} {}", clause.operator, clause.value),
+                actual: actual_value,
+                matched,
+            });
+
+            if !matched {
+                archetype_matched = false;
+            }
+        }
+
+        if archetype_matched {
+            matched_archetypes.push(archetype_name.clone());
+        }
+    }
+
+    let primary_label = matched_archetypes.first().cloned();
+    let is_classified = primary_label.is_some();
+
+    ClassificationResult {
+        dimension_id: "organism-archetype".to_string(),
         entity_id: window.entity_id.clone(),
         mode: ClassificationMode::Observed,
         primary_label,
