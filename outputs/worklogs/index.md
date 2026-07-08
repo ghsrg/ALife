@@ -54,6 +54,7 @@ tags:
 - [[outputs/worklogs/2026-07-07-2313-PLAN-phase-2D-division-death-decomposition|2026-07-07-2313-PLAN-phase-2D-division-death-decomposition]]
 - [[outputs/worklogs/2026-07-08-1440-PLAN-observer-mechanism-coverage-contract|2026-07-08-1440-PLAN-observer-mechanism-coverage-contract]]
 - [[outputs/worklogs/2026-07-08-2225-PLAN-observer-config-review|2026-07-08-2225-PLAN-observer-config-review]]
+- [[outputs/worklogs/2026-07-09-0026-PLAN-sweep-observer-review|2026-07-09-0026-PLAN-sweep-observer-review]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
@@ -141,4 +142,7 @@ tags:
 - [[outputs/worklogs/2026-07-08-1844-REPORT-observer-classification-indexing|2026-07-08-1844-REPORT-observer-classification-indexing]]
 - [[outputs/worklogs/2026-07-08-2215-REPORT-observer-config-parsers|2026-07-08-2215-REPORT-observer-config-parsers]]
 - [[outputs/worklogs/2026-07-08-2345-REPORT-equal-requirements-evaluator-balance-findings|2026-07-08-2345-REPORT-equal-requirements-evaluator-balance-findings]]
+- [[outputs/worklogs/2026-07-08-2359-REPORT-sweep-analyzer-observer|2026-07-08-2359-REPORT-sweep-analyzer-observer]]
+- [[outputs/worklogs/2026-07-09-0028-REPORT-sweep-observer-review|2026-07-09-0028-REPORT-sweep-observer-review]]
+- [[outputs/worklogs/2026-07-09-0056-REPORT-config-restructure|2026-07-09-0056-REPORT-config-restructure]]
 
