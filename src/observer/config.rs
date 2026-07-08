@@ -81,16 +81,20 @@ fn map_field_to_clause(key: &str, value: &toml::Value) -> Option<RuleClause> {
     let val_f32 = match value {
         toml::Value::Integer(i) => *i as f32,
         toml::Value::Float(f) => *f as f32,
-        toml::Value::Boolean(b) => if *b { 1.0 } else { 0.0 },
+        toml::Value::Boolean(b) => {
+            if *b {
+                1.0
+            } else {
+                0.0
+            }
+        }
         _ => return None,
     };
 
-    let (operator, raw_feature) = if key.starts_with("min_") {
-        (">=", &key[4..])
-    } else if key.starts_with("max_") {
-        ("<=", &key[4..])
-    } else if key.starts_with("requires_") {
-        ("==", key)
+    let (operator, raw_feature) = if let Some(pref) = key.strip_prefix("min_") {
+        (">=", pref)
+    } else if let Some(pref) = key.strip_prefix("max_") {
+        ("<=", pref)
     } else {
         ("==", key)
     };
@@ -119,51 +123,37 @@ fn feature_priority(feature: &str) -> i32 {
     }
 }
 
-pub fn load_classification_registry<P: AsRef<Path>>(path: P) -> Result<ClassificationRegistry, Box<dyn std::error::Error>> {
+pub fn load_classification_registry<P: AsRef<Path>>(
+    path: P,
+) -> Result<ClassificationRegistry, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(path)?;
     let parsed: ClassificationRegistry = toml::from_str(&content)?;
     Ok(parsed)
 }
 
-pub fn load_cell_role_classifier<P: AsRef<Path>>(path: P) -> Result<CellRoleClassifierConfig, Box<dyn std::error::Error>> {
+pub fn load_cell_role_classifier<P: AsRef<Path>>(
+    path: P,
+) -> Result<CellRoleClassifierConfig, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(path)?;
     let raw: CellRoleClassifierConfig = toml::from_str(&content)?;
-    
-    let mut normalized_rules = HashMap::new();
-    for (k, v) in raw.rules {
-        let normalized_key = if k.ends_with("-like") {
-            k
-        } else {
-            format!("{}-like", k)
-        };
-        normalized_rules.insert(normalized_key, v);
-    }
-    
-    Ok(CellRoleClassifierConfig {
-        version: raw.version,
-        rules: normalized_rules,
-    })
+    Ok(raw)
 }
 
-pub fn load_behavior_profile_classifier<P: AsRef<Path>>(path: P) -> Result<BehaviorClassifierConfig, Box<dyn std::error::Error>> {
+pub fn load_behavior_profile_classifier<P: AsRef<Path>>(
+    path: P,
+) -> Result<BehaviorClassifierConfig, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(path)?;
     let raw: RawBehaviorConfig = toml::from_str(&content)?;
-    
-    let mut normalized_profiles = HashMap::new();
+
+    let mut profiles = HashMap::new();
     for (k, v) in raw.profiles {
-        let normalized_key = if k.ends_with("-like") {
-            k
-        } else {
-            format!("{}-like", k)
-        };
-        
         let mut clauses = Vec::new();
         for (field_name, field_val) in v {
             if let Some(clause) = map_field_to_clause(&field_name, &field_val) {
                 clauses.push(clause);
             }
         }
-        
+
         // Sort clauses using priority
         clauses.sort_by(|a, b| {
             let p_a = feature_priority(&a.feature);
@@ -174,43 +164,39 @@ pub fn load_behavior_profile_classifier<P: AsRef<Path>>(path: P) -> Result<Behav
                 a.feature.cmp(&b.feature)
             }
         });
-        
-        normalized_profiles.insert(normalized_key, ProfileRule { clauses });
+
+        profiles.insert(k, ProfileRule { clauses });
     }
-    
+
     Ok(BehaviorClassifierConfig {
         version: raw.version,
-        profiles: normalized_profiles,
+        profiles,
     })
 }
 
-pub fn load_organism_archetype_classifier<P: AsRef<Path>>(path: P) -> Result<OrganismArchetypeClassifierConfig, Box<dyn std::error::Error>> {
+pub fn load_organism_archetype_classifier<P: AsRef<Path>>(
+    path: P,
+) -> Result<OrganismArchetypeClassifierConfig, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(path)?;
     let raw: RawArchetypeConfig = toml::from_str(&content)?;
-    
-    let mut normalized_archetypes = HashMap::new();
+
+    let mut archetypes = HashMap::new();
     for (k, v) in raw.archetypes {
-        let normalized_key = if k.ends_with("-like") {
-            k
-        } else {
-            format!("{}-like", k)
-        };
-        
         let mut clauses = Vec::new();
         for (field_name, field_val) in v {
             if let Some(clause) = map_field_to_clause(&field_name, &field_val) {
                 clauses.push(clause);
             }
         }
-        
+
         // Sort clauses alphabetically by feature name
         clauses.sort_by(|a, b| a.feature.cmp(&b.feature));
-        
-        normalized_archetypes.insert(normalized_key, ArchetypeRule { clauses });
+
+        archetypes.insert(k, ArchetypeRule { clauses });
     }
-    
+
     Ok(OrganismArchetypeClassifierConfig {
         version: raw.version,
-        archetypes: normalized_archetypes,
+        archetypes,
     })
 }
