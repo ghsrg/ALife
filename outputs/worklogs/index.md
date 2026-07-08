@@ -53,6 +53,7 @@ tags:
 - [[outputs/worklogs/2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit|2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit]]
 - [[outputs/worklogs/2026-07-07-2313-PLAN-phase-2D-division-death-decomposition|2026-07-07-2313-PLAN-phase-2D-division-death-decomposition]]
 - [[outputs/worklogs/2026-07-08-1440-PLAN-observer-mechanism-coverage-contract|2026-07-08-1440-PLAN-observer-mechanism-coverage-contract]]
+- [[outputs/worklogs/2026-07-08-2225-PLAN-observer-config-review|2026-07-08-2225-PLAN-observer-config-review]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
