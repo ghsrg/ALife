@@ -31,6 +31,7 @@ Mechanics cards are routing checklists, not sources of truth.
 - [[docs/biology/INDEX|Biology Index]] `#cell` `#processes` `#lifecycle`
 - [[docs/genetics/INDEX|Genetics Index]] `#genome` `#inheritance` `#mutation`
 - [[docs/evolution/INDEX|Evolution Index]] `#observer` `#population` `#selection`
+- [[docs/observer/INDEX|Observer Index]] `#observer` `#projection` `#coverage`
 - [[docs/config/INDEX|Config Index]] `#config` `#bounds`
 - [[docs/engine/INDEX|Engine Index]] `#runtime` `#performance` `#storage`
 - [[docs/ui/INDEX|UI Index]] `#viewer` `#control-center`
@@ -46,4 +47,5 @@ Mechanics cards are routing checklists, not sources of truth.
 - Planning phase work -> [[docs/ROADMAP]] + [[docs/implementation/INDEX]] + relevant mechanics cards.
 - Working with configs -> [[docs/config/INDEX]] + [[docs/mechanics/config-to-runtime|Config -> Runtime]].
 - Working with viewer/UI -> [[docs/ui/INDEX]] + [[docs/implementation/implementation-plan-ui|UI Implementation Plan]].
+- Working with observer/projections/coverage -> [[docs/observer/INDEX]] + [[docs/mechanics/observer-projection|Observer Projection]].
 - Looking for saved plans/reports -> [[outputs/worklogs/index|Worklogs Index]].

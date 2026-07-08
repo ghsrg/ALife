@@ -27,5 +27,7 @@ tags:
 
 - [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
 - [[docs/implementation/ui-technology-stack|UI Technology Stack]]
+- [[docs/observer/projection-contract|Observer Projection Contract]]
+- [[docs/observer/observer-layer|Observer Layer]]
 - [[docs/engine/rendering|Engine Rendering]]
 - [[docs/mechanics/observer-projection|Committed State -> Observer Projection]]

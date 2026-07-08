@@ -381,3 +381,74 @@ def evaluate_mechanisms(
         results.append(result)
 
     return results
+
+
+COVERAGE_STATUSES = {
+    "covered",
+    "partially_covered",
+    "registered_but_disabled",
+    "not_activated",
+    "missing_scenario",
+    "missing_metrics",
+    "missing_balance_test",
+}
+
+
+def _first_or_empty(values: list[str]) -> str:
+    return values[0] if values else ""
+
+
+def build_coverage_records(mechanisms: list[dict]) -> list[dict]:
+    records = []
+    for mechanism in mechanisms:
+        enabled = mechanism["status"] == "now"
+        scenario = _first_or_empty(mechanism.get("required_scenarios", []))
+        status = "missing_metrics" if enabled and scenario else "registered_but_disabled"
+        warnings = ["METRIC_MISSING"] if status == "missing_metrics" else []
+        records.append(
+            {
+                "mechanism_id": mechanism["mechanism_id"],
+                "category": mechanism.get("category", "uncategorized"),
+                "introduced_in_phase": mechanism.get("introduced_in_phase", "unknown"),
+                "registered": True,
+                "enabled": enabled,
+                "activation_scenario": scenario,
+                "isolated_test": mechanism.get("isolated_test", ""),
+                "integration_test": mechanism.get("integration_test", ""),
+                "raw_metrics": mechanism.get("raw_metrics", ""),
+                "cost_metrics": mechanism.get("cost_metrics", ""),
+                "benefit_metrics": mechanism.get("benefit_metrics", ""),
+                "balance_sweep": mechanism.get("balance_sweep", ""),
+                "status": status,
+                "warning_codes": warnings,
+            }
+        )
+    return records
+
+
+def evaluate_coverage_records(records: list[dict], reachability_results: list[dict]) -> list[dict]:
+    by_id = {item["mechanism_id"]: item for item in reachability_results}
+    evaluated = []
+    for record in records:
+        updated = {**record}
+        result = by_id.get(record["mechanism_id"])
+        if not record["enabled"]:
+            updated["status"] = "registered_but_disabled"
+            updated["warning_codes"] = []
+        elif result is None:
+            updated["status"] = "not_activated"
+            updated["warning_codes"] = ["UNTESTED_REGISTERED_MECHANISM"]
+        elif result["reachability_result"] == "pass" and result.get("effect_nonzero_count", 0) > 0:
+            has_balance = bool(updated["balance_sweep"])
+            updated["status"] = "covered" if has_balance else "partially_covered"
+            updated["warning_codes"] = [] if has_balance else ["MECHANIC_TRADEOFF_MISSING"]
+        elif result["reachability_result"] in {"blocked", "fail"}:
+            updated["status"] = "not_activated"
+            updated["warning_codes"] = ["SCENARIO_MECHANISM_NOT_ACTIVATED"]
+        else:
+            updated["status"] = "partially_covered"
+            updated["warning_codes"] = ["METRIC_MISSING"]
+        evaluated.append(updated)
+    return evaluated
+
+

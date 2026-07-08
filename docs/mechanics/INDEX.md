@@ -16,6 +16,7 @@ tags:
 - [[docs/mechanics/config-to-runtime|Config -> Runtime]]
 - [[docs/mechanics/snapshot-replay|Snapshot -> Replay]]
 - [[docs/mechanics/observer-projection|Committed State -> Observer Projection]]
+- [[docs/observer/INDEX|Observer Index]]
 
 ## Space, Matter And Energy
 

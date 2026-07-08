@@ -115,3 +115,100 @@ def write_reachability_outputs(
 
     with open(os.path.join(output_dir, "REPORT.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
+
+
+import csv
+from pathlib import Path
+
+
+def write_mechanism_coverage_outputs(root_dir: str, timestamp: str, coverage: list[dict]) -> None:
+    root = Path(root_dir)
+    raw_dir = root / "raw_data"
+    reports_dir = root / "reports"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    fields = [
+        "mechanism_id",
+        "category",
+        "introduced_in_phase",
+        "registered",
+        "enabled",
+        "activation_scenario",
+        "isolated_test",
+        "integration_test",
+        "raw_metrics",
+        "cost_metrics",
+        "benefit_metrics",
+        "balance_sweep",
+        "status",
+        "warning_codes",
+    ]
+
+    csv_path = raw_dir / "mechanism_coverage.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        for row in coverage:
+            serializable = {**row, "warning_codes": ",".join(row.get("warning_codes", []))}
+            writer.writerow(serializable)
+
+    json_path = reports_dir / f"mechanism-coverage-{timestamp}.json"
+    write_json(str(json_path), coverage)
+
+    lines = [
+        f"# Mechanism Coverage Report: {timestamp}",
+        "",
+        "| Mechanism | Status | Warnings |",
+        "| --- | --- | --- |",
+    ]
+    for row in coverage:
+        warnings = ", ".join(row.get("warning_codes", [])) or "none"
+        lines.append(f"| {row['mechanism_id']} | {row['status']} | {warnings} |")
+
+    md_path = reports_dir / f"mechanism-coverage-{timestamp}.md"
+    md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    phase_mechanism_delta = raw_dir / "phase_mechanism_delta.csv"
+    with phase_mechanism_delta.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["introduced_in_phase", "mechanism_id", "category", "status"])
+        writer.writeheader()
+        for row in coverage:
+            writer.writerow(
+                {
+                    "introduced_in_phase": row["introduced_in_phase"],
+                    "mechanism_id": row["mechanism_id"],
+                    "category": row["category"],
+                    "status": row["status"],
+                }
+            )
+
+    phase_test_coverage_delta = raw_dir / "phase_test_coverage_delta.csv"
+    with phase_test_coverage_delta.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["mechanism_id", "isolated_test", "integration_test", "balance_sweep"])
+        writer.writeheader()
+        for row in coverage:
+            writer.writerow(
+                {
+                    "mechanism_id": row["mechanism_id"],
+                    "isolated_test": row["isolated_test"],
+                    "integration_test": row["integration_test"],
+                    "balance_sweep": row["balance_sweep"],
+                }
+            )
+
+    impact_lines = ["# Phase Balance Impact", ""]
+    for row in coverage:
+        impact_lines.append(f"- {row['mechanism_id']}: {row['status']}")
+    (reports_dir / "phase_balance_impact.md").write_text("\n".join(impact_lines) + "\n", encoding="utf-8")
+
+    rerun_lines = [f"# Recommended Reruns: {timestamp}", ""]
+    for row in coverage:
+        if row["status"] != "covered":
+            rerun_lines.append(f"- {row['mechanism_id']}: add activation scenario and rerun related sweeps.")
+    (reports_dir / f"recommended-reruns-{timestamp}.md").write_text(
+        "\n".join(rerun_lines) + "\n",
+        encoding="utf-8",
+    )
+
+

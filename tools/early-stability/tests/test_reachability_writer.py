@@ -1,6 +1,10 @@
 import json
 
-from reachability_writer import summarize_reachability, write_reachability_outputs
+from reachability_writer import (
+    summarize_reachability,
+    write_reachability_outputs,
+    write_mechanism_coverage_outputs,
+)
 
 
 def sample_results():
@@ -89,3 +93,65 @@ def test_report_points_back_to_parameter_tuning_when_bypass_exists(tmp_path):
     report = (tmp_path / "REPORT.md").read_text(encoding="utf-8")
     assert "Return to parameter tuning" in report
     assert "competing_path_cheaper" in report
+
+
+def test_write_mechanism_coverage_outputs_writes_csv_json_and_markdown(tmp_path):
+    coverage = [
+        {
+            "mechanism_id": "mandatory_energy_cost",
+            "category": "lifecycle",
+            "introduced_in_phase": "phase1",
+            "registered": True,
+            "enabled": True,
+            "activation_scenario": "single_cell_survival",
+            "isolated_test": "tests/test.py::test_cost",
+            "integration_test": "",
+            "raw_metrics": "energy_delta",
+            "cost_metrics": "energy_spent",
+            "benefit_metrics": "",
+            "balance_sweep": "",
+            "status": "partially_covered",
+            "warning_codes": ["MECHANIC_TRADEOFF_MISSING"],
+        }
+    ]
+
+    write_mechanism_coverage_outputs(str(tmp_path), "2026-07-08-1440", coverage)
+
+    assert (tmp_path / "raw_data" / "mechanism_coverage.csv").exists()
+    assert (tmp_path / "reports" / "mechanism-coverage-2026-07-08-1440.json").exists()
+    report = tmp_path / "reports" / "mechanism-coverage-2026-07-08-1440.md"
+    assert report.exists()
+    assert "mandatory_energy_cost" in report.read_text(encoding="utf-8")
+    assert "MECHANIC_TRADEOFF_MISSING" in report.read_text(encoding="utf-8")
+
+
+def test_write_mechanism_coverage_outputs_writes_phase_delta_and_reruns(tmp_path):
+    coverage = [
+        {
+            "mechanism_id": "storage_material",
+            "category": "material",
+            "introduced_in_phase": "phase2",
+            "registered": True,
+            "enabled": True,
+            "activation_scenario": "",
+            "isolated_test": "",
+            "integration_test": "",
+            "raw_metrics": "",
+            "cost_metrics": "",
+            "benefit_metrics": "",
+            "balance_sweep": "",
+            "status": "not_activated",
+            "warning_codes": ["UNTESTED_REGISTERED_MECHANISM"],
+        }
+    ]
+
+    write_mechanism_coverage_outputs(str(tmp_path), "2026-07-08-1440", coverage)
+
+    assert (tmp_path / "raw_data" / "phase_mechanism_delta.csv").exists()
+    assert (tmp_path / "raw_data" / "phase_test_coverage_delta.csv").exists()
+    assert (tmp_path / "reports" / "phase_balance_impact.md").exists()
+    reruns = tmp_path / "reports" / "recommended-reruns-2026-07-08-1440.md"
+    assert reruns.exists()
+    assert "storage_material" in reruns.read_text(encoding="utf-8")
+
+

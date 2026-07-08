@@ -27,3 +27,25 @@ def test_cli_reachability_writes_artifacts(tmp_path):
     results = json.loads((out_dir / "results.json").read_text(encoding="utf-8"))
     assert results["stability_ranges_ref"] == "outputs/stability/test"
     assert results["mechanism_count"] == 1
+
+
+def test_reachability_cli_writes_mechanism_coverage_outputs(tmp_path):
+    scenario = tmp_path / "scenario.toml"
+    scenario.write_text(VALID_SCENARIO_TOML, encoding="utf-8")
+    registry = tmp_path / "mechanisms.toml"
+    registry.write_text(VALID_REGISTRY, encoding="utf-8")
+    out_dir = tmp_path / "reachability"
+
+    main([
+        "reachability",
+        "--scenario", str(scenario),
+        "--mechanisms", str(registry),
+        "--stability-ranges-ref", "outputs/stability/test",
+        "--out", str(out_dir),
+        "--coverage",
+        "--timestamp", "2026-07-08-1440",
+    ])
+
+    assert (out_dir / "raw_data" / "mechanism_coverage.csv").exists()
+    assert (out_dir / "reports" / "mechanism-coverage-2026-07-08-1440.json").exists()
+

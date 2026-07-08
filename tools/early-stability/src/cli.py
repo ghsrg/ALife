@@ -11,8 +11,14 @@ from micro_simulator import run_micro_simulation
 from tuner import run_tuning
 from result_writer import write_results_json, write_ranges_json, write_run_detail_json
 from report_writer import write_report_markdown, write_recommended_toml
-from reachability import load_mechanism_registry, evaluate_mechanisms, ReachabilityValidationError
-from reachability_writer import write_reachability_outputs
+from reachability import (
+    load_mechanism_registry,
+    evaluate_mechanisms,
+    ReachabilityValidationError,
+    build_coverage_records,
+    evaluate_coverage_records,
+)
+from reachability_writer import write_reachability_outputs, write_mechanism_coverage_outputs
 
 RESULT_RANK = {
     "stable": 0,
@@ -250,6 +256,8 @@ def run_reachability_mode(
     mechanisms_path: str,
     stability_ranges_ref: str,
     out_dir: str,
+    coverage: bool = False,
+    timestamp: str = None,
 ):
     try:
         with open(scenario_path, "r", encoding="utf-8") as f:
@@ -284,6 +292,13 @@ def run_reachability_mode(
         stability_ranges_ref,
         mechanism_results,
     )
+
+    if coverage:
+        ts = timestamp or config.get("scenario_id", "reachability")
+        records = build_coverage_records(mechanisms)
+        coverage_data = evaluate_coverage_records(records, mechanism_results)
+        write_mechanism_coverage_outputs(out_dir, ts, coverage_data)
+
 
 def run_batch_mode(scenarios_dir: str, out_dir: str, with_simulation: bool = False):
     if not os.path.isdir(scenarios_dir):
@@ -399,6 +414,8 @@ def main(argv=None):
     reach_parser.add_argument("--mechanisms", required=True)
     reach_parser.add_argument("--stability-ranges-ref", required=True)
     reach_parser.add_argument("--out", required=True)
+    reach_parser.add_argument("--coverage", action="store_true")
+    reach_parser.add_argument("--timestamp", default=None)
 
     args = parser.parse_args(argv)
 
@@ -416,7 +433,10 @@ def main(argv=None):
             args.mechanisms,
             args.stability_ranges_ref,
             args.out,
+            args.coverage,
+            args.timestamp,
         )
+
 
 if __name__ == "__main__":
     main()

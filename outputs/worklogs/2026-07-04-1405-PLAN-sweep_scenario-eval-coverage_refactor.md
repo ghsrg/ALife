@@ -42,6 +42,122 @@ UNTESTED_REGISTERED_MECHANISM
 
 ---
 
+# 0. Current Sweep Suite Stabilization
+
+Before registry-driven coverage is implemented, the existing analytical sweeps must pass their scenario and accounting contracts.
+
+## Required Scenario Mapping
+
+```text
+viability_threshold
+  -> finite_resource_viability
+
+passive_income_equilibrium
+  -> passive_income_survival
+
+upkeep_sensitivity
+  -> steady_resource_flow
+
+dormant_modifier
+  -> dormancy_survival
+
+transport_metabolism
+  -> resource_abundance
+```
+
+Analytical sweeps without an explicit scenario must fail configuration validation.
+
+`scenario = none` is allowed only for explicitly marked `smoke_regression` runs.
+
+## Current Scenario Contracts
+
+### Viability Threshold
+
+```text
+finite initial Resource
+no regeneration
+survival_ticks must respond to resource_density
+all points may end in collapse
+single-zone result is not automatically low-information
+```
+
+### Passive Income Equilibrium
+
+```text
+low initial Energy
+little or no Resource
+passive income is the main Energy source
+must expose collapse, dormancy survival or active survival thresholds
+```
+
+### Upkeep Sensitivity
+
+```text
+steady weak Resource flow
+must reach at least two meaningful regimes
+preferred: stable, fragile/dormancy survival and collapse
+```
+
+### Dormant Modifier
+
+```text
+dormant_ticks > 0
+dormant_fraction or survival_ticks must respond to the parameter
+otherwise:
+  SCENARIO_MECHANISM_NOT_ACTIVATED
+  PARAMETER_HAS_NO_EFFECT
+```
+
+### Transport × Metabolism
+
+```text
+Resource exhaustion must not dominate all combinations
+matrix must expose at least two throughput regimes
+all-collapse result requires environment-dominance validation
+```
+
+## Conservation Gate
+
+Before balance interpretation:
+
+```text
+Resource accounting has no unexplained mismatch
+Energy accounting has no unexplained mismatch
+all explicit sinks and losses are classified
+configured tolerance is used only for numeric error
+```
+
+Do not increase tolerance to hide unaccounted state changes.
+
+## Reporting Gate
+
+The report must include:
+
+```text
+scenario mapping
+mechanism activation status
+zones reached
+parameter effect
+conservation result
+warning codes
+interpretation
+recommended correction
+```
+
+## Stabilization Acceptance
+
+```text
+all analytical runs have explicit scenario_id
+no unexplained conservation mismatch
+dormant modifier activates dormancy
+viability is evaluated by survival response, not zone count alone
+upkeep produces multiple meaningful regimes
+transport × metabolism is not dominated by finite Resource exhaustion
+three-seed sensitivity run completes
+```
+
+---
+
 # 1. Registry-Driven Coverage
 
 Analyzer повинен отримувати або формувати перелік із реєстрів core:

@@ -52,6 +52,7 @@ tags:
 - [[outputs/worklogs/2026-07-04-1405-PLAN-sweep_scenario-eval-coverage_refactor|2026-07-04-1405-PLAN-sweep_scenario-eval-coverage_refactor]]
 - [[outputs/worklogs/2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit|2026-07-07-2128-PLAN-ui-docs-tdd-readiness-audit]]
 - [[outputs/worklogs/2026-07-07-2313-PLAN-phase-2D-division-death-decomposition|2026-07-07-2313-PLAN-phase-2D-division-death-decomposition]]
+- [[outputs/worklogs/2026-07-08-1440-PLAN-observer-mechanism-coverage-contract|2026-07-08-1440-PLAN-observer-mechanism-coverage-contract]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
@@ -134,3 +135,4 @@ tags:
 - [[outputs/worklogs/2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links|2026-07-06-1443-REPORT-hierarchical-doc-indexes-and-mechanics-links]]
 - [[outputs/worklogs/2026-07-06-1548-REPORT-agents-md-trim|2026-07-06-1548-REPORT-agents-md-trim]]
 - [[outputs/worklogs/2026-07-07-2149-REPORT-ui-docs-pre-tdd-cleanup|2026-07-07-2149-REPORT-ui-docs-pre-tdd-cleanup]]
+- [[outputs/worklogs/2026-07-08-1440-REPORT-observer-docs-and-coverage-plan|2026-07-08-1440-REPORT-observer-docs-and-coverage-plan]]

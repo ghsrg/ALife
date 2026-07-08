@@ -22,6 +22,7 @@ Mechanics cards are routing checklists, not sources of truth.
 ## Architecture And Phases
 
 - [[docs/implementation/architecture|Architecture]] `#architecture`
+- [[docs/observer/observer-layer|Observer Layer]] `#observer` `#projection`
 - [[docs/implementation/implementation-phases|Implementation Phases]] `#phases`
 - [[docs/implementation/phase-1-design|Phase 1 Design]] `#phase1`
 - [[docs/implementation/phase-1-data-model|Phase 1 Data Model]] `#data-model`
@@ -33,6 +34,7 @@ Mechanics cards are routing checklists, not sources of truth.
 - [[docs/implementation/early-stability-tool|Early Stability Tool]] `#stability`
 - [[docs/implementation/early-stability-parameter-tuning|Early Stability Parameter Tuning]] `#tuning`
 - [[docs/implementation/mechanism-reachability|Mechanism Reachability]] `#reachability`
+- [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]] `#coverage`
 
 ## UI Implementation
 

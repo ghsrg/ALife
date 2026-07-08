@@ -6,6 +6,8 @@ from reachability import (
     ReachabilityValidationError,
     evaluate_mechanisms,
     load_mechanism_registry,
+    build_coverage_records,
+    evaluate_coverage_records,
 )
 
 
@@ -214,3 +216,55 @@ def test_evaluate_candidate_config_validation_passes_for_valid_config():
 
     assert results[0]["reachability_result"] == "pass"
     assert results[0]["effect_nonzero_count"] == 1
+
+
+def test_build_coverage_records_normalizes_registry_defaults():
+    mechanisms = load_mechanism_registry(VALID_REGISTRY)
+
+    records = build_coverage_records(mechanisms)
+
+    assert records == [
+        {
+            "mechanism_id": "mandatory_energy_cost",
+            "category": "uncategorized",
+            "introduced_in_phase": "unknown",
+            "registered": True,
+            "enabled": True,
+            "activation_scenario": "single_cell_survival",
+            "isolated_test": "",
+            "integration_test": "",
+            "raw_metrics": "",
+            "cost_metrics": "",
+            "benefit_metrics": "",
+            "balance_sweep": "",
+            "status": "missing_metrics",
+            "warning_codes": ["METRIC_MISSING"],
+        }
+    ]
+
+
+def test_evaluate_coverage_marks_passed_mechanism_as_partially_covered_without_balance():
+    records = build_coverage_records(load_mechanism_registry(VALID_REGISTRY))
+    reachability_results = [
+        {
+            "mechanism_id": "mandatory_energy_cost",
+            "reachability_result": "pass",
+            "executed_count": 3,
+            "effect_nonzero_count": 3,
+        }
+    ]
+
+    coverage = evaluate_coverage_records(records, reachability_results)
+
+    assert coverage[0]["status"] == "partially_covered"
+    assert coverage[0]["warning_codes"] == ["MECHANIC_TRADEOFF_MISSING"]
+
+
+def test_evaluate_coverage_flags_registered_mechanism_without_reachability_result():
+    records = build_coverage_records(load_mechanism_registry(VALID_REGISTRY))
+
+    coverage = evaluate_coverage_records(records, [])
+
+    assert coverage[0]["status"] == "not_activated"
+    assert coverage[0]["warning_codes"] == ["UNTESTED_REGISTERED_MECHANISM"]
+

@@ -33,8 +33,9 @@ tags:
 6. [[docs/biology/processes|Processes]] і [[docs/biology/feasibility|Feasibility]] — як клітина може діяти.
 7. [[docs/genetics/genome-representation|Genome Representation]] і [[docs/genetics/genome-runtime|Genome Runtime]] — як геном регулює поведінку.
 8. [[docs/evolution/population-dynamics|Population Dynamics]] — як аналізуються популяції.
-9. [[docs/engine/technology-stack|Technology Stack]] — прийнятий стек.
-10. [[docs/implementation/implementation-phases|Implementation Phases]] — порядок розробки.
+9. [[docs/observer/observer-layer|Observer Layer]] — read-only шар для projection, analytics і coverage.
+10. [[docs/engine/technology-stack|Technology Stack]] — прийнятий стек.
+11. [[docs/implementation/implementation-phases|Implementation Phases]] — порядок розробки.
 
 ## Якщо шукаєте конкретну тему
 
@@ -170,6 +171,18 @@ Observer-side еволюційна аналітика: adaptation, population dy
 - [[docs/evolution/selection|Selection]]
 - [[docs/evolution/species-like-clusters|Species-like Clusters]]
 
+## `observer/`
+
+Agent index: [[docs/observer/INDEX|Observer Index]].
+
+Read-only шар для projection, analytics, OrganismView, lineage summaries, mechanism coverage і balance/reachability reports.
+
+Ключові входи:
+
+- [[docs/observer/observer-layer|Observer Layer]]
+- [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]]
+- [[docs/observer/projection-contract|Projection Contract]]
+
 ## `config/`
 
 Agent index: [[docs/config/INDEX|Config Index]].
@@ -267,5 +280,6 @@ Agent index: [[docs/examples/INDEX|Examples Index]].
 - tracks status in: [[docs/ROADMAP|Roadmap]]
 - implements through: [[docs/implementation/README|Implementation]]
 - includes UI canon: [[docs/ui/README|UI Layer]]
+- includes observer layer: [[docs/observer/README|Observer]]
 - records decisions in: [[docs/decisions/README|Decisions]]
 - records work in: [[outputs/worklogs/index|Worklogs]]

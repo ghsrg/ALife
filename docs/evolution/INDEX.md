@@ -12,6 +12,7 @@ tags:
 
 ## Observer Analysis
 
+- [[docs/observer/INDEX|Observer Index]] `#observer`
 - [[docs/evolution/adaptation|Adaptation]] `#adaptation` `#observer-only`
 - [[docs/evolution/population-dynamics|Population Dynamics]] `#population`
 - [[docs/evolution/selection|Selection]] `#selection` `#interpretation`
