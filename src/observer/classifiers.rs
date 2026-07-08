@@ -160,3 +160,71 @@ pub fn classify_cell_roles_observed(
         data_completeness: window.data_completeness,
     }
 }
+
+pub fn evaluate_clause(clause: &crate::observer::config::RuleClause, actual_value: f32) -> bool {
+    match clause.operator.as_str() {
+        ">=" => actual_value >= clause.value,
+        "<=" => actual_value <= clause.value,
+        "==" => actual_value == clause.value,
+        _ => false,
+    }
+}
+
+pub fn classify_behavior_profiles(
+    window: &ObservationWindow,
+    config: &crate::observer::config::BehaviorClassifierConfig,
+) -> ClassificationResult {
+    let mut evidence = Vec::new();
+    let mut matched_profiles = Vec::new();
+
+    // Sort profiles alphabetically to ensure deterministic tie-breaking
+    let mut sorted_profiles: Vec<(&String, &crate::observer::config::ProfileRule)> =
+        config.profiles.iter().collect();
+    sorted_profiles.sort_by_key(|(name, _)| *name);
+
+    for (profile_name, rule) in sorted_profiles {
+        let mut profile_matched = true;
+        for clause in &rule.clauses {
+            let actual_value = window.features.get(&clause.feature).copied().unwrap_or(0.0);
+            let matched = evaluate_clause(clause, actual_value);
+
+            evidence.push(EvidenceRecord {
+                feature: clause.feature.clone(),
+                expected: format!("{} {}", clause.operator, clause.value),
+                actual: actual_value,
+                matched,
+            });
+
+            if !matched {
+                profile_matched = false;
+            }
+        }
+
+        if profile_matched {
+            matched_profiles.push(profile_name.clone());
+        }
+    }
+
+    let primary_label = matched_profiles.first().cloned();
+    let is_classified = primary_label.is_some();
+
+    ClassificationResult {
+        dimension_id: "behavior-profile".to_string(),
+        entity_id: window.entity_id.clone(),
+        mode: ClassificationMode::Observed,
+        primary_label,
+        secondary_labels: vec![],
+        status: if is_classified {
+            ClassificationStatus::Classified
+        } else {
+            ClassificationStatus::Unknown
+        },
+        confidence: if is_classified { 0.9 } else { 0.0 },
+        tick_start: window.tick_start,
+        tick_end: window.tick_end,
+        classifier_version: config.version.clone(),
+        evidence,
+        data_completeness: window.data_completeness,
+    }
+}
+
