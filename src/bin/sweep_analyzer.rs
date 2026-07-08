@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use alife::core::cell_store::{CellIndex, LifecycleState};
 use alife::core::config::{
     CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
@@ -17,132 +19,359 @@ use std::io::Write;
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, serde::Deserialize)]
-struct AnalyzerConfig {
-    run: RunConfig,
-    cell: CellConfig,
-    lifecycle: LifecycleRaw,
-    resource_interaction: ResourceInteractionRaw,
-    environment: EnvironmentRaw,
-    sweep: Option<Vec<SweepDef>>,
-    matrix: Option<Vec<MatrixDef>>,
+pub struct AnalyzerConfig {
+    pub run: RunConfig,
+    pub cell: CellConfig,
+    pub lifecycle: LifecycleRaw,
+    pub resource_interaction: ResourceInteractionRaw,
+    pub environment: EnvironmentRaw,
+    pub sweep: Option<Vec<SweepDef>>,
+    pub matrix: Option<Vec<MatrixDef>>,
+    #[allow(dead_code)]
+    pub scenarios: Option<std::collections::HashMap<String, RawScenarioPreset>>,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct RunConfig {
-    output_dir: String,
-    seed: u64,
-    ticks: u32,
+pub struct RunConfig {
+    pub output_dir: String,
+    pub seed: u64,
+    pub ticks: u32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct CellConfig {
-    radius: f32,
-    initial_energy: f32,
-    energy_capacity: f32,
-    mandatory_cost_per_tick: f32,
-    passive_energy_income: f32,
-    capacity_limit: f32,
-    initial_metabolic_material: f32,
-    initial_transport_material: f32,
-    initial_boundary_material: f32,
-    initial_structural_material: f32,
+pub struct CellConfig {
+    pub radius: f32,
+    pub initial_energy: f32,
+    pub energy_capacity: f32,
+    pub mandatory_cost_per_tick: f32,
+    pub passive_energy_income: f32,
+    pub capacity_limit: f32,
+    pub initial_metabolic_material: f32,
+    pub initial_transport_material: f32,
+    pub initial_boundary_material: f32,
+    pub initial_structural_material: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct LifecycleRaw {
-    stress_energy_threshold: f32,
-    dormancy_allowed: bool,
-    dormant_mandatory_cost_modifier: f32,
-    critical_capacity_overrun: f32,
+pub struct LifecycleRaw {
+    pub stress_energy_threshold: f32,
+    pub dormancy_allowed: bool,
+    pub dormant_mandatory_cost_modifier: f32,
+    pub critical_capacity_overrun: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct ResourceInteractionRaw {
-    energy_per_resource: f32,
-    heat_per_resource: f32,
-    waste_per_resource: f32,
-    decay_rate: f32,
-    default_resource_density: f32,
-    default_max_uptake_per_tick: f32,
-    default_metabolism_resource_per_tick: f32,
+pub struct ResourceInteractionRaw {
+    pub energy_per_resource: f32,
+    pub heat_per_resource: f32,
+    pub waste_per_resource: f32,
+    pub decay_rate: f32,
+    pub default_resource_density: f32,
+    pub default_max_uptake_per_tick: f32,
+    pub default_metabolism_resource_per_tick: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct EnvironmentRaw {
-    heat_dissipation_rate: f32,
-    heat_warning_threshold: f32,
-    heat_death_threshold: f32,
-    waste_sink_rate: f32,
-    waste_warning_threshold: f32,
-    waste_death_threshold: f32,
+pub struct EnvironmentRaw {
+    pub heat_dissipation_rate: f32,
+    pub heat_warning_threshold: f32,
+    pub heat_death_threshold: f32,
+    pub waste_sink_rate: f32,
+    pub waste_warning_threshold: f32,
+    pub waste_death_threshold: f32,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct SweepDef {
-    name: String,
-    param: String,
-    from: f32,
-    to: f32,
-    steps: usize,
+pub struct SweepDef {
+    pub name: String,
+    pub param: String,
+    pub from: f32,
+    pub to: f32,
+    pub steps: usize,
+    pub scenario: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct MatrixDef {
-    name: String,
-    param_x: String,
-    from_x: f32,
-    to_x: f32,
-    steps_x: usize,
-    param_y: String,
-    from_y: f32,
-    to_y: f32,
-    steps_y: usize,
+pub struct MatrixDef {
+    pub name: String,
+    pub param_x: String,
+    pub from_x: f32,
+    pub to_x: f32,
+    pub steps_x: usize,
+    pub param_y: String,
+    pub from_y: f32,
+    pub to_y: f32,
+    pub steps_y: usize,
+    pub scenario: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, serde::Deserialize, Clone)]
+pub struct RawScenarioPreset {
+    pub world_size: Vec<f32>,
+    pub initial_resources: Vec<f32>,
+    pub decay_rate: f32,
+    pub cell_position: Vec<f32>,
+    pub cell_radius: f32,
+    pub initial_energy: f32,
+    pub energy_capacity: f32,
+    pub mandatory_cost_per_tick: f32,
+    pub passive_energy_income: f32,
+    pub capacity_limit: f32,
+    pub stress_energy_threshold: f32,
+    pub dormancy_allowed: bool,
+    pub dormant_mandatory_cost_modifier: f32,
+    pub critical_capacity_overrun: f32,
+    pub heat_dissipation_rate: f32,
+    pub heat_warning_threshold: f32,
+    pub heat_death_threshold: f32,
+    pub waste_sink_rate: f32,
+    pub waste_warning_threshold: f32,
+    pub waste_death_threshold: f32,
+    pub growth_enabled: bool,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Single simulation run result
 // ─────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug)]
-struct SimResult {
-    collapsed: bool,
-    collapse_tick: Option<u32>,
-    dormant_ticks: u32,
-    active_ticks: u32,
-    stressed_ticks: u32,
-    min_energy: f32,
-    max_energy: f32,
-    final_energy: f32,
-    total_resource_consumed: f32,
-    metabolism_count: u32,
+#[derive(Debug, Clone)]
+pub struct SimResult {
+    pub collapsed: bool,
+    pub collapse_tick: Option<u32>,
+    pub dormant_ticks: u32,
+    pub active_ticks: u32,
+    pub stressed_ticks: u32,
+    pub min_energy: f32,
+    pub max_energy: f32,
+    pub final_energy: f32,
+    pub mean_energy: f32,
+    pub initial_energy: f32,
+    pub death_reason: String,
+    pub energy_produced: f32,
+    pub passive_energy_received: f32,
+    pub energy_spent_upkeep: f32,
+    pub energy_spent_dormant_upkeep: f32,
+    pub energy_spent_movement: f32,
+    pub energy_spent_growth: f32,
+    pub energy_spent_repair: f32,
+    pub energy_spent_division: f32,
+    pub initial_world_resource: f32,
+    pub final_world_resource: f32,
+    pub resource_regenerated: f32,
+    pub resource_absorbed: f32,
+    pub resource_metabolized: f32,
+    pub internal_resource_final: f32,
+    pub resource_released: f32,
+    pub resource_explicit_sink: f32,
+    pub resource_balance_error: f32,
+    pub energy_balance_error: f32,
+    pub dormancy_enter_count: u32,
+    pub dormancy_exit_count: u32,
+    pub ticks_executed: u32,
+    pub total_resource_consumed: f32,
+    pub metabolism_count: u32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Build RuntimeConfig, patching one or two parameters
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> RuntimeConfig {
+pub fn build_config(
+    cfg: &AnalyzerConfig,
+    preset: Option<&RawScenarioPreset>,
+    overrides: &std::collections::HashMap<&str, f32>,
+) -> RuntimeConfig {
     let cell_cfg = &cfg.cell;
     let lc = &cfg.lifecycle;
     let ri = &cfg.resource_interaction;
     let env = &cfg.environment;
 
+    let (world_w, world_h) = if let Some(p) = preset {
+        (p.world_size[0], p.world_size[1])
+    } else {
+        (512.0, 512.0)
+    };
+
+    let (cell_x, cell_y) = if let Some(p) = preset {
+        (p.cell_position[0], p.cell_position[1])
+    } else {
+        (256.0, 256.0)
+    };
+
+    let cell_radius_base = if let Some(p) = preset {
+        p.cell_radius
+    } else {
+        cell_cfg.radius
+    };
+    let cell_radius = overrides
+        .get("cell_radius")
+        .copied()
+        .unwrap_or(cell_radius_base);
+
+    let initial_energy_base = if let Some(p) = preset {
+        p.initial_energy
+    } else {
+        cell_cfg.initial_energy
+    };
+    let initial_energy = overrides
+        .get("initial_energy")
+        .copied()
+        .unwrap_or(initial_energy_base);
+
+    let energy_capacity_base = if let Some(p) = preset {
+        p.energy_capacity
+    } else {
+        cell_cfg.energy_capacity
+    };
+    let energy_capacity = overrides
+        .get("energy_capacity")
+        .copied()
+        .unwrap_or(energy_capacity_base);
+
+    let capacity_limit_base = if let Some(p) = preset {
+        p.capacity_limit
+    } else {
+        cell_cfg.capacity_limit
+    };
+    let capacity_limit = overrides
+        .get("capacity_limit")
+        .copied()
+        .unwrap_or(capacity_limit_base);
+
+    let decay_rate_base = if let Some(p) = preset {
+        p.decay_rate
+    } else {
+        ri.decay_rate
+    };
+    let decay_rate = overrides
+        .get("decay_rate")
+        .copied()
+        .unwrap_or(decay_rate_base);
+
+    let stress_energy_threshold_base = if let Some(p) = preset {
+        p.stress_energy_threshold
+    } else {
+        lc.stress_energy_threshold
+    };
+    let stress_energy_threshold = overrides
+        .get("stress_energy_threshold")
+        .copied()
+        .unwrap_or(stress_energy_threshold_base);
+
+    let critical_capacity_overrun_base = if let Some(p) = preset {
+        p.critical_capacity_overrun
+    } else {
+        lc.critical_capacity_overrun
+    };
+    let critical_capacity_overrun = overrides
+        .get("critical_capacity_overrun")
+        .copied()
+        .unwrap_or(critical_capacity_overrun_base);
+
+    let heat_dissipation_rate_base = if let Some(p) = preset {
+        p.heat_dissipation_rate
+    } else {
+        env.heat_dissipation_rate
+    };
+    let heat_dissipation_rate = overrides
+        .get("heat_dissipation_rate")
+        .copied()
+        .unwrap_or(heat_dissipation_rate_base);
+
+    let heat_warning_threshold_base = if let Some(p) = preset {
+        p.heat_warning_threshold
+    } else {
+        env.heat_warning_threshold
+    };
+    let heat_warning_threshold = overrides
+        .get("heat_warning_threshold")
+        .copied()
+        .unwrap_or(heat_warning_threshold_base);
+
+    let heat_death_threshold_base = if let Some(p) = preset {
+        p.heat_death_threshold
+    } else {
+        env.heat_death_threshold
+    };
+    let heat_death_threshold = overrides
+        .get("heat_death_threshold")
+        .copied()
+        .unwrap_or(heat_death_threshold_base);
+
+    let waste_sink_rate_base = if let Some(p) = preset {
+        p.waste_sink_rate
+    } else {
+        env.waste_sink_rate
+    };
+    let waste_sink_rate = overrides
+        .get("waste_sink_rate")
+        .copied()
+        .unwrap_or(waste_sink_rate_base);
+
+    let waste_warning_threshold_base = if let Some(p) = preset {
+        p.waste_warning_threshold
+    } else {
+        env.waste_warning_threshold
+    };
+    let waste_warning_threshold = overrides
+        .get("waste_warning_threshold")
+        .copied()
+        .unwrap_or(waste_warning_threshold_base);
+
+    let waste_death_threshold_base = if let Some(p) = preset {
+        p.waste_death_threshold
+    } else {
+        env.waste_death_threshold
+    };
+    let waste_death_threshold = overrides
+        .get("waste_death_threshold")
+        .copied()
+        .unwrap_or(waste_death_threshold_base);
+
+    let resource_density_base = if let Some(p) = preset {
+        p.initial_resources
+            .first()
+            .copied()
+            .unwrap_or(ri.default_resource_density)
+    } else {
+        ri.default_resource_density
+    };
     let resource_density = overrides
         .get("resource_density")
         .copied()
-        .unwrap_or(ri.default_resource_density);
+        .unwrap_or(resource_density_base);
+
+    let passive_income_base = if let Some(p) = preset {
+        p.passive_energy_income
+    } else {
+        cell_cfg.passive_energy_income
+    };
     let passive_income = overrides
         .get("passive_energy_income")
         .copied()
-        .unwrap_or(cell_cfg.passive_energy_income);
+        .unwrap_or(passive_income_base);
+
+    let upkeep_base = if let Some(p) = preset {
+        p.mandatory_cost_per_tick
+    } else {
+        cell_cfg.mandatory_cost_per_tick
+    };
     let upkeep = overrides
         .get("mandatory_cost_per_tick")
         .copied()
-        .unwrap_or(cell_cfg.mandatory_cost_per_tick);
+        .unwrap_or(upkeep_base);
+
+    let dormant_mod_base = if let Some(p) = preset {
+        p.dormant_mandatory_cost_modifier
+    } else {
+        lc.dormant_mandatory_cost_modifier
+    };
     let dormant_mod = overrides
         .get("dormant_mandatory_cost_modifier")
         .copied()
-        .unwrap_or(lc.dormant_mandatory_cost_modifier);
+        .unwrap_or(dormant_mod_base);
+
     let uptake = overrides
         .get("max_uptake_per_tick")
         .copied()
@@ -154,7 +383,7 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
 
     let resources = ResourceConfig::new(
         vec![ResourceAmount::new(resource_density.max(0.001)).unwrap()],
-        ri.decay_rate.clamp(0.0, 1.0),
+        decay_rate.clamp(0.0, 1.0),
     )
     .unwrap();
 
@@ -169,13 +398,13 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
     };
 
     let cell = CellInitialConfig {
-        position: Position::new(256.0, 256.0),
-        radius: Radius::new(cell_cfg.radius.max(0.1)).unwrap(),
-        initial_energy: EnergyAmount::new(cell_cfg.initial_energy).unwrap(),
-        energy_capacity: EnergyAmount::new(cell_cfg.energy_capacity).unwrap(),
+        position: Position::new(cell_x, cell_y),
+        radius: Radius::new(cell_radius.max(0.1)).unwrap(),
+        initial_energy: EnergyAmount::new(initial_energy).unwrap(),
+        energy_capacity: EnergyAmount::new(energy_capacity).unwrap(),
         mandatory_cost_per_tick: EnergyAmount::new(upkeep.max(0.0)).unwrap(),
         passive_energy_income: EnergyAmount::new(passive_income.max(0.0)).unwrap(),
-        capacity_limit: CapacityAmount::new(cell_cfg.capacity_limit.max(1.0)).unwrap(),
+        capacity_limit: CapacityAmount::new(capacity_limit.max(1.0)).unwrap(),
         initial_resource_amount: ResourceAmount::zero(),
         initial_boundary_material: MaterialAmount::new(cell_cfg.initial_boundary_material).unwrap(),
         initial_transport_material: MaterialAmount::new(cell_cfg.initial_transport_material)
@@ -194,29 +423,34 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
     let environment = EnvironmentConfig {
         heat_current: HeatAmount::zero(),
         heat_generated_per_tick: HeatAmount::zero(),
-        heat_dissipation_rate: HeatAmount::new(env.heat_dissipation_rate).unwrap(),
-        heat_warning_threshold: HeatAmount::new(env.heat_warning_threshold).unwrap(),
-        heat_death_threshold: HeatAmount::new(env.heat_death_threshold).unwrap(),
+        heat_dissipation_rate: HeatAmount::new(heat_dissipation_rate).unwrap(),
+        heat_warning_threshold: HeatAmount::new(heat_warning_threshold).unwrap(),
+        heat_death_threshold: HeatAmount::new(heat_death_threshold).unwrap(),
         waste_current: WasteAmount::zero(),
         waste_generated_per_tick: WasteAmount::zero(),
-        waste_sink_rate: WasteAmount::new(env.waste_sink_rate).unwrap(),
-        waste_warning_threshold: WasteAmount::new(env.waste_warning_threshold).unwrap(),
-        waste_death_threshold: WasteAmount::new(env.waste_death_threshold).unwrap(),
+        waste_sink_rate: WasteAmount::new(waste_sink_rate).unwrap(),
+        waste_warning_threshold: WasteAmount::new(waste_warning_threshold).unwrap(),
+        waste_death_threshold: WasteAmount::new(waste_death_threshold).unwrap(),
+    };
+
+    let dormancy_allowed = if let Some(p) = preset {
+        p.dormancy_allowed
+    } else {
+        lc.dormancy_allowed
     };
 
     let lifecycle = LifecycleConfig {
-        stress_energy_threshold: EnergyAmount::new(lc.stress_energy_threshold).unwrap(),
-        dormancy_allowed: lc.dormancy_allowed,
+        stress_energy_threshold: EnergyAmount::new(stress_energy_threshold).unwrap(),
+        dormancy_allowed,
         dormant_mandatory_cost_modifier: dormant_mod.clamp(0.0, 1.0),
-        critical_capacity_overrun: CapacityAmount::new(lc.critical_capacity_overrun.max(0.1))
-            .unwrap(),
+        critical_capacity_overrun: CapacityAmount::new(critical_capacity_overrun.max(0.1)).unwrap(),
     };
 
-    RuntimeConfig::new(
+    let mut rt = RuntimeConfig::new(
         WorldConfig {
             tick_count: Tick::from_raw(cfg.run.ticks.into()),
             seed: Seed::from_raw(cfg.run.seed),
-            size: WorldSize::new(512.0, 512.0).unwrap(),
+            size: WorldSize::new(world_w, world_h).unwrap(),
         },
         SpaceConfig {
             spatial_grid_size: 8.0,
@@ -228,7 +462,13 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
         environment,
         lifecycle,
     )
-    .unwrap()
+    .unwrap();
+
+    rt.growth = alife::core::config::GrowthConfig::default();
+    rt.synthesis = alife::core::config::SynthesisConfig::default();
+    rt.contractility = alife::core::config::ContractilityConfig::default();
+    rt.growth_enabled = preset.map(|p| p.growth_enabled).unwrap_or(false);
+    rt
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -236,6 +476,21 @@ fn build_config(cfg: &AnalyzerConfig, overrides: &HashMap<&str, f32>) -> Runtime
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
+    let metabolism_cost = rt_config
+        .resource_interaction
+        .metabolism_resource_per_tick
+        .raw();
+    let energy_per_resource = rt_config.resource_interaction.energy_per_resource;
+    let synthesis_cost_res = rt_config.synthesis.cost_resource.raw();
+    let synthesis_cost_energy = rt_config.synthesis.cost_energy.raw();
+    let growth_cost_res = rt_config.growth.growth_cost_resource.raw();
+    let growth_cost_energy = rt_config.growth.growth_cost_energy.raw();
+    let displacement_cost_energy = rt_config.contractility.energy_cost.raw();
+    let mandatory_cost_per_tick = rt_config.cell.mandatory_cost_per_tick.raw();
+    let dormant_cost =
+        mandatory_cost_per_tick * rt_config.lifecycle.dormant_mandatory_cost_modifier;
+    let passive_energy_income = rt_config.cell.passive_energy_income.raw();
+
     let mut executor = match TickExecutor::new(rt_config) {
         Ok(e) => e,
         Err(_) => {
@@ -248,11 +503,37 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 min_energy: 0.0,
                 max_energy: 0.0,
                 final_energy: 0.0,
+                mean_energy: 0.0,
+                initial_energy: 0.0,
+                death_reason: "config_invalid".to_string(),
+                energy_produced: 0.0,
+                passive_energy_received: 0.0,
+                energy_spent_upkeep: 0.0,
+                energy_spent_dormant_upkeep: 0.0,
+                energy_spent_movement: 0.0,
+                energy_spent_growth: 0.0,
+                energy_spent_repair: 0.0,
+                energy_spent_division: 0.0,
+                initial_world_resource: 0.0,
+                final_world_resource: 0.0,
+                resource_regenerated: 0.0,
+                resource_absorbed: 0.0,
+                resource_metabolized: 0.0,
+                internal_resource_final: 0.0,
+                resource_released: 0.0,
+                resource_explicit_sink: 0.0,
+                resource_balance_error: 0.0,
+                energy_balance_error: 0.0,
+                dormancy_enter_count: 0,
+                dormancy_exit_count: 0,
+                ticks_executed: 0,
                 total_resource_consumed: 0.0,
                 metabolism_count: 0,
             };
         }
     };
+
+    let len = executor.world().cells().len();
 
     let initial_grid = executor
         .world()
@@ -260,40 +541,193 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         .total_amount_for_layer(alife::core::resources::ResourceLayerIndex::from_raw(0))
         .map(|a| a.raw())
         .unwrap_or(0.0);
+    let initial_cell_res = (0..len)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .resource_amount(CellIndex::from_raw(i))
+                .raw()
+        })
+        .sum::<f32>();
+    let initial_cell_mat = (0..len)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .total_materials(CellIndex::from_raw(i))
+                .raw()
+        })
+        .sum::<f32>();
+    let initial_total_res = initial_grid + initial_cell_res + initial_cell_mat;
+
+    let initial_energy = (0..len)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .energy(CellIndex::from_raw(i))
+                .current()
+                .raw()
+        })
+        .sum::<f32>();
 
     let mut min_energy = f32::MAX;
     let mut max_energy = f32::MIN;
-    let mut final_energy = 0.0;
     let mut dormant_ticks = 0u32;
     let mut active_ticks = 0u32;
     let mut stressed_ticks = 0u32;
     let mut metabolism_count = 0u32;
     let mut collapsed = false;
     let mut collapse_tick = None;
+    let mut death_reason = "none".to_string();
+
+    let mut metabolized_cumulative = 0.0_f32;
+    let mut decay_cumulative = 0.0_f32;
+    let mut resource_absorbed_cumulative = 0.0_f32;
+    let mut energy_produced = 0.0_f32;
+    let mut passive_energy_received = 0.0_f32;
+    let mut energy_spent_upkeep = 0.0_f32;
+    let mut energy_spent_dormant_upkeep = 0.0_f32;
+    let mut energy_spent_synthesis = 0.0_f32;
+    let mut energy_spent_growth = 0.0_f32;
+    let mut energy_spent_movement = 0.0_f32;
+    let mut dormancy_enter_count = 0_u32;
+    let mut dormancy_exit_count = 0_u32;
+    let mut ticks_executed = 0_u32;
+    let mut energy_sum = 0.0_f32;
 
     for t in 0..ticks {
+        let mut cell_states_before = Vec::with_capacity(len);
+        let mut cell_res_before = 0.0_f32;
+        for i in 0..len {
+            let index = CellIndex::from_raw(i);
+            cell_states_before.push(executor.world().cells().lifecycle_state(index));
+            cell_res_before += executor.world().cells().resource_amount(index).raw();
+        }
+        let grid_before = executor
+            .world()
+            .resources()
+            .total_amount_for_layer(alife::core::resources::ResourceLayerIndex::from_raw(0))
+            .map(|a| a.raw())
+            .unwrap_or(0.0);
+
         let summary = match executor.step() {
             Ok(s) => s,
             Err(_) => {
                 collapsed = true;
                 collapse_tick = Some(t);
+                death_reason = "engine_error".to_string();
                 break;
             }
         };
 
+        ticks_executed += 1;
+
         if summary.survival_result == SurvivalResult::Collapse {
             collapsed = true;
             collapse_tick = Some(t);
+            death_reason = format!("{:?}", summary.collapse_reason);
             break;
         }
 
         let e = summary.metrics.final_energy;
         min_energy = min_energy.min(e);
         max_energy = max_energy.max(e);
-        final_energy = e;
+        energy_sum += e;
 
         if summary.metrics.process_attempts > 0 {
             metabolism_count += 1;
+        }
+
+        let grid_after = executor
+            .world()
+            .resources()
+            .total_amount_for_layer(alife::core::resources::ResourceLayerIndex::from_raw(0))
+            .map(|a| a.raw())
+            .unwrap_or(0.0);
+        let mut cell_res_after = 0.0_f32;
+        for i in 0..len {
+            let index = CellIndex::from_raw(i);
+            cell_res_after += executor.world().cells().resource_amount(index).raw();
+        }
+
+        // Get process successes in this tick
+        let get_successes = |proc_id: alife::core::process::ProcessId,
+                             diag: &alife::core::summary::ProcessDiagnostics|
+         -> u32 {
+            let att = diag.attempts_by_process.get(&proc_id).copied().unwrap_or(0);
+            let rej = diag
+                .rejections_by_process
+                .get(&proc_id)
+                .copied()
+                .unwrap_or(0);
+            att.saturating_sub(rej)
+        };
+
+        let metabolism_successes = get_successes(
+            alife::core::process::ProcessId::MetabolismEnergyConversion,
+            &summary.diagnostics,
+        );
+        let synthesis_successes = get_successes(
+            alife::core::process::ProcessId::MaterialSynthesis,
+            &summary.diagnostics,
+        );
+        let growth_successes = get_successes(
+            alife::core::process::ProcessId::GrowthResourceAllocation,
+            &summary.diagnostics,
+        );
+        let displacement_successes = get_successes(
+            alife::core::process::ProcessId::ContractileDisplacement,
+            &summary.diagnostics,
+        );
+
+        let metabolized_tick = metabolism_successes as f32 * metabolism_cost;
+        metabolized_cumulative += metabolized_tick;
+        energy_produced += metabolized_tick * energy_per_resource;
+
+        let synthesis_tick_res = synthesis_successes as f32 * synthesis_cost_res;
+        energy_spent_synthesis += synthesis_successes as f32 * synthesis_cost_energy;
+
+        let growth_tick_res = growth_successes as f32 * growth_cost_res;
+        energy_spent_growth += growth_successes as f32 * growth_cost_energy;
+
+        energy_spent_movement += displacement_successes as f32 * displacement_cost_energy;
+
+        let uptake_tick = (cell_res_after - cell_res_before)
+            + metabolized_tick
+            + synthesis_tick_res
+            + growth_tick_res;
+        resource_absorbed_cumulative += uptake_tick;
+
+        let decay_tick = (grid_before - uptake_tick - grid_after).max(0.0);
+        decay_cumulative += decay_tick;
+
+        // Energy spent and passive income
+        for (i, &state_before) in cell_states_before.iter().enumerate() {
+            let index = CellIndex::from_raw(i);
+            let state_after = executor.world().cells().lifecycle_state(index);
+            if state_before != alife::core::cell_store::LifecycleState::Dead {
+                passive_energy_received += passive_energy_income;
+                if state_before == alife::core::cell_store::LifecycleState::Dormant {
+                    energy_spent_dormant_upkeep += dormant_cost;
+                } else {
+                    energy_spent_upkeep += mandatory_cost_per_tick;
+                }
+
+                // Check transitions
+                if state_before != alife::core::cell_store::LifecycleState::Dormant
+                    && state_after == alife::core::cell_store::LifecycleState::Dormant
+                {
+                    dormancy_enter_count += 1;
+                }
+                if state_before == alife::core::cell_store::LifecycleState::Dormant
+                    && state_after != alife::core::cell_store::LifecycleState::Dormant
+                    && state_after != alife::core::cell_store::LifecycleState::Dead
+                {
+                    dormancy_exit_count += 1;
+                }
+            }
         }
 
         let state = executor
@@ -314,6 +748,53 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         .total_amount_for_layer(alife::core::resources::ResourceLayerIndex::from_raw(0))
         .map(|a| a.raw())
         .unwrap_or(0.0);
+    let final_cell_res = (0..len)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .resource_amount(CellIndex::from_raw(i))
+                .raw()
+        })
+        .sum::<f32>();
+    let final_cell_mat = (0..len)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .total_materials(CellIndex::from_raw(i))
+                .raw()
+        })
+        .sum::<f32>();
+
+    let final_total_res =
+        final_grid + final_cell_res + final_cell_mat + metabolized_cumulative + decay_cumulative;
+    let resource_balance_error = (final_total_res - initial_total_res).abs();
+
+    let final_energy = (0..len)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .energy(CellIndex::from_raw(i))
+                .current()
+                .raw()
+        })
+        .sum::<f32>();
+    let energy_total_input = initial_energy + energy_produced + passive_energy_received;
+    let energy_total_output = final_energy
+        + energy_spent_upkeep
+        + energy_spent_dormant_upkeep
+        + energy_spent_synthesis
+        + energy_spent_growth
+        + energy_spent_movement;
+    let energy_balance_error = (energy_total_input - energy_total_output).abs();
+
+    let mean_energy = if ticks_executed > 0 {
+        energy_sum / ticks_executed as f32
+    } else {
+        0.0
+    };
 
     let total_resource_consumed = (initial_grid - final_grid).max(0.0);
 
@@ -333,6 +814,30 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         min_energy,
         max_energy,
         final_energy,
+        mean_energy,
+        initial_energy,
+        death_reason,
+        energy_produced,
+        passive_energy_received,
+        energy_spent_upkeep,
+        energy_spent_dormant_upkeep,
+        energy_spent_movement,
+        energy_spent_growth,
+        energy_spent_repair: 0.0,
+        energy_spent_division: 0.0,
+        initial_world_resource: initial_grid,
+        final_world_resource: final_grid,
+        resource_regenerated: 0.0,
+        resource_absorbed: resource_absorbed_cumulative,
+        resource_metabolized: metabolized_cumulative,
+        internal_resource_final: final_cell_res,
+        resource_released: 0.0,
+        resource_explicit_sink: decay_cumulative,
+        resource_balance_error,
+        energy_balance_error,
+        dormancy_enter_count,
+        dormancy_exit_count,
+        ticks_executed,
         total_resource_consumed,
         metabolism_count,
     }
@@ -357,6 +862,35 @@ fn classify(res: &SimResult, ticks: u32) -> &'static str {
     } else {
         "stable"
     }
+}
+
+pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> {
+    let mut warnings = Vec::new();
+    if results.is_empty() {
+        return warnings;
+    }
+
+    let scenario_lower = scenario_id.to_lowercase();
+    if (scenario_lower.contains("dormant") || scenario_lower.contains("dormancy"))
+        && results.iter().all(|r| r.dormant_ticks == 0)
+    {
+        warnings.push("SCENARIO_MECHANISM_NOT_ACTIVATED".to_string());
+    }
+
+    let first_energy = results[0].final_energy;
+    let all_energies_same = results
+        .iter()
+        .all(|r| (r.final_energy - first_energy).abs() < 1e-4);
+
+    let ticks = results[0].ticks_executed.max(1);
+    let first_zone = classify(&results[0], ticks);
+    let all_zones_same = results.iter().all(|r| classify(r, ticks) == first_zone);
+
+    if all_energies_same || all_zones_same {
+        warnings.push("LOW_INFORMATION_SWEEP".to_string());
+    }
+
+    warnings
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -395,11 +929,67 @@ fn compute_stats(values: &[f32]) -> Stats {
     }
 }
 
+fn write_summary_row(
+    out_dir: &str,
+    name: &str,
+    scenario_id: &str,
+    stats: &Stats,
+    zone_counts: &HashMap<&str, usize>,
+) {
+    let summary_path = format!("{}/sweep_scenario_summary.csv", out_dir);
+    let is_new = !std::path::Path::new(&summary_path).exists();
+
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&summary_path)
+        .expect("cannot open sweep_scenario_summary.csv");
+
+    if is_new {
+        writeln!(
+            file,
+            "sweep_name,scenario_id,min_final_energy,max_final_energy,mean_final_energy,\
+             ideal_range_lo,ideal_range_hi,stable_count,collapse_count,dormancy_count,\
+             dormancy_survival_count,accumulates_count"
+        )
+        .unwrap();
+    }
+
+    let stable = zone_counts.get("stable").copied().unwrap_or(0);
+    let collapse = zone_counts.get("collapse").copied().unwrap_or(0);
+    let dormancy = zone_counts.get("dormancy").copied().unwrap_or(0);
+    let dormancy_survival = zone_counts.get("dormancy_survival").copied().unwrap_or(0);
+    let accumulates = zone_counts.get("accumulates").copied().unwrap_or(0);
+
+    writeln!(
+        file,
+        "{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{},{},{},{},{}",
+        name,
+        scenario_id,
+        stats.min,
+        stats.max,
+        stats.mean,
+        stats.ideal_range_lo,
+        stats.ideal_range_hi,
+        stable,
+        collapse,
+        dormancy,
+        dormancy_survival,
+        accumulates
+    )
+    .unwrap();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Run a 1-D sweep and write results
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
+pub fn run_sweep(
+    cfg: &AnalyzerConfig,
+    sweep: &SweepDef,
+    preset: Option<&RawScenarioPreset>,
+    out_dir: &str,
+) {
     println!(
         "\n▶ Sweep «{}» — {} from {:.3} to {:.3} in {} steps ({} ticks each)",
         sweep.name, sweep.param, sweep.from, sweep.to, sweep.steps, cfg.run.ticks
@@ -415,53 +1005,118 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
     let mut csv = std::fs::File::create(&csv_path).expect("cannot create CSV");
     writeln!(
         csv,
-        "param_value,zone,collapsed,collapse_tick,\
-         dormant_ticks,active_ticks,stressed_ticks,\
-         min_energy,max_energy,final_energy,mean_energy,\
-         resource_consumed,metabolism_count"
+        "scenario_id,scenario_version,config_hash,seed,ticks_requested,ticks_executed,\
+         parameter_name,parameter_value,secondary_parameter_name,secondary_parameter_value,\
+         zone,scenario_status,warning_codes,survived_to_end,survival_ticks,death_tick,death_reason,\
+         active_ticks,active_fraction,dormant_ticks,dormant_fraction,dormancy_enter_count,dormancy_exit_count,\
+         initial_energy,final_energy,min_energy,max_energy,mean_energy,\
+         energy_produced,passive_energy_received,\
+         energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
+         initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
+         resource_balance_error,energy_balance_error"
     )
     .unwrap();
 
     let mut final_energies: Vec<f32> = Vec::new();
     let mut zone_counts: HashMap<&str, usize> = HashMap::new();
+    let mut run_results = Vec::new();
 
     for i in 0..sweep.steps {
         let val = sweep.from + step_size * i as f32;
         let mut overrides = HashMap::new();
         overrides.insert(sweep.param.as_str(), val);
 
-        let rt = build_config(cfg, &overrides);
+        let rt = build_config(cfg, preset, &overrides);
+        let config_hash = rt.config_hash();
         let res = run_simulation(rt, cfg.run.ticks);
         let zone = classify(&res, cfg.run.ticks);
         *zone_counts.entry(zone).or_insert(0) += 1;
 
-        let mean_e = if res.active_ticks + res.dormant_ticks + res.stressed_ticks > 0 {
-            // approximation from available data
-            (res.min_energy + res.max_energy) / 2.0
+        final_energies.push(res.final_energy);
+        run_results.push((val, config_hash, res, zone));
+    }
+
+    let scenario_id = sweep.scenario.as_deref().unwrap_or("none");
+    let sweep_warnings = detect_warnings(
+        &run_results
+            .iter()
+            .map(|(_, _, r, _)| r.clone())
+            .collect::<Vec<_>>(),
+        scenario_id,
+    );
+
+    for (val, config_hash, res, zone) in run_results {
+        let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
+        let mut row_warnings = Vec::new();
+        if res.resource_balance_error > 0.01 || res.energy_balance_error > 0.01 {
+            row_warnings.push("BALANCE_ERROR".to_string());
+        }
+        for w in &sweep_warnings {
+            row_warnings.push(w.clone());
+        }
+        let warning_codes = if row_warnings.is_empty() {
+            "none".to_string()
+        } else {
+            row_warnings.join("|")
+        };
+
+        let active_fraction = if res.ticks_executed > 0 {
+            res.active_ticks as f32 / res.ticks_executed as f32
+        } else {
+            0.0
+        };
+        let dormant_fraction = if res.ticks_executed > 0 {
+            res.dormant_ticks as f32 / res.ticks_executed as f32
         } else {
             0.0
         };
 
-        final_energies.push(res.final_energy);
-
         writeln!(
             csv,
-            "{:.4},{},{},{},{},{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            scenario_id,
+            config_hash,
+            cfg.run.seed,
+            cfg.run.ticks,
+            res.ticks_executed,
+            sweep.param,
             val,
             zone,
-            res.collapsed,
-            res.collapse_tick
-                .map(|t| t.to_string())
-                .unwrap_or_else(|| "-".to_string()),
-            res.dormant_ticks,
+            scenario_status,
+            warning_codes,
+            !res.collapsed,
+            res.ticks_executed,
+            res.collapse_tick.unwrap_or(0),
+            res.death_reason,
             res.active_ticks,
-            res.stressed_ticks,
+            active_fraction,
+            res.dormant_ticks,
+            dormant_fraction,
+            res.dormancy_enter_count,
+            res.dormancy_exit_count,
+            res.initial_energy,
+            res.final_energy,
             res.min_energy,
             res.max_energy,
-            res.final_energy,
-            mean_e,
-            res.total_resource_consumed,
-            res.metabolism_count,
+            res.mean_energy,
+            res.energy_produced,
+            res.passive_energy_received,
+            res.energy_spent_upkeep,
+            res.energy_spent_dormant_upkeep,
+            res.energy_spent_movement,
+            res.energy_spent_growth,
+            res.energy_spent_repair,
+            res.energy_spent_division,
+            res.initial_world_resource,
+            res.final_world_resource,
+            res.resource_regenerated,
+            res.resource_absorbed,
+            res.resource_metabolized,
+            res.internal_resource_final,
+            res.resource_released,
+            res.resource_explicit_sink,
+            res.resource_balance_error,
+            res.energy_balance_error
         )
         .unwrap();
 
@@ -492,28 +1147,19 @@ fn run_sweep(cfg: &AnalyzerConfig, sweep: &SweepDef, out_dir: &str) {
     println!("  Zone distribution: {:?}", zone_counts);
     println!("  CSV → {}", csv_path);
 
-    // append summary block at the end of CSV
-    writeln!(csv).unwrap();
-    writeln!(csv, "# SUMMARY").unwrap();
-    writeln!(csv, "# min_final_energy,{:.3}", stats.min).unwrap();
-    writeln!(csv, "# max_final_energy,{:.3}", stats.max).unwrap();
-    writeln!(csv, "# mean_final_energy,{:.3}", stats.mean).unwrap();
-    writeln!(
-        csv,
-        "# ideal_range,{:.3},{:.3}",
-        stats.ideal_range_lo, stats.ideal_range_hi
-    )
-    .unwrap();
-    for (zone, count) in &zone_counts {
-        writeln!(csv, "# zone_{},{}", zone, count).unwrap();
-    }
+    write_summary_row(out_dir, &sweep.name, scenario_id, &stats, &zone_counts);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Run a 2-D matrix sweep and write results
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
+pub fn run_matrix(
+    cfg: &AnalyzerConfig,
+    mat: &MatrixDef,
+    preset: Option<&RawScenarioPreset>,
+    out_dir: &str,
+) {
     println!(
         "\n▶ Matrix «{}» — {} × {} ({} × {} = {} runs, {} ticks each)",
         mat.name,
@@ -540,13 +1186,21 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
     let mut csv = std::fs::File::create(&csv_path).expect("cannot create matrix CSV");
     writeln!(
         csv,
-        "{},{},zone,collapsed,dormant_pct,active_pct,min_energy,max_energy,final_energy",
-        mat.param_x, mat.param_y
+        "scenario_id,scenario_version,config_hash,seed,ticks_requested,ticks_executed,\
+         parameter_name,parameter_value,secondary_parameter_name,secondary_parameter_value,\
+         zone,scenario_status,warning_codes,survived_to_end,survival_ticks,death_tick,death_reason,\
+         active_ticks,active_fraction,dormant_ticks,dormant_fraction,dormancy_enter_count,dormancy_exit_count,\
+         initial_energy,final_energy,min_energy,max_energy,mean_energy,\
+         energy_produced,passive_energy_received,\
+         energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
+         initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
+         resource_balance_error,energy_balance_error"
     )
     .unwrap();
 
     let mut all_finals: Vec<f32> = Vec::new();
     let mut zone_counts: HashMap<&str, usize> = HashMap::new();
+    let mut run_results = Vec::new();
 
     for ix in 0..mat.steps_x {
         let vx = mat.from_x + step_x * ix as f32;
@@ -557,42 +1211,104 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
             overrides.insert(mat.param_x.as_str(), vx);
             overrides.insert(mat.param_y.as_str(), vy);
 
-            let rt = build_config(cfg, &overrides);
+            let rt = build_config(cfg, preset, &overrides);
+            let config_hash = rt.config_hash();
             let res = run_simulation(rt, cfg.run.ticks);
             let zone = classify(&res, cfg.run.ticks);
             *zone_counts.entry(zone).or_insert(0) += 1;
 
-            let total_alive = res.dormant_ticks + res.active_ticks + res.stressed_ticks;
-            let dormant_pct = if total_alive > 0 {
-                res.dormant_ticks as f32 / total_alive as f32
-            } else {
-                0.0
-            };
-            let active_pct = if total_alive > 0 {
-                res.active_ticks as f32 / total_alive as f32
-            } else {
-                0.0
-            };
-
             all_finals.push(res.final_energy);
-
-            writeln!(
-                csv,
-                "{:.4},{:.4},{},{},{:.3},{:.3},{:.3},{:.3},{:.3}",
-                vx,
-                vy,
-                zone,
-                res.collapsed,
-                dormant_pct,
-                active_pct,
-                res.min_energy,
-                res.max_energy,
-                res.final_energy,
-            )
-            .unwrap();
+            run_results.push((vx, vy, config_hash, res, zone));
         }
         print!(".");
         let _ = std::io::stdout().flush();
+    }
+
+    let scenario_id = mat.scenario.as_deref().unwrap_or("none");
+    let matrix_warnings = detect_warnings(
+        &run_results
+            .iter()
+            .map(|(_, _, _, r, _)| r.clone())
+            .collect::<Vec<_>>(),
+        scenario_id,
+    );
+
+    for (vx, vy, config_hash, res, zone) in run_results {
+        let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
+        let mut row_warnings = Vec::new();
+        if res.resource_balance_error > 0.01 || res.energy_balance_error > 0.01 {
+            row_warnings.push("BALANCE_ERROR".to_string());
+        }
+        for w in &matrix_warnings {
+            row_warnings.push(w.clone());
+        }
+        let warning_codes = if row_warnings.is_empty() {
+            "none".to_string()
+        } else {
+            row_warnings.join("|")
+        };
+
+        let active_fraction = if res.ticks_executed > 0 {
+            res.active_ticks as f32 / res.ticks_executed as f32
+        } else {
+            0.0
+        };
+        let dormant_fraction = if res.ticks_executed > 0 {
+            res.dormant_ticks as f32 / res.ticks_executed as f32
+        } else {
+            0.0
+        };
+
+        writeln!(
+            csv,
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            scenario_id,
+            config_hash,
+            cfg.run.seed,
+            cfg.run.ticks,
+            res.ticks_executed,
+            mat.param_x,
+            vx,
+            mat.param_y,
+            vy,
+            zone,
+            scenario_status,
+            warning_codes,
+            !res.collapsed,
+            res.ticks_executed,
+            res.collapse_tick.unwrap_or(0),
+            res.death_reason,
+            res.active_ticks,
+            active_fraction,
+            res.dormant_ticks,
+            dormant_fraction,
+            res.dormancy_enter_count,
+            res.dormancy_exit_count,
+            res.initial_energy,
+            res.final_energy,
+            res.min_energy,
+            res.max_energy,
+            res.mean_energy,
+            res.energy_produced,
+            res.passive_energy_received,
+            res.energy_spent_upkeep,
+            res.energy_spent_dormant_upkeep,
+            res.energy_spent_movement,
+            res.energy_spent_growth,
+            res.energy_spent_repair,
+            res.energy_spent_division,
+            res.initial_world_resource,
+            res.final_world_resource,
+            res.resource_regenerated,
+            res.resource_absorbed,
+            res.resource_metabolized,
+            res.internal_resource_final,
+            res.resource_released,
+            res.resource_explicit_sink,
+            res.resource_balance_error,
+            res.energy_balance_error
+        )
+        .unwrap();
     }
 
     println!();
@@ -605,20 +1321,7 @@ fn run_matrix(cfg: &AnalyzerConfig, mat: &MatrixDef, out_dir: &str) {
     println!("  Zone distribution: {:?}", zone_counts);
     println!("  CSV → {}", csv_path);
 
-    writeln!(csv).unwrap();
-    writeln!(csv, "# SUMMARY").unwrap();
-    writeln!(csv, "# min_final_energy,{:.3}", stats.min).unwrap();
-    writeln!(csv, "# max_final_energy,{:.3}", stats.max).unwrap();
-    writeln!(csv, "# mean_final_energy,{:.3}", stats.mean).unwrap();
-    writeln!(
-        csv,
-        "# ideal_range,{:.3},{:.3}",
-        stats.ideal_range_lo, stats.ideal_range_hi
-    )
-    .unwrap();
-    for (zone, count) in &zone_counts {
-        writeln!(csv, "# zone_{},{}", zone, count).unwrap();
-    }
+    write_summary_row(out_dir, &mat.name, scenario_id, &stats, &zone_counts);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -686,7 +1389,7 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str) {
     }
 
     writeln!(f).unwrap();
-    writeln!(f, "> Summary rows in each CSV are prefixed with `#` and contain `min`, `max`, `mean`, and `ideal_range`.").unwrap();
+    writeln!(f, "> Aggregated statistics are saved in `sweep_scenario_summary.csv` containing `min`, `max`, `mean`, and `ideal_range`.").unwrap();
 
     println!("\n  Report → {}", report_path);
 }
@@ -719,17 +1422,25 @@ fn main() {
 
     if let Some(sweeps) = &cfg.sweep {
         let out = cfg.run.output_dir.clone();
-        let sweeps_cloned: Vec<_> = sweeps.iter().collect();
-        for sweep in sweeps_cloned {
-            run_sweep(&cfg, sweep, &out);
+        for sweep in sweeps {
+            let preset = sweep.scenario.as_ref().and_then(|name| {
+                cfg.scenarios
+                    .as_ref()
+                    .and_then(|scenarios| scenarios.get(name))
+            });
+            run_sweep(&cfg, sweep, preset, &out);
         }
     }
 
     if let Some(matrices) = &cfg.matrix {
         let out = cfg.run.output_dir.clone();
-        let matrices_cloned: Vec<_> = matrices.iter().collect();
-        for mat in matrices_cloned {
-            run_matrix(&cfg, mat, &out);
+        for mat in matrices {
+            let preset = mat.scenario.as_ref().and_then(|name| {
+                cfg.scenarios
+                    .as_ref()
+                    .and_then(|scenarios| scenarios.get(name))
+            });
+            run_matrix(&cfg, mat, preset, &out);
         }
     }
 
