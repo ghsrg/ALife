@@ -22,8 +22,10 @@ Observer не є частиною поведінки клітини. Він не
 1. [[docs/observer/observer-layer|Observer Layer]] — базові вимоги, межі відповідальності й authority contract.
 2. [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]] — як analyzer має бачити зареєстровані механіки та їх покриття.
 3. [[docs/observer/behavior-profile-balance|Behavior Profile Balance]] — як з coverage і метрик отримувати висновки про баланс survival styles.
-4. [[docs/observer/projection-contract|Projection Contract]] — шаблон для майбутніх UI/debug/analytics projection.
-5. [[docs/mechanics/observer-projection|Committed State -> Observer Projection]] — коротка pre-flight card для агентів.
+4. [[docs/observer/classification-contract|Classification Contract]] — загальний контракт observer-side labels, evidence, confidence, windows, provenance і UI/storage rules.
+5. [[docs/observer/classification-registry|Classification Registry]] — стартовий registry Functional Roles, Survival Profiles, Organization Archetypes та інших labels.
+6. [[docs/observer/projection-contract|Projection Contract]] — шаблон для майбутніх UI/debug/analytics projection.
+7. [[docs/mechanics/observer-projection|Committed State -> Observer Projection]] — коротка pre-flight card для агентів.
 
 ## Semantic Links
 
@@ -31,6 +33,8 @@ Observer не є частиною поведінки клітини. Він не
 - routed by: [[docs/observer/INDEX|Observer Index]]
 - mechanics card: [[docs/mechanics/observer-projection|Observer Projection]]
 - compares behavior: [[docs/observer/behavior-profile-balance|Behavior Profile Balance]]
+- classifies observed patterns: [[docs/observer/classification-contract|Classification Contract]]
+- registers observer labels: [[docs/observer/classification-registry|Classification Registry]]
 - feeds UI: [[docs/ui/INDEX|UI Index]]
 - supports implementation: [[docs/implementation/INDEX|Implementation Index]]
 - analyzes evolution: [[docs/evolution/INDEX|Evolution Index]]

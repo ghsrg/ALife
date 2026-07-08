@@ -24,6 +24,8 @@ tags:
 - [[docs/observer/observer-layer|Observer Layer]] `#contract` `#authority`
 - [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]] `#coverage` `#analyzer`
 - [[docs/observer/behavior-profile-balance|Behavior Profile Balance]] `#balance` `#survival-style`
+- [[docs/observer/classification-contract|Classification Contract]] `#classification` `#analytics`
+- [[docs/observer/classification-registry|Classification Registry]] `#classification` `#registry`
 - [[docs/observer/projection-contract|Projection Contract]] `#projection` `#ui`
 
 ## Related Canon
@@ -41,6 +43,13 @@ tags:
 - [[docs/implementation/mechanism-reachability|Mechanism Reachability]]
 - [[docs/implementation/early-stability-tool|Early Stability Tool]]
 - [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
+
+## Classification Routing
+
+- Classification rules and result schema -> [[docs/observer/classification-contract|Classification Contract]]
+- Initial labels and priorities -> [[docs/observer/classification-registry|Classification Registry]]
+- Survival-style balance conclusions -> [[docs/observer/behavior-profile-balance|Behavior Profile Balance]]
+- UI display of labels -> [[docs/ui/exploration|UI Exploration]] + [[docs/ui/analytics|UI Analytics]]
 
 ## Core Rule
 

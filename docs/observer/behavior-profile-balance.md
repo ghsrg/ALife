@@ -74,6 +74,8 @@ balanced-generalist
 
 These labels are fuzzy analysis labels. They must not become Core entities, config categories, Cell classes or Genome inputs.
 
+Detailed classification schema and the initial label registry are defined in [[docs/observer/classification-contract|Classification Contract]] and [[docs/observer/classification-registry|Classification Registry]].
+
 ## Equal Requirements
 
 Balance comparison must only compare styles under explicitly equalized requirements.
@@ -184,4 +186,6 @@ The current implementation may produce only mechanism coverage first. A report t
 - mechanism gate: [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]]
 - evolution interpretation: [[docs/evolution/selection|Selection]]
 - adaptation interpretation: [[docs/evolution/adaptation|Adaptation]]
+- classification rules: [[docs/observer/classification-contract|Classification Contract]]
+- label registry: [[docs/observer/classification-registry|Classification Registry]]
 - source plan: [[outputs/worklogs/2026-07-04-1405-PLAN-sweep_scenario-eval-coverage_refactor|Sweep Scenario Eval Coverage Refactor]]

@@ -137,3 +137,4 @@ tags:
 - [[outputs/worklogs/2026-07-07-2149-REPORT-ui-docs-pre-tdd-cleanup|2026-07-07-2149-REPORT-ui-docs-pre-tdd-cleanup]]
 - [[outputs/worklogs/2026-07-08-1440-REPORT-observer-docs-and-coverage-plan|2026-07-08-1440-REPORT-observer-docs-and-coverage-plan]]
 - [[outputs/worklogs/2026-07-08-1813-REPORT-observer-behavior-profile-balance-sync|2026-07-08-1813-REPORT-observer-behavior-profile-balance-sync]]
+- [[outputs/worklogs/2026-07-08-1844-REPORT-observer-classification-indexing|2026-07-08-1844-REPORT-observer-classification-indexing]]

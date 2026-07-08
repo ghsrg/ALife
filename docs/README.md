@@ -181,6 +181,9 @@ Read-only шар для projection, analytics, OrganismView, lineage summaries, 
 
 - [[docs/observer/observer-layer|Observer Layer]]
 - [[docs/observer/mechanism-coverage|Mechanism Coverage Contract]]
+- [[docs/observer/behavior-profile-balance|Behavior Profile Balance]]
+- [[docs/observer/classification-contract|Classification Contract]]
+- [[docs/observer/classification-registry|Classification Registry]]
 - [[docs/observer/projection-contract|Projection Contract]]
 
 ## `config/`

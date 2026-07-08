@@ -52,6 +52,7 @@ LineageProjection
 CoverageProjection
 BehaviorProfileProjection
 BalanceFindingProjection
+ClassificationProjection
 DebugTraceProjection
 ```
 
@@ -105,6 +106,30 @@ source_report
 
 It mirrors [[docs/observer/behavior-profile-balance|Behavior Profile Balance]] outputs.
 
+## Classification Projection
+
+Classification projection exposes observer-only labels with evidence and confidence:
+
+```text
+classification_id
+dimension_id
+entity_type
+entity_id
+tick_start
+tick_end
+mode
+primary_label
+secondary_labels
+confidence
+classification_status
+evidence_summary
+registry_version
+classifier_version
+source_report
+```
+
+It mirrors [[docs/observer/classification-contract|Classification Contract]] and [[docs/observer/classification-registry|Classification Registry]].
+
 ## Command Boundary
 
 UI commands are not Observer projections.
@@ -118,3 +143,4 @@ Any future command path must use explicit approved command APIs and must not mut
 - visualization: [[docs/ui/visualization|UI Visualization]]
 - rendering: [[docs/engine/rendering|Rendering]]
 - storage: [[docs/engine/storage|Storage]]
+- classification: [[docs/observer/classification-contract|Classification Contract]]
