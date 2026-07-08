@@ -1009,8 +1009,9 @@ fn classify(res: &SimResult, ticks: u32) -> &'static str {
     if res.collapsed {
         return "collapse";
     }
-    let dormant_pct = res.dormant_ticks as f32 / ticks as f32;
-    let active_pct = res.active_ticks as f32 / ticks as f32;
+    let ticks_f = ticks.max(1) as f32;
+    let dormant_pct = res.dormant_ticks as f32 / ticks_f;
+    let active_pct = res.active_ticks as f32 / ticks_f;
     if dormant_pct > 0.80 {
         "dormancy"
     } else if dormant_pct > 0.20 {
@@ -1608,7 +1609,7 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str, records: &[ClassificationRe
         entry.1 += 1;
     }
     let mut sorted_sweeps: Vec<_> = sweep_perf.into_iter().collect();
-    sorted_sweeps.sort_by(|a, b| a.0.to_string().cmp(&b.0.to_string()));
+    sorted_sweeps.sort_by(|a, b| a.0.cmp(&b.0));
     for (name, (sum_tps, count)) in sorted_sweeps {
         let avg = if count > 0 { sum_tps / count as f32 } else { 0.0 };
         writeln!(f, "| {} | {:.2} |", name, avg).unwrap();

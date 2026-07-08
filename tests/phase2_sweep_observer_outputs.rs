@@ -4,7 +4,7 @@ use std::path::Path;
 fn test_sweep_analyzer_generates_observer_files() {
     // Run sweep_analyzer binary with test configuration
     let mut cmd = std::process::Command::new("cargo");
-    cmd.args(&["run", "--bin", "sweep_analyzer", "--", "sweep_analyzer_smoke.toml"]);
+    cmd.args(["run", "--bin", "sweep_analyzer", "--", "sweep_analyzer_smoke.toml"]);
     let status = cmd.status().unwrap();
     assert!(status.success());
 
