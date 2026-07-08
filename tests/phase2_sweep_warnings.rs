@@ -40,6 +40,10 @@ fn mock_result(collapsed: bool, final_energy: f32, dormant_ticks: u32) -> SimRes
         ticks_executed: 100,
         total_resource_consumed: 0.0,
         metabolism_count: 0,
+        potential_role: "unknown".to_string(),
+        observed_role: "unknown".to_string(),
+        behavior_profile: "unknown".to_string(),
+        ticks_per_second: 0.0,
     }
 }
 

@@ -84,4 +84,3 @@ fn test_classify_organism_archetype_resource_sharing_colony() {
     assert!(result.primary_label.is_some());
     assert_eq!(result.primary_label.unwrap(), "resource-sharing-colony");
 }
-

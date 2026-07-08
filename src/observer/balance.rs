@@ -51,7 +51,8 @@ pub fn evaluate_balance(
     // If one profile has higher survival but lower divisions, or vice versa, it's a tradeoff.
     // If they are identical, it's balanced.
     // If one dominates (higher or equal on both, with at least one strict inequality), it's not balanced.
-    let (outcome, dominance_rate) = if (v1.survival_ticks > v2.survival_ticks && v1.divisions_count < v2.divisions_count)
+    let (outcome, dominance_rate) = if (v1.survival_ticks > v2.survival_ticks
+        && v1.divisions_count < v2.divisions_count)
         || (v1.survival_ticks < v2.survival_ticks && v1.divisions_count > v2.divisions_count)
     {
         (BalanceOutcome::TradeoffObserved, 0.0)
@@ -74,8 +75,14 @@ pub fn evaluate_balance(
     let finding_id = format!("{}-{}-{}", cond.scenario_id, profile_a, profile_b);
 
     let evidence_metrics = vec![
-        format!("{}: survival_ticks={}, divisions_count={}", profile_a, v1.survival_ticks, v1.divisions_count),
-        format!("{}: survival_ticks={}, divisions_count={}", profile_b, v2.survival_ticks, v2.divisions_count),
+        format!(
+            "{}: survival_ticks={}, divisions_count={}",
+            profile_a, v1.survival_ticks, v1.divisions_count
+        ),
+        format!(
+            "{}: survival_ticks={}, divisions_count={}",
+            profile_b, v2.survival_ticks, v2.divisions_count
+        ),
     ];
 
     let suspected_cause = if outcome == BalanceOutcome::NotBalanced {
@@ -85,7 +92,10 @@ pub fn evaluate_balance(
     };
 
     let recommendation = if outcome == BalanceOutcome::NotBalanced {
-        Some("Adjust parameters to introduce higher upkeep cost or division requirements.".to_string())
+        Some(
+            "Adjust parameters to introduce higher upkeep cost or division requirements."
+                .to_string(),
+        )
     } else {
         None
     };

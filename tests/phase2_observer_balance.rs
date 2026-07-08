@@ -1,5 +1,5 @@
 use alife::observer::balance::{
-    evaluate_balance, BalanceOutcome, ControlledConditions, ProfileVariables,
+    BalanceOutcome, ControlledConditions, ProfileVariables, evaluate_balance,
 };
 
 #[test]
