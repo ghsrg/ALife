@@ -1,0 +1,21 @@
+# Правила класифікації архетипів багатоорганних структур (колоній)
+version = "1.0.0"
+
+[archetypes.transient-cluster]
+# Тимчасові об'єднання клітин, що швидко розпадаються
+min_component_size = 2
+max_lifetime_ticks = 50
+min_joint_persistence = 0.10
+
+[archetypes.stable-colony]
+# Стабільна група клітин із довготривалими зв'язками
+min_component_size = 3
+min_lifetime_ticks = 100
+min_joint_persistence = 0.70
+
+[archetypes.resource-sharing-colony]
+# Стабільна група з активним перерозподілом ресурсів/енергії між клітинами
+min_component_size = 3
+min_lifetime_ticks = 100
+min_joint_persistence = 0.70
+requires_resource_transfer = true

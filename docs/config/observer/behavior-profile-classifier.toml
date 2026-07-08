@@ -1,0 +1,27 @@
+# Правила класифікації профілів поведінки клітин
+version = "1.0.0"
+
+[profiles.dormancy-oriented]
+# Перебуває в анабіозі більшу частину часу під час дефіциту
+min_dormant_ticks_fraction = 0.80
+min_dormancy_entries = 1
+
+[profiles.opportunistic-growth]
+# Активно росте за наявності ресурсів
+min_growth_attempts_fraction = 0.30
+min_radius_increase_factor = 1.20 # збільшення радіусу на 20%+
+
+[profiles.metabolism-efficient]
+# Висока ефективність конверсії з мінімальним виділенням тепла/відходів
+min_metabolism_executions_fraction = 0.40
+max_heat_produced_per_resource = 0.15
+
+[profiles.movement-foraging]
+# Використовує рух для пошуку ресурсів
+min_contractile_executions_fraction = 0.20
+min_displacement_distance = 10.0
+
+[profiles.scarcity-adapted]
+# Виживає в умовах довготривалої відсутності зовнішніх ресурсів
+min_scarcity_ticks = 50
+max_energy_loss_rate = 0.10

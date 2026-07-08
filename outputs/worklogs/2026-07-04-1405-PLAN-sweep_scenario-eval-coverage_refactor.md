@@ -204,6 +204,15 @@ Reference contract:
 
 ---
 
+## Task 0B: Config-Driven Classification & Registries
+
+- [ ] Створити директорію `docs/config/observer/` для конфігураційних файлів класифікації.
+- [ ] Описати TOML-схеми для реєстру класифікацій, ролей клітин, профілів поведінки та архетипів організмів.
+- [ ] Модифікувати `sweep_analyzer` (або загальний Observer-шар) для динамічного завантаження цих TOML-конфігів.
+- [ ] Замінити хардкод класифікації зон/ролей на перевірку правил, зчитаних з файлів конфігурації.
+
+---
+
 # 0. Current Sweep Suite Stabilization
 
 Before registry-driven coverage is implemented, the existing analytical sweeps must pass their scenario and accounting contracts.

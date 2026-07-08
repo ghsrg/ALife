@@ -1,0 +1,41 @@
+[registry]
+id = "observer-classification-registry"
+version = "1.0.0"
+
+[dimensions.cell-functional-role]
+name = "Cell Functional Role"
+priority = 0
+enabled = true
+labels = [
+    "boundary-supporting",
+    "transport-like",
+    "metabolic-like",
+    "storage-like",
+    "synthesis-oriented",
+    "growth-oriented",
+    "repair-oriented",
+    "contractile-like",
+    "sensory-like"
+]
+
+[dimensions.behavior-profile]
+name = "Behavior / Survival Profile"
+priority = 0
+enabled = true
+labels = [
+    "dormancy-oriented",
+    "opportunistic-growth",
+    "metabolism-efficient",
+    "movement-foraging",
+    "scarcity-adapted"
+]
+
+[dimensions.organism-archetype]
+name = "Organization Archetype"
+priority = 0
+enabled = true
+labels = [
+    "transient-cluster",
+    "stable-colony",
+    "resource-sharing-colony"
+]

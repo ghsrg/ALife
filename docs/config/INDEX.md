@@ -19,6 +19,13 @@ tags:
 - [[docs/config/fields_config|Fields Config]] `#fields`
 - [[docs/config/stability_bounds|Stability Bounds]] `#bounds`
 
+### Observer Configs
+- [classification-registry.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/classification-registry.toml) `#observer` `#registry`
+- [cell-functional-role-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/cell-functional-role-classifier.toml) `#observer` `#classifier` `#role`
+- [behavior-profile-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/behavior-profile-classifier.toml) `#observer` `#classifier` `#profile`
+- [organism-archetype-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/organism-archetype-classifier.toml) `#observer` `#classifier` `#archetype`
+
+
 ## Mechanics Cards
 
 - [[docs/mechanics/config-to-runtime|Config -> Runtime]]

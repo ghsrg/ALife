@@ -1,0 +1,38 @@
+# Правила визначення ролей клітин на основі часток матеріалів в інвентарі
+version = "1.0.0"
+
+[rules.boundary-supporting]
+required_material = "boundary_material"
+min_fraction = 0.20
+
+[rules.transport-like]
+required_material = "transport_material"
+min_fraction = 0.20
+
+[rules.metabolic-like]
+required_material = "metabolic_material"
+min_fraction = 0.20
+
+[rules.storage-like]
+required_material = "storage_material"
+min_fraction = 0.20
+
+[rules.synthesis-oriented]
+required_material = "synthesis_material"
+min_fraction = 0.20
+
+[rules.growth-oriented]
+required_material = "structural_material"
+min_fraction = 0.20
+
+[rules.repair-oriented]
+required_material = "repair_material"
+min_fraction = 0.20
+
+[rules.contractile-like]
+required_material = "contractile_material"
+min_fraction = 0.20
+
+[rules.sensory-like]
+required_material = "sensory_material"
+min_fraction = 0.20

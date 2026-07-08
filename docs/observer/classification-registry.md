@@ -2583,6 +2583,10 @@ saved results preserve registry version
 # 17. Semantic Links
 
 - contract: [[docs/observer/classification-contract|Classification Contract]]
+- configuration registry: [classification-registry.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/classification-registry.toml)
+- cell functional role config: [cell-functional-role-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/cell-functional-role-classifier.toml)
+- behavior profile config: [behavior-profile-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/behavior-profile-classifier.toml)
+- organism archetype config: [organism-archetype-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/organism-archetype-classifier.toml)
 - source: [[docs/biology/organism|Organism View]]
 - source: [[docs/biology/specialization|Specialization]]
 - source: [[docs/biology/communication|Communication]]
@@ -2592,3 +2596,4 @@ saved results preserve registry version
 - source: [[docs/evolution/species-like-clusters|Species-like Clusters]]
 - presentation: [[docs/ui/exploration|UI Exploration]]
 - analytics: [[docs/ui/analytics|UI Analytics]]
+

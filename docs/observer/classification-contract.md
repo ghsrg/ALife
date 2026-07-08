@@ -1427,3 +1427,8 @@ registry coverage is testable
 - constrains: [[docs/ui/analytics|UI Analytics]]
 - follows: [[docs/mechanics/observer-projection|Observer Projection]]
 - registry: [[docs/observer/classification-registry|Classification Registry]]
+- configuration registry: [classification-registry.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/classification-registry.toml)
+- cell functional role config: [cell-functional-role-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/cell-functional-role-classifier.toml)
+- behavior profile config: [behavior-profile-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/behavior-profile-classifier.toml)
+- organism archetype config: [organism-archetype-classifier.toml](file:///c:/Users/korsr/PycharmProjects/ALife/docs/config/observer/organism-archetype-classifier.toml)
+
