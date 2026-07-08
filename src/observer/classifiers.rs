@@ -165,7 +165,7 @@ pub fn evaluate_clause(clause: &crate::observer::config::RuleClause, actual_valu
     match clause.operator.as_str() {
         ">=" => actual_value >= clause.value,
         "<=" => actual_value <= clause.value,
-        "==" => actual_value == clause.value,
+        "==" => (actual_value - clause.value).abs() < 1e-5,
         _ => false,
     }
 }
@@ -227,4 +227,3 @@ pub fn classify_behavior_profiles(
         data_completeness: window.data_completeness,
     }
 }
-
