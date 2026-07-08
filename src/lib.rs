@@ -17,3 +17,5 @@ pub mod process {
 pub mod bin {
     pub mod sweep_analyzer;
 }
+
+pub mod observer;
