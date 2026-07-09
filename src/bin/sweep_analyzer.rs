@@ -14,6 +14,7 @@ use alife::core::units::{
 use alife::observer::{
     classifiers::{
         classify_behavior_profiles, classify_cell_roles_observed, classify_cell_roles_potential,
+        ClassificationResult,
     },
     config::{
         BehaviorClassifierConfig, CellRoleClassifierConfig, load_behavior_profile_classifier,
@@ -185,6 +186,7 @@ pub struct SimResult {
     pub observed_role: String,
     pub behavior_profile: String,
     pub ticks_per_second: f32,
+    pub bhv_res: Option<ClassificationResult>,
     pub explicit_energy_loss: f32,
     pub death_cleanup_loss_energy: f32,
     pub death_cleanup_loss_resources: f32,
@@ -539,6 +541,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 observed_role: "unknown".to_string(),
                 behavior_profile: "unknown".to_string(),
                 ticks_per_second: 0.0,
+                bhv_res: None,
                 explicit_energy_loss: 0.0,
                 death_cleanup_loss_energy: 0.0,
                 death_cleanup_loss_resources: 0.0,
@@ -1219,6 +1222,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         observed_role,
         behavior_profile,
         ticks_per_second,
+        bhv_res: Some(bhv_res),
         explicit_energy_loss: 0.0,
         death_cleanup_loss_energy,
         death_cleanup_loss_resources,
@@ -1332,6 +1336,17 @@ pub struct ClassificationRecord {
     pub observed_role: String,
     pub behavior_profile: String,
     pub ticks_per_second: f32,
+    pub classification_mode: String,
+    pub status: String,
+    pub primary_label: String,
+    pub secondary_labels: String,
+    pub score: f32,
+    pub confidence: f32,
+    pub evidence_summary: String,
+    pub classifier_version: String,
+    pub tick_start: u64,
+    pub tick_end: u64,
+    pub data_completeness: f32,
 }
 
 fn write_summary_row(
@@ -1443,6 +1458,7 @@ pub fn run_sweep(
 
         final_energies.push(res.final_energy);
 
+        let bhv_res = res.bhv_res.as_ref();
         records.push(ClassificationRecord {
             sweep_name: sweep.name.clone(),
             scenario_id: scenario_id.to_string(),
@@ -1454,6 +1470,19 @@ pub fn run_sweep(
             observed_role: res.observed_role.clone(),
             behavior_profile: res.behavior_profile.clone(),
             ticks_per_second: res.ticks_per_second,
+            classification_mode: bhv_res.map(|r| format!("{:?}", r.mode)).unwrap_or_else(|| "unknown".to_string()),
+            status: bhv_res.map(|r| format!("{:?}", r.status)).unwrap_or_else(|| "unknown".to_string()),
+            primary_label: bhv_res.map(|r| r.primary_label.clone().unwrap_or_else(|| "unknown".to_string())).unwrap_or_else(|| "unknown".to_string()),
+            secondary_labels: bhv_res.map(|r| r.secondary_labels.iter().map(|lr| lr.label.as_str()).collect::<Vec<_>>().join(",")).unwrap_or_else(|| "".to_string()),
+            score: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
+            confidence: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
+            evidence_summary: bhv_res.map(|r| {
+                r.evidence.iter().map(|e| format!("{} {}: {}", e.feature, e.expected, e.matched)).collect::<Vec<_>>().join(", ")
+            }).unwrap_or_else(|| "".to_string()),
+            classifier_version: bhv_res.map(|r| r.classifier_version.clone()).unwrap_or_else(|| "".to_string()),
+            tick_start: bhv_res.map(|r| r.tick_start).unwrap_or(0),
+            tick_end: bhv_res.map(|r| r.tick_end).unwrap_or(0),
+            data_completeness: bhv_res.map(|r| r.data_completeness).unwrap_or(0.0),
         });
 
         run_results.push((val, config_hash, res, zone));
@@ -1658,6 +1687,7 @@ pub fn run_matrix(
 
             all_finals.push(res.final_energy);
 
+            let bhv_res = res.bhv_res.as_ref();
             records.push(ClassificationRecord {
                 sweep_name: mat.name.clone(),
                 scenario_id: scenario_id.to_string(),
@@ -1669,6 +1699,19 @@ pub fn run_matrix(
                 observed_role: res.observed_role.clone(),
                 behavior_profile: res.behavior_profile.clone(),
                 ticks_per_second: res.ticks_per_second,
+                classification_mode: bhv_res.map(|r| format!("{:?}", r.mode)).unwrap_or_else(|| "unknown".to_string()),
+                status: bhv_res.map(|r| format!("{:?}", r.status)).unwrap_or_else(|| "unknown".to_string()),
+                primary_label: bhv_res.map(|r| r.primary_label.clone().unwrap_or_else(|| "unknown".to_string())).unwrap_or_else(|| "unknown".to_string()),
+                secondary_labels: bhv_res.map(|r| r.secondary_labels.iter().map(|lr| lr.label.as_str()).collect::<Vec<_>>().join(",")).unwrap_or_else(|| "".to_string()),
+                score: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
+                confidence: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
+                evidence_summary: bhv_res.map(|r| {
+                    r.evidence.iter().map(|e| format!("{} {}: {}", e.feature, e.expected, e.matched)).collect::<Vec<_>>().join(", ")
+                }).unwrap_or_else(|| "".to_string()),
+                classifier_version: bhv_res.map(|r| r.classifier_version.clone()).unwrap_or_else(|| "".to_string()),
+                tick_start: bhv_res.map(|r| r.tick_start).unwrap_or(0),
+                tick_end: bhv_res.map(|r| r.tick_end).unwrap_or(0),
+                data_completeness: bhv_res.map(|r| r.data_completeness).unwrap_or(0.0),
             });
 
             run_results.push((vx, vy, config_hash, res, zone));
@@ -2018,14 +2061,16 @@ fn main() {
         .expect("cannot create behavior_profiles.csv");
     writeln!(
         bp_csv,
-        "sweep_name,scenario_id,parameter_name,parameter_value,secondary_parameter_name,secondary_parameter_value,potential_role,observed_role,behavior_profile,ticks_per_second"
+        "sweep_name,scenario_id,parameter_name,parameter_value,secondary_parameter_name,secondary_parameter_value,potential_role,observed_role,behavior_profile,ticks_per_second,\
+         classification_mode,status,primary_label,secondary_labels,score,confidence,evidence_summary,classifier_version,tick_start,tick_end,data_completeness"
     )
     .unwrap();
 
     for r in &all_records {
         writeln!(
             bp_csv,
-            "{},{},{},{:.4},{},{:.4},{},{},{},{:.4}",
+            "{},{},{},{:.4},{},{:.4},{},{},{},{:.4},{},{},{},\"{}\",\
+             {:.4},{:.4},\"{}\",{},{},{},{:.4}",
             r.sweep_name,
             r.scenario_id,
             r.parameter_name,
@@ -2035,7 +2080,18 @@ fn main() {
             r.potential_role,
             r.observed_role,
             r.behavior_profile,
-            r.ticks_per_second
+            r.ticks_per_second,
+            r.classification_mode,
+            r.status,
+            r.primary_label,
+            r.secondary_labels,
+            r.score,
+            r.confidence,
+            r.evidence_summary.replace("\"", "\"\""),
+            r.classifier_version,
+            r.tick_start,
+            r.tick_end,
+            r.data_completeness
         )
         .unwrap();
     }
@@ -2062,12 +2118,12 @@ fn main() {
         .expect("cannot create behavior-profiles md report");
     writeln!(bp_md, "# Behavior Profiles Report").unwrap();
     writeln!(bp_md).unwrap();
-    writeln!(bp_md, "| Sweep Name | Scenario | Parameter | Value | Sec Param | Sec Value | Potential Role | Observed Role | Behavior Profile | Speed (t/s) |").unwrap();
-    writeln!(bp_md, "|---|---|---|---|---|---|---|---|---|---|").unwrap();
+    writeln!(bp_md, "| Sweep Name | Scenario | Parameter | Value | Sec Param | Sec Value | Potential Role | Observed Role | Behavior Profile | Speed (t/s) | Mode | Status | Primary | Secondary | Score | Conf | Evidence | Ver | Start | End | Complete |").unwrap();
+    writeln!(bp_md, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|").unwrap();
     for r in &all_records {
         writeln!(
             bp_md,
-            "| {} | {} | {} | {:.4} | {} | {:.4} | {} | {} | {} | {:.2} |",
+            "| {} | {} | {} | {:.4} | {} | {:.4} | {} | {} | {} | {:.2} | {} | {} | {} | {} | {:.4} | {:.4} | {} | {} | {} | {} | {:.4} |",
             r.sweep_name,
             r.scenario_id,
             r.parameter_name,
@@ -2077,7 +2133,18 @@ fn main() {
             r.potential_role,
             r.observed_role,
             r.behavior_profile,
-            r.ticks_per_second
+            r.ticks_per_second,
+            r.classification_mode,
+            r.status,
+            r.primary_label,
+            r.secondary_labels,
+            r.score,
+            r.confidence,
+            r.evidence_summary,
+            r.classifier_version,
+            r.tick_start,
+            r.tick_end,
+            r.data_completeness
         )
         .unwrap();
     }

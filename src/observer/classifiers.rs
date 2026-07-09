@@ -101,44 +101,43 @@ pub fn classify_cell_roles_observed(
     window: &ObservationWindow,
     config: &CellRoleClassifierConfig,
 ) -> ClassificationResult {
-    let mut primary_label = None;
     let mut evidence = Vec::new();
-    let mut max_fraction = 0.0;
+    let actions = [
+        ("boundary-supporting", "PassiveUptake_executed"),
+        ("contractile-like", "ContractileDisplacement_executed"),
+        ("growth-oriented", "Growth_executed"),
+        ("metabolic-like", "Metabolism_executed"),
+        ("synthesis-oriented", "MaterialSynthesis_executed"),
+        ("transport-like", "ActiveUptake_executed"),
+    ];
 
-    let mut sorted_rules: Vec<(&String, &crate::observer::config::RoleRule)> =
-        config.rules.iter().collect();
-    sorted_rules.sort_by_key(|(name, _)| *name);
-
-    // For Observed role, check if related action was actually executed
-    for (role_name, rule) in sorted_rules {
-        let feature_name = format!("{}_fraction", rule.required_material);
-        let fraction = window.features.get(&feature_name).copied().unwrap_or(0.0);
-
-        let action_feature = match rule.required_material.as_str() {
-            "boundary_material" => "PassiveUptake_executed",
-            "transport_material" => "ActiveUptake_executed",
-            "metabolic_material" => "Metabolism_executed",
-            "storage_material" => "Storage_executed",
-            "synthesis_material" => "MaterialSynthesis_executed",
-            "structural_material" => "Growth_executed",
-            "contractile_material" => "ContractileDisplacement_executed",
-            _ => "unknown_action",
-        };
-        let executed = window.features.get(action_feature).copied().unwrap_or(0.0);
-        let matched = fraction >= rule.min_fraction && executed > 0.0;
-
+    let mut candidates = Vec::new();
+    for &(role_name, action_name) in &actions {
+        let val = window.features.get(action_name).copied().unwrap_or(0.0);
         evidence.push(EvidenceRecord {
-            feature: format!("{}+{}", feature_name, action_feature),
-            expected: format!(">= {} and executed > 0", rule.min_fraction),
-            actual: fraction,
-            matched,
+            feature: action_name.to_string(),
+            expected: "> 0".to_string(),
+            actual: val,
+            matched: val > 0.0,
         });
-
-        if matched && fraction > max_fraction {
-            max_fraction = fraction;
-            primary_label = Some(role_name.clone());
-        }
+        candidates.push((role_name, action_name, val));
     }
+
+    // Sort to find the candidate with the highest non-zero value,
+    // breaking ties alphabetically by role name.
+    candidates.sort_by(|a, b| {
+        match b.2.partial_cmp(&a.2) {
+            Some(std::cmp::Ordering::Equal) => a.0.cmp(&b.0),
+            Some(ord) => ord,
+            None => std::cmp::Ordering::Equal,
+        }
+    });
+
+    let primary_label = if candidates[0].2 > 0.0 {
+        Some(candidates[0].0.to_string())
+    } else {
+        None
+    };
 
     let is_classified = primary_label.is_some();
     ClassificationResult {

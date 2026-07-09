@@ -26,3 +26,34 @@ fn test_classify_cell_roles_potential_and_observed() {
     assert_eq!(obs_res.status, ClassificationStatus::Unknown);
     assert!(obs_res.primary_label.is_none());
 }
+
+#[test]
+fn test_observed_role_execution_and_tie_breaking() {
+    let config =
+        load_cell_role_classifier("config/observer/cell-functional-role-classifier.toml").unwrap();
+    
+    // Test case 1: Single action executed
+    let mut raw_data1 = HashMap::new();
+    raw_data1.insert("PassiveUptake_executed".to_string(), 5.0);
+    let window1 = extract_features("run-1", EntityType::Cell, "cell-0", 0, 100, &raw_data1);
+    let obs_res1 = classify_cell_roles_observed(&window1, &config);
+    assert_eq!(obs_res1.primary_label.unwrap(), "boundary-supporting");
+    assert_eq!(obs_res1.status, ClassificationStatus::Classified);
+
+    // Test case 2: Tie-breaking where boundary-supporting (PassiveUptake) vs transport-like (ActiveUptake) both executed with same count (5.0).
+    // "boundary-supporting" is alphabetically before "transport-like".
+    let mut raw_data2 = HashMap::new();
+    raw_data2.insert("PassiveUptake_executed".to_string(), 5.0);
+    raw_data2.insert("ActiveUptake_executed".to_string(), 5.0);
+    let window2 = extract_features("run-2", EntityType::Cell, "cell-0", 0, 100, &raw_data2);
+    let obs_res2 = classify_cell_roles_observed(&window2, &config);
+    assert_eq!(obs_res2.primary_label.unwrap(), "boundary-supporting");
+
+    // Test case 3: transport-like (ActiveUptake) executed with higher count (10.0) vs boundary-supporting (PassiveUptake) (5.0)
+    let mut raw_data3 = HashMap::new();
+    raw_data3.insert("PassiveUptake_executed".to_string(), 5.0);
+    raw_data3.insert("ActiveUptake_executed".to_string(), 10.0);
+    let window3 = extract_features("run-3", EntityType::Cell, "cell-0", 0, 100, &raw_data3);
+    let obs_res3 = classify_cell_roles_observed(&window3, &config);
+    assert_eq!(obs_res3.primary_label.unwrap(), "transport-like");
+}
