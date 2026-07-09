@@ -147,4 +147,6 @@ tags:
 - [[outputs/worklogs/2026-07-09-0056-REPORT-config-restructure|2026-07-09-0056-REPORT-config-restructure]]
 - [[outputs/worklogs/2026-07-09-1049-REPORT-rust-integration-paths|2026-07-09-1049-REPORT-rust-integration-paths]]
 - [[outputs/worklogs/2026-07-09-1051-REPORT-update-docs-paths|2026-07-09-1051-REPORT-update-docs-paths]]
+- [[outputs/worklogs/2026-07-09-1118-REPORT-scenario-mapping-config-validation|2026-07-09-1118-REPORT-scenario-mapping-config-validation]]
+- [[outputs/worklogs/2026-07-09-1123-REPORT-feat-scenario-mapping-accounting|2026-07-09-1123-REPORT-feat-scenario-mapping-accounting]]
 

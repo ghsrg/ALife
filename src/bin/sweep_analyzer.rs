@@ -185,6 +185,17 @@ pub struct SimResult {
     pub observed_role: String,
     pub behavior_profile: String,
     pub ticks_per_second: f32,
+    pub explicit_energy_loss: f32,
+    pub death_cleanup_loss_energy: f32,
+    pub death_cleanup_loss_resources: f32,
+    pub clamping_loss: f32,
+    pub unpaid_mandatory_cost: f32,
+    pub resource_decay: f32,
+    pub resource_sink: f32,
+    pub numerical_error_energy: f32,
+    pub numerical_error_resources: f32,
+    pub unclassified_loss_energy: f32,
+    pub unclassified_loss_resources: f32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -528,6 +539,17 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 observed_role: "unknown".to_string(),
                 behavior_profile: "unknown".to_string(),
                 ticks_per_second: 0.0,
+                explicit_energy_loss: 0.0,
+                death_cleanup_loss_energy: 0.0,
+                death_cleanup_loss_resources: 0.0,
+                clamping_loss: 0.0,
+                unpaid_mandatory_cost: 0.0,
+                resource_decay: 0.0,
+                resource_sink: 0.0,
+                numerical_error_energy: 0.0,
+                numerical_error_resources: 0.0,
+                unclassified_loss_energy: 0.0,
+                unclassified_loss_resources: 0.0,
             };
         }
     };
@@ -558,7 +580,6 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 .raw()
         })
         .sum::<f32>();
-    let initial_total_res = initial_grid + initial_cell_res + initial_cell_mat;
 
     let initial_energy = (0..len)
         .map(|i| {
@@ -595,6 +616,11 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
     let mut dormancy_exit_count = 0_u32;
     let mut ticks_executed = 0_u32;
     let mut energy_sum = 0.0_f32;
+
+    let mut clamping_cumulative = 0.0_f32;
+    let mut unpaid_mandatory_cost_cumulative = 0.0_f32;
+    let mut death_cleanup_loss_energy = 0.0_f32;
+    let mut death_cleanup_loss_resources = 0.0_f32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -634,6 +660,17 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             .total_amount_for_layer(alife::core::resources::ResourceLayerIndex::from_raw(0))
             .map(|a| a.raw())
             .unwrap_or(0.0);
+
+        let energy_before_sum = (0..len)
+            .map(|i| {
+                executor
+                    .world()
+                    .cells()
+                    .energy(CellIndex::from_raw(i))
+                    .current()
+                    .raw()
+            })
+            .sum::<f32>();
 
         let summary = match executor.step() {
             Ok(s) => s,
@@ -753,6 +790,74 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             }
         }
 
+        // New accounting category calculations
+        let mut upkeep_tick_sum = 0.0_f32;
+        for (i, &state_before) in cell_states_before.iter().enumerate() {
+            if state_before != LifecycleState::Dead {
+                let flags = executor.world().cells().runtime_flags(CellIndex::from_raw(i));
+                if flags.mandatory_paid {
+                    if state_before == LifecycleState::Dormant {
+                        upkeep_tick_sum += dormant_cost;
+                    } else {
+                        upkeep_tick_sum += mandatory_cost_per_tick;
+                    }
+                }
+            }
+        }
+
+        let spent_tick_sum = (synthesis_successes as f32 * synthesis_cost_energy)
+            + (growth_successes as f32 * growth_cost_energy)
+            + (displacement_successes as f32 * displacement_cost_energy);
+
+        let mut passive_income_tick_sum = 0.0_f32;
+        for &state_before in &cell_states_before {
+            if state_before != LifecycleState::Dead {
+                passive_income_tick_sum += passive_energy_income;
+            }
+        }
+        let produced_tick_sum = metabolism_successes as f32 * energy_per_resource;
+
+        let expected_after_tick = energy_before_sum + passive_income_tick_sum + produced_tick_sum - upkeep_tick_sum - spent_tick_sum;
+        let energy_after_sum = (0..len)
+            .map(|i| {
+                executor
+                    .world()
+                    .cells()
+                    .energy(CellIndex::from_raw(i))
+                    .current()
+                    .raw()
+            })
+            .sum::<f32>();
+
+        let clamping_tick = (expected_after_tick - energy_after_sum).max(0.0);
+        clamping_cumulative += clamping_tick;
+
+        let mut unpaid_mandatory_cost_tick = 0.0_f32;
+        for (i, &state_before) in cell_states_before.iter().enumerate() {
+            if state_before != LifecycleState::Dead {
+                let flags = executor.world().cells().runtime_flags(CellIndex::from_raw(i));
+                if !flags.mandatory_paid {
+                    let cost = if state_before == LifecycleState::Dormant {
+                        dormant_cost
+                    } else {
+                        mandatory_cost_per_tick
+                    };
+                    unpaid_mandatory_cost_tick += cost;
+                }
+            }
+        }
+        unpaid_mandatory_cost_cumulative += unpaid_mandatory_cost_tick;
+
+        for (i, &state_before) in cell_states_before.iter().enumerate() {
+            let index = CellIndex::from_raw(i);
+            let state_after = executor.world().cells().lifecycle_state(index);
+            if state_before != LifecycleState::Dead && state_after == LifecycleState::Dead {
+                death_cleanup_loss_energy += executor.world().cells().energy(index).current().raw();
+                death_cleanup_loss_resources += executor.world().cells().resource_amount(index).raw()
+                    + executor.world().cells().total_materials(index).raw();
+            }
+        }
+
         if len > 0 {
             let state = executor
                 .world()
@@ -808,7 +913,20 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 .raw()
         })
         .sum::<f32>();
-    let final_cell_mat = (0..len)
+
+    let final_cell_res_alive = (0..len)
+        .filter(|&i| executor.world().cells().lifecycle_state(CellIndex::from_raw(i)) != LifecycleState::Dead)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .resource_amount(CellIndex::from_raw(i))
+                .raw()
+        })
+        .sum::<f32>();
+
+    let final_cell_mat_alive = (0..len)
+        .filter(|&i| executor.world().cells().lifecycle_state(CellIndex::from_raw(i)) != LifecycleState::Dead)
         .map(|i| {
             executor
                 .world()
@@ -817,10 +935,6 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 .raw()
         })
         .sum::<f32>();
-
-    let final_total_res =
-        final_grid + final_cell_res + final_cell_mat + metabolized_cumulative + decay_cumulative;
-    let resource_balance_error = (final_total_res - initial_total_res).abs();
 
     let final_energy = (0..len)
         .map(|i| {
@@ -832,14 +946,58 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 .raw()
         })
         .sum::<f32>();
+
+    let final_energy_alive = (0..len)
+        .filter(|&i| executor.world().cells().lifecycle_state(CellIndex::from_raw(i)) != LifecycleState::Dead)
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .energy(CellIndex::from_raw(i))
+                .current()
+                .raw()
+        })
+        .sum::<f32>();
+
     let energy_total_input = initial_energy + energy_produced + passive_energy_received;
-    let energy_total_output = final_energy
+    let energy_total_output = final_energy_alive
         + energy_spent_upkeep
         + energy_spent_dormant_upkeep
         + energy_spent_synthesis
         + energy_spent_growth
-        + energy_spent_movement;
+        + energy_spent_movement
+        + death_cleanup_loss_energy
+        + clamping_cumulative;
     let energy_balance_error = (energy_total_input - energy_total_output).abs();
+
+    let numerical_error_energy;
+    let unclassified_loss_energy;
+    if energy_balance_error < 0.01 {
+        numerical_error_energy = energy_balance_error;
+        unclassified_loss_energy = 0.0;
+    } else {
+        numerical_error_energy = 0.0;
+        unclassified_loss_energy = energy_balance_error;
+    }
+
+    let resource_total_input = initial_grid + initial_cell_res + initial_cell_mat;
+    let resource_total_output = final_grid
+        + final_cell_res_alive
+        + final_cell_mat_alive
+        + metabolized_cumulative
+        + decay_cumulative
+        + death_cleanup_loss_resources;
+    let resource_balance_error = (resource_total_input - resource_total_output).abs();
+
+    let numerical_error_resources;
+    let unclassified_loss_resources;
+    if resource_balance_error < 0.01 {
+        numerical_error_resources = resource_balance_error;
+        unclassified_loss_resources = 0.0;
+    } else {
+        numerical_error_resources = 0.0;
+        unclassified_loss_resources = resource_balance_error;
+    }
 
     let mean_energy = if ticks_executed > 0 {
         energy_sum / ticks_executed as f32
@@ -1061,6 +1219,17 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         observed_role,
         behavior_profile,
         ticks_per_second,
+        explicit_energy_loss: 0.0,
+        death_cleanup_loss_energy,
+        death_cleanup_loss_resources,
+        clamping_loss: clamping_cumulative,
+        unpaid_mandatory_cost: unpaid_mandatory_cost_cumulative,
+        resource_decay: decay_cumulative,
+        resource_sink: 0.0,
+        numerical_error_energy,
+        numerical_error_resources,
+        unclassified_loss_energy,
+        unclassified_loss_resources,
     }
 }
 
@@ -1249,7 +1418,8 @@ pub fn run_sweep(
          energy_produced,passive_energy_received,\
          energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
-         resource_balance_error,energy_balance_error,ticks_per_second"
+         resource_balance_error,energy_balance_error,ticks_per_second,\
+         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources"
     )
     .unwrap();
 
@@ -1325,7 +1495,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -1369,7 +1539,18 @@ pub fn run_sweep(
             res.resource_explicit_sink,
             res.resource_balance_error,
             res.energy_balance_error,
-            res.ticks_per_second
+            res.ticks_per_second,
+            res.explicit_energy_loss,
+            res.death_cleanup_loss_energy,
+            res.death_cleanup_loss_resources,
+            res.clamping_loss,
+            res.unpaid_mandatory_cost,
+            res.resource_decay,
+            res.resource_sink,
+            res.numerical_error_energy,
+            res.numerical_error_resources,
+            res.unclassified_loss_energy,
+            res.unclassified_loss_resources
         )
         .unwrap();
 
@@ -1448,7 +1629,8 @@ pub fn run_matrix(
          energy_produced,passive_energy_received,\
          energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
-         resource_balance_error,energy_balance_error,ticks_per_second"
+         resource_balance_error,energy_balance_error,ticks_per_second,\
+         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources"
     )
     .unwrap();
 
@@ -1531,7 +1713,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -1577,7 +1759,18 @@ pub fn run_matrix(
             res.resource_explicit_sink,
             res.resource_balance_error,
             res.energy_balance_error,
-            res.ticks_per_second
+            res.ticks_per_second,
+            res.explicit_energy_loss,
+            res.death_cleanup_loss_energy,
+            res.death_cleanup_loss_resources,
+            res.clamping_loss,
+            res.unpaid_mandatory_cost,
+            res.resource_decay,
+            res.resource_sink,
+            res.numerical_error_energy,
+            res.numerical_error_resources,
+            res.unclassified_loss_energy,
+            res.unclassified_loss_resources
         )
         .unwrap();
     }
@@ -1615,6 +1808,20 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str, records: &[ClassificationRe
     writeln!(f, "- **seed**: {}", cfg.run.seed).unwrap();
     writeln!(f, "- **ticks per run**: {}", cfg.run.ticks).unwrap();
     writeln!(f, "- **output_dir**: `{}`", cfg.run.output_dir).unwrap();
+    writeln!(f).unwrap();
+    writeln!(f, "## Detailed Accounting Categories").unwrap();
+    writeln!(f, "The following new accounting category fields are tracked in the simulation results:").unwrap();
+    writeln!(f, "- **explicit_energy_loss**: Energy explicitly removed/sunk.").unwrap();
+    writeln!(f, "- **death_cleanup_loss_energy**: Remaining energy of cells upon death.").unwrap();
+    writeln!(f, "- **death_cleanup_loss_resources**: Remaining resource inventory and materials of cells upon death.").unwrap();
+    writeln!(f, "- **clamping_loss**: Energy lost due to maximum capacity limits and clamping.").unwrap();
+    writeln!(f, "- **unpaid_mandatory_cost**: Mandatory upkeep cost that could not be paid due to energy depletion.").unwrap();
+    writeln!(f, "- **resource_decay**: Environmental resource decay over time.").unwrap();
+    writeln!(f, "- **resource_sink**: Resources explicitly removed/sunk.").unwrap();
+    writeln!(f, "- **numerical_error_energy**: Energy balance error below the tolerance threshold (< 0.01).").unwrap();
+    writeln!(f, "- **numerical_error_resources**: Resource balance error below the tolerance threshold (< 0.01).").unwrap();
+    writeln!(f, "- **unclassified_loss_energy**: Energy balance error exceeding the tolerance threshold.").unwrap();
+    writeln!(f, "- **unclassified_loss_resources**: Resource balance error exceeding the tolerance threshold.").unwrap();
     writeln!(f).unwrap();
     writeln!(f, "## Zone Legend").unwrap();
     writeln!(f, "| Zone | Meaning |").unwrap();

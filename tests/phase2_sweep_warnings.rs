@@ -44,6 +44,17 @@ fn mock_result(collapsed: bool, final_energy: f32, dormant_ticks: u32) -> SimRes
         observed_role: "unknown".to_string(),
         behavior_profile: "unknown".to_string(),
         ticks_per_second: 0.0,
+        explicit_energy_loss: 0.0,
+        death_cleanup_loss_energy: 0.0,
+        death_cleanup_loss_resources: 0.0,
+        clamping_loss: 0.0,
+        unpaid_mandatory_cost: 0.0,
+        resource_decay: 0.0,
+        resource_sink: 0.0,
+        numerical_error_energy: 0.0,
+        numerical_error_resources: 0.0,
+        unclassified_loss_energy: 0.0,
+        unclassified_loss_resources: 0.0,
     }
 }
 
