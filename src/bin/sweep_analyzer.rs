@@ -1335,10 +1335,8 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
         }
     }
 
-    if push_low_info {
-        if !warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()) {
-            warnings.push("LOW_INFORMATION_SWEEP".to_string());
-        }
+    if push_low_info && !warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()) {
+        warnings.push("LOW_INFORMATION_SWEEP".to_string());
     }
 
     // 4. Steady resource flow check
@@ -1562,7 +1560,7 @@ pub fn run_sweep(
                         .collect::<Vec<_>>()
                         .join(",")
                 })
-                .unwrap_or_else(|| "".to_string()),
+                .unwrap_or_default(),
             score: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
             confidence: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
             evidence_summary: bhv_res
@@ -1573,10 +1571,10 @@ pub fn run_sweep(
                         .collect::<Vec<_>>()
                         .join(", ")
                 })
-                .unwrap_or_else(|| "".to_string()),
+                .unwrap_or_default(),
             classifier_version: bhv_res
                 .map(|r| r.classifier_version.clone())
-                .unwrap_or_else(|| "".to_string()),
+                .unwrap_or_default(),
             tick_start: bhv_res.map(|r| r.tick_start).unwrap_or(0),
             tick_end: bhv_res.map(|r| r.tick_end).unwrap_or(0),
             data_completeness: bhv_res.map(|r| r.data_completeness).unwrap_or(0.0),
@@ -1817,7 +1815,7 @@ pub fn run_matrix(
                             .collect::<Vec<_>>()
                             .join(",")
                     })
-                    .unwrap_or_else(|| "".to_string()),
+                    .unwrap_or_default(),
                 score: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
                 confidence: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
                 evidence_summary: bhv_res
@@ -1828,10 +1826,10 @@ pub fn run_matrix(
                             .collect::<Vec<_>>()
                             .join(", ")
                     })
-                    .unwrap_or_else(|| "".to_string()),
+                    .unwrap_or_default(),
                 classifier_version: bhv_res
                     .map(|r| r.classifier_version.clone())
-                    .unwrap_or_else(|| "".to_string()),
+                    .unwrap_or_default(),
                 tick_start: bhv_res.map(|r| r.tick_start).unwrap_or(0),
                 tick_end: bhv_res.map(|r| r.tick_end).unwrap_or(0),
                 data_completeness: bhv_res.map(|r| r.data_completeness).unwrap_or(0.0),
@@ -2126,14 +2124,12 @@ fn main() {
                 );
                 std::process::exit(1);
             }
-            if let Some(scenarios) = &cfg.scenarios {
-                if !scenarios.contains_key(sc) {
-                    eprintln!(
-                        "Validation error: scenario preset '{}' specified in sweep '{}' does not exist under scenarios presets in configuration.",
-                        sc, sweep.name
-                    );
-                    std::process::exit(1);
-                }
+            if cfg.scenarios.as_ref().is_some_and(|s| !s.contains_key(sc)) {
+                eprintln!(
+                    "Validation error: scenario preset '{}' specified in sweep '{}' does not exist under scenarios presets in configuration.",
+                    sc, sweep.name
+                );
+                std::process::exit(1);
             }
         }
     }
@@ -2148,14 +2144,12 @@ fn main() {
                 );
                 std::process::exit(1);
             }
-            if let Some(scenarios) = &cfg.scenarios {
-                if !scenarios.contains_key(sc) {
-                    eprintln!(
-                        "Validation error: scenario preset '{}' specified in matrix '{}' does not exist under scenarios presets in configuration.",
-                        sc, mat.name
-                    );
-                    std::process::exit(1);
-                }
+            if cfg.scenarios.as_ref().is_some_and(|s| !s.contains_key(sc)) {
+                eprintln!(
+                    "Validation error: scenario preset '{}' specified in matrix '{}' does not exist under scenarios presets in configuration.",
+                    sc, mat.name
+                );
+                std::process::exit(1);
             }
         }
     }
