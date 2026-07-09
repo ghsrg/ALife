@@ -242,7 +242,7 @@ Key differences from `cargo test`:
 ### Quick start
 
 ```powershell
-# Default: reads sweep_analyzer.toml in the project root
+# Default: reads config/analyzer/sweep_analyzer.toml
 cargo run --bin sweep_analyzer
 
 # Custom config path
@@ -252,9 +252,9 @@ cargo run --bin sweep_analyzer -- path/to/my_sweep.toml
 cargo run --release --bin sweep_analyzer
 ```
 
-### Configuration (`sweep_analyzer.toml`)
+### Configuration (`config/analyzer/sweep_analyzer.toml`)
 
-Located at the project root. Key sections:
+Located at `config/analyzer/sweep_analyzer.toml`. Key sections:
 
 ```toml
 [run]
