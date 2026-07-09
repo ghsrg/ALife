@@ -1266,12 +1266,27 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
     }
 
     let scenario_lower = scenario_id.to_lowercase();
+
+    // 1. Dormancy survival check
     if (scenario_lower.contains("dormant") || scenario_lower.contains("dormancy"))
         && results.iter().all(|r| r.dormant_ticks == 0)
     {
         warnings.push("SCENARIO_MECHANISM_NOT_ACTIVATED".to_string());
     }
 
+    // 2. Resource abundance check
+    if scenario_lower == "resource_abundance" {
+        let all_collapsed = results.iter().all(|r| r.collapsed);
+        let any_environmental = results.iter().any(|r| {
+            let dr_lower = r.death_reason.to_lowercase();
+            dr_lower.contains("heat") || dr_lower.contains("waste")
+        });
+        if all_collapsed && any_environmental {
+            warnings.push("ENVIRONMENT_DOMINATED_RESULT".to_string());
+        }
+    }
+
+    // 3. Low information sweep check
     let first_energy = results[0].final_energy;
     let all_energies_same = results
         .iter()
@@ -1281,8 +1296,37 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
     let first_zone = classify(&results[0], ticks);
     let all_zones_same = results.iter().all(|r| classify(r, ticks) == first_zone);
 
-    if all_energies_same || all_zones_same {
-        warnings.push("LOW_INFORMATION_SWEEP".to_string());
+    let mut push_low_info = all_energies_same || all_zones_same;
+
+    if push_low_info && scenario_lower == "finite_resource_viability" {
+        let (min_survival, max_survival) = results
+            .iter()
+            .map(|r| r.ticks_executed)
+            .fold((u32::MAX, u32::MIN), |(min, max), t| (min.min(t), max.max(t)));
+        if max_survival.saturating_sub(min_survival) > 5 {
+            push_low_info = false;
+        }
+    }
+
+    if push_low_info {
+        if !warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()) {
+            warnings.push("LOW_INFORMATION_SWEEP".to_string());
+        }
+    }
+
+    // 4. Steady resource flow check
+    if scenario_lower == "steady_resource_flow" {
+        let stable_count = results.iter().filter(|r| !r.collapsed).count();
+        let ratio = stable_count as f32 / results.len() as f32;
+        if ratio <= 0.05 {
+            if !warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()) {
+                warnings.push("LOW_INFORMATION_SWEEP".to_string());
+            }
+            let rec = "LOW_INFORMATION_SWEEP: Recommend narrowing the parameter range since stable runs are very sparse.".to_string();
+            if !warnings.contains(&rec) {
+                warnings.push(rec);
+            }
+        }
     }
 
     warnings
