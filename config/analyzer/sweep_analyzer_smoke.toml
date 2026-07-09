@@ -55,6 +55,14 @@ from  = 0.10
 to    = 0.50
 steps = 5
 
+[[sweep]]
+name  = "active_metabolism_viability"
+scenario = "active_metabolism_viability"
+param = "max_uptake_per_tick"
+from  = 0.1
+to    = 2.0
+steps = 5
+
 [[matrix]]
 name      = "resource_abundance"
 scenario  = "resource_abundance"
@@ -78,3 +86,8 @@ dormancy_allowed = true
 
 [scenarios.resource_abundance]
 passive_energy_income = 1.5
+
+[scenarios.active_metabolism_viability]
+decay_rate = 0.0
+passive_energy_income = 0.0
+initial_resources = [4000.0]

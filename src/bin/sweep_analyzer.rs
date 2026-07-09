@@ -2117,6 +2117,7 @@ fn main() {
         "steady_resource_flow",
         "dormancy_survival",
         "resource_abundance",
+        "active_metabolism_viability",
     ];
 
     if let Some(sweeps) = &cfg.sweep {
