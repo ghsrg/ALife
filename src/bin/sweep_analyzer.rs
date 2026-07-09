@@ -13,8 +13,8 @@ use alife::core::units::{
 };
 use alife::observer::{
     classifiers::{
-        classify_behavior_profiles, classify_cell_roles_observed, classify_cell_roles_potential,
-        ClassificationResult,
+        ClassificationResult, classify_behavior_profiles, classify_cell_roles_observed,
+        classify_cell_roles_potential,
     },
     config::{
         BehaviorClassifierConfig, CellRoleClassifierConfig, load_behavior_profile_classifier,
@@ -256,9 +256,7 @@ pub fn build_config(
         .copied()
         .unwrap_or(capacity_limit_base);
 
-    let decay_rate_base = preset
-        .and_then(|p| p.decay_rate)
-        .unwrap_or(ri.decay_rate);
+    let decay_rate_base = preset.and_then(|p| p.decay_rate).unwrap_or(ri.decay_rate);
     let decay_rate = overrides
         .get("decay_rate")
         .copied()
@@ -797,7 +795,10 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         let mut upkeep_tick_sum = 0.0_f32;
         for (i, &state_before) in cell_states_before.iter().enumerate() {
             if state_before != LifecycleState::Dead {
-                let flags = executor.world().cells().runtime_flags(CellIndex::from_raw(i));
+                let flags = executor
+                    .world()
+                    .cells()
+                    .runtime_flags(CellIndex::from_raw(i));
                 if flags.mandatory_paid {
                     if state_before == LifecycleState::Dormant {
                         upkeep_tick_sum += dormant_cost;
@@ -820,7 +821,9 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         }
         let produced_tick_sum = metabolism_successes as f32 * energy_per_resource;
 
-        let expected_after_tick = energy_before_sum + passive_income_tick_sum + produced_tick_sum - upkeep_tick_sum - spent_tick_sum;
+        let expected_after_tick = energy_before_sum + passive_income_tick_sum + produced_tick_sum
+            - upkeep_tick_sum
+            - spent_tick_sum;
         let energy_after_sum = (0..len)
             .map(|i| {
                 executor
@@ -838,7 +841,10 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         let mut unpaid_mandatory_cost_tick = 0.0_f32;
         for (i, &state_before) in cell_states_before.iter().enumerate() {
             if state_before != LifecycleState::Dead {
-                let flags = executor.world().cells().runtime_flags(CellIndex::from_raw(i));
+                let flags = executor
+                    .world()
+                    .cells()
+                    .runtime_flags(CellIndex::from_raw(i));
                 if !flags.mandatory_paid {
                     let cost = if state_before == LifecycleState::Dormant {
                         dormant_cost
@@ -856,8 +862,9 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             let state_after = executor.world().cells().lifecycle_state(index);
             if state_before != LifecycleState::Dead && state_after == LifecycleState::Dead {
                 death_cleanup_loss_energy += executor.world().cells().energy(index).current().raw();
-                death_cleanup_loss_resources += executor.world().cells().resource_amount(index).raw()
-                    + executor.world().cells().total_materials(index).raw();
+                death_cleanup_loss_resources +=
+                    executor.world().cells().resource_amount(index).raw()
+                        + executor.world().cells().total_materials(index).raw();
             }
         }
 
@@ -918,7 +925,13 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         .sum::<f32>();
 
     let final_cell_res_alive = (0..len)
-        .filter(|&i| executor.world().cells().lifecycle_state(CellIndex::from_raw(i)) != LifecycleState::Dead)
+        .filter(|&i| {
+            executor
+                .world()
+                .cells()
+                .lifecycle_state(CellIndex::from_raw(i))
+                != LifecycleState::Dead
+        })
         .map(|i| {
             executor
                 .world()
@@ -929,7 +942,13 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         .sum::<f32>();
 
     let final_cell_mat_alive = (0..len)
-        .filter(|&i| executor.world().cells().lifecycle_state(CellIndex::from_raw(i)) != LifecycleState::Dead)
+        .filter(|&i| {
+            executor
+                .world()
+                .cells()
+                .lifecycle_state(CellIndex::from_raw(i))
+                != LifecycleState::Dead
+        })
         .map(|i| {
             executor
                 .world()
@@ -951,7 +970,13 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         .sum::<f32>();
 
     let final_energy_alive = (0..len)
-        .filter(|&i| executor.world().cells().lifecycle_state(CellIndex::from_raw(i)) != LifecycleState::Dead)
+        .filter(|&i| {
+            executor
+                .world()
+                .cells()
+                .lifecycle_state(CellIndex::from_raw(i))
+                != LifecycleState::Dead
+        })
         .map(|i| {
             executor
                 .world()
@@ -1302,7 +1327,9 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
         let (min_survival, max_survival) = results
             .iter()
             .map(|r| r.ticks_executed)
-            .fold((u32::MAX, u32::MIN), |(min, max), t| (min.min(t), max.max(t)));
+            .fold((u32::MAX, u32::MIN), |(min, max), t| {
+                (min.min(t), max.max(t))
+            });
         if max_survival.saturating_sub(min_survival) > 5 {
             push_low_info = false;
         }
@@ -1514,16 +1541,42 @@ pub fn run_sweep(
             observed_role: res.observed_role.clone(),
             behavior_profile: res.behavior_profile.clone(),
             ticks_per_second: res.ticks_per_second,
-            classification_mode: bhv_res.map(|r| format!("{:?}", r.mode)).unwrap_or_else(|| "unknown".to_string()),
-            status: bhv_res.map(|r| format!("{:?}", r.status)).unwrap_or_else(|| "unknown".to_string()),
-            primary_label: bhv_res.map(|r| r.primary_label.clone().unwrap_or_else(|| "unknown".to_string())).unwrap_or_else(|| "unknown".to_string()),
-            secondary_labels: bhv_res.map(|r| r.secondary_labels.iter().map(|lr| lr.label.as_str()).collect::<Vec<_>>().join(",")).unwrap_or_else(|| "".to_string()),
+            classification_mode: bhv_res
+                .map(|r| format!("{:?}", r.mode))
+                .unwrap_or_else(|| "unknown".to_string()),
+            status: bhv_res
+                .map(|r| format!("{:?}", r.status))
+                .unwrap_or_else(|| "unknown".to_string()),
+            primary_label: bhv_res
+                .map(|r| {
+                    r.primary_label
+                        .clone()
+                        .unwrap_or_else(|| "unknown".to_string())
+                })
+                .unwrap_or_else(|| "unknown".to_string()),
+            secondary_labels: bhv_res
+                .map(|r| {
+                    r.secondary_labels
+                        .iter()
+                        .map(|lr| lr.label.as_str())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                })
+                .unwrap_or_else(|| "".to_string()),
             score: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
             confidence: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
-            evidence_summary: bhv_res.map(|r| {
-                r.evidence.iter().map(|e| format!("{} {}: {}", e.feature, e.expected, e.matched)).collect::<Vec<_>>().join(", ")
-            }).unwrap_or_else(|| "".to_string()),
-            classifier_version: bhv_res.map(|r| r.classifier_version.clone()).unwrap_or_else(|| "".to_string()),
+            evidence_summary: bhv_res
+                .map(|r| {
+                    r.evidence
+                        .iter()
+                        .map(|e| format!("{} {}: {}", e.feature, e.expected, e.matched))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
+                .unwrap_or_else(|| "".to_string()),
+            classifier_version: bhv_res
+                .map(|r| r.classifier_version.clone())
+                .unwrap_or_else(|| "".to_string()),
             tick_start: bhv_res.map(|r| r.tick_start).unwrap_or(0),
             tick_end: bhv_res.map(|r| r.tick_end).unwrap_or(0),
             data_completeness: bhv_res.map(|r| r.data_completeness).unwrap_or(0.0),
@@ -1743,16 +1796,42 @@ pub fn run_matrix(
                 observed_role: res.observed_role.clone(),
                 behavior_profile: res.behavior_profile.clone(),
                 ticks_per_second: res.ticks_per_second,
-                classification_mode: bhv_res.map(|r| format!("{:?}", r.mode)).unwrap_or_else(|| "unknown".to_string()),
-                status: bhv_res.map(|r| format!("{:?}", r.status)).unwrap_or_else(|| "unknown".to_string()),
-                primary_label: bhv_res.map(|r| r.primary_label.clone().unwrap_or_else(|| "unknown".to_string())).unwrap_or_else(|| "unknown".to_string()),
-                secondary_labels: bhv_res.map(|r| r.secondary_labels.iter().map(|lr| lr.label.as_str()).collect::<Vec<_>>().join(",")).unwrap_or_else(|| "".to_string()),
+                classification_mode: bhv_res
+                    .map(|r| format!("{:?}", r.mode))
+                    .unwrap_or_else(|| "unknown".to_string()),
+                status: bhv_res
+                    .map(|r| format!("{:?}", r.status))
+                    .unwrap_or_else(|| "unknown".to_string()),
+                primary_label: bhv_res
+                    .map(|r| {
+                        r.primary_label
+                            .clone()
+                            .unwrap_or_else(|| "unknown".to_string())
+                    })
+                    .unwrap_or_else(|| "unknown".to_string()),
+                secondary_labels: bhv_res
+                    .map(|r| {
+                        r.secondary_labels
+                            .iter()
+                            .map(|lr| lr.label.as_str())
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    })
+                    .unwrap_or_else(|| "".to_string()),
                 score: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
                 confidence: bhv_res.map(|r| r.confidence).unwrap_or(0.0),
-                evidence_summary: bhv_res.map(|r| {
-                    r.evidence.iter().map(|e| format!("{} {}: {}", e.feature, e.expected, e.matched)).collect::<Vec<_>>().join(", ")
-                }).unwrap_or_else(|| "".to_string()),
-                classifier_version: bhv_res.map(|r| r.classifier_version.clone()).unwrap_or_else(|| "".to_string()),
+                evidence_summary: bhv_res
+                    .map(|r| {
+                        r.evidence
+                            .iter()
+                            .map(|e| format!("{} {}: {}", e.feature, e.expected, e.matched))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
+                    .unwrap_or_else(|| "".to_string()),
+                classifier_version: bhv_res
+                    .map(|r| r.classifier_version.clone())
+                    .unwrap_or_else(|| "".to_string()),
                 tick_start: bhv_res.map(|r| r.tick_start).unwrap_or(0),
                 tick_end: bhv_res.map(|r| r.tick_end).unwrap_or(0),
                 data_completeness: bhv_res.map(|r| r.data_completeness).unwrap_or(0.0),
@@ -1897,17 +1976,45 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str, records: &[ClassificationRe
     writeln!(f, "- **output_dir**: `{}`", cfg.run.output_dir).unwrap();
     writeln!(f).unwrap();
     writeln!(f, "## Detailed Accounting Categories").unwrap();
-    writeln!(f, "The following new accounting category fields are tracked in the simulation results:").unwrap();
-    writeln!(f, "- **explicit_energy_loss**: Energy explicitly removed/sunk.").unwrap();
-    writeln!(f, "- **death_cleanup_loss_energy**: Remaining energy of cells upon death.").unwrap();
+    writeln!(
+        f,
+        "The following new accounting category fields are tracked in the simulation results:"
+    )
+    .unwrap();
+    writeln!(
+        f,
+        "- **explicit_energy_loss**: Energy explicitly removed/sunk."
+    )
+    .unwrap();
+    writeln!(
+        f,
+        "- **death_cleanup_loss_energy**: Remaining energy of cells upon death."
+    )
+    .unwrap();
     writeln!(f, "- **death_cleanup_loss_resources**: Remaining resource inventory and materials of cells upon death.").unwrap();
-    writeln!(f, "- **clamping_loss**: Energy lost due to maximum capacity limits and clamping.").unwrap();
+    writeln!(
+        f,
+        "- **clamping_loss**: Energy lost due to maximum capacity limits and clamping."
+    )
+    .unwrap();
     writeln!(f, "- **unpaid_mandatory_cost**: Mandatory upkeep cost that could not be paid due to energy depletion.").unwrap();
-    writeln!(f, "- **resource_decay**: Environmental resource decay over time.").unwrap();
+    writeln!(
+        f,
+        "- **resource_decay**: Environmental resource decay over time."
+    )
+    .unwrap();
     writeln!(f, "- **resource_sink**: Resources explicitly removed/sunk.").unwrap();
-    writeln!(f, "- **numerical_error_energy**: Energy balance error below the tolerance threshold (< 0.01).").unwrap();
+    writeln!(
+        f,
+        "- **numerical_error_energy**: Energy balance error below the tolerance threshold (< 0.01)."
+    )
+    .unwrap();
     writeln!(f, "- **numerical_error_resources**: Resource balance error below the tolerance threshold (< 0.01).").unwrap();
-    writeln!(f, "- **unclassified_loss_energy**: Energy balance error exceeding the tolerance threshold.").unwrap();
+    writeln!(
+        f,
+        "- **unclassified_loss_energy**: Energy balance error exceeding the tolerance threshold."
+    )
+    .unwrap();
     writeln!(f, "- **unclassified_loss_resources**: Resource balance error exceeding the tolerance threshold.").unwrap();
     writeln!(f).unwrap();
     writeln!(f, "## Zone Legend").unwrap();
@@ -2163,7 +2270,11 @@ fn main() {
     writeln!(bp_md, "# Behavior Profiles Report").unwrap();
     writeln!(bp_md).unwrap();
     writeln!(bp_md, "| Sweep Name | Scenario | Parameter | Value | Sec Param | Sec Value | Potential Role | Observed Role | Behavior Profile | Speed (t/s) | Mode | Status | Primary | Secondary | Score | Conf | Evidence | Ver | Start | End | Complete |").unwrap();
-    writeln!(bp_md, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|").unwrap();
+    writeln!(
+        bp_md,
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
+    )
+    .unwrap();
     for r in &all_records {
         writeln!(
             bp_md,

@@ -68,7 +68,11 @@ fn mock_result_custom(
 ) -> SimResult {
     SimResult {
         collapsed,
-        collapse_tick: if collapsed { Some(ticks_executed) } else { None },
+        collapse_tick: if collapsed {
+            Some(ticks_executed)
+        } else {
+            None
+        },
         dormant_ticks,
         active_ticks: ticks_executed.saturating_sub(dormant_ticks),
         stressed_ticks: 0,
@@ -219,9 +223,20 @@ fn test_scenario_steady_resource_flow_low_stable_density() {
     let mut results = Vec::new();
     results.push(mock_result_custom(false, 50.0, 0, 100, "none".to_string())); // 1 stable (5%)
     for _ in 0..19 {
-        results.push(mock_result_custom(true, 0.0, 0, 20, "collapsed".to_string())); // 19 collapsed
+        results.push(mock_result_custom(
+            true,
+            0.0,
+            0,
+            20,
+            "collapsed".to_string(),
+        )); // 19 collapsed
     }
     let warnings = detect_warnings(&results, "steady_resource_flow");
     assert!(warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
-    assert!(warnings.iter().any(|w| w.contains("Recommend narrowing the parameter range") || w.contains("RECOMMEND_NARROW_RANGE")));
+    assert!(
+        warnings
+            .iter()
+            .any(|w| w.contains("Recommend narrowing the parameter range")
+                || w.contains("RECOMMEND_NARROW_RANGE"))
+    );
 }

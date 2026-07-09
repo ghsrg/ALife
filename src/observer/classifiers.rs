@@ -125,12 +125,10 @@ pub fn classify_cell_roles_observed(
 
     // Sort to find the candidate with the highest non-zero value,
     // breaking ties alphabetically by role name.
-    candidates.sort_by(|a, b| {
-        match b.2.partial_cmp(&a.2) {
-            Some(std::cmp::Ordering::Equal) => a.0.cmp(&b.0),
-            Some(ord) => ord,
-            None => std::cmp::Ordering::Equal,
-        }
+    candidates.sort_by(|a, b| match b.2.partial_cmp(&a.2) {
+        Some(std::cmp::Ordering::Equal) => a.0.cmp(&b.0),
+        Some(ord) => ord,
+        None => std::cmp::Ordering::Equal,
     });
 
     let primary_label = if candidates[0].2 > 0.0 {

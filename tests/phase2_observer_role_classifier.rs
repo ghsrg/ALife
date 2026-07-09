@@ -31,7 +31,7 @@ fn test_classify_cell_roles_potential_and_observed() {
 fn test_observed_role_execution_and_tie_breaking() {
     let config =
         load_cell_role_classifier("config/observer/cell-functional-role-classifier.toml").unwrap();
-    
+
     // Test case 1: Single action executed
     let mut raw_data1 = HashMap::new();
     raw_data1.insert("PassiveUptake_executed".to_string(), 5.0);

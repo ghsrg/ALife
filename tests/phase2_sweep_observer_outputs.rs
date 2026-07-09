@@ -81,13 +81,10 @@ steps = 2
     std::fs::write(tmp_path, invalid_toml).unwrap();
 
     let mut cmd = std::process::Command::new("cargo");
-    cmd.args([
-        "run",
-        "--bin",
-        "sweep_analyzer",
-        "--",
-        tmp_path,
-    ]);
+    cmd.args(["run", "--bin", "sweep_analyzer", "--", tmp_path]);
     let status = cmd.status().unwrap();
-    assert!(!status.success(), "Expected sweep_analyzer to fail with invalid scenario name");
+    assert!(
+        !status.success(),
+        "Expected sweep_analyzer to fail with invalid scenario name"
+    );
 }
