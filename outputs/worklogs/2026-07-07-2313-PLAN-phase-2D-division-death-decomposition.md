@@ -20,6 +20,36 @@ tags:
 
 ---
 
+## Phase 2C/2I Calibration Nuances (MUST FOLLOW)
+
+When implementing division, death, and decomposition, the following constraints and architectural design details from the Phase 2C/Phase 2I calibration MUST be strictly followed:
+
+### 1. Root Config Directory Structure
+- All new scenario configurations, parameters, sweeps, and matrices MUST be written exclusively in `config/analyzer/sweep_analyzer.toml` (and `sweep_analyzer_smoke.toml`).
+- Any new observer rule adjustments MUST be stored in the generic TOML files under `config/observer/`.
+- No configuration files may be placed in `docs/` or the root directory.
+
+### 2. Scenario Registration and Validation
+- Every new simulation mechanic (Division, Decomposition) MUST receive its own **activation scenario** (e.g., `division_viability`, `decomposition_viability`) immediately as it is developed.
+- The new scenario IDs MUST be added to the `allowed_scenarios` whitelist inside `sweep_analyzer.rs`. Any sweeps specifying unregistered scenarios must cause validation panic.
+- At least one good-condition run in the sweeps/matrices for each scenario MUST be configured to survive (`survived_to_end = true`) in an active state (exhibiting `active_fraction >= 0.70`, `metabolism_count > 0`, etc.) to prove that the mechanic provides a benefit under proper conditions and has a clear cost.
+- Parameter presets (e.g., `decay_rate`, `passive_energy_income`, `initial_resources`) for these scenarios MUST be specified in the `[scenarios.<scenario_id>]` table of the TOML config to avoid warnings such as `SCENARIO_MECHANISM_NOT_ACTIVATED`.
+
+### 3. Observer Projection & Classification
+- Cell state transitions (birth of daughters, death, decomposition stages) must be properly tracked in intermediate projections (`ObservationWindow`).
+- Ensure that the classifiers in `src/observer/classifiers.rs` are updated if necessary to handle the cell role, behavior, and archetype changes resulting from division and death.
+
+### 4. Detailed Accounting Categories
+- Division (splitting parent energy/resources/materials to daughters) and Decomposition (transferring dead cell matter to the grid) MUST be fully accounted for.
+- Update the 11 accounting metrics in `SimResult` to trace division-related matter partitioning (including any partition loss) and decomposition resource release.
+- Avoid any double counting of resources/materials in dead cell cleanup vs grid replenishment.
+- Keep the `resource_balance_error` tolerance threshold at `0.05` and `energy_balance_error` at `0.01` to prevent floating-point accumulation warnings.
+
+### 5. TPS Throughput Tracking
+- Keep the `std::time::Instant` execution timer active across the simulation loop. The throughput metric `ticks_per_second` must cover the execution costs of division and decomposition.
+
+---
+
 ## Scope
 
 Phase 2D is based on [[outputs/worklogs/2026-07-02-1855-PLAN-phase-2-global-roadmap|Phase 2 Global Roadmap]].
