@@ -10,8 +10,7 @@ use std::collections::HashMap;
 #[test]
 fn test_classify_cell_roles_potential_and_observed() {
     let config =
-        load_cell_role_classifier("docs/config/observer/cell-functional-role-classifier.toml")
-            .unwrap();
+        load_cell_role_classifier("config/observer/cell-functional-role-classifier.toml").unwrap();
     let mut raw_data = HashMap::new();
     raw_data.insert("boundary_material".to_string(), 30.0);
     raw_data.insert("total_materials".to_string(), 100.0);

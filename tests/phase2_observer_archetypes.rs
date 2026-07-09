@@ -5,10 +5,9 @@ use std::collections::HashMap;
 
 #[test]
 fn test_classify_organism_archetype_stable_colony() {
-    let config = load_organism_archetype_classifier(
-        "docs/config/observer/organism-archetype-classifier.toml",
-    )
-    .unwrap();
+    let config =
+        load_organism_archetype_classifier("config/observer/organism-archetype-classifier.toml")
+            .unwrap();
     let mut raw_data = HashMap::new();
     raw_data.insert("cell_count".to_string(), 4.0);
     raw_data.insert("joint_count".to_string(), 3.0);
@@ -32,10 +31,9 @@ fn test_classify_organism_archetype_stable_colony() {
 
 #[test]
 fn test_classify_organism_archetype_transient_cluster() {
-    let config = load_organism_archetype_classifier(
-        "docs/config/observer/organism-archetype-classifier.toml",
-    )
-    .unwrap();
+    let config =
+        load_organism_archetype_classifier("config/observer/organism-archetype-classifier.toml")
+            .unwrap();
     let mut raw_data = HashMap::new();
     raw_data.insert("cell_count".to_string(), 2.0);
     raw_data.insert("joint_count".to_string(), 1.0);
@@ -59,10 +57,9 @@ fn test_classify_organism_archetype_transient_cluster() {
 
 #[test]
 fn test_classify_organism_archetype_resource_sharing_colony() {
-    let config = load_organism_archetype_classifier(
-        "docs/config/observer/organism-archetype-classifier.toml",
-    )
-    .unwrap();
+    let config =
+        load_organism_archetype_classifier("config/observer/organism-archetype-classifier.toml")
+            .unwrap();
     let mut raw_data = HashMap::new();
     raw_data.insert("cell_count".to_string(), 3.0);
     raw_data.insert("joint_count".to_string(), 2.0);

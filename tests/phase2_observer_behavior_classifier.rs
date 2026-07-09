@@ -8,7 +8,7 @@ use std::collections::HashMap;
 #[test]
 fn test_classify_behavior_profiles() {
     let config =
-        load_behavior_profile_classifier("docs/config/observer/behavior-profile-classifier.toml")
+        load_behavior_profile_classifier("config/observer/behavior-profile-classifier.toml")
             .unwrap();
     let mut raw_data = HashMap::new();
     // Simulate dormancy-oriented behavior

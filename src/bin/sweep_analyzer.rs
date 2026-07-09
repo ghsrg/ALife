@@ -12,9 +12,14 @@ use alife::core::units::{
     Seed, Tick, WasteAmount, WorldSize,
 };
 use alife::observer::{
-    classifiers::{classify_behavior_profiles, classify_cell_roles_observed, classify_cell_roles_potential},
-    config::{CellRoleClassifierConfig, BehaviorClassifierConfig, load_cell_role_classifier, load_behavior_profile_classifier},
-    projection::{extract_features, EntityType},
+    classifiers::{
+        classify_behavior_profiles, classify_cell_roles_observed, classify_cell_roles_potential,
+    },
+    config::{
+        BehaviorClassifierConfig, CellRoleClassifierConfig, load_behavior_profile_classifier,
+        load_cell_role_classifier,
+    },
+    projection::{EntityType, extract_features},
 };
 use std::collections::HashMap;
 use std::io::Write;
@@ -491,14 +496,14 @@ static BEHAVIOR_CLASSIFIER: OnceLock<BehaviorClassifierConfig> = OnceLock::new()
 
 fn get_role_classifier() -> &'static CellRoleClassifierConfig {
     ROLE_CLASSIFIER.get_or_init(|| {
-        load_cell_role_classifier("docs/config/observer/cell-functional-role-classifier.toml")
+        load_cell_role_classifier("config/observer/cell-functional-role-classifier.toml")
             .expect("Failed to load cell functional role classifier config")
     })
 }
 
 fn get_behavior_classifier() -> &'static BehaviorClassifierConfig {
     BEHAVIOR_CLASSIFIER.get_or_init(|| {
-        load_behavior_profile_classifier("docs/config/observer/behavior-profile-classifier.toml")
+        load_behavior_profile_classifier("config/observer/behavior-profile-classifier.toml")
             .expect("Failed to load behavior profile classifier config")
     })
 }
@@ -643,7 +648,11 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
     let mut final_pos = Position::new(0.0, 0.0);
 
     if len > 0 {
-        initial_radius = executor.world().cells().radius(CellIndex::from_raw(0)).raw();
+        initial_radius = executor
+            .world()
+            .cells()
+            .radius(CellIndex::from_raw(0))
+            .raw();
         final_radius = initial_radius;
         initial_pos = executor.world().cells().position(CellIndex::from_raw(0));
         final_pos = initial_pos;
@@ -801,7 +810,12 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             total_synthesis_successes += synthesis_successes;
             total_growth_successes += growth_successes;
             total_displacement_successes += displacement_successes;
-            growth_attempts += summary.diagnostics.attempts_by_process.get(&alife::core::process::ProcessId::GrowthResourceAllocation).copied().unwrap_or(0);
+            growth_attempts += summary
+                .diagnostics
+                .attempts_by_process
+                .get(&alife::core::process::ProcessId::GrowthResourceAllocation)
+                .copied()
+                .unwrap_or(0);
             if displacement_successes > 0 {
                 movement_ticks += 1;
             }
@@ -809,7 +823,11 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 scarcity_ticks += 1;
             }
             if len > 0 {
-                final_radius = executor.world().cells().radius(CellIndex::from_raw(0)).raw();
+                final_radius = executor
+                    .world()
+                    .cells()
+                    .radius(CellIndex::from_raw(0))
+                    .raw();
                 final_pos = executor.world().cells().position(CellIndex::from_raw(0));
             }
         }
@@ -889,34 +907,96 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
     raw_data.insert("ticks_executed".to_string(), ticks_executed as f32);
     raw_data.insert("dormant_ticks".to_string(), dormant_ticks as f32);
     raw_data.insert("dormancy_entries".to_string(), dormancy_enter_count as f32);
-    raw_data.insert("growth_attempts_fraction".to_string(), if ticks_executed > 0 { growth_attempts as f32 / ticks_executed as f32 } else { 0.0 });
-    let radius_increase_factor = if initial_radius > 0.0 { final_radius / initial_radius } else { 1.0 };
+    raw_data.insert(
+        "growth_attempts_fraction".to_string(),
+        if ticks_executed > 0 {
+            growth_attempts as f32 / ticks_executed as f32
+        } else {
+            0.0
+        },
+    );
+    let radius_increase_factor = if initial_radius > 0.0 {
+        final_radius / initial_radius
+    } else {
+        1.0
+    };
     raw_data.insert("radius_increase_factor".to_string(), radius_increase_factor);
-    raw_data.insert("metabolism_executions_fraction".to_string(), if ticks_executed > 0 { metabolism_count as f32 / ticks_executed as f32 } else { 0.0 });
-    raw_data.insert("heat_produced_per_resource".to_string(), rt_config.resource_interaction.heat_per_resource);
-    raw_data.insert("contractile_executions_fraction".to_string(), if ticks_executed > 0 { movement_ticks as f32 / ticks_executed as f32 } else { 0.0 });
-    
+    raw_data.insert(
+        "metabolism_executions_fraction".to_string(),
+        if ticks_executed > 0 {
+            metabolism_count as f32 / ticks_executed as f32
+        } else {
+            0.0
+        },
+    );
+    raw_data.insert(
+        "heat_produced_per_resource".to_string(),
+        rt_config.resource_interaction.heat_per_resource,
+    );
+    raw_data.insert(
+        "contractile_executions_fraction".to_string(),
+        if ticks_executed > 0 {
+            movement_ticks as f32 / ticks_executed as f32
+        } else {
+            0.0
+        },
+    );
+
     let dx = final_pos.x() - initial_pos.x();
     let dy = final_pos.y() - initial_pos.y();
     let displacement_distance = (dx * dx + dy * dy).sqrt();
     raw_data.insert("displacement_distance".to_string(), displacement_distance);
     raw_data.insert("scarcity_ticks".to_string(), scarcity_ticks as f32);
-    let energy_loss_rate = if ticks_executed > 0 { ((initial_energy - final_energy) / ticks_executed as f32).max(0.0) } else { 0.0 };
+    let energy_loss_rate = if ticks_executed > 0 {
+        ((initial_energy - final_energy) / ticks_executed as f32).max(0.0)
+    } else {
+        0.0
+    };
     raw_data.insert("energy_loss_rate".to_string(), energy_loss_rate);
 
     if len > 0 {
         let cell_idx = CellIndex::from_raw(0);
         let cells = executor.world().cells();
-        raw_data.insert("boundary_material".to_string(), cells.boundary_material(cell_idx).raw());
-        raw_data.insert("transport_material".to_string(), cells.transport_material(cell_idx).raw());
-        raw_data.insert("metabolic_material".to_string(), cells.metabolic_material(cell_idx).raw());
-        raw_data.insert("storage_material".to_string(), cells.storage_material(cell_idx).raw());
-        raw_data.insert("synthesis_material".to_string(), cells.synthesis_material(cell_idx).raw());
-        raw_data.insert("structural_material".to_string(), cells.structural_material(cell_idx).raw());
-        raw_data.insert("repair_material".to_string(), cells.repair_material(cell_idx).raw());
-        raw_data.insert("contractile_material".to_string(), cells.contractile_material(cell_idx).raw());
-        raw_data.insert("sensory_material".to_string(), cells.sensory_material(cell_idx).raw());
-        raw_data.insert("total_materials".to_string(), cells.total_materials(cell_idx).raw());
+        raw_data.insert(
+            "boundary_material".to_string(),
+            cells.boundary_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "transport_material".to_string(),
+            cells.transport_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "metabolic_material".to_string(),
+            cells.metabolic_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "storage_material".to_string(),
+            cells.storage_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "synthesis_material".to_string(),
+            cells.synthesis_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "structural_material".to_string(),
+            cells.structural_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "repair_material".to_string(),
+            cells.repair_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "contractile_material".to_string(),
+            cells.contractile_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "sensory_material".to_string(),
+            cells.sensory_material(cell_idx).raw(),
+        );
+        raw_data.insert(
+            "total_materials".to_string(),
+            cells.total_materials(cell_idx).raw(),
+        );
     } else {
         raw_data.insert("boundary_material".to_string(), 0.0);
         raw_data.insert("transport_material".to_string(), 0.0);
@@ -930,17 +1010,31 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         raw_data.insert("total_materials".to_string(), 0.0);
     }
 
-    let passive_uptake = if raw_data.get("boundary_material").copied().unwrap_or(0.0) > 0.0 { resource_absorbed_cumulative } else { 0.0 };
+    let passive_uptake = if raw_data.get("boundary_material").copied().unwrap_or(0.0) > 0.0 {
+        resource_absorbed_cumulative
+    } else {
+        0.0
+    };
     raw_data.insert("PassiveUptake_executed".to_string(), passive_uptake);
 
-    let active_uptake = if raw_data.get("transport_material").copied().unwrap_or(0.0) > 0.0 { resource_absorbed_cumulative } else { 0.0 };
+    let active_uptake = if raw_data.get("transport_material").copied().unwrap_or(0.0) > 0.0 {
+        resource_absorbed_cumulative
+    } else {
+        0.0
+    };
     raw_data.insert("ActiveUptake_executed".to_string(), active_uptake);
 
     raw_data.insert("Metabolism_executed".to_string(), metabolized_cumulative);
     raw_data.insert("Storage_executed".to_string(), final_cell_res);
-    raw_data.insert("MaterialSynthesis_executed".to_string(), total_synthesis_successes as f32);
+    raw_data.insert(
+        "MaterialSynthesis_executed".to_string(),
+        total_synthesis_successes as f32,
+    );
     raw_data.insert("Growth_executed".to_string(), total_growth_successes as f32);
-    raw_data.insert("ContractileDisplacement_executed".to_string(), total_displacement_successes as f32);
+    raw_data.insert(
+        "ContractileDisplacement_executed".to_string(),
+        total_displacement_successes as f32,
+    );
 
     let window = extract_features(
         "run-id",
@@ -955,9 +1049,18 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
     let obs_res = classify_cell_roles_observed(&window, role_classifier);
     let bhv_res = classify_behavior_profiles(&window, behavior_classifier);
 
-    let potential_role = pot_res.primary_label.clone().unwrap_or_else(|| "unknown".to_string());
-    let observed_role = obs_res.primary_label.clone().unwrap_or_else(|| "unknown".to_string());
-    let behavior_profile = bhv_res.primary_label.clone().unwrap_or_else(|| "unknown".to_string());
+    let potential_role = pot_res
+        .primary_label
+        .clone()
+        .unwrap_or_else(|| "unknown".to_string());
+    let observed_role = obs_res
+        .primary_label
+        .clone()
+        .unwrap_or_else(|| "unknown".to_string());
+    let behavior_profile = bhv_res
+        .primary_label
+        .clone()
+        .unwrap_or_else(|| "unknown".to_string());
 
     SimResult {
         collapsed,
@@ -1611,7 +1714,11 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str, records: &[ClassificationRe
     let mut sorted_sweeps: Vec<_> = sweep_perf.into_iter().collect();
     sorted_sweeps.sort_by(|a, b| a.0.cmp(&b.0));
     for (name, (sum_tps, count)) in sorted_sweeps {
-        let avg = if count > 0 { sum_tps / count as f32 } else { 0.0 };
+        let avg = if count > 0 {
+            sum_tps / count as f32
+        } else {
+            0.0
+        };
         writeln!(f, "| {} | {:.2} |", name, avg).unwrap();
     }
 
@@ -1629,7 +1736,7 @@ fn main() {
     // allow override: cargo run --bin sweep_analyzer -- path/to/other.toml
     let config_path = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "sweep_analyzer.toml".to_string());
+        .unwrap_or_else(|| "config/analyzer/sweep_analyzer.toml".to_string());
 
     println!("ALife Sweep Analyzer");
     println!("Config: {}", config_path);
@@ -1649,7 +1756,7 @@ fn main() {
 
     // Load classifiers
     let _registry = alife::observer::config::load_classification_registry(
-        "docs/config/observer/classification-registry.toml",
+        "config/observer/classification-registry.toml",
     )
     .expect("Failed to load classification registry");
     let _role_classifier = get_role_classifier();
@@ -1688,7 +1795,8 @@ fn main() {
     std::fs::create_dir_all("outputs/reports").ok();
 
     let behavior_profiles_csv_path = "outputs/raw_data/behavior_profiles.csv";
-    let mut bp_csv = std::fs::File::create(behavior_profiles_csv_path).expect("cannot create behavior_profiles.csv");
+    let mut bp_csv = std::fs::File::create(behavior_profiles_csv_path)
+        .expect("cannot create behavior_profiles.csv");
     writeln!(
         bp_csv,
         "sweep_name,scenario_id,parameter_name,parameter_value,secondary_parameter_name,secondary_parameter_value,potential_role,observed_role,behavior_profile,ticks_per_second"
@@ -1725,12 +1833,14 @@ fn main() {
 
     // JSON in reports
     let bp_reports_json_path = format!("outputs/reports/behavior-profiles-{}.json", ts);
-    let json_content = serde_json::to_string_pretty(&all_records).unwrap_or_else(|_| "[]".to_string());
+    let json_content =
+        serde_json::to_string_pretty(&all_records).unwrap_or_else(|_| "[]".to_string());
     std::fs::write(&bp_reports_json_path, json_content).ok();
 
     // Markdown report in reports
     let bp_reports_md_path = format!("outputs/reports/behavior-profiles-{}.md", ts);
-    let mut bp_md = std::fs::File::create(&bp_reports_md_path).expect("cannot create behavior-profiles md report");
+    let mut bp_md = std::fs::File::create(&bp_reports_md_path)
+        .expect("cannot create behavior-profiles md report");
     writeln!(bp_md, "# Behavior Profiles Report").unwrap();
     writeln!(bp_md).unwrap();
     writeln!(bp_md, "| Sweep Name | Scenario | Parameter | Value | Sec Param | Sec Value | Potential Role | Observed Role | Behavior Profile | Speed (t/s) |").unwrap();
