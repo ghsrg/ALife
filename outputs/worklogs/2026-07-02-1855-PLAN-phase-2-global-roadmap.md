@@ -23,6 +23,7 @@ PLAN-phase-2B-...
 PLAN-phase-2C-...
 PLAN-phase-2D-...
 PLAN-phase-2E-...
+PLAN-phase-2F-...
 ```
 
 ## Phase 2 Principle
@@ -38,6 +39,8 @@ Can Materials define simple reflexive capabilities before Genome exists?
 Can Cells react through material/process rules instead of scripted intent?
 Can a Cell grow by accounting rules?
 Can a Cell divide into daughters?
+Do Material profiles and proportions actually change Cell mechanics?
+Can sweep_analyzer explain material-profile benefits, costs and imbalance?
 Can Cells interact locally before Genome-driven evolution starts?
 Can lifecycle/death/decomposition remain deterministic and accountable?
 Can we observe the system visually without viewer authority?
@@ -526,7 +529,183 @@ Phase 1 scenarios still pass
 Phase 2 scenario report exists
 ```
 
-## Phase 2E: Local Cell-Cell Interaction Primitives
+## Phase 2E: Material Profile Coverage, Material Properties And Sweep Analyzer Calibration
+
+### Goal
+
+Make Materials real enough for Phase 2 behavior: current Material proportions must gate capabilities, change process strength/cost/effect, expose trade-offs, and produce observer/analyzer evidence.
+
+This is not full chemistry. It is a material-profile mechanics coverage phase:
+
+```text
+Material proportions
+  -> derived capabilities/properties
+  -> process candidates and Feasibility
+  -> execution rates/costs/effects
+  -> observer role/profile evidence
+  -> sweep analyzer balance findings
+```
+
+### Build
+
+```text
+Material properties/config contract
+Material profile scenario files under root `config/`
+capability strength, not only bool presence
+profile-driven Cell initialization
+material-gated uptake/metabolism/synthesis/growth/storage/repair/contractility/sensory placeholders
+directional effect tests for Material proportions
+negative controls for missing capabilities
+10+ Cell material-profile scenarios
+sweep_analyzer material-profile sweeps
+material_profile_*.csv raw outputs
+material_profile_summary.csv
+material_profile_coverage.csv
+material-profile-coverage report
+observer role/profile sanity checks
+config candidate recommendations when imbalance is detected
+```
+
+### Material Profiles
+
+Minimum profiles:
+
+```text
+balanced_baseline
+boundary_rich
+transport_rich
+metabolic_rich
+storage_rich
+structural_rich
+repair_rich
+contractile_rich
+sensory_rich
+low_material / weak_cell
+mixed_specialized
+```
+
+Each profile must define:
+
+```text
+initial material proportions
+expected activated mechanics
+expected benefit
+expected cost
+key metrics
+expected observer role/profile
+good-condition scenario
+negative/failure scenario when capability is absent
+```
+
+### Core Material Rules
+
+Phase 2E may modify core behavior where current material properties are stubs.
+
+Implement minimal placeholder effects when full future mechanics are too expensive:
+
+```text
+transport material -> uptake throughput modifier
+metabolic material -> conversion throughput/efficiency modifier
+storage material -> capacity or retention modifier
+structural material -> growth/radius/stability modifier
+boundary material -> permeability/retention/stress modifier
+repair material -> repair placeholder or explicit tool_limited status if no damage path exists
+contractile material -> deterministic displacement strength if process enabled
+sensory material -> local sensed input metric; never command behavior
+```
+
+Rules:
+
+```text
+No capability -> related active process rejected or reduced to zero.
+More relevant Material -> expected directional effect under equal conditions.
+Benefit must have measurable cost or trade-off.
+Observer labels are derived diagnostics only.
+Core, Feasibility and Processes must not read observer labels.
+No hardcoded CellType, species_id or role class.
+```
+
+### Config Location
+
+Canonical runtime/scenario configuration files belong under the project-root config directory:
+
+```text
+config/
+```
+
+Suggested structure:
+
+```text
+config/material_profiles/
+config/scenarios/material_profiles/
+config/analyzer/
+config/observer/
+```
+
+Tool-local configuration files are allowed only for tool tests or temporary tool fixtures.
+
+### Sweep Analyzer Scope
+
+Required sweeps:
+
+```text
+material_profile_capability_gating
+material_profile_uptake
+material_profile_metabolism
+material_profile_storage_survival
+material_profile_growth
+material_profile_contractility
+material_profile_sensory_input
+material_profile_mixed_tradeoff
+```
+
+Required warning codes:
+
+```text
+MATERIAL_PROFILE_NOT_ACTIVATED
+EXPECTED_CAPABILITY_MISSING
+PROCESS_NOT_GATED_BY_MATERIAL
+MATERIAL_PROPORTION_HAS_NO_EFFECT
+OBSERVER_ROLE_MISMATCH
+SCENARIO_TOO_EASY
+SCENARIO_TOO_HARD
+PASSIVE_INCOME_DOMINATED
+ENVIRONMENT_DOMINATED_RESULT
+LOW_INFORMATION_MATERIAL_SWEEP
+```
+
+### Acceptance Gates
+
+```text
+every current Material has activation scenario and negative control
+each active Material profile shows expected mechanic activation or explicit tool_limited status
+at least one profile shows expected benefit under good conditions
+at least one profile shows expected cost/trade-off
+proportion changes produce directional effect for implemented mechanics
+analyzer detects inactive/missing material mechanics
+observer labels match profiles only as derived roles
+no hardcoded CellType or species-like behavior input
+10+ Cell scenario is deterministic
+Phase 1 and Phase 2A-D scenarios still pass
+cargo fmt, clippy and cargo test pass
+sweep_analyzer produces CSV/report artifacts
+```
+
+### Deferred
+
+```text
+full chemical reaction network
+Genome regulation
+mutation/inheritance
+organism-level behavior
+predator/prey
+pathfinding
+learned decision-making
+nondeterministic noise
+UI visualization
+```
+
+## Phase 2F: Local Cell-Cell Interaction Primitives
 
 ### Goal
 
@@ -569,7 +748,7 @@ OrganismView connected components
 multicellular reproduction
 ```
 
-These deferred concepts remain candidates for Phase 3/4 depending on the final phase split, but Phase 2E must leave clean extension points.
+These deferred concepts remain candidates for Phase 3/4 depending on the final phase split, but Phase 2F must leave clean extension points.
 
 ### Acceptance Gates
 
@@ -665,6 +844,21 @@ small_population_collapse_reachable
 Minimum after 2E:
 
 ```text
+material_profile_capability_gating_reachable
+material_profile_proportion_effect_reachable
+material_profile_uptake_reachable
+material_profile_metabolism_reachable
+material_profile_storage_survival_reachable
+material_profile_growth_reachable
+material_profile_contractility_reachable_if_enabled
+material_profile_sensory_input_reachable
+material_profile_observer_role_reachable
+material_profile_analyzer_report_reachable
+```
+
+Minimum after 2F:
+
+```text
 contact_pair_reachable
 contact_pressure_reachable
 passive_contact_exchange_reachable
@@ -745,6 +939,8 @@ many Cells can coexist in one world
 Cells collide/push deterministically
 Cells act through material capabilities, registered processes and Feasibility
 Cells have simple reflexive material behavior before Genome exists
+Material profiles and proportions have measurable effects and trade-offs
+material-profile analyzer coverage reports exist
 Cells can grow from accounted resources/materials
 Cells can divide with deterministic partitioning
 Cells can die and decompose through explicit rules
@@ -765,8 +961,10 @@ How many physics solver iterations per Tick should be the default?
 Should radius derive from material/resource mass in 2C, or stay a configured/growth state value until Phase 3?
 Which minimal Material capability set belongs in 2B, and which stays disabled until later?
 Do we include contractile/reflexive displacement in 2C, or defer active movement until after growth/division?
-Should Phase 2E include a minimal adhesion primitive, or only contact exchange/stimulus?
-Do full Joints belong in late Phase 2E or early Phase 3/4 after Genome?
+Which Phase 2E Material properties become numeric strength modifiers vs binary gates?
+Which root `config/` subdirectories should be treated as canonical for material profiles, scenarios and analyzer presets?
+Should Phase 2F include a minimal adhesion primitive, or only contact exchange/stimulus?
+Do full Joints belong in late Phase 2F or early Phase 3/4 after Genome?
 Do we create the first viewer immediately after 2A, or run 2B first and then viewer?
 ```
 

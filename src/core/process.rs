@@ -73,6 +73,7 @@ pub enum RejectionReason {
     RadiusBelowTarget,
     PressureTooHigh,
     NoPressure,
+    ProcessDisabled,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -161,8 +162,8 @@ static PROCESS_REGISTRY: &[ProcessSpec] = &[
     },
     ProcessSpec {
         process_id: ProcessId::Division,
-        status: ProcessStatus::Future,
+        status: ProcessStatus::Now,
         required_capabilities: &[],
-        description: "Reserved for Phase 2D: splits cell into two daughters.",
+        description: "Splits one living cell into two accounted daughter cells.",
     },
 ];

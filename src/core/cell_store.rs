@@ -151,6 +151,10 @@ impl CellStore {
         id
     }
 
+    pub fn insert_partitioned_daughter(&mut self, cell: InitialCellState) -> CellId {
+        self.insert_initial(cell)
+    }
+
     pub fn len(&self) -> usize {
         self.ids.len()
     }
@@ -172,6 +176,10 @@ impl CellStore {
 
     pub fn id_at(&self, index: CellIndex) -> CellId {
         self.ids[index.raw()]
+    }
+
+    pub fn temperature(&self, index: CellIndex) -> Temperature {
+        self.temperatures[index.raw()]
     }
 
     pub fn position(&self, index: CellIndex) -> Position {
@@ -249,11 +257,11 @@ impl CellStore {
         self.positions[index.raw()] = position;
     }
 
-    pub(crate) fn set_lifecycle_state(&mut self, index: CellIndex, state: LifecycleState) {
+    pub fn set_lifecycle_state(&mut self, index: CellIndex, state: LifecycleState) {
         self.lifecycle_states[index.raw()] = state;
     }
 
-    pub(crate) fn set_runtime_flags(&mut self, index: CellIndex, flags: RuntimeFlags) {
+    pub fn set_runtime_flags(&mut self, index: CellIndex, flags: RuntimeFlags) {
         self.runtime_flags[index.raw()] = flags;
     }
 

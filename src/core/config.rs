@@ -181,6 +181,50 @@ impl Default for ContractilityConfig {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DivisionConfig {
+    pub enabled: bool,
+    pub energy_cost: EnergyAmount,
+    pub split_ratio: f32,
+    pub daughter_spacing: f32,
+    pub min_daughter_radius: Radius,
+    pub partition_loss_fraction: f32,
+}
+
+impl Default for DivisionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            energy_cost: EnergyAmount::zero(),
+            split_ratio: 0.5,
+            daughter_spacing: 0.25,
+            min_daughter_radius: Radius::new(0.5).unwrap(),
+            partition_loss_fraction: 0.0,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DecompositionConfig {
+    pub enabled: bool,
+    pub resource_layer_index: usize,
+    pub resources_per_tick: ResourceAmount,
+    pub materials_per_tick: MaterialAmount,
+    pub remove_when_empty: bool,
+}
+
+impl Default for DecompositionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            resource_layer_index: 0,
+            resources_per_tick: ResourceAmount::zero(),
+            materials_per_tick: MaterialAmount::zero(),
+            remove_when_empty: false,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
     pub world: WorldConfig,
@@ -195,6 +239,8 @@ pub struct RuntimeConfig {
     pub initial_cells: Vec<CellInitialConfig>,
     pub synthesis: SynthesisConfig,
     pub contractility: ContractilityConfig,
+    pub division: DivisionConfig,
+    pub decomposition: DecompositionConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -206,6 +252,10 @@ pub enum ConfigError {
     EmptyResourceDistribution,
     InvalidResourceInteractionLayer,
     InvalidResourceInteractionRate,
+    InvalidDivisionSplit,
+    InvalidDivisionLoss,
+    InvalidDaughterSpacing,
+    InvalidDecompositionLayer,
 }
 
 impl RuntimeConfig {
@@ -248,7 +298,25 @@ impl RuntimeConfig {
             initial_cells,
             synthesis: SynthesisConfig::default(),
             contractility: ContractilityConfig::default(),
+            division: DivisionConfig::default(),
+            decomposition: DecompositionConfig::default(),
         })
+    }
+
+    pub fn validate_phase2d_options(&self) -> Result<(), ConfigError> {
+        if !(0.35..=0.65).contains(&self.division.split_ratio) {
+            return Err(ConfigError::InvalidDivisionSplit);
+        }
+        if !(0.0..=0.25).contains(&self.division.partition_loss_fraction) {
+            return Err(ConfigError::InvalidDivisionLoss);
+        }
+        if !self.division.daughter_spacing.is_finite() || self.division.daughter_spacing < 0.0 {
+            return Err(ConfigError::InvalidDaughterSpacing);
+        }
+        if self.decomposition.resource_layer_index >= self.resources.layer_count() {
+            return Err(ConfigError::InvalidDecompositionLayer);
+        }
+        Ok(())
     }
 
     pub fn with_cells(mut self, cells: Vec<CellInitialConfig>) -> Self {
@@ -315,6 +383,17 @@ impl RuntimeConfig {
             self.environment.waste_warning_threshold.raw().to_bits() as u64,
             self.environment.waste_death_threshold.raw().to_bits() as u64,
             self.growth_enabled as u64,
+            self.division.enabled as u64,
+            self.division.energy_cost.raw().to_bits() as u64,
+            self.division.split_ratio.to_bits() as u64,
+            self.division.daughter_spacing.to_bits() as u64,
+            self.division.min_daughter_radius.raw().to_bits() as u64,
+            self.division.partition_loss_fraction.to_bits() as u64,
+            self.decomposition.enabled as u64,
+            self.decomposition.resource_layer_index as u64,
+            self.decomposition.resources_per_tick.raw().to_bits() as u64,
+            self.decomposition.materials_per_tick.raw().to_bits() as u64,
+            self.decomposition.remove_when_empty as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);

@@ -1,7 +1,7 @@
 use crate::core::config::{
-    CellInitialConfig, ConfigError, ContractilityConfig, EnvironmentConfig, GrowthConfig,
-    LifecycleConfig, ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SpaceConfig,
-    SynthesisConfig, WorldConfig,
+    CellInitialConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
+    EnvironmentConfig, GrowthConfig, LifecycleConfig, ResourceConfig, ResourceInteractionConfig,
+    RuntimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
 };
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
@@ -79,6 +79,25 @@ pub struct RawSynthesis {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RawDivision {
+    pub enabled: Option<bool>,
+    pub energy_cost: Option<f32>,
+    pub split_ratio: Option<f32>,
+    pub daughter_spacing: Option<f32>,
+    pub min_daughter_radius: Option<f32>,
+    pub partition_loss_fraction: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawDecomposition {
+    pub enabled: Option<bool>,
+    pub resource_layer_index: Option<usize>,
+    pub resources_per_tick: Option<f32>,
+    pub materials_per_tick: Option<f32>,
+    pub remove_when_empty: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RawContractility {
     pub energy_cost: Option<f32>,
     pub force_factor: Option<f32>,
@@ -112,6 +131,8 @@ pub struct RawScenarioConfig {
     pub growth: Option<RawGrowth>,
     pub synthesis: Option<RawSynthesis>,
     pub contractility: Option<RawContractility>,
+    pub division: Option<RawDivision>,
+    pub decomposition: Option<RawDecomposition>,
 }
 
 #[derive(Debug)]
@@ -439,6 +460,56 @@ impl RawScenarioConfig {
                 force_factor: force,
             };
         }
+
+        if let Some(ref raw_div) = self.division {
+            runtime_config.division = DivisionConfig {
+                enabled: raw_div.enabled.unwrap_or(false),
+                energy_cost: EnergyAmount::new(raw_div.energy_cost.unwrap_or(0.0)).map_err(
+                    |e| {
+                        ParseError::ValidationError(format!(
+                            "Invalid division energy_cost: {:?}",
+                            e
+                        ))
+                    },
+                )?,
+                split_ratio: raw_div.split_ratio.unwrap_or(0.5),
+                daughter_spacing: raw_div.daughter_spacing.unwrap_or(0.25),
+                min_daughter_radius: Radius::new(raw_div.min_daughter_radius.unwrap_or(0.5))
+                    .map_err(|e| {
+                        ParseError::ValidationError(format!(
+                            "Invalid division min_daughter_radius: {:?}",
+                            e
+                        ))
+                    })?,
+                partition_loss_fraction: raw_div.partition_loss_fraction.unwrap_or(0.0),
+            };
+        }
+
+        if let Some(ref raw_dec) = self.decomposition {
+            runtime_config.decomposition = DecompositionConfig {
+                enabled: raw_dec.enabled.unwrap_or(false),
+                resource_layer_index: raw_dec.resource_layer_index.unwrap_or(0),
+                resources_per_tick: ResourceAmount::new(raw_dec.resources_per_tick.unwrap_or(0.0))
+                    .map_err(|e| {
+                        ParseError::ValidationError(format!(
+                            "Invalid decomposition resources_per_tick: {:?}",
+                            e
+                        ))
+                    })?,
+                materials_per_tick: MaterialAmount::new(raw_dec.materials_per_tick.unwrap_or(0.0))
+                    .map_err(|e| {
+                        ParseError::ValidationError(format!(
+                            "Invalid decomposition materials_per_tick: {:?}",
+                            e
+                        ))
+                    })?,
+                remove_when_empty: raw_dec.remove_when_empty.unwrap_or(false),
+            };
+        }
+
+        runtime_config
+            .validate_phase2d_options()
+            .map_err(ParseError::ConfigValidationError)?;
 
         if !initial_cells.is_empty() {
             runtime_config = runtime_config.with_cells(initial_cells);

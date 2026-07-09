@@ -37,6 +37,11 @@ pub struct MetricsSummary {
     pub overlap_resolved: f32,
     pub process_attempts: u32,
     pub process_rejections: u32,
+    pub alive_cells_count: u32,
+    pub dead_cells_count: u32,
+    pub divisions_count: u32,
+    pub births_count: u32,
+    pub decomposed_cells_count: u32,
 }
 
 use crate::core::process::{ProcessId, RejectionReason};

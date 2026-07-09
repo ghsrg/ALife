@@ -136,6 +136,7 @@ fn division_readiness_and_pressure_gating_work() {
     let mut config = RawScenarioConfig::parse(base_scenario_toml()).unwrap();
     config.growth.growth_target_radius = Radius::new(2.0).unwrap();
     config.growth.max_division_pressure = 0.5;
+    config.division.enabled = true;
 
     let mut exec = TickExecutor::new(config).unwrap();
     let idx = CellIndex::from_raw(0);

@@ -95,6 +95,22 @@ from  = 0.1
 to    = 2.0
 steps = 5
 
+[[sweep]]
+name  = "division_viability"
+scenario = "division_viability"
+param = "max_division_pressure"
+from  = 0.1
+to    = 0.8
+steps = 15
+
+[[sweep]]
+name  = "decomposition_viability"
+scenario = "decomposition_viability"
+param = "decomposition_resources_per_tick"
+from  = 1.0
+to    = 5.0
+steps = 9
+
 # ─────────────────────────────────────────────
 # Двовимірне сканування
 # ─────────────────────────────────────────────
@@ -126,3 +142,15 @@ passive_energy_income = 1.5
 decay_rate = 0.0
 passive_energy_income = 0.0
 initial_resources = [4000.0]
+
+[scenarios.division_viability]
+growth_enabled = true
+division_enabled = true
+initial_resources = [4000.0]
+
+[scenarios.decomposition_viability]
+decomposition_enabled = true
+initial_energy = 1.0
+mandatory_cost_per_tick = 5.0
+decomposition_resources_per_tick = 1.0
+decomposition_materials_per_tick = 1.0

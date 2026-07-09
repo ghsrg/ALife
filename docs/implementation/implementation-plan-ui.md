@@ -187,6 +187,50 @@ analytics result adapter
 
 Recorded fixtures дозволяють почати UI раніше, але `Start` не вважається завершеним до підключення live Core.
 
+## Local And Remote Viewer Modes
+
+ALife Control Center must support two projection connection modes.
+
+### Local default mode
+
+Safe default mode for development and normal local use.
+
+```toml
+[server]
+bind_host = "127.0.0.1"
+port = 8080
+allow_remote_viewer = false
+```
+
+Rules:
+accessible only from the same machine;
+no LAN exposure by default;
+suitable for local Core + local UI;
+must be the default generated configuration.
+
+### Remote viewer mode
+
+Explicit LAN mode for running Core/Runner on one machine and viewing from another machine.
+
+```toml
+[server]
+bind_host = "0.0.0.0"
+port = 8080
+allow_remote_viewer = true
+read_only_by_default = true
+allowed_origins = ["http://192.168.1.51:5173"]
+access_token_required = true
+```
+Rules:
+
+must be opt-in;
+intended for trusted LAN only;
+remote clients are read-only by default;
+simulation-changing commands require explicit permission and Core validation;
+UI must show the active connection target;
+reconnect must not repeat pending commands automatically;
+Core must not block on Viewer rendering.
+
 ## Command Gateway
 
 Simulation-changing requests проходять через один command boundary:

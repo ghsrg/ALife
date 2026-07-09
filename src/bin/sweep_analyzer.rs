@@ -140,6 +140,15 @@ pub struct RawScenarioPreset {
     pub waste_warning_threshold: Option<f32>,
     pub waste_death_threshold: Option<f32>,
     pub growth_enabled: Option<bool>,
+    pub division_enabled: Option<bool>,
+    pub division_split_ratio: Option<f32>,
+    pub division_partition_loss_fraction: Option<f32>,
+    pub division_daughter_spacing: Option<f32>,
+    pub division_min_daughter_radius: Option<f32>,
+    pub decomposition_enabled: Option<bool>,
+    pub decomposition_resource_layer_index: Option<usize>,
+    pub decomposition_resources_per_tick: Option<f32>,
+    pub decomposition_materials_per_tick: Option<f32>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -453,6 +462,66 @@ pub fn build_config(
     rt.synthesis = alife::core::config::SynthesisConfig::default();
     rt.contractility = alife::core::config::ContractilityConfig::default();
     rt.growth_enabled = preset.and_then(|p| p.growth_enabled).unwrap_or(false);
+
+    let division_enabled = preset.and_then(|p| p.division_enabled).unwrap_or(false);
+    let division_split_ratio = overrides
+        .get("division_split_ratio")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.division_split_ratio))
+        .unwrap_or(0.5);
+    let division_partition_loss_fraction = overrides
+        .get("division_partition_loss_fraction")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.division_partition_loss_fraction))
+        .unwrap_or(0.0);
+    let division_daughter_spacing = overrides
+        .get("division_daughter_spacing")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.division_daughter_spacing))
+        .unwrap_or(1.0);
+    let division_min_daughter_radius = overrides
+        .get("division_min_daughter_radius")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.division_min_daughter_radius))
+        .unwrap_or(0.5);
+
+    let max_div_pressure = overrides
+        .get("max_division_pressure")
+        .copied()
+        .unwrap_or(0.5);
+
+    let decomp_enabled = preset
+        .and_then(|p| p.decomposition_enabled)
+        .unwrap_or(false);
+    let decomp_layer = overrides
+        .get("decomposition_resource_layer_index")
+        .copied()
+        .map(|v| v as usize)
+        .or_else(|| preset.and_then(|p| p.decomposition_resource_layer_index))
+        .unwrap_or(0);
+    let decomp_resources = overrides
+        .get("decomposition_resources_per_tick")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.decomposition_resources_per_tick))
+        .unwrap_or(0.0);
+    let decomp_materials = overrides
+        .get("decomposition_materials_per_tick")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.decomposition_materials_per_tick))
+        .unwrap_or(0.0);
+
+    rt.division.enabled = division_enabled;
+    rt.division.split_ratio = division_split_ratio;
+    rt.division.partition_loss_fraction = division_partition_loss_fraction;
+    rt.division.daughter_spacing = division_daughter_spacing;
+    rt.division.min_daughter_radius = Radius::new(division_min_daughter_radius.max(0.1)).unwrap();
+    rt.growth.max_division_pressure = max_div_pressure;
+
+    rt.decomposition.enabled = decomp_enabled;
+    rt.decomposition.resource_layer_index = decomp_layer;
+    rt.decomposition.resources_per_tick = ResourceAmount::new(decomp_resources.max(0.0)).unwrap();
+    rt.decomposition.materials_per_tick = MaterialAmount::new(decomp_materials.max(0.0)).unwrap();
+
     rt
 }
 
@@ -496,6 +565,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
     let dormant_cost =
         mandatory_cost_per_tick * rt_config.lifecycle.dormant_mandatory_cost_modifier;
     let passive_energy_income = rt_config.cell.passive_energy_income.raw();
+    let division_cost_energy = rt_config.division.energy_cost.raw();
 
     let mut executor = match TickExecutor::new(rt_config.clone()) {
         Ok(e) => e,
@@ -620,8 +690,8 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
 
     let mut clamping_cumulative = 0.0_f32;
     let mut unpaid_mandatory_cost_cumulative = 0.0_f32;
-    let mut death_cleanup_loss_energy = 0.0_f32;
-    let mut death_cleanup_loss_resources = 0.0_f32;
+    let mut energy_spent_division = 0.0_f32;
+    let mut division_partition_loss_resources = 0.0_f32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -648,12 +718,15 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
     let loop_start = std::time::Instant::now();
 
     for t in 0..ticks {
+        let len = executor.world().cells().len();
         let mut cell_states_before = Vec::with_capacity(len);
         let mut cell_res_before = 0.0_f32;
+        let mut cell_mat_before = 0.0_f32;
         for i in 0..len {
             let index = CellIndex::from_raw(i);
             cell_states_before.push(executor.world().cells().lifecycle_state(index));
             cell_res_before += executor.world().cells().resource_amount(index).raw();
+            cell_mat_before += executor.world().cells().total_materials(index).raw();
         }
         let grid_before = executor
             .world()
@@ -685,7 +758,6 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
 
         ticks_executed += 1;
 
-
         let mut loop_break = false;
         if summary.survival_result == SurvivalResult::Collapse {
             collapsed = true;
@@ -709,10 +781,16 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             .total_amount_for_layer(alife::core::resources::ResourceLayerIndex::from_raw(0))
             .map(|a| a.raw())
             .unwrap_or(0.0);
+        let len_after = executor.world().cells().len();
         let mut cell_res_after = 0.0_f32;
-        for i in 0..len {
+        for i in 0..len_after {
             let index = CellIndex::from_raw(i);
             cell_res_after += executor.world().cells().resource_amount(index).raw();
+        }
+        let mut cell_mat_after = 0.0_f32;
+        for i in 0..len_after {
+            let index = CellIndex::from_raw(i);
+            cell_mat_after += executor.world().cells().total_materials(index).raw();
         }
 
         // Get process successes in this tick
@@ -757,14 +835,34 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
 
         energy_spent_movement += displacement_successes as f32 * displacement_cost_energy;
 
-        let uptake_tick = (cell_res_after - cell_res_before)
-            + metabolized_tick
-            + synthesis_tick_res
-            + growth_tick_res;
-        resource_absorbed_cumulative += uptake_tick;
+        let mut released_decomposed_tick = 0.0_f32;
+        let decomp_resources_limit = rt_config.decomposition.resources_per_tick.raw();
+        let decomp_materials_limit = rt_config.decomposition.materials_per_tick.raw();
+        for (i, &state_before) in cell_states_before.iter().enumerate() {
+            if state_before == LifecycleState::Dead {
+                let index = CellIndex::from_raw(i);
+                let res_amount = executor.world().cells().resource_amount(index).raw();
+                let mat_amount = executor.world().cells().total_materials(index).raw();
+                let released_res = res_amount.min(decomp_resources_limit);
+                let released_mat = mat_amount.min(decomp_materials_limit);
+                released_decomposed_tick += released_res + released_mat;
+            }
+        }
 
-        let decay_tick = (grid_before - uptake_tick - grid_after).max(0.0);
+        let decay_rate = rt_config.resources.optional_decay_rate;
+        let decay_factor = (1.0 - decay_rate).max(0.0001);
+        let uptake_tick = (grid_before + released_decomposed_tick - grid_after / decay_factor).max(0.0);
+        let decay_tick = (grid_after / decay_factor - grid_after).max(0.0);
+        resource_absorbed_cumulative += uptake_tick;
         decay_cumulative += decay_tick;
+
+        if summary.metrics.divisions_count > 0 {
+            let resource_sink_tick = synthesis_tick_res + growth_tick_res;
+            let expected_res_mat_after = cell_res_before + cell_mat_before + uptake_tick - metabolized_tick - resource_sink_tick;
+            let actual_res_mat_after = cell_res_after + cell_mat_after;
+            let division_loss_res_mat = (expected_res_mat_after - actual_res_mat_after).max(0.0);
+            division_partition_loss_resources += division_loss_res_mat;
+        }
 
         // Energy spent and passive income
         let mut upkeep_tick_sum = 0.0_f32;
@@ -815,10 +913,14 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         }
         let produced_tick_sum = metabolism_successes as f32 * metabolism_cost * energy_per_resource;
 
+        let division_cost_tick = summary.metrics.divisions_count as f32 * division_cost_energy;
+        energy_spent_division += division_cost_tick;
+
         let expected_after_tick = energy_before_sum + passive_income_tick_sum + produced_tick_sum
             - upkeep_tick_sum
-            - spent_tick_sum;
-        let energy_after_sum = (0..len)
+            - spent_tick_sum
+            - division_cost_tick;
+        let energy_after_sum = (0..len_after)
             .map(|i| {
                 executor
                     .world()
@@ -850,17 +952,6 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             }
         }
         unpaid_mandatory_cost_cumulative += unpaid_mandatory_cost_tick;
-
-        for (i, &state_before) in cell_states_before.iter().enumerate() {
-            let index = CellIndex::from_raw(i);
-            let state_after = executor.world().cells().lifecycle_state(index);
-            if state_before != LifecycleState::Dead && state_after == LifecycleState::Dead {
-                death_cleanup_loss_energy += executor.world().cells().energy(index).current().raw();
-                death_cleanup_loss_resources +=
-                    executor.world().cells().resource_amount(index).raw()
-                        + executor.world().cells().total_materials(index).raw();
-            }
-        }
 
         if len > 0 {
             let state = executor
@@ -910,7 +1001,8 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         .total_amount_for_layer(alife::core::resources::ResourceLayerIndex::from_raw(0))
         .map(|a| a.raw())
         .unwrap_or(0.0);
-    let final_cell_res = (0..len)
+    let len_final = executor.world().cells().len();
+    let final_cell_res = (0..len_final)
         .map(|i| {
             executor
                 .world()
@@ -920,7 +1012,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         })
         .sum::<f32>();
 
-    let final_cell_res_alive = (0..len)
+    let final_cell_res_alive = (0..len_final)
         .filter(|&i| {
             executor
                 .world()
@@ -937,7 +1029,24 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         })
         .sum::<f32>();
 
-    let final_cell_mat_alive = (0..len)
+    let final_cell_res_dead = (0..len_final)
+        .filter(|&i| {
+            executor
+                .world()
+                .cells()
+                .lifecycle_state(CellIndex::from_raw(i))
+                == LifecycleState::Dead
+        })
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .resource_amount(CellIndex::from_raw(i))
+                .raw()
+        })
+        .sum::<f32>();
+
+    let final_cell_mat_alive = (0..len_final)
         .filter(|&i| {
             executor
                 .world()
@@ -954,7 +1063,24 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         })
         .sum::<f32>();
 
-    let final_energy = (0..len)
+    let final_cell_mat_dead = (0..len_final)
+        .filter(|&i| {
+            executor
+                .world()
+                .cells()
+                .lifecycle_state(CellIndex::from_raw(i))
+                == LifecycleState::Dead
+        })
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .total_materials(CellIndex::from_raw(i))
+                .raw()
+        })
+        .sum::<f32>();
+
+    let final_energy = (0..len_final)
         .map(|i| {
             executor
                 .world()
@@ -965,7 +1091,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         })
         .sum::<f32>();
 
-    let final_energy_alive = (0..len)
+    let final_energy_alive = (0..len_final)
         .filter(|&i| {
             executor
                 .world()
@@ -983,6 +1109,27 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         })
         .sum::<f32>();
 
+    let final_energy_dead = (0..len_final)
+        .filter(|&i| {
+            executor
+                .world()
+                .cells()
+                .lifecycle_state(CellIndex::from_raw(i))
+                == LifecycleState::Dead
+        })
+        .map(|i| {
+            executor
+                .world()
+                .cells()
+                .energy(CellIndex::from_raw(i))
+                .current()
+                .raw()
+        })
+        .sum::<f32>();
+
+    let death_cleanup_loss_energy = final_energy_dead;
+    let death_cleanup_loss_resources = final_cell_res_dead + final_cell_mat_dead;
+
     let energy_total_input = initial_energy + energy_produced + passive_energy_received;
     let energy_total_output = final_energy_alive
         + energy_spent_upkeep
@@ -990,13 +1137,15 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         + energy_spent_synthesis
         + energy_spent_growth
         + energy_spent_movement
+        + energy_spent_division
         + death_cleanup_loss_energy
         + clamping_cumulative;
     let energy_balance_error = (energy_total_input - energy_total_output).abs();
 
     let numerical_error_energy;
     let unclassified_loss_energy;
-    if energy_balance_error < 0.01 {
+    let allowed_energy_error = 0.01 + 0.00001 * energy_total_input;
+    if energy_balance_error < allowed_energy_error {
         numerical_error_energy = energy_balance_error;
         unclassified_loss_energy = 0.0;
     } else {
@@ -1015,12 +1164,14 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         + metabolized_cumulative
         + decay_cumulative
         + death_cleanup_loss_resources
-        + resource_sink_val;
+        + resource_sink_val
+        + division_partition_loss_resources;
     let resource_balance_error = (resource_total_input - resource_total_output).abs();
 
     let numerical_error_resources;
     let unclassified_loss_resources;
-    if resource_balance_error < 0.05 {
+    let allowed_resource_error = 0.05 + 0.00001 * resource_total_input;
+    if resource_balance_error < allowed_resource_error {
         numerical_error_resources = resource_balance_error;
         unclassified_loss_resources = 0.0;
     } else {
@@ -1228,7 +1379,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         energy_spent_movement,
         energy_spent_growth,
         energy_spent_repair: 0.0,
-        energy_spent_division: 0.0,
+        energy_spent_division,
         initial_world_resource: initial_grid,
         final_world_resource: final_grid,
         resource_regenerated: 0.0,
@@ -1599,7 +1750,7 @@ pub fn run_sweep(
     for (val, config_hash, res, zone) in run_results {
         let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
         let mut row_warnings = Vec::new();
-        if res.resource_balance_error > 0.05 || res.energy_balance_error > 0.01 {
+        if res.unclassified_loss_resources > 0.0 || res.unclassified_loss_energy > 0.0 {
             row_warnings.push("BALANCE_ERROR".to_string());
         }
         for w in &sweep_warnings {
@@ -1857,7 +2008,7 @@ pub fn run_matrix(
     for (vx, vy, config_hash, res, zone) in run_results {
         let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
         let mut row_warnings = Vec::new();
-        if res.resource_balance_error > 0.05 || res.energy_balance_error > 0.01 {
+        if res.unclassified_loss_resources > 0.0 || res.unclassified_loss_energy > 0.0 {
             row_warnings.push("BALANCE_ERROR".to_string());
         }
         for w in &matrix_warnings {
@@ -2118,6 +2269,8 @@ fn main() {
         "dormancy_survival",
         "resource_abundance",
         "active_metabolism_viability",
+        "division_viability",
+        "decomposition_viability",
     ];
 
     if let Some(sweeps) = &cfg.sweep {

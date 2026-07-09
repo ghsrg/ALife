@@ -11,6 +11,9 @@ pub enum EventKind {
     HeatWarning,
     WasteWarning,
     CellDead,
+    CellDivided,
+    CellBorn,
+    CellDecomposed,
     SnapshotEmitted,
     RunFinished,
 }

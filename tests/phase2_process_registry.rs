@@ -18,11 +18,11 @@ fn test_every_process_id_has_registry_entry() {
 }
 
 #[test]
-fn test_division_is_future_status() {
+fn test_division_is_now_status_in_phase_2d() {
     assert_eq!(
         ProcessSpec::for_id(ProcessId::Division).status,
-        ProcessStatus::Future,
-        "Division must be Future until Phase 2D"
+        ProcessStatus::Now,
+        "Division must be executable in Phase 2D"
     );
 }
 

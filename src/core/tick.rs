@@ -234,9 +234,7 @@ impl TickExecutor {
                 for &(idx_i, idx_j) in &pairs {
                     let (pos_i, r_i) = {
                         let cells = self.world.cells();
-                        if cells.lifecycle_state(idx_i) == LifecycleState::Dead
-                            || cells.lifecycle_state(idx_j) == LifecycleState::Dead
-                        {
+                        if cells.runtime_flags(idx_i).inert || cells.runtime_flags(idx_j).inert {
                             continue;
                         }
                         (cells.position(idx_i), cells.radius(idx_i))
@@ -286,7 +284,7 @@ impl TickExecutor {
                     let idx = CellIndex::from_raw(i);
                     let (pos, r) = {
                         let cells = self.world.cells();
-                        if cells.lifecycle_state(idx) == LifecycleState::Dead {
+                        if cells.runtime_flags(idx).inert {
                             continue;
                         }
                         (cells.position(idx), cells.radius(idx))
@@ -346,13 +344,16 @@ impl TickExecutor {
         let waste_death = waste_next.raw() > config.environment.waste_death_threshold.raw();
 
         let mut final_energy = 0.0;
-        let mut overall_lifecycle = LifecycleState::Alive;
+        let overall_lifecycle;
         let mut collapse_reason = CollapseReason::None;
 
         // Phase C: Pay cost and check lifecycle
         for i in 0..len {
             let index = CellIndex::from_raw(i);
             let cell_state_before = self.world.cells().lifecycle_state(index);
+            if cell_state_before == LifecycleState::Dead {
+                continue;
+            }
             let current = self.world.cells().energy(index);
             let available = current
                 .current()
@@ -476,7 +477,8 @@ impl TickExecutor {
                         mandatory_paid,
                         stalled: !mandatory_paid,
                         over_capacity,
-                        inert: is_dead,
+                        inert: cells.runtime_flags(index).inert
+                            || (is_dead && !config.decomposition.enabled),
                         division_ready,
                     },
                 );
@@ -501,27 +503,76 @@ impl TickExecutor {
 
             final_energy += energy_after_clamped.raw();
 
-            match (overall_lifecycle, next_state) {
-                (LifecycleState::Dead, _) | (_, LifecycleState::Dead) => {
-                    overall_lifecycle = LifecycleState::Dead;
-                }
-                (LifecycleState::Stressed, _) | (_, LifecycleState::Stressed) => {
-                    overall_lifecycle = LifecycleState::Stressed;
-                }
-                (LifecycleState::Dormant, _) | (_, LifecycleState::Dormant) => {
-                    overall_lifecycle = LifecycleState::Dormant;
-                }
-                _ => {
-                    overall_lifecycle = LifecycleState::Alive;
-                }
-            }
-
             if collapse_reason == CollapseReason::None
                 && cell_collapse_reason != CollapseReason::None
             {
                 collapse_reason = cell_collapse_reason;
             }
         }
+
+        let mut any_alive = false;
+        let mut any_stressed = false;
+        let mut any_dormant = false;
+
+        for i in 0..len {
+            let idx = CellIndex::from_raw(i);
+            match self.world.cells().lifecycle_state(idx) {
+                LifecycleState::Alive => any_alive = true,
+                LifecycleState::Stressed => any_stressed = true,
+                LifecycleState::Dormant => any_dormant = true,
+                LifecycleState::Dead => {}
+            }
+        }
+
+        if any_stressed {
+            overall_lifecycle = LifecycleState::Stressed;
+        } else if any_dormant {
+            overall_lifecycle = LifecycleState::Dormant;
+        } else if any_alive {
+            overall_lifecycle = LifecycleState::Alive;
+        } else {
+            overall_lifecycle = LifecycleState::Dead;
+        }
+
+        let mut divisions_count = 0_u32;
+        let mut births_count = 0_u32;
+
+        if self.world.config().division.enabled {
+            let mut division_candidates = Vec::new();
+            let len = self.world.cells().len();
+            for i in 0..len {
+                let idx = CellIndex::from_raw(i);
+                if self.world.cells().lifecycle_state(idx) == LifecycleState::Alive
+                    && self.world.cells().runtime_flags(idx).division_ready
+                {
+                    division_candidates.push(idx);
+                }
+            }
+
+            let current_tick = self.world.tick();
+            for idx in division_candidates {
+                let candidate = crate::core::process::ActionCandidate {
+                    process_id: crate::core::process::ProcessId::Division,
+                    requested_amount: 1.0,
+                };
+                if let Ok(outcome) = self.world.execute_division(idx, &candidate) {
+                    divisions_count += 1;
+                    births_count += 1;
+                    self.world.events_mut_for_commit().push(
+                        current_tick,
+                        EventKind::CellDivided,
+                        Some(outcome.parent_id),
+                    );
+                    self.world.events_mut_for_commit().push(
+                        current_tick,
+                        EventKind::CellBorn,
+                        Some(outcome.daughter_b_id),
+                    );
+                }
+            }
+        }
+
+        let decomposed_cells_count = self.world.execute_decomposition_for_dead_cells();
 
         self.world.environment_mut_for_commit().set_heat(heat_next);
         self.world
@@ -564,6 +615,9 @@ impl TickExecutor {
                 overlap_resolved,
                 process_attempts,
                 process_rejections,
+                divisions_count,
+                births_count,
+                decomposed_cells_count,
             ),
             diagnostics,
         })
@@ -625,23 +679,31 @@ impl TickExecutor {
         overlap_resolved: f32,
         process_attempts: u32,
         process_rejections: u32,
+        divisions_count: u32,
+        births_count: u32,
+        decomposed_cells_count: u32,
     ) -> MetricsSummary {
         let cells = self.world.cells();
         let mut final_internal_resources = 0.0_f32;
         let mut final_used_capacity = 0.0_f32;
         let mut final_free_capacity = 0.0_f32;
         let mut growth_readiness = false;
+        let mut alive_cells_count = 0_u32;
+        let mut dead_cells_count = 0_u32;
 
         for i in 0..cells.len() {
             let idx = CellIndex::from_raw(i);
-            if cells.lifecycle_state(idx) == LifecycleState::Dead {
-                continue;
-            }
-            final_internal_resources += cells.resource_amount(idx).raw();
-            final_used_capacity += cells.used_capacity(idx).raw();
-            final_free_capacity += cells.free_capacity(idx).raw();
-            if cells.runtime_flags(idx).division_ready {
-                growth_readiness = true;
+            match cells.lifecycle_state(idx) {
+                LifecycleState::Dead => dead_cells_count += 1,
+                _ => {
+                    alive_cells_count += 1;
+                    final_internal_resources += cells.resource_amount(idx).raw();
+                    final_used_capacity += cells.used_capacity(idx).raw();
+                    final_free_capacity += cells.free_capacity(idx).raw();
+                    if cells.runtime_flags(idx).division_ready {
+                        growth_readiness = true;
+                    }
+                }
             }
         }
 
@@ -659,6 +721,11 @@ impl TickExecutor {
             overlap_resolved,
             process_attempts,
             process_rejections,
+            alive_cells_count,
+            dead_cells_count,
+            divisions_count,
+            births_count,
+            decomposed_cells_count,
         }
     }
 }

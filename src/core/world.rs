@@ -15,6 +15,15 @@ pub enum WorldInitError {
     InvalidInitialState,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DivisionOutcome {
+    pub parent_id: crate::core::ids::CellId,
+    pub daughter_a_id: crate::core::ids::CellId,
+    pub daughter_b_id: crate::core::ids::CellId,
+    pub daughter_a_index: CellIndex,
+    pub daughter_b_index: CellIndex,
+}
+
 #[derive(Clone, Debug)]
 pub struct WorldState {
     tick: Tick,
@@ -319,6 +328,10 @@ impl WorldState {
                 }
             }
             ProcessId::Division => {
+                if !self.config.division.enabled {
+                    return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
+                }
+
                 let radius = self.cells.radius(cell_idx).raw();
                 let target = self.config.growth.growth_target_radius.raw();
                 if radius < target {
@@ -331,9 +344,15 @@ impl WorldState {
                     return FeasibilityResult::Rejected(RejectionReason::PressureTooHigh);
                 }
 
+                let current_eng = self.cells.energy(cell_idx).current().raw();
+                let cost_eng = self.config.division.energy_cost.raw();
+                if current_eng < cost_eng {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
+                }
+
                 FeasibilityResult::Allowed {
-                    accepted_amount: 0.0,
-                    energy_cost: 0.0,
+                    accepted_amount: 1.0,
+                    energy_cost: cost_eng,
                     resource_cost: 0.0,
                 }
             }
@@ -395,6 +414,146 @@ impl WorldState {
             .set_capacity_limit(cell_idx, CapacityAmount::new(new_cap_val).unwrap());
 
         Ok(())
+    }
+
+    pub fn execute_division(
+        &mut self,
+        cell_idx: CellIndex,
+        action: &crate::core::process::ActionCandidate,
+    ) -> Result<DivisionOutcome, String> {
+        let feasibility = self.validate_feasibility(cell_idx, action);
+        let (cost_eng, _cost_res) = match feasibility {
+            crate::core::process::FeasibilityResult::Allowed {
+                energy_cost,
+                resource_cost,
+                ..
+            } => (energy_cost, resource_cost),
+            crate::core::process::FeasibilityResult::Rejected(reason) => {
+                return Err(format!("{:?}", reason));
+            }
+        };
+
+        let ratio = self.config.division.split_ratio;
+        let inv_ratio = 1.0 - ratio;
+        let loss_keep = 1.0 - self.config.division.partition_loss_fraction;
+
+        let parent_id = self.cells.id_at(cell_idx);
+        let parent_pos = self.cells.position(cell_idx);
+        let parent_radius = self.cells.radius(cell_idx).raw();
+        let parent_energy = self.cells.energy(cell_idx);
+        let energy_after_cost = (parent_energy.current().raw() - cost_eng).max(0.0);
+
+        let a_energy = EnergyAmount::new(energy_after_cost * ratio).unwrap();
+        let b_energy = EnergyAmount::new(energy_after_cost * inv_ratio).unwrap();
+        let a_capacity = EnergyAmount::new(parent_energy.capacity().raw() * ratio).unwrap();
+        let b_capacity = EnergyAmount::new(parent_energy.capacity().raw() * inv_ratio).unwrap();
+
+        let split_resource = |amount: ResourceAmount, r: f32| {
+            ResourceAmount::new(amount.raw() * r * loss_keep).unwrap()
+        };
+        let split_material = |amount: MaterialAmount, r: f32| {
+            MaterialAmount::new(amount.raw() * r * loss_keep).unwrap()
+        };
+
+        let parent_resources = self.cells.resource_amount(cell_idx);
+        let parent_boundary = self.cells.boundary_material(cell_idx);
+        let parent_transport = self.cells.transport_material(cell_idx);
+        let parent_metabolic = self.cells.metabolic_material(cell_idx);
+        let parent_storage = self.cells.storage_material(cell_idx);
+        let parent_synthesis = self.cells.synthesis_material(cell_idx);
+        let parent_structural = self.cells.structural_material(cell_idx);
+        let parent_repair = self.cells.repair_material(cell_idx);
+        let parent_contractile = self.cells.contractile_material(cell_idx);
+        let parent_sensory = self.cells.sensory_material(cell_idx);
+        let parent_capacity_limit = self.cells.capacity_limit(cell_idx);
+        let parent_temperature = self.cells.temperature(cell_idx);
+
+        // Daughter radii: start at max(parent_radius * sqrt(ratio), min_daughter_radius)
+        let min_daughter_radius = self.config.division.min_daughter_radius.raw();
+        let a_radius_val = (parent_radius * ratio.sqrt()).max(min_daughter_radius);
+        let b_radius_val = (parent_radius * inv_ratio.sqrt()).max(min_daughter_radius);
+        let a_radius = Radius::new(a_radius_val).unwrap();
+        let b_radius = Radius::new(b_radius_val).unwrap();
+
+        // Spacing offset left/right along X
+        let a_x = parent_pos.x() - (a_radius_val + self.config.division.daughter_spacing);
+        let b_x = parent_pos.x() + (b_radius_val + self.config.division.daughter_spacing);
+
+        let width = self.config.world.size.width();
+        let height = self.config.world.size.height();
+
+        let clamp_pos = |x: f32, y: f32, r: f32| {
+            let clamped_x = x.clamp(r, width - r);
+            let clamped_y = y.clamp(r, height - r);
+            Position::new(clamped_x, clamped_y)
+        };
+
+        let a_position = clamp_pos(a_x, parent_pos.y(), a_radius_val);
+        let b_position = clamp_pos(b_x, parent_pos.y(), b_radius_val);
+
+        // Modify parent state to become daughter A
+        self.cells
+            .set_energy(cell_idx, EnergyBuffer::new(a_energy, a_capacity));
+        self.cells
+            .set_resources(cell_idx, split_resource(parent_resources, ratio));
+        self.cells
+            .set_boundary_material(cell_idx, split_material(parent_boundary, ratio));
+        self.cells
+            .set_transport_material(cell_idx, split_material(parent_transport, ratio));
+        self.cells
+            .set_metabolic_material(cell_idx, split_material(parent_metabolic, ratio));
+        self.cells
+            .set_storage_material(cell_idx, split_material(parent_storage, ratio));
+        self.cells
+            .set_synthesis_material(cell_idx, split_material(parent_synthesis, ratio));
+        self.cells
+            .set_structural_material(cell_idx, split_material(parent_structural, ratio));
+        self.cells
+            .set_repair_material(cell_idx, split_material(parent_repair, ratio));
+        self.cells
+            .set_contractile_material(cell_idx, split_material(parent_contractile, ratio));
+        self.cells
+            .set_sensory_material(cell_idx, split_material(parent_sensory, ratio));
+        self.cells.set_radius(cell_idx, a_radius);
+        self.cells.set_capacity_limit(
+            cell_idx,
+            CapacityAmount::new(parent_capacity_limit.raw() * ratio).unwrap(),
+        );
+        self.cells.set_position(cell_idx, a_position);
+        self.cells
+            .set_lifecycle_state(cell_idx, LifecycleState::Alive);
+        self.cells
+            .set_runtime_flags(cell_idx, crate::core::cell_store::RuntimeFlags::default());
+
+        // Insert daughter B
+        let daughter_b_state = InitialCellState {
+            position: b_position,
+            radius: b_radius,
+            energy: EnergyBuffer::new(b_energy, b_capacity),
+            resources: split_resource(parent_resources, inv_ratio),
+            boundary_material: split_material(parent_boundary, inv_ratio),
+            transport_material: split_material(parent_transport, inv_ratio),
+            metabolic_material: split_material(parent_metabolic, inv_ratio),
+            storage_material: split_material(parent_storage, inv_ratio),
+            synthesis_material: split_material(parent_synthesis, inv_ratio),
+            structural_material: split_material(parent_structural, inv_ratio),
+            repair_material: split_material(parent_repair, inv_ratio),
+            contractile_material: split_material(parent_contractile, inv_ratio),
+            sensory_material: split_material(parent_sensory, inv_ratio),
+            capacity_limit: CapacityAmount::new(parent_capacity_limit.raw() * inv_ratio).unwrap(),
+            temperature: parent_temperature,
+        };
+
+        let daughter_b_id = self.cells.insert_partitioned_daughter(daughter_b_state);
+        let daughter_b_index = self.cells.resolve_id_cold(daughter_b_id).unwrap();
+
+        Ok(DivisionOutcome {
+            parent_id,
+            daughter_a_id: parent_id,
+            daughter_b_id,
+            daughter_a_index: cell_idx,
+            daughter_b_index,
+        })
     }
 
     pub fn execute_synthesis(&mut self, cell_idx: CellIndex) -> Result<(), String> {
@@ -485,5 +644,182 @@ impl WorldState {
         self.cells
             .set_position(cell_idx, Position::new(clamped_x, clamped_y));
         Ok(())
+    }
+
+    pub fn execute_decomposition_for_dead_cells(&mut self) -> u32 {
+        if !self.config.decomposition.enabled {
+            return 0;
+        }
+
+        let mut fully_decomposed_count = 0_u32;
+        let resources_per_tick = self.config.decomposition.resources_per_tick.raw();
+        let materials_per_tick = self.config.decomposition.materials_per_tick.raw();
+        let layer = crate::core::resources::ResourceLayerIndex::from_raw(
+            self.config.decomposition.resource_layer_index,
+        );
+        let len = self.cells.len();
+
+        for i in 0..len {
+            let idx = CellIndex::from_raw(i);
+            if self.cells.lifecycle_state(idx) != LifecycleState::Dead {
+                continue;
+            }
+            if self.cells.runtime_flags(idx).inert {
+                continue;
+            }
+
+            let pos = self.cells.position(idx);
+            let grid_coord = self.resources.coord_for_position(pos);
+
+            // 1. Decompose internal resources
+            let internal_res = self.cells.resource_amount(idx).raw();
+            let remaining_decompose_res = resources_per_tick;
+            let actual_decompose_res = internal_res.min(remaining_decompose_res);
+
+            if actual_decompose_res > 0.0 {
+                self.cells.set_resources(
+                    idx,
+                    ResourceAmount::new(internal_res - actual_decompose_res).unwrap(),
+                );
+                let current_grid_res = self
+                    .resources
+                    .amount_at(layer, grid_coord)
+                    .map(|a| a.raw())
+                    .unwrap_or(0.0);
+                let _ = self.resources.set_amount_at(
+                    layer,
+                    grid_coord,
+                    ResourceAmount::new(current_grid_res + actual_decompose_res).unwrap(),
+                );
+            }
+
+            // 2. Decompose materials
+            let mut remaining_decompose_mat = materials_per_tick;
+            let mut decomposed_mat_sum = 0.0;
+
+            // boundary
+            let val = self.cells.boundary_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_boundary_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            // transport
+            let val = self.cells.transport_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_transport_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            // metabolic
+            let val = self.cells.metabolic_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_metabolic_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            // storage
+            let val = self.cells.storage_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_storage_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            // synthesis
+            let val = self.cells.synthesis_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_synthesis_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            // structural
+            let val = self.cells.structural_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_structural_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            // repair
+            let val = self.cells.repair_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_repair_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            // contractile
+            let val = self.cells.contractile_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells.set_contractile_material(
+                    idx,
+                    MaterialAmount::new(val - to_decompose).unwrap(),
+                );
+            }
+
+            // sensory
+            let val = self.cells.sensory_material(idx).raw();
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                self.cells
+                    .set_sensory_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+            }
+
+            if decomposed_mat_sum > 0.0 {
+                let current_grid_res = self
+                    .resources
+                    .amount_at(layer, grid_coord)
+                    .map(|a| a.raw())
+                    .unwrap_or(0.0);
+                let _ = self.resources.set_amount_at(
+                    layer,
+                    grid_coord,
+                    ResourceAmount::new(current_grid_res + decomposed_mat_sum).unwrap(),
+                );
+            }
+
+            // 3. Check if empty
+            if self.cells.resource_amount(idx).raw() == 0.0
+                && self.cells.total_materials(idx).raw() == 0.0
+            {
+                let mut flags = self.cells.runtime_flags(idx);
+                flags.inert = true;
+                self.cells.set_runtime_flags(idx, flags);
+                fully_decomposed_count += 1;
+                // Emit event
+                let current_tick = self.tick;
+                let cell_id = self.cells.id_at(idx);
+                self.events.push(
+                    current_tick,
+                    crate::core::events::EventKind::CellDecomposed,
+                    Some(cell_id),
+                );
+            }
+        }
+
+        fully_decomposed_count
     }
 }
