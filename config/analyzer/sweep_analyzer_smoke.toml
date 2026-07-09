@@ -66,3 +66,15 @@ param_y   = "metabolism_resource_per_tick"
 from_y    = 0.1
 to_y      = 2.0
 steps_y   = 4
+
+# Scenarios Presets
+[scenarios.finite_resource_viability]
+[scenarios.passive_income_survival]
+[scenarios.steady_resource_flow]
+
+[scenarios.dormancy_survival]
+passive_energy_income = 0.05
+dormancy_allowed = true
+
+[scenarios.resource_abundance]
+passive_energy_income = 1.5

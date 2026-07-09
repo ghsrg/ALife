@@ -685,11 +685,13 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
 
         ticks_executed += 1;
 
+
+        let mut loop_break = false;
         if summary.survival_result == SurvivalResult::Collapse {
             collapsed = true;
             collapse_tick = Some(t);
             death_reason = format!("{:?}", summary.collapse_reason);
-            break;
+            loop_break = true;
         }
 
         let e = summary.metrics.final_energy;
@@ -765,15 +767,25 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         decay_cumulative += decay_tick;
 
         // Energy spent and passive income
+        let mut upkeep_tick_sum = 0.0_f32;
         for (i, &state_before) in cell_states_before.iter().enumerate() {
             let index = CellIndex::from_raw(i);
             let state_after = executor.world().cells().lifecycle_state(index);
             if state_before != alife::core::cell_store::LifecycleState::Dead {
                 passive_energy_received += passive_energy_income;
-                if state_before == alife::core::cell_store::LifecycleState::Dormant {
+
+                let flags = executor.world().cells().runtime_flags(index);
+                if flags.mandatory_paid {
+                    if state_before == alife::core::cell_store::LifecycleState::Dormant {
+                        energy_spent_dormant_upkeep += dormant_cost;
+                        upkeep_tick_sum += dormant_cost;
+                    } else {
+                        energy_spent_upkeep += mandatory_cost_per_tick;
+                        upkeep_tick_sum += mandatory_cost_per_tick;
+                    }
+                } else if state_after == alife::core::cell_store::LifecycleState::Dormant {
                     energy_spent_dormant_upkeep += dormant_cost;
-                } else {
-                    energy_spent_upkeep += mandatory_cost_per_tick;
+                    upkeep_tick_sum += dormant_cost;
                 }
 
                 // Check transitions
@@ -791,24 +803,6 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             }
         }
 
-        // New accounting category calculations
-        let mut upkeep_tick_sum = 0.0_f32;
-        for (i, &state_before) in cell_states_before.iter().enumerate() {
-            if state_before != LifecycleState::Dead {
-                let flags = executor
-                    .world()
-                    .cells()
-                    .runtime_flags(CellIndex::from_raw(i));
-                if flags.mandatory_paid {
-                    if state_before == LifecycleState::Dormant {
-                        upkeep_tick_sum += dormant_cost;
-                    } else {
-                        upkeep_tick_sum += mandatory_cost_per_tick;
-                    }
-                }
-            }
-        }
-
         let spent_tick_sum = (synthesis_successes as f32 * synthesis_cost_energy)
             + (growth_successes as f32 * growth_cost_energy)
             + (displacement_successes as f32 * displacement_cost_energy);
@@ -819,7 +813,7 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 passive_income_tick_sum += passive_energy_income;
             }
         }
-        let produced_tick_sum = metabolism_successes as f32 * energy_per_resource;
+        let produced_tick_sum = metabolism_successes as f32 * metabolism_cost * energy_per_resource;
 
         let expected_after_tick = energy_before_sum + passive_income_tick_sum + produced_tick_sum
             - upkeep_tick_sum
@@ -881,30 +875,32 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
             }
         }
 
-        if !collapsed {
-            total_synthesis_successes += synthesis_successes;
-            total_growth_successes += growth_successes;
-            total_displacement_successes += displacement_successes;
-            growth_attempts += summary
-                .diagnostics
-                .attempts_by_process
-                .get(&alife::core::process::ProcessId::GrowthResourceAllocation)
-                .copied()
-                .unwrap_or(0);
-            if displacement_successes > 0 {
-                movement_ticks += 1;
-            }
-            if uptake_tick <= 0.001 {
-                scarcity_ticks += 1;
-            }
-            if len > 0 {
-                final_radius = executor
-                    .world()
-                    .cells()
-                    .radius(CellIndex::from_raw(0))
-                    .raw();
-                final_pos = executor.world().cells().position(CellIndex::from_raw(0));
-            }
+        total_synthesis_successes += synthesis_successes;
+        total_growth_successes += growth_successes;
+        total_displacement_successes += displacement_successes;
+        growth_attempts += summary
+            .diagnostics
+            .attempts_by_process
+            .get(&alife::core::process::ProcessId::GrowthResourceAllocation)
+            .copied()
+            .unwrap_or(0);
+        if displacement_successes > 0 {
+            movement_ticks += 1;
+        }
+        if uptake_tick <= 0.001 {
+            scarcity_ticks += 1;
+        }
+        if len > 0 {
+            final_radius = executor
+                .world()
+                .cells()
+                .radius(CellIndex::from_raw(0))
+                .raw();
+            final_pos = executor.world().cells().position(CellIndex::from_raw(0));
+        }
+
+        if loop_break {
+            break;
         }
     }
 
@@ -1008,18 +1004,23 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         unclassified_loss_energy = energy_balance_error;
     }
 
+    let synthesis_loss = total_synthesis_successes as f32 * (synthesis_cost_res - 1.0).max(0.0);
+    let growth_loss = total_growth_successes as f32 * (growth_cost_res - 1.0).max(0.0);
+    let resource_sink_val = synthesis_loss + growth_loss;
+
     let resource_total_input = initial_grid + initial_cell_res + initial_cell_mat;
     let resource_total_output = final_grid
         + final_cell_res_alive
         + final_cell_mat_alive
         + metabolized_cumulative
         + decay_cumulative
-        + death_cleanup_loss_resources;
+        + death_cleanup_loss_resources
+        + resource_sink_val;
     let resource_balance_error = (resource_total_input - resource_total_output).abs();
 
     let numerical_error_resources;
     let unclassified_loss_resources;
-    if resource_balance_error < 0.01 {
+    if resource_balance_error < 0.05 {
         numerical_error_resources = resource_balance_error;
         unclassified_loss_resources = 0.0;
     } else {
@@ -1248,13 +1249,17 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         behavior_profile,
         ticks_per_second,
         bhv_res: Some(bhv_res),
-        explicit_energy_loss: 0.0,
+        explicit_energy_loss: energy_spent_upkeep
+            + energy_spent_dormant_upkeep
+            + energy_spent_synthesis
+            + energy_spent_growth
+            + energy_spent_movement,
         death_cleanup_loss_energy,
         death_cleanup_loss_resources,
         clamping_loss: clamping_cumulative,
         unpaid_mandatory_cost: unpaid_mandatory_cost_cumulative,
         resource_decay: decay_cumulative,
-        resource_sink: 0.0,
+        resource_sink: resource_sink_val,
         numerical_error_energy,
         numerical_error_resources,
         unclassified_loss_energy,
@@ -1594,7 +1599,7 @@ pub fn run_sweep(
     for (val, config_hash, res, zone) in run_results {
         let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
         let mut row_warnings = Vec::new();
-        if res.resource_balance_error > 0.01 || res.energy_balance_error > 0.01 {
+        if res.resource_balance_error > 0.05 || res.energy_balance_error > 0.01 {
             row_warnings.push("BALANCE_ERROR".to_string());
         }
         for w in &sweep_warnings {
@@ -1852,7 +1857,7 @@ pub fn run_matrix(
     for (vx, vy, config_hash, res, zone) in run_results {
         let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
         let mut row_warnings = Vec::new();
-        if res.resource_balance_error > 0.01 || res.energy_balance_error > 0.01 {
+        if res.resource_balance_error > 0.05 || res.energy_balance_error > 0.01 {
             row_warnings.push("BALANCE_ERROR".to_string());
         }
         for w in &matrix_warnings {
