@@ -56,28 +56,32 @@ waste_death_threshold   = 20.0
 # ─────────────────────────────────────────────
 
 [[sweep]]
-name  = "viability_threshold"
+name  = "finite_resource_viability"
+scenario = "finite_resource_viability"
 param = "resource_density"  # початкова щільність ресурсу у світі
 from  = 0.0
 to    = 20.0
 steps = 40                   # 40 точок → крок 0.5
 
 [[sweep]]
-name  = "passive_income_equilibrium"
+name  = "passive_income_survival"
+scenario = "passive_income_survival"
 param = "passive_energy_income"
 from  = 0.05
 to    = 0.50
 steps = 18
 
 [[sweep]]
-name  = "upkeep_sensitivity"
+name  = "steady_resource_flow"
+scenario = "steady_resource_flow"
 param = "mandatory_cost_per_tick"
 from  = 0.05
 to    = 5.0
 steps = 20
 
 [[sweep]]
-name  = "dormant_modifier"
+name  = "dormancy_survival"
+scenario = "dormancy_survival"
 param = "dormant_mandatory_cost_modifier"
 from  = 0.02
 to    = 0.50
@@ -87,7 +91,8 @@ steps = 16
 # Двовимірне сканування
 # ─────────────────────────────────────────────
 [[matrix]]
-name      = "transport_metabolism"
+name      = "resource_abundance"
+scenario  = "resource_abundance"
 param_x   = "max_uptake_per_tick"
 from_x    = 0.1
 to_x      = 3.0

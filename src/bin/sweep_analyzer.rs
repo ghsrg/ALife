@@ -118,27 +118,27 @@ pub struct MatrixDef {
 #[allow(dead_code)]
 #[derive(Debug, serde::Deserialize, Clone)]
 pub struct RawScenarioPreset {
-    pub world_size: Vec<f32>,
-    pub initial_resources: Vec<f32>,
-    pub decay_rate: f32,
-    pub cell_position: Vec<f32>,
-    pub cell_radius: f32,
-    pub initial_energy: f32,
-    pub energy_capacity: f32,
-    pub mandatory_cost_per_tick: f32,
-    pub passive_energy_income: f32,
-    pub capacity_limit: f32,
-    pub stress_energy_threshold: f32,
-    pub dormancy_allowed: bool,
-    pub dormant_mandatory_cost_modifier: f32,
-    pub critical_capacity_overrun: f32,
-    pub heat_dissipation_rate: f32,
-    pub heat_warning_threshold: f32,
-    pub heat_death_threshold: f32,
-    pub waste_sink_rate: f32,
-    pub waste_warning_threshold: f32,
-    pub waste_death_threshold: f32,
-    pub growth_enabled: bool,
+    pub world_size: Option<Vec<f32>>,
+    pub initial_resources: Option<Vec<f32>>,
+    pub decay_rate: Option<f32>,
+    pub cell_position: Option<Vec<f32>>,
+    pub cell_radius: Option<f32>,
+    pub initial_energy: Option<f32>,
+    pub energy_capacity: Option<f32>,
+    pub mandatory_cost_per_tick: Option<f32>,
+    pub passive_energy_income: Option<f32>,
+    pub capacity_limit: Option<f32>,
+    pub stress_energy_threshold: Option<f32>,
+    pub dormancy_allowed: Option<bool>,
+    pub dormant_mandatory_cost_modifier: Option<f32>,
+    pub critical_capacity_overrun: Option<f32>,
+    pub heat_dissipation_rate: Option<f32>,
+    pub heat_warning_threshold: Option<f32>,
+    pub heat_death_threshold: Option<f32>,
+    pub waste_sink_rate: Option<f32>,
+    pub waste_warning_threshold: Option<f32>,
+    pub waste_death_threshold: Option<f32>,
+    pub growth_enabled: Option<bool>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -201,186 +201,148 @@ pub fn build_config(
     let ri = &cfg.resource_interaction;
     let env = &cfg.environment;
 
-    let (world_w, world_h) = if let Some(p) = preset {
-        (p.world_size[0], p.world_size[1])
-    } else {
-        (512.0, 512.0)
-    };
+    let (world_w, world_h) = preset
+        .and_then(|p| p.world_size.as_ref())
+        .map(|ws| (ws[0], ws[1]))
+        .unwrap_or((512.0, 512.0));
 
-    let (cell_x, cell_y) = if let Some(p) = preset {
-        (p.cell_position[0], p.cell_position[1])
-    } else {
-        (256.0, 256.0)
-    };
+    let (cell_x, cell_y) = preset
+        .and_then(|p| p.cell_position.as_ref())
+        .map(|cp| (cp[0], cp[1]))
+        .unwrap_or((256.0, 256.0));
 
-    let cell_radius_base = if let Some(p) = preset {
-        p.cell_radius
-    } else {
-        cell_cfg.radius
-    };
+    let cell_radius_base = preset
+        .and_then(|p| p.cell_radius)
+        .unwrap_or(cell_cfg.radius);
     let cell_radius = overrides
         .get("cell_radius")
         .copied()
         .unwrap_or(cell_radius_base);
 
-    let initial_energy_base = if let Some(p) = preset {
-        p.initial_energy
-    } else {
-        cell_cfg.initial_energy
-    };
+    let initial_energy_base = preset
+        .and_then(|p| p.initial_energy)
+        .unwrap_or(cell_cfg.initial_energy);
     let initial_energy = overrides
         .get("initial_energy")
         .copied()
         .unwrap_or(initial_energy_base);
 
-    let energy_capacity_base = if let Some(p) = preset {
-        p.energy_capacity
-    } else {
-        cell_cfg.energy_capacity
-    };
+    let energy_capacity_base = preset
+        .and_then(|p| p.energy_capacity)
+        .unwrap_or(cell_cfg.energy_capacity);
     let energy_capacity = overrides
         .get("energy_capacity")
         .copied()
         .unwrap_or(energy_capacity_base);
 
-    let capacity_limit_base = if let Some(p) = preset {
-        p.capacity_limit
-    } else {
-        cell_cfg.capacity_limit
-    };
+    let capacity_limit_base = preset
+        .and_then(|p| p.capacity_limit)
+        .unwrap_or(cell_cfg.capacity_limit);
     let capacity_limit = overrides
         .get("capacity_limit")
         .copied()
         .unwrap_or(capacity_limit_base);
 
-    let decay_rate_base = if let Some(p) = preset {
-        p.decay_rate
-    } else {
-        ri.decay_rate
-    };
+    let decay_rate_base = preset
+        .and_then(|p| p.decay_rate)
+        .unwrap_or(ri.decay_rate);
     let decay_rate = overrides
         .get("decay_rate")
         .copied()
         .unwrap_or(decay_rate_base);
 
-    let stress_energy_threshold_base = if let Some(p) = preset {
-        p.stress_energy_threshold
-    } else {
-        lc.stress_energy_threshold
-    };
+    let stress_energy_threshold_base = preset
+        .and_then(|p| p.stress_energy_threshold)
+        .unwrap_or(lc.stress_energy_threshold);
     let stress_energy_threshold = overrides
         .get("stress_energy_threshold")
         .copied()
         .unwrap_or(stress_energy_threshold_base);
 
-    let critical_capacity_overrun_base = if let Some(p) = preset {
-        p.critical_capacity_overrun
-    } else {
-        lc.critical_capacity_overrun
-    };
+    let critical_capacity_overrun_base = preset
+        .and_then(|p| p.critical_capacity_overrun)
+        .unwrap_or(lc.critical_capacity_overrun);
     let critical_capacity_overrun = overrides
         .get("critical_capacity_overrun")
         .copied()
         .unwrap_or(critical_capacity_overrun_base);
 
-    let heat_dissipation_rate_base = if let Some(p) = preset {
-        p.heat_dissipation_rate
-    } else {
-        env.heat_dissipation_rate
-    };
+    let heat_dissipation_rate_base = preset
+        .and_then(|p| p.heat_dissipation_rate)
+        .unwrap_or(env.heat_dissipation_rate);
     let heat_dissipation_rate = overrides
         .get("heat_dissipation_rate")
         .copied()
         .unwrap_or(heat_dissipation_rate_base);
 
-    let heat_warning_threshold_base = if let Some(p) = preset {
-        p.heat_warning_threshold
-    } else {
-        env.heat_warning_threshold
-    };
+    let heat_warning_threshold_base = preset
+        .and_then(|p| p.heat_warning_threshold)
+        .unwrap_or(env.heat_warning_threshold);
     let heat_warning_threshold = overrides
         .get("heat_warning_threshold")
         .copied()
         .unwrap_or(heat_warning_threshold_base);
 
-    let heat_death_threshold_base = if let Some(p) = preset {
-        p.heat_death_threshold
-    } else {
-        env.heat_death_threshold
-    };
+    let heat_death_threshold_base = preset
+        .and_then(|p| p.heat_death_threshold)
+        .unwrap_or(env.heat_death_threshold);
     let heat_death_threshold = overrides
         .get("heat_death_threshold")
         .copied()
         .unwrap_or(heat_death_threshold_base);
 
-    let waste_sink_rate_base = if let Some(p) = preset {
-        p.waste_sink_rate
-    } else {
-        env.waste_sink_rate
-    };
+    let waste_sink_rate_base = preset
+        .and_then(|p| p.waste_sink_rate)
+        .unwrap_or(env.waste_sink_rate);
     let waste_sink_rate = overrides
         .get("waste_sink_rate")
         .copied()
         .unwrap_or(waste_sink_rate_base);
 
-    let waste_warning_threshold_base = if let Some(p) = preset {
-        p.waste_warning_threshold
-    } else {
-        env.waste_warning_threshold
-    };
+    let waste_warning_threshold_base = preset
+        .and_then(|p| p.waste_warning_threshold)
+        .unwrap_or(env.waste_warning_threshold);
     let waste_warning_threshold = overrides
         .get("waste_warning_threshold")
         .copied()
         .unwrap_or(waste_warning_threshold_base);
 
-    let waste_death_threshold_base = if let Some(p) = preset {
-        p.waste_death_threshold
-    } else {
-        env.waste_death_threshold
-    };
+    let waste_death_threshold_base = preset
+        .and_then(|p| p.waste_death_threshold)
+        .unwrap_or(env.waste_death_threshold);
     let waste_death_threshold = overrides
         .get("waste_death_threshold")
         .copied()
         .unwrap_or(waste_death_threshold_base);
 
-    let resource_density_base = if let Some(p) = preset {
-        p.initial_resources
-            .first()
-            .copied()
-            .unwrap_or(ri.default_resource_density)
-    } else {
-        ri.default_resource_density
-    };
+    let resource_density_base = preset
+        .and_then(|p| p.initial_resources.as_ref())
+        .and_then(|r| r.first().copied())
+        .unwrap_or(ri.default_resource_density);
     let resource_density = overrides
         .get("resource_density")
         .copied()
         .unwrap_or(resource_density_base);
 
-    let passive_income_base = if let Some(p) = preset {
-        p.passive_energy_income
-    } else {
-        cell_cfg.passive_energy_income
-    };
+    let passive_income_base = preset
+        .and_then(|p| p.passive_energy_income)
+        .unwrap_or(cell_cfg.passive_energy_income);
     let passive_income = overrides
         .get("passive_energy_income")
         .copied()
         .unwrap_or(passive_income_base);
 
-    let upkeep_base = if let Some(p) = preset {
-        p.mandatory_cost_per_tick
-    } else {
-        cell_cfg.mandatory_cost_per_tick
-    };
+    let upkeep_base = preset
+        .and_then(|p| p.mandatory_cost_per_tick)
+        .unwrap_or(cell_cfg.mandatory_cost_per_tick);
     let upkeep = overrides
         .get("mandatory_cost_per_tick")
         .copied()
         .unwrap_or(upkeep_base);
 
-    let dormant_mod_base = if let Some(p) = preset {
-        p.dormant_mandatory_cost_modifier
-    } else {
-        lc.dormant_mandatory_cost_modifier
-    };
+    let dormant_mod_base = preset
+        .and_then(|p| p.dormant_mandatory_cost_modifier)
+        .unwrap_or(lc.dormant_mandatory_cost_modifier);
     let dormant_mod = overrides
         .get("dormant_mandatory_cost_modifier")
         .copied()
@@ -447,11 +409,9 @@ pub fn build_config(
         waste_death_threshold: WasteAmount::new(waste_death_threshold).unwrap(),
     };
 
-    let dormancy_allowed = if let Some(p) = preset {
-        p.dormancy_allowed
-    } else {
-        lc.dormancy_allowed
-    };
+    let dormancy_allowed = preset
+        .and_then(|p| p.dormancy_allowed)
+        .unwrap_or(lc.dormancy_allowed);
 
     let lifecycle = LifecycleConfig {
         stress_energy_threshold: EnergyAmount::new(stress_energy_threshold).unwrap(),
@@ -481,7 +441,7 @@ pub fn build_config(
     rt.growth = alife::core::config::GrowthConfig::default();
     rt.synthesis = alife::core::config::SynthesisConfig::default();
     rt.contractility = alife::core::config::ContractilityConfig::default();
-    rt.growth_enabled = preset.map(|p| p.growth_enabled).unwrap_or(false);
+    rt.growth_enabled = preset.and_then(|p| p.growth_enabled).unwrap_or(false);
     rt
 }
 
@@ -1746,6 +1706,58 @@ fn main() {
 
     let cfg: AnalyzerConfig =
         toml::from_str(&raw).unwrap_or_else(|e| panic!("Cannot parse {}: {}", config_path, e));
+
+    let allowed_scenarios = [
+        "finite_resource_viability",
+        "passive_income_survival",
+        "steady_resource_flow",
+        "dormancy_survival",
+        "resource_abundance",
+    ];
+
+    if let Some(sweeps) = &cfg.sweep {
+        for sweep in sweeps {
+            let sc = sweep.scenario.as_deref().unwrap_or("");
+            if sc.is_empty() || sc == "none" || !allowed_scenarios.contains(&sc) {
+                eprintln!(
+                    "Validation error: sweep '{}' has invalid, empty, or missing scenario '{}'. Allowed scenarios: {:?}",
+                    sweep.name, sc, allowed_scenarios
+                );
+                std::process::exit(1);
+            }
+            if let Some(scenarios) = &cfg.scenarios {
+                if !scenarios.contains_key(sc) {
+                    eprintln!(
+                        "Validation error: scenario preset '{}' specified in sweep '{}' does not exist under scenarios presets in configuration.",
+                        sc, sweep.name
+                    );
+                    std::process::exit(1);
+                }
+            }
+        }
+    }
+
+    if let Some(matrices) = &cfg.matrix {
+        for mat in matrices {
+            let sc = mat.scenario.as_deref().unwrap_or("");
+            if sc.is_empty() || sc == "none" || !allowed_scenarios.contains(&sc) {
+                eprintln!(
+                    "Validation error: matrix '{}' has invalid, empty, or missing scenario '{}'. Allowed scenarios: {:?}",
+                    mat.name, sc, allowed_scenarios
+                );
+                std::process::exit(1);
+            }
+            if let Some(scenarios) = &cfg.scenarios {
+                if !scenarios.contains_key(sc) {
+                    eprintln!(
+                        "Validation error: scenario preset '{}' specified in matrix '{}' does not exist under scenarios presets in configuration.",
+                        sc, mat.name
+                    );
+                    std::process::exit(1);
+                }
+            }
+        }
+    }
 
     std::fs::create_dir_all(&cfg.run.output_dir).expect("cannot create output_dir");
 

@@ -40,21 +40,24 @@ waste_warning_threshold = 10.0
 waste_death_threshold   = 20.0
 
 [[sweep]]
-name  = "viability_threshold"
+name  = "finite_resource_viability"
+scenario = "finite_resource_viability"
 param = "resource_density"
 from  = 0.0
 to    = 20.0
 steps = 6
 
 [[sweep]]
-name  = "passive_income_equilibrium"
+name  = "passive_income_survival"
+scenario = "passive_income_survival"
 param = "passive_energy_income"
 from  = 0.10
 to    = 0.50
 steps = 5
 
 [[matrix]]
-name      = "transport_metabolism"
+name      = "resource_abundance"
+scenario  = "resource_abundance"
 param_x   = "max_uptake_per_tick"
 from_x    = 0.1
 to_x      = 2.0
