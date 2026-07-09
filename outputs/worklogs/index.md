@@ -145,4 +145,5 @@ tags:
 - [[outputs/worklogs/2026-07-08-2359-REPORT-sweep-analyzer-observer|2026-07-08-2359-REPORT-sweep-analyzer-observer]]
 - [[outputs/worklogs/2026-07-09-0028-REPORT-sweep-observer-review|2026-07-09-0028-REPORT-sweep-observer-review]]
 - [[outputs/worklogs/2026-07-09-0056-REPORT-config-restructure|2026-07-09-0056-REPORT-config-restructure]]
+- [[outputs/worklogs/2026-07-09-1049-REPORT-rust-integration-paths|2026-07-09-1049-REPORT-rust-integration-paths]]
 
