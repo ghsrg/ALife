@@ -555,19 +555,30 @@ impl TickExecutor {
                     process_id: crate::core::process::ProcessId::Division,
                     requested_amount: 1.0,
                 };
-                if let Ok(outcome) = self.world.execute_division(idx, &candidate) {
-                    divisions_count += 1;
-                    births_count += 1;
-                    self.world.events_mut_for_commit().push(
-                        current_tick,
-                        EventKind::CellDivided,
-                        Some(outcome.parent_id),
-                    );
-                    self.world.events_mut_for_commit().push(
-                        current_tick,
-                        EventKind::CellBorn,
-                        Some(outcome.daughter_b_id),
-                    );
+                *diagnostics.attempts_by_process.entry(ProcessId::Division).or_insert(0) += 1;
+                process_attempts += 1;
+                match self.world.validate_feasibility(idx, &candidate) {
+                    FeasibilityResult::Allowed { .. } => {
+                        if let Ok(outcome) = self.world.execute_division(idx, &candidate) {
+                            divisions_count += 1;
+                            births_count += 1;
+                            self.world.events_mut_for_commit().push(
+                                current_tick,
+                                EventKind::CellDivided,
+                                Some(outcome.parent_id),
+                            );
+                            self.world.events_mut_for_commit().push(
+                                current_tick,
+                                EventKind::CellBorn,
+                                Some(outcome.daughter_b_id),
+                            );
+                        }
+                    }
+                    FeasibilityResult::Rejected(reason) => {
+                        *diagnostics.rejections_by_process.entry(ProcessId::Division).or_insert(0) += 1;
+                        *diagnostics.rejections_by_reason.entry(reason).or_insert(0) += 1;
+                        process_rejections += 1;
+                    }
                 }
             }
         }

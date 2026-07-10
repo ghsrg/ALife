@@ -112,6 +112,8 @@ initial_resources = [4000.0]
 growth_enabled = true
 division_enabled = true
 initial_resources = [4000.0]
+waste_death_threshold = 100.0
+waste_sink_rate = 0.8
 
 [scenarios.decomposition_viability]
 decomposition_enabled = true
@@ -119,3 +121,4 @@ initial_energy = 1.0
 mandatory_cost_per_tick = 5.0
 decomposition_resources_per_tick = 1.0
 decomposition_materials_per_tick = 1.0
+continue_after_collapse_ticks = 50

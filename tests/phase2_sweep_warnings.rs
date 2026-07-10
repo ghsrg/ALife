@@ -56,6 +56,15 @@ fn mock_result(collapsed: bool, final_energy: f32, dormant_ticks: u32) -> SimRes
         numerical_error_resources: 0.0,
         unclassified_loss_energy: 0.0,
         unclassified_loss_resources: 0.0,
+        divisions_count: 0,
+        births_count: 0,
+        dead_cells_count: 0,
+        decomposing_cells_count: 0,
+        decomposed_cells_count: 0,
+        division_attempts: 0,
+        division_successes: 0,
+        division_rejections: 0,
+        decomposition_released_resources: 0.0,
     }
 }
 
@@ -121,6 +130,15 @@ fn mock_result_custom(
         numerical_error_resources: 0.0,
         unclassified_loss_energy: 0.0,
         unclassified_loss_resources: 0.0,
+        divisions_count: 0,
+        births_count: 0,
+        dead_cells_count: 0,
+        decomposing_cells_count: 0,
+        decomposed_cells_count: 0,
+        division_attempts: 0,
+        division_successes: 0,
+        division_rejections: 0,
+        decomposition_released_resources: 0.0,
     }
 }
 

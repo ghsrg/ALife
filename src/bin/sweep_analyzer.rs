@@ -149,6 +149,7 @@ pub struct RawScenarioPreset {
     pub decomposition_resource_layer_index: Option<usize>,
     pub decomposition_resources_per_tick: Option<f32>,
     pub decomposition_materials_per_tick: Option<f32>,
+    pub continue_after_collapse_ticks: Option<u32>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,6 +208,15 @@ pub struct SimResult {
     pub numerical_error_resources: f32,
     pub unclassified_loss_energy: f32,
     pub unclassified_loss_resources: f32,
+    pub divisions_count: u32,
+    pub births_count: u32,
+    pub dead_cells_count: u32,
+    pub decomposing_cells_count: u32,
+    pub decomposed_cells_count: u32,
+    pub division_attempts: u32,
+    pub division_successes: u32,
+    pub division_rejections: u32,
+    pub decomposition_released_resources: f32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -548,7 +558,11 @@ fn get_behavior_classifier() -> &'static BehaviorClassifierConfig {
     })
 }
 
-fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
+fn run_simulation(
+    rt_config: RuntimeConfig,
+    ticks: u32,
+    preset: Option<&RawScenarioPreset>,
+) -> SimResult {
     let role_classifier = get_role_classifier();
     let behavior_classifier = get_behavior_classifier();
     let metabolism_cost = rt_config
@@ -621,6 +635,15 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
                 numerical_error_resources: 0.0,
                 unclassified_loss_energy: 0.0,
                 unclassified_loss_resources: 0.0,
+                divisions_count: 0,
+                births_count: 0,
+                dead_cells_count: 0,
+                decomposing_cells_count: 0,
+                decomposed_cells_count: 0,
+                division_attempts: 0,
+                division_successes: 0,
+                division_rejections: 0,
+                decomposition_released_resources: 0.0,
             };
         }
     };
@@ -692,6 +715,13 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
     let mut unpaid_mandatory_cost_cumulative = 0.0_f32;
     let mut energy_spent_division = 0.0_f32;
     let mut division_partition_loss_resources = 0.0_f32;
+    let mut divisions_count_cumulative = 0_u32;
+    let mut births_count_cumulative = 0_u32;
+    let mut dead_cells_count_cumulative = 0_u32;
+    let mut division_attempts_cumulative = 0_u32;
+    let mut division_rejections_cumulative = 0_u32;
+    let mut division_successes_cumulative = 0_u32;
+    let mut decomposition_released_resources_cumulative = 0.0_f32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -715,6 +745,8 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         final_pos = initial_pos;
     }
 
+    let continue_after = preset.and_then(|p| p.continue_after_collapse_ticks).unwrap_or(0);
+    let mut collapse_tick_counter: Option<u32> = None;
     let loop_start = std::time::Instant::now();
 
     for t in 0..ticks {
@@ -722,11 +754,18 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         let mut cell_states_before = Vec::with_capacity(len);
         let mut cell_res_before = 0.0_f32;
         let mut cell_mat_before = 0.0_f32;
+        let mut cell_res_before_vec = Vec::with_capacity(len);
+        let mut cell_mat_before_vec = Vec::with_capacity(len);
         for i in 0..len {
             let index = CellIndex::from_raw(i);
-            cell_states_before.push(executor.world().cells().lifecycle_state(index));
-            cell_res_before += executor.world().cells().resource_amount(index).raw();
-            cell_mat_before += executor.world().cells().total_materials(index).raw();
+            let state = executor.world().cells().lifecycle_state(index);
+            cell_states_before.push(state);
+            let res = executor.world().cells().resource_amount(index).raw();
+            let mat = executor.world().cells().total_materials(index).raw();
+            cell_res_before += res;
+            cell_mat_before += mat;
+            cell_res_before_vec.push(res);
+            cell_mat_before_vec.push(mat);
         }
         let grid_before = executor
             .world()
@@ -760,10 +799,21 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
 
         let mut loop_break = false;
         if summary.survival_result == SurvivalResult::Collapse {
-            collapsed = true;
-            collapse_tick = Some(t);
-            death_reason = format!("{:?}", summary.collapse_reason);
-            loop_break = true;
+            if collapse_tick.is_none() {
+                collapsed = true;
+                collapse_tick = Some(t);
+                death_reason = format!("{:?}", summary.collapse_reason);
+            }
+            if continue_after > 0 {
+                let current_count = collapse_tick_counter.unwrap_or(0);
+                if current_count >= continue_after {
+                    loop_break = true;
+                } else {
+                    collapse_tick_counter = Some(current_count + 1);
+                }
+            } else {
+                loop_break = true;
+            }
         }
 
         let e = summary.metrics.final_energy;
@@ -835,24 +885,46 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
 
         energy_spent_movement += displacement_successes as f32 * displacement_cost_energy;
 
-        let mut released_decomposed_tick = 0.0_f32;
-        let decomp_resources_limit = rt_config.decomposition.resources_per_tick.raw();
-        let decomp_materials_limit = rt_config.decomposition.materials_per_tick.raw();
-        for (i, &state_before) in cell_states_before.iter().enumerate() {
-            if state_before == LifecycleState::Dead {
-                let index = CellIndex::from_raw(i);
-                let res_amount = executor.world().cells().resource_amount(index).raw();
-                let mat_amount = executor.world().cells().total_materials(index).raw();
-                let released_res = res_amount.min(decomp_resources_limit);
-                let released_mat = mat_amount.min(decomp_materials_limit);
-                released_decomposed_tick += released_res + released_mat;
+        let division_attempts_tick = summary.diagnostics.attempts_by_process.get(&alife::core::process::ProcessId::Division).copied().unwrap_or(0);
+        let division_rejections_tick = summary.diagnostics.rejections_by_process.get(&alife::core::process::ProcessId::Division).copied().unwrap_or(0);
+        let division_successes_tick = division_attempts_tick.saturating_sub(division_rejections_tick);
+
+        division_attempts_cumulative += division_attempts_tick;
+        division_rejections_cumulative += division_rejections_tick;
+        division_successes_cumulative += division_successes_tick;
+        divisions_count_cumulative += summary.metrics.divisions_count;
+        births_count_cumulative += summary.metrics.divisions_count;
+
+        let mut dead_cells_res_mat_before = Vec::new();
+        for i in 0..len {
+            let index = CellIndex::from_raw(i);
+            let state_before = cell_states_before[i];
+            let state_after = executor.world().cells().lifecycle_state(index);
+            if state_before == LifecycleState::Dead || (state_before != LifecycleState::Dead && state_after == LifecycleState::Dead) {
+                dead_cells_res_mat_before.push((cell_res_before_vec[i], cell_mat_before_vec[i]));
             }
         }
 
-        let decay_rate = rt_config.resources.optional_decay_rate;
-        let decay_factor = (1.0 - decay_rate).max(0.0001);
-        let uptake_tick = (grid_before + released_decomposed_tick - grid_after / decay_factor).max(0.0);
-        let decay_tick = (grid_after / decay_factor - grid_after).max(0.0);
+        let mut released_decomposed_tick = 0.0_f32;
+        let decomp_resources_limit = rt_config.decomposition.resources_per_tick.raw();
+        let decomp_materials_limit = rt_config.decomposition.materials_per_tick.raw();
+        let mut decomposition_released_res = 0.0_f32;
+        for &(res_before, mat_before) in &dead_cells_res_mat_before {
+            let released_res = res_before.min(decomp_resources_limit);
+            let released_mat = mat_before.min(decomp_materials_limit);
+            released_decomposed_tick += released_res + released_mat;
+            decomposition_released_res += released_res;
+        }
+        decomposition_released_resources_cumulative += released_decomposed_tick;
+
+        let partition_loss_fraction = rt_config.division.partition_loss_fraction;
+        let division_loss_res = 0.0_f32;
+        if partition_loss_fraction > 0.0 && summary.metrics.divisions_count > 0 {
+            // partition_loss_fraction is 0.0 in all our active scenarios.
+        }
+
+        let uptake_tick = (cell_res_after - cell_res_before + metabolized_tick + synthesis_tick_res + growth_tick_res + decomposition_released_res + division_loss_res).max(0.0);
+        let decay_tick = (grid_before + released_decomposed_tick - uptake_tick - grid_after).max(0.0);
         resource_absorbed_cumulative += uptake_tick;
         decay_cumulative += decay_tick;
 
@@ -936,11 +1008,16 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
 
         let mut unpaid_mandatory_cost_tick = 0.0_f32;
         for (i, &state_before) in cell_states_before.iter().enumerate() {
+            let index = CellIndex::from_raw(i);
+            let state_after = executor.world().cells().lifecycle_state(index);
+            if state_before != LifecycleState::Dead && state_after == LifecycleState::Dead {
+                dead_cells_count_cumulative += 1;
+            }
             if state_before != LifecycleState::Dead {
                 let flags = executor
                     .world()
                     .cells()
-                    .runtime_flags(CellIndex::from_raw(i));
+                    .runtime_flags(index);
                 if !flags.mandatory_paid {
                     let cost = if state_before == LifecycleState::Dormant {
                         dormant_cost
@@ -1002,6 +1079,21 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         .map(|a| a.raw())
         .unwrap_or(0.0);
     let len_final = executor.world().cells().len();
+    let decomposing_cells_count = (0..len_final)
+        .filter(|&i| {
+            let idx = CellIndex::from_raw(i);
+            executor.world().cells().lifecycle_state(idx) == LifecycleState::Dead
+                && !executor.world().cells().runtime_flags(idx).inert
+        })
+        .count() as u32;
+
+    let decomposed_cells_count = (0..len_final)
+        .filter(|&i| {
+            let idx = CellIndex::from_raw(i);
+            executor.world().cells().lifecycle_state(idx) == LifecycleState::Dead
+                && executor.world().cells().runtime_flags(idx).inert
+        })
+        .count() as u32;
     let final_cell_res = (0..len_final)
         .map(|i| {
             executor
@@ -1415,6 +1507,15 @@ fn run_simulation(rt_config: RuntimeConfig, ticks: u32) -> SimResult {
         numerical_error_resources,
         unclassified_loss_energy,
         unclassified_loss_resources,
+        divisions_count: divisions_count_cumulative,
+        births_count: births_count_cumulative,
+        dead_cells_count: dead_cells_count_cumulative,
+        decomposing_cells_count,
+        decomposed_cells_count,
+        division_attempts: division_attempts_cumulative,
+        division_successes: division_successes_cumulative,
+        division_rejections: division_rejections_cumulative,
+        decomposition_released_resources: decomposition_released_resources_cumulative,
     }
 }
 
@@ -1659,7 +1760,8 @@ pub fn run_sweep(
          energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
          resource_balance_error,energy_balance_error,ticks_per_second,\
-         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources"
+         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
+         divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources"
     )
     .unwrap();
 
@@ -1677,7 +1779,7 @@ pub fn run_sweep(
 
         let rt = build_config(cfg, preset, &overrides);
         let config_hash = rt.config_hash();
-        let res = run_simulation(rt, cfg.run.ticks);
+        let res = run_simulation(rt, cfg.run.ticks, preset);
         let zone = classify(&res, cfg.run.ticks);
         *zone_counts.entry(zone).or_insert(0) += 1;
 
@@ -1775,7 +1877,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -1830,7 +1932,16 @@ pub fn run_sweep(
             res.numerical_error_energy,
             res.numerical_error_resources,
             res.unclassified_loss_energy,
-            res.unclassified_loss_resources
+            res.unclassified_loss_resources,
+            res.divisions_count,
+            res.births_count,
+            res.dead_cells_count,
+            res.decomposing_cells_count,
+            res.decomposed_cells_count,
+            res.division_attempts,
+            res.division_successes,
+            res.division_rejections,
+            res.decomposition_released_resources
         )
         .unwrap();
 
@@ -1910,7 +2021,8 @@ pub fn run_matrix(
          energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
          resource_balance_error,energy_balance_error,ticks_per_second,\
-         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources"
+         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
+         divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources"
     )
     .unwrap();
 
@@ -1932,7 +2044,7 @@ pub fn run_matrix(
 
             let rt = build_config(cfg, preset, &overrides);
             let config_hash = rt.config_hash();
-            let res = run_simulation(rt, cfg.run.ticks);
+            let res = run_simulation(rt, cfg.run.ticks, preset);
             let zone = classify(&res, cfg.run.ticks);
             *zone_counts.entry(zone).or_insert(0) += 1;
 
@@ -2033,7 +2145,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2090,7 +2202,16 @@ pub fn run_matrix(
             res.numerical_error_energy,
             res.numerical_error_resources,
             res.unclassified_loss_energy,
-            res.unclassified_loss_resources
+            res.unclassified_loss_resources,
+            res.divisions_count,
+            res.births_count,
+            res.dead_cells_count,
+            res.decomposing_cells_count,
+            res.decomposed_cells_count,
+            res.division_attempts,
+            res.division_successes,
+            res.division_rejections,
+            res.decomposition_released_resources
         )
         .unwrap();
     }
