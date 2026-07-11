@@ -133,6 +133,10 @@ continue_after_collapse_ticks = 50
 
 [scenarios.local_interaction_viability]
 world_size = [64.0, 64.0]
+cell_radius = 2.0
+initial_energy = 20.0
+mandatory_cost_per_tick = 0.0
+capacity_limit = 50.0
 initial_cell_count = 2
 overlap_offset = 3.0
 source_cell_resources = 10.0

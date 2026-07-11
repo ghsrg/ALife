@@ -377,9 +377,10 @@ steps = 3
         .get("local_interaction_viability");
     alife::bin::sweep_analyzer::run_sweep(&cfg, sweep, preset, out_dir);
 
-    let csv =
-        std::fs::read_to_string("target/test_local_interaction_sweep/local_interaction_viability.csv")
-            .unwrap();
+    let csv = std::fs::read_to_string(
+        "target/test_local_interaction_sweep/local_interaction_viability.csv",
+    )
+    .unwrap();
     let header = csv.lines().next().unwrap();
     assert!(header.contains("contact_pairs_count"));
     assert!(header.contains("contact_pressure_pre_total"));

@@ -903,14 +903,13 @@ fn run_simulation(
         };
 
         ticks_executed += 1;
-        contact_pairs_count_max =
-            contact_pairs_count_max.max(summary.metrics.contact_pairs_count);
+        contact_pairs_count_max = contact_pairs_count_max.max(summary.metrics.contact_pairs_count);
         contact_pressure_pre_total_max =
             contact_pressure_pre_total_max.max(summary.metrics.contact_pressure_pre_total);
         contact_pressure_post_total_max =
             contact_pressure_post_total_max.max(summary.metrics.contact_pressure_post_total);
-        contact_pressure_max_over_tick_max = contact_pressure_max_over_tick_max
-            .max(summary.metrics.contact_pressure_max_over_tick);
+        contact_pressure_max_over_tick_max =
+            contact_pressure_max_over_tick_max.max(summary.metrics.contact_pressure_max_over_tick);
         contact_exchange_amount_cumulative += summary.metrics.contact_exchange_amount;
         contact_exchange_pairs_count_cumulative += summary.metrics.contact_exchange_pairs_count;
         contact_exchange_rejections_no_capability_cumulative +=
@@ -1829,8 +1828,7 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
         let any_contact = results
             .iter()
             .any(|r| r.contact_pairs_count > 0 && r.contact_pressure_max_over_tick > 0.0);
-        let exchange_values: Vec<f32> =
-            results.iter().map(|r| r.contact_exchange_amount).collect();
+        let exchange_values: Vec<f32> = results.iter().map(|r| r.contact_exchange_amount).collect();
         let stimulus_values: Vec<f32> = results
             .iter()
             .map(|r| r.contact_stimulus_readable_total)

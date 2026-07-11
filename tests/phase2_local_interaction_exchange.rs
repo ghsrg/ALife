@@ -6,8 +6,8 @@ use alife::core::{
     },
     tick::TickExecutor,
     units::{
-        CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius,
-        ResourceAmount, Seed, Tick, WasteAmount, WorldSize,
+        CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
+        Seed, Tick, WasteAmount, WorldSize,
     },
 };
 use alife::runner::config_parser::RawScenarioConfig;

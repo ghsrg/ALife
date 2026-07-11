@@ -75,15 +75,13 @@ impl TickExecutor {
                     (b, a, b_res - a_res)
                 };
 
-                if !has_contact_exchange_capability(
-                    &self.world,
-                    source,
-                    &config.local_interaction,
-                ) || !has_contact_exchange_capability(
-                    &self.world,
-                    target,
-                    &config.local_interaction,
-                ) {
+                if !has_contact_exchange_capability(&self.world, source, &config.local_interaction)
+                    || !has_contact_exchange_capability(
+                        &self.world,
+                        target,
+                        &config.local_interaction,
+                    )
+                {
                     contact_exchange_rejections_no_capability += 1;
                     continue;
                 }

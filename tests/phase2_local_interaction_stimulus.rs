@@ -6,8 +6,8 @@ use alife::core::{
     },
     tick::TickExecutor,
     units::{
-        CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius,
-        ResourceAmount, Seed, Tick, WasteAmount, WorldSize,
+        CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
+        Seed, Tick, WasteAmount, WorldSize,
     },
 };
 
@@ -81,7 +81,9 @@ fn contact_stimulus_created_in_tick_n_is_readable_in_tick_n_plus_1() {
     let mut exec = TickExecutor::new(contact_stimulus_config(1.0)).unwrap();
 
     assert_eq!(
-        exec.world().cells().contact_stimulus(CellIndex::from_raw(0)),
+        exec.world()
+            .cells()
+            .contact_stimulus(CellIndex::from_raw(0)),
         0.0
     );
     let first = exec.step().unwrap();
@@ -90,10 +92,16 @@ fn contact_stimulus_created_in_tick_n_is_readable_in_tick_n_plus_1() {
 
     let second = exec.step().unwrap();
     assert!(
-        exec.world().cells().contact_stimulus(CellIndex::from_raw(0)) > 0.0
+        exec.world()
+            .cells()
+            .contact_stimulus(CellIndex::from_raw(0))
+            > 0.0
     );
     assert!(
-        exec.world().cells().contact_stimulus(CellIndex::from_raw(1)) > 0.0
+        exec.world()
+            .cells()
+            .contact_stimulus(CellIndex::from_raw(1))
+            > 0.0
     );
     assert!(second.metrics.contact_stimulus_readable_total > 0.0);
 }
@@ -105,11 +113,15 @@ fn contact_stimulus_requires_sensory_material() {
     let second = exec.step().unwrap();
 
     assert_eq!(
-        exec.world().cells().contact_stimulus(CellIndex::from_raw(0)),
+        exec.world()
+            .cells()
+            .contact_stimulus(CellIndex::from_raw(0)),
         0.0
     );
     assert_eq!(
-        exec.world().cells().contact_stimulus(CellIndex::from_raw(1)),
+        exec.world()
+            .cells()
+            .contact_stimulus(CellIndex::from_raw(1)),
         0.0
     );
     assert_eq!(second.metrics.contact_stimulus_readable_total, 0.0);

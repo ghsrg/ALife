@@ -611,24 +611,23 @@ impl RawScenarioConfig {
             runtime_config.local_interaction.enabled = raw_local.enabled.unwrap_or(false);
             runtime_config.local_interaction.contact_exchange_rate =
                 raw_local.contact_exchange_rate.unwrap_or(0.0);
-            runtime_config.local_interaction.max_exchange_per_pair =
-                ResourceAmount::new(raw_local.max_exchange_per_pair.unwrap_or(0.0)).map_err(
-                    |e| {
-                        ParseError::ValidationError(format!(
-                            "Invalid local_interaction max_exchange_per_pair: {:?}",
-                            e
-                        ))
-                    },
-                )?;
+            runtime_config.local_interaction.max_exchange_per_pair = ResourceAmount::new(
+                raw_local.max_exchange_per_pair.unwrap_or(0.0),
+            )
+            .map_err(|e| {
+                ParseError::ValidationError(format!(
+                    "Invalid local_interaction max_exchange_per_pair: {:?}",
+                    e
+                ))
+            })?;
             runtime_config.local_interaction.min_boundary_capability =
                 raw_local.min_boundary_capability.unwrap_or(0.0);
             runtime_config.local_interaction.min_transport_capability =
                 raw_local.min_transport_capability.unwrap_or(0.0);
             runtime_config
                 .local_interaction
-                .contact_stimulus_per_overlap = raw_local
-                .contact_stimulus_per_overlap
-                .unwrap_or(0.0);
+                .contact_stimulus_per_overlap =
+                raw_local.contact_stimulus_per_overlap.unwrap_or(0.0);
             runtime_config.local_interaction.stimulus_decay_per_tick =
                 raw_local.stimulus_decay_per_tick.unwrap_or(0.0);
         }
