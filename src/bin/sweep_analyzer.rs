@@ -1825,6 +1825,35 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
         }
     }
 
+    if scenario_lower == "local_interaction_viability" {
+        let any_contact = results
+            .iter()
+            .any(|r| r.contact_pairs_count > 0 && r.contact_pressure_max_over_tick > 0.0);
+        let exchange_values: Vec<f32> =
+            results.iter().map(|r| r.contact_exchange_amount).collect();
+        let stimulus_values: Vec<f32> = results
+            .iter()
+            .map(|r| r.contact_stimulus_readable_total)
+            .collect();
+
+        if !any_contact {
+            warnings.push("LOCAL_INTERACTION_NOT_ACTIVATED".to_string());
+        }
+        if !varies_meaningfully(&exchange_values, 0.001) {
+            warnings.push("LOCAL_INTERACTION_EXCHANGE_FLAT".to_string());
+        }
+        if !varies_meaningfully(&stimulus_values, 0.001) {
+            warnings.push("LOCAL_INTERACTION_STIMULUS_FLAT".to_string());
+        }
+        if any_contact
+            && (varies_meaningfully(&exchange_values, 0.001)
+                || varies_meaningfully(&stimulus_values, 0.001))
+        {
+            push_low_info = false;
+            warnings.retain(|w| w != "LOW_INFORMATION_SWEEP");
+        }
+    }
+
     if push_low_info && !warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()) {
         warnings.push("LOW_INFORMATION_SWEEP".to_string());
     }
@@ -1850,6 +1879,15 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
 // ─────────────────────────────────────────────────────────────────────────────
 // Aggregate stats over a slice of SimResults
 // ─────────────────────────────────────────────────────────────────────────────
+
+fn varies_meaningfully(values: &[f32], min_delta: f32) -> bool {
+    if values.is_empty() {
+        return false;
+    }
+    let min = values.iter().copied().fold(f32::INFINITY, f32::min);
+    let max = values.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    max.is_finite() && min.is_finite() && (max - min).abs() >= min_delta
+}
 
 struct Stats {
     min: f32,
