@@ -41,6 +41,8 @@ pub struct MetricsSummary {
     pub contact_exchange_amount: f32,
     pub contact_exchange_pairs_count: u32,
     pub contact_exchange_rejections_no_capability: u32,
+    pub contact_stimulus_generated_total: f32,
+    pub contact_stimulus_readable_total: f32,
     pub overlap_resolved: f32,
     pub process_attempts: u32,
     pub process_rejections: u32,

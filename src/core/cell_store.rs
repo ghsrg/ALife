@@ -99,6 +99,8 @@ pub struct CellStore {
     lifecycle_states: Vec<LifecycleState>,
     runtime_flags: Vec<RuntimeFlags>,
     pressures: Vec<f32>,
+    contact_stimulus_current: Vec<f32>,
+    contact_stimulus_next: Vec<f32>,
     next_cell_id: u32,
 }
 
@@ -124,6 +126,8 @@ impl CellStore {
             lifecycle_states: Vec::with_capacity(capacity),
             runtime_flags: Vec::with_capacity(capacity),
             pressures: Vec::with_capacity(capacity),
+            contact_stimulus_current: Vec::with_capacity(capacity),
+            contact_stimulus_next: Vec::with_capacity(capacity),
             next_cell_id: 1,
         }
     }
@@ -150,6 +154,8 @@ impl CellStore {
         self.lifecycle_states.push(LifecycleState::Alive);
         self.runtime_flags.push(RuntimeFlags::default());
         self.pressures.push(0.0);
+        self.contact_stimulus_current.push(0.0);
+        self.contact_stimulus_next.push(0.0);
         id
     }
 
@@ -370,6 +376,25 @@ impl CellStore {
 
     pub fn set_contact_pressure(&mut self, index: CellIndex, pressure: f32) {
         self.pressures[index.raw()] = pressure;
+    }
+
+    pub fn contact_stimulus(&self, index: CellIndex) -> f32 {
+        self.contact_stimulus_current[index.raw()]
+    }
+
+    pub fn add_next_contact_stimulus(&mut self, index: CellIndex, amount: f32) {
+        self.contact_stimulus_next[index.raw()] =
+            (self.contact_stimulus_next[index.raw()] + amount.max(0.0)).clamp(0.0, 1.0);
+    }
+
+    pub fn commit_contact_stimulus(&mut self, decay_per_tick: f32) {
+        let decay = decay_per_tick.clamp(0.0, 1.0);
+        for i in 0..self.contact_stimulus_current.len() {
+            let decayed_current = self.contact_stimulus_current[i] * (1.0 - decay);
+            self.contact_stimulus_current[i] =
+                (decayed_current + self.contact_stimulus_next[i]).clamp(0.0, 1.0);
+            self.contact_stimulus_next[i] = 0.0;
+        }
     }
 
     pub fn material_amount(&self, index: CellIndex) -> MaterialAmount {

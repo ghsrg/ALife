@@ -51,6 +51,9 @@ impl TickExecutor {
         let contact_pairs_count = self.world.contact_cache().pairs().len() as u32;
         let contact_pressure_pre_total = self.world.contact_cache().total_overlap();
         let mut contact_pressure_max_over_tick = self.world.contact_cache().max_overlap();
+        let contact_stimulus_readable_total_for_summary = (0..self.world.cells().len())
+            .map(|i| self.world.cells().contact_stimulus(CellIndex::from_raw(i)))
+            .sum::<f32>();
         let mut contact_exchange_amount = 0.0_f32;
         let mut contact_exchange_pairs_count = 0_u32;
         let mut contact_exchange_rejections_no_capability = 0_u32;
@@ -113,6 +116,31 @@ impl TickExecutor {
                 if moved.raw() > 0.0 {
                     contact_exchange_amount += moved.raw();
                     contact_exchange_pairs_count += 1;
+                }
+            }
+        }
+        let mut contact_stimulus_generated_total = 0.0_f32;
+        if config.local_interaction.enabled
+            && config.local_interaction.contact_stimulus_per_overlap > 0.0
+        {
+            let pairs = self.world.contact_cache().pairs().to_vec();
+            for pair in pairs {
+                for target in [pair.a, pair.b] {
+                    let sensory = self.world.cells().capability_level(
+                        target,
+                        crate::core::process::MaterialCapability::ResourceSensing,
+                    );
+                    if sensory <= 0.0 {
+                        continue;
+                    }
+                    let stimulus = (pair.overlap
+                        * config.local_interaction.contact_stimulus_per_overlap
+                        * sensory)
+                        .clamp(0.0, 1.0);
+                    self.world
+                        .cells_mut_for_commit()
+                        .add_next_contact_stimulus(target, stimulus);
+                    contact_stimulus_generated_total += stimulus;
                 }
             }
         }
@@ -717,6 +745,9 @@ impl TickExecutor {
         self.world
             .resources_mut_for_commit()
             .decay_or_passive_update();
+        self.world
+            .cells_mut_for_commit()
+            .commit_contact_stimulus(config.local_interaction.stimulus_decay_per_tick);
         self.world.advance_tick();
 
         let current_tick = self.world.tick();
@@ -756,6 +787,8 @@ impl TickExecutor {
                 contact_exchange_amount,
                 contact_exchange_pairs_count,
                 contact_exchange_rejections_no_capability,
+                contact_stimulus_generated_total,
+                contact_stimulus_readable_total_for_summary,
                 process_attempts,
                 process_rejections,
                 divisions_count,
@@ -827,6 +860,8 @@ impl TickExecutor {
         contact_exchange_amount: f32,
         contact_exchange_pairs_count: u32,
         contact_exchange_rejections_no_capability: u32,
+        contact_stimulus_generated_total: f32,
+        contact_stimulus_readable_total: f32,
         process_attempts: u32,
         process_rejections: u32,
         divisions_count: u32,
@@ -896,6 +931,8 @@ impl TickExecutor {
             contact_exchange_amount,
             contact_exchange_pairs_count,
             contact_exchange_rejections_no_capability,
+            contact_stimulus_generated_total,
+            contact_stimulus_readable_total,
             overlap_resolved,
             process_attempts,
             process_rejections,
