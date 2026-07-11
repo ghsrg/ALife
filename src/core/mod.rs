@@ -2,6 +2,7 @@ pub const CORE_MODULE_NAME: &str = "alife-core";
 
 pub mod cell_store;
 pub mod config;
+pub mod contact;
 pub mod deltas;
 pub mod environment;
 pub mod events;
