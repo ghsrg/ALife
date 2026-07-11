@@ -252,3 +252,48 @@ fn local_interaction_metrics_are_deterministic_for_same_seed_and_config() {
     assert_eq!(metric_tuple(&first_tick_1), metric_tuple(&second_tick_1));
     assert_eq!(metric_tuple(&first_tick_2), metric_tuple(&second_tick_2));
 }
+
+#[test]
+fn passive_contact_exchange_rejects_when_boundary_material_missing() {
+    let mut exec = TickExecutor::new(contact_exchange_config(0.0, 1.0, 1.0, 1.0)).unwrap();
+    let summary = exec.step().unwrap();
+
+    let a_after = exec
+        .world()
+        .cells()
+        .resource_amount(CellIndex::from_raw(0))
+        .raw();
+    let b_after = exec
+        .world()
+        .cells()
+        .resource_amount(CellIndex::from_raw(1))
+        .raw();
+
+    assert_eq!(a_after, 10.0);
+    assert_eq!(b_after, 0.0);
+    assert_eq!(summary.metrics.contact_exchange_amount, 0.0);
+    assert_eq!(summary.metrics.contact_exchange_rejections_no_capability, 1);
+}
+
+#[test]
+fn passive_contact_exchange_rejects_when_transport_material_missing() {
+    let mut exec = TickExecutor::new(contact_exchange_config(1.0, 0.0, 1.0, 1.0)).unwrap();
+    let summary = exec.step().unwrap();
+
+    assert_eq!(
+        exec.world()
+            .cells()
+            .resource_amount(CellIndex::from_raw(0))
+            .raw(),
+        10.0
+    );
+    assert_eq!(
+        exec.world()
+            .cells()
+            .resource_amount(CellIndex::from_raw(1))
+            .raw(),
+        0.0
+    );
+    assert_eq!(summary.metrics.contact_exchange_amount, 0.0);
+    assert_eq!(summary.metrics.contact_exchange_rejections_no_capability, 1);
+}
