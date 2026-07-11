@@ -305,3 +305,91 @@ steps = 3
 
     assert!(has_clean_survivor);
 }
+
+#[test]
+fn test_local_interaction_sweep_outputs_contact_metrics() {
+    let out_dir = "target/test_local_interaction_sweep";
+    std::fs::create_dir_all(out_dir).unwrap();
+
+    let toml_str = r#"
+[run]
+output_dir = "target/test_local_interaction_sweep"
+seed = 42
+ticks = 20
+
+[cell]
+radius = 2.0
+initial_energy = 20.0
+energy_capacity = 20.0
+mandatory_cost_per_tick = 0.0
+passive_energy_income = 0.0
+capacity_limit = 50.0
+initial_metabolic_material = 0.0
+initial_transport_material = 1.0
+initial_boundary_material = 1.0
+initial_structural_material = 1.0
+
+[lifecycle]
+stress_energy_threshold = 1.0
+dormancy_allowed = false
+dormant_mandatory_cost_modifier = 1.0
+critical_capacity_overrun = 100.0
+
+[resource_interaction]
+energy_per_resource = 0.0
+heat_per_resource = 0.0
+waste_per_resource = 0.0
+decay_rate = 0.0
+default_resource_density = 0.001
+default_max_uptake_per_tick = 0.0
+default_metabolism_resource_per_tick = 0.0
+
+[environment]
+heat_dissipation_rate = 0.0
+heat_warning_threshold = 100.0
+heat_death_threshold = 200.0
+waste_sink_rate = 0.0
+waste_warning_threshold = 100.0
+waste_death_threshold = 200.0
+
+[scenarios.local_interaction_viability]
+initial_cell_count = 2
+overlap_offset = 3.0
+source_cell_resources = 10.0
+target_cell_resources = 0.0
+enable_local_interaction = true
+
+[[sweep]]
+name = "local_interaction_viability"
+scenario = "local_interaction_viability"
+param = "contact_exchange_rate"
+from = 0.0
+to = 1.0
+steps = 3
+"#;
+
+    let cfg: alife::bin::sweep_analyzer::AnalyzerConfig = toml::from_str(toml_str).unwrap();
+    let sweep = &cfg.sweep.as_ref().unwrap()[0];
+    let preset = cfg
+        .scenarios
+        .as_ref()
+        .unwrap()
+        .get("local_interaction_viability");
+    alife::bin::sweep_analyzer::run_sweep(&cfg, sweep, preset, out_dir);
+
+    let csv =
+        std::fs::read_to_string("target/test_local_interaction_sweep/local_interaction_viability.csv")
+            .unwrap();
+    let header = csv.lines().next().unwrap();
+    assert!(header.contains("contact_pairs_count"));
+    assert!(header.contains("contact_pressure_pre_total"));
+    assert!(header.contains("contact_pressure_post_total"));
+    assert!(header.contains("contact_pressure_max_over_tick"));
+    assert!(header.contains("contact_exchange_amount"));
+    assert!(header.contains("contact_stimulus_readable_total"));
+    assert!(
+        csv.lines()
+            .skip(1)
+            .any(|line| line.contains("local_interaction_viability"))
+    );
+}

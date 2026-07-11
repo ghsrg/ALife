@@ -154,6 +154,11 @@ pub struct RawScenarioPreset {
     pub decomposition_resources_per_tick: Option<f32>,
     pub decomposition_materials_per_tick: Option<f32>,
     pub continue_after_collapse_ticks: Option<u32>,
+    pub initial_cell_count: Option<usize>,
+    pub overlap_offset: Option<f32>,
+    pub source_cell_resources: Option<f32>,
+    pub target_cell_resources: Option<f32>,
+    pub enable_local_interaction: Option<bool>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,6 +234,15 @@ pub struct SimResult {
     pub time_to_decomposed: u32,
     pub remaining_dead_cell_resources: f32,
     pub remaining_dead_cell_materials: f32,
+    pub contact_pairs_count: u32,
+    pub contact_pressure_pre_total: f32,
+    pub contact_pressure_post_total: f32,
+    pub contact_pressure_max_over_tick: f32,
+    pub contact_exchange_amount: f32,
+    pub contact_exchange_pairs_count: u32,
+    pub contact_exchange_rejections_no_capability: u32,
+    pub contact_stimulus_generated_total: f32,
+    pub contact_stimulus_readable_total: f32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -557,6 +571,42 @@ pub fn build_config(
     rt.decomposition.resources_per_tick = ResourceAmount::new(decomp_resources.max(0.0)).unwrap();
     rt.decomposition.materials_per_tick = MaterialAmount::new(decomp_materials.max(0.0)).unwrap();
 
+    if preset.and_then(|p| p.initial_cell_count).unwrap_or(1) >= 2 {
+        let overlap_offset = preset.and_then(|p| p.overlap_offset).unwrap_or(3.0);
+        let mut source = cell;
+        let mut target = cell;
+        source.position = Position::new(16.0, 16.0);
+        target.position = Position::new(16.0 + overlap_offset, 16.0);
+        source.initial_resource_amount =
+            ResourceAmount::new(preset.and_then(|p| p.source_cell_resources).unwrap_or(10.0))
+                .unwrap();
+        target.initial_resource_amount =
+            ResourceAmount::new(preset.and_then(|p| p.target_cell_resources).unwrap_or(0.0))
+                .unwrap();
+        source.initial_sensory_material = MaterialAmount::new(1.0).unwrap();
+        target.initial_sensory_material = MaterialAmount::new(1.0).unwrap();
+        rt = rt.with_cells(vec![source, target]);
+        rt.resource_interaction.enabled = false;
+        rt.local_interaction.enabled = preset
+            .and_then(|p| p.enable_local_interaction)
+            .unwrap_or(true);
+    }
+
+    if rt.local_interaction.enabled {
+        rt.local_interaction.contact_exchange_rate = overrides
+            .get("contact_exchange_rate")
+            .copied()
+            .unwrap_or(0.5);
+        rt.local_interaction.max_exchange_per_pair = ResourceAmount::new(2.0).unwrap();
+        rt.local_interaction.min_boundary_capability = 0.1;
+        rt.local_interaction.min_transport_capability = 0.1;
+        rt.local_interaction.contact_stimulus_per_overlap = overrides
+            .get("contact_stimulus_per_overlap")
+            .copied()
+            .unwrap_or(0.5);
+        rt.local_interaction.stimulus_decay_per_tick = 0.0;
+    }
+
     rt
 }
 
@@ -677,6 +727,15 @@ fn run_simulation(
                 time_to_decomposed: 0,
                 remaining_dead_cell_resources: 0.0,
                 remaining_dead_cell_materials: 0.0,
+                contact_pairs_count: 0,
+                contact_pressure_pre_total: 0.0,
+                contact_pressure_post_total: 0.0,
+                contact_pressure_max_over_tick: 0.0,
+                contact_exchange_amount: 0.0,
+                contact_exchange_pairs_count: 0,
+                contact_exchange_rejections_no_capability: 0,
+                contact_stimulus_generated_total: 0.0,
+                contact_stimulus_readable_total: 0.0,
             };
         }
     };
@@ -759,6 +818,15 @@ fn run_simulation(
     let mut first_decomposition_tick: Option<u32> = None;
     let mut first_decomposed_tick: Option<u32> = None;
     let mut decomposition_ticks = 0_u32;
+    let mut contact_pairs_count_max = 0_u32;
+    let mut contact_pressure_pre_total_max = 0.0_f32;
+    let mut contact_pressure_post_total_max = 0.0_f32;
+    let mut contact_pressure_max_over_tick_max = 0.0_f32;
+    let mut contact_exchange_amount_cumulative = 0.0_f32;
+    let mut contact_exchange_pairs_count_cumulative = 0_u32;
+    let mut contact_exchange_rejections_no_capability_cumulative = 0_u32;
+    let mut contact_stimulus_generated_total_cumulative = 0.0_f32;
+    let mut contact_stimulus_readable_total_max = 0.0_f32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -835,6 +903,22 @@ fn run_simulation(
         };
 
         ticks_executed += 1;
+        contact_pairs_count_max =
+            contact_pairs_count_max.max(summary.metrics.contact_pairs_count);
+        contact_pressure_pre_total_max =
+            contact_pressure_pre_total_max.max(summary.metrics.contact_pressure_pre_total);
+        contact_pressure_post_total_max =
+            contact_pressure_post_total_max.max(summary.metrics.contact_pressure_post_total);
+        contact_pressure_max_over_tick_max = contact_pressure_max_over_tick_max
+            .max(summary.metrics.contact_pressure_max_over_tick);
+        contact_exchange_amount_cumulative += summary.metrics.contact_exchange_amount;
+        contact_exchange_pairs_count_cumulative += summary.metrics.contact_exchange_pairs_count;
+        contact_exchange_rejections_no_capability_cumulative +=
+            summary.metrics.contact_exchange_rejections_no_capability;
+        contact_stimulus_generated_total_cumulative +=
+            summary.metrics.contact_stimulus_generated_total;
+        contact_stimulus_readable_total_max = contact_stimulus_readable_total_max
+            .max(summary.metrics.contact_stimulus_readable_total);
 
         let mut loop_break = false;
         if summary.survival_result == SurvivalResult::Collapse {
@@ -1610,6 +1694,16 @@ fn run_simulation(
         time_to_decomposed,
         remaining_dead_cell_resources: final_cell_res_dead,
         remaining_dead_cell_materials: final_cell_mat_dead,
+        contact_pairs_count: contact_pairs_count_max,
+        contact_pressure_pre_total: contact_pressure_pre_total_max,
+        contact_pressure_post_total: contact_pressure_post_total_max,
+        contact_pressure_max_over_tick: contact_pressure_max_over_tick_max,
+        contact_exchange_amount: contact_exchange_amount_cumulative,
+        contact_exchange_pairs_count: contact_exchange_pairs_count_cumulative,
+        contact_exchange_rejections_no_capability:
+            contact_exchange_rejections_no_capability_cumulative,
+        contact_stimulus_generated_total: contact_stimulus_generated_total_cumulative,
+        contact_stimulus_readable_total: contact_stimulus_readable_total_max,
     }
 }
 
@@ -1901,7 +1995,8 @@ pub fn run_sweep(
          resource_balance_error,energy_balance_error,ticks_per_second,\
          explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
-         first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials"
+         first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
+         contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total"
     )
     .unwrap();
 
@@ -2017,7 +2112,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2088,7 +2183,16 @@ pub fn run_sweep(
             res.decomposition_released_resources_per_tick,
             res.time_to_decomposed,
             res.remaining_dead_cell_resources,
-            res.remaining_dead_cell_materials
+            res.remaining_dead_cell_materials,
+            res.contact_pairs_count,
+            res.contact_pressure_pre_total,
+            res.contact_pressure_post_total,
+            res.contact_pressure_max_over_tick,
+            res.contact_exchange_amount,
+            res.contact_exchange_pairs_count,
+            res.contact_exchange_rejections_no_capability,
+            res.contact_stimulus_generated_total,
+            res.contact_stimulus_readable_total
         )
         .unwrap();
 
@@ -2170,7 +2274,8 @@ pub fn run_matrix(
          resource_balance_error,energy_balance_error,ticks_per_second,\
          explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
-         first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials"
+         first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
+         contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total"
     )
     .unwrap();
 
@@ -2293,7 +2398,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2366,7 +2471,16 @@ pub fn run_matrix(
             res.decomposition_released_resources_per_tick,
             res.time_to_decomposed,
             res.remaining_dead_cell_resources,
-            res.remaining_dead_cell_materials
+            res.remaining_dead_cell_materials,
+            res.contact_pairs_count,
+            res.contact_pressure_pre_total,
+            res.contact_pressure_post_total,
+            res.contact_pressure_max_over_tick,
+            res.contact_exchange_amount,
+            res.contact_exchange_pairs_count,
+            res.contact_exchange_rejections_no_capability,
+            res.contact_stimulus_generated_total,
+            res.contact_stimulus_readable_total
         )
         .unwrap();
     }
@@ -2885,6 +2999,7 @@ fn main() {
         "active_metabolism_viability",
         "division_viability",
         "decomposition_viability",
+        "local_interaction_viability",
     ];
 
     if let Some(sweeps) = &cfg.sweep {

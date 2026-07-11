@@ -111,6 +111,14 @@ from  = 1.0
 to    = 5.0
 steps = 9
 
+[[sweep]]
+name  = "local_interaction_viability"
+scenario = "local_interaction_viability"
+param = "contact_exchange_rate"
+from  = 0.0
+to    = 1.0
+steps = 6
+
 # ─────────────────────────────────────────────
 # Двовимірне сканування
 # ─────────────────────────────────────────────
@@ -171,3 +179,11 @@ mandatory_cost_per_tick = 50.0
 decomposition_resources_per_tick = 1.0
 decomposition_materials_per_tick = 1.0
 continue_after_collapse_ticks = 80
+
+[scenarios.local_interaction_viability]
+world_size = [64.0, 64.0]
+initial_cell_count = 2
+overlap_offset = 3.0
+source_cell_resources = 10.0
+target_cell_resources = 0.0
+enable_local_interaction = true
