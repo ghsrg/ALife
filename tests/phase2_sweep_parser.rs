@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct RawScenarioPreset {
@@ -32,6 +33,30 @@ pub struct RawScenarioPreset {
 #[derive(Debug, serde::Deserialize)]
 pub struct TestConfig {
     pub scenarios: HashMap<String, RawScenarioPreset>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct ScenarioListConfig {
+    sweep: Option<Vec<ScenarioRef>>,
+    matrix: Option<Vec<ScenarioRef>>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct ScenarioRef {
+    scenario: Option<String>,
+    name: String,
+}
+
+fn configured_scenarios(path: &str) -> HashSet<String> {
+    let contents = std::fs::read_to_string(path).unwrap();
+    let config: ScenarioListConfig = toml::from_str(&contents).unwrap();
+    config
+        .sweep
+        .into_iter()
+        .flatten()
+        .chain(config.matrix.into_iter().flatten())
+        .map(|entry| entry.scenario.unwrap_or(entry.name))
+        .collect()
 }
 
 #[test]
@@ -168,4 +193,12 @@ scenario = "test_preset"
     assert_eq!(preset.division_energy_cost, Some(2.0));
     assert_eq!(preset.max_uptake_per_tick, Some(0.25));
     assert_eq!(preset.metabolism_resource_per_tick, Some(0.25));
+}
+
+#[test]
+fn test_smoke_config_covers_all_full_analyzer_scenarios() {
+    let full = configured_scenarios("config/analyzer/sweep_analyzer.toml");
+    let smoke = configured_scenarios("config/analyzer/sweep_analyzer_smoke.toml");
+
+    assert_eq!(smoke, full);
 }

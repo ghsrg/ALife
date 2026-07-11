@@ -56,6 +56,22 @@ to    = 0.50
 steps = 5
 
 [[sweep]]
+name  = "steady_resource_flow"
+scenario = "steady_resource_flow"
+param = "mandatory_cost_per_tick"
+from  = 0.05
+to    = 5.0
+steps = 5
+
+[[sweep]]
+name  = "dormancy_survival"
+scenario = "dormancy_survival"
+param = "dormant_mandatory_cost_modifier"
+from  = 0.02
+to    = 0.50
+steps = 5
+
+[[sweep]]
 name  = "active_metabolism_viability"
 scenario = "active_metabolism_viability"
 param = "max_uptake_per_tick"
