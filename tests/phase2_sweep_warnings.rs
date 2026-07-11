@@ -73,6 +73,15 @@ fn mock_result(collapsed: bool, final_energy: f32, dormant_ticks: u32) -> SimRes
         time_to_decomposed: 0,
         remaining_dead_cell_resources: 0.0,
         remaining_dead_cell_materials: 0.0,
+        contact_pairs_count: 0,
+        contact_pressure_pre_total: 0.0,
+        contact_pressure_post_total: 0.0,
+        contact_pressure_max_over_tick: 0.0,
+        contact_exchange_amount: 0.0,
+        contact_exchange_pairs_count: 0,
+        contact_exchange_rejections_no_capability: 0,
+        contact_stimulus_generated_total: 0.0,
+        contact_stimulus_readable_total: 0.0,
     }
 }
 
@@ -155,6 +164,15 @@ fn mock_result_custom(
         time_to_decomposed: 0,
         remaining_dead_cell_resources: 0.0,
         remaining_dead_cell_materials: 0.0,
+        contact_pairs_count: 0,
+        contact_pressure_pre_total: 0.0,
+        contact_pressure_post_total: 0.0,
+        contact_pressure_max_over_tick: 0.0,
+        contact_exchange_amount: 0.0,
+        contact_exchange_pairs_count: 0,
+        contact_exchange_rejections_no_capability: 0,
+        contact_stimulus_generated_total: 0.0,
+        contact_stimulus_readable_total: 0.0,
     }
 }
 
@@ -232,6 +250,15 @@ fn mock_decomposition_result(
         time_to_decomposed,
         remaining_dead_cell_resources: remaining_resources,
         remaining_dead_cell_materials: remaining_materials,
+        contact_pairs_count: 0,
+        contact_pressure_pre_total: 0.0,
+        contact_pressure_post_total: 0.0,
+        contact_pressure_max_over_tick: 0.0,
+        contact_exchange_amount: 0.0,
+        contact_exchange_pairs_count: 0,
+        contact_exchange_rejections_no_capability: 0,
+        contact_stimulus_generated_total: 0.0,
+        contact_stimulus_readable_total: 0.0,
     }
 }
 
@@ -391,4 +418,50 @@ fn test_scenario_steady_resource_flow_low_stable_density() {
             .any(|w| w.contains("Recommend narrowing the parameter range")
                 || w.contains("RECOMMEND_NARROW_RANGE"))
     );
+}
+
+#[test]
+fn test_scenario_local_interaction_viability_rate_responsive() {
+    let mut slow = mock_result(false, 10.0, 0);
+    slow.contact_pairs_count = 1;
+    slow.contact_pressure_pre_total = 1.0;
+    slow.contact_pressure_max_over_tick = 1.0;
+    slow.contact_exchange_amount = 0.0;
+    slow.contact_stimulus_readable_total = 0.5;
+
+    let mut fast = slow.clone();
+    fast.contact_exchange_amount = 2.0;
+
+    let warnings = detect_warnings(&[slow, fast], "local_interaction_viability");
+    assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
+    assert!(!warnings.contains(&"LOCAL_INTERACTION_NOT_ACTIVATED".to_string()));
+}
+
+#[test]
+fn test_scenario_local_interaction_viability_flags_flat_exchange() {
+    let mut a = mock_result(false, 10.0, 0);
+    a.contact_pairs_count = 1;
+    a.contact_pressure_pre_total = 1.0;
+    a.contact_pressure_max_over_tick = 1.0;
+    a.contact_exchange_amount = 0.0;
+
+    let mut b = a.clone();
+    b.contact_exchange_amount = 0.0;
+
+    let warnings = detect_warnings(&[a, b], "local_interaction_viability");
+    assert!(warnings.contains(&"LOCAL_INTERACTION_EXCHANGE_FLAT".to_string()));
+}
+
+#[test]
+fn test_scenario_local_interaction_viability_flags_no_contact() {
+    let mut a = mock_result(false, 10.0, 0);
+    a.contact_pairs_count = 0;
+    a.contact_pressure_pre_total = 0.0;
+    a.contact_pressure_max_over_tick = 0.0;
+
+    let mut b = a.clone();
+    b.contact_exchange_amount = 1.0;
+
+    let warnings = detect_warnings(&[a, b], "local_interaction_viability");
+    assert!(warnings.contains(&"LOCAL_INTERACTION_NOT_ACTIVATED".to_string()));
 }

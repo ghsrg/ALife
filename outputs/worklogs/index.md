@@ -156,4 +156,5 @@ tags:
 - [[outputs/worklogs/2026-07-10-2332-REPORT-phase-2d-division-sweep-calibration|2026-07-10-2332-REPORT-phase-2d-division-sweep-calibration]]
 - [[outputs/worklogs/2026-07-11-0055-REPORT-phase-2E-material-profile-coverage|2026-07-11-0055-REPORT-phase-2E-material-profile-coverage]]
 - [[outputs/worklogs/2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails|2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails]]
+- [[outputs/worklogs/2026-07-11-1159-REPORT-phase-2F-local-interactions|2026-07-11-1159-REPORT-phase-2F-local-interactions]]
 

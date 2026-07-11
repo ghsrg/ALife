@@ -46,6 +46,102 @@ impl TickExecutor {
 
         // Rebuild Spatial Index at the start of tick
         self.world.rebuild_spatial_index();
+        self.world.rebuild_contact_cache();
+
+        let contact_pairs_count = self.world.contact_cache().pairs().len() as u32;
+        let contact_pressure_pre_total = self.world.contact_cache().total_overlap();
+        let mut contact_pressure_max_over_tick = self.world.contact_cache().max_overlap();
+        let contact_stimulus_readable_total_for_summary = (0..self.world.cells().len())
+            .map(|i| self.world.cells().contact_stimulus(CellIndex::from_raw(i)))
+            .sum::<f32>();
+        let mut contact_exchange_amount = 0.0_f32;
+        let mut contact_exchange_pairs_count = 0_u32;
+        let mut contact_exchange_rejections_no_capability = 0_u32;
+
+        if config.local_interaction.enabled {
+            let pairs = self.world.contact_cache().pairs().to_vec();
+            for pair in pairs {
+                let a = pair.a;
+                let b = pair.b;
+                let a_res = self.world.cells().resource_amount(a).raw();
+                let b_res = self.world.cells().resource_amount(b).raw();
+                if (a_res - b_res).abs() <= f32::EPSILON {
+                    continue;
+                }
+
+                let (source, target, gradient) = if a_res > b_res {
+                    (a, b, a_res - b_res)
+                } else {
+                    (b, a, b_res - a_res)
+                };
+
+                if !has_contact_exchange_capability(&self.world, source, &config.local_interaction)
+                    || !has_contact_exchange_capability(
+                        &self.world,
+                        target,
+                        &config.local_interaction,
+                    )
+                {
+                    contact_exchange_rejections_no_capability += 1;
+                    continue;
+                }
+
+                let free_target = self
+                    .world
+                    .cells()
+                    .effective_free_capacity(
+                        target,
+                        config.material_effects.storage_capacity_per_unit,
+                    )
+                    .raw();
+                let requested = (gradient * config.local_interaction.contact_exchange_rate)
+                    .min(config.local_interaction.max_exchange_per_pair.raw())
+                    .min(free_target);
+                if requested <= 0.0 {
+                    continue;
+                }
+
+                let moved = {
+                    let cells = self.world.cells_mut_for_commit();
+                    cells.transfer_resources_limited_by_effective_capacity(
+                        source,
+                        target,
+                        ResourceAmount::new(requested).expect("requested exchange is clamped"),
+                        config.material_effects.storage_capacity_per_unit,
+                    )
+                };
+
+                if moved.raw() > 0.0 {
+                    contact_exchange_amount += moved.raw();
+                    contact_exchange_pairs_count += 1;
+                }
+            }
+        }
+        let mut contact_stimulus_generated_total = 0.0_f32;
+        if config.local_interaction.enabled
+            && config.local_interaction.contact_stimulus_per_overlap > 0.0
+        {
+            let pairs = self.world.contact_cache().pairs().to_vec();
+            for pair in pairs {
+                for target in [pair.a, pair.b] {
+                    let sensory = self.world.cells().capability_level(
+                        target,
+                        crate::core::process::MaterialCapability::ResourceSensing,
+                    );
+                    if sensory <= 0.0 {
+                        continue;
+                    }
+                    let stimulus = (pair.overlap
+                        * config.local_interaction.contact_stimulus_per_overlap
+                        * sensory)
+                        .clamp(0.0, 1.0);
+                    self.world
+                        .cells_mut_for_commit()
+                        .add_next_contact_stimulus(target, stimulus);
+                    contact_stimulus_generated_total += stimulus;
+                }
+            }
+        }
 
         let mut metabolism_heat_total = 0.0_f32;
         let mut metabolism_waste_total = 0.0_f32;
@@ -242,20 +338,20 @@ impl TickExecutor {
                 }
             }
 
-            let mut pairs = Vec::new();
-            {
-                let cells = self.world.cells();
-                self.world
-                    .spatial_index()
-                    .generate_candidate_pairs(cells, &mut pairs);
-            }
-
             let iterations = config.space.physics_solver_iterations;
             let world_size = config.world.size;
 
             for _ in 0..iterations {
+                self.world.rebuild_spatial_index();
+                self.world.rebuild_contact_cache();
+                contact_pressure_max_over_tick =
+                    contact_pressure_max_over_tick.max(self.world.contact_cache().max_overlap());
+                let pairs = self.world.contact_cache().pairs().to_vec();
+
                 // 1. Resolve cell-cell overlaps
-                for &(idx_i, idx_j) in &pairs {
+                for pair in &pairs {
+                    let idx_i = pair.a;
+                    let idx_j = pair.b;
                     let (pos_i, r_i) = {
                         let cells = self.world.cells();
                         if cells.runtime_flags(idx_i).inert || cells.runtime_flags(idx_j).inert {
@@ -342,6 +438,12 @@ impl TickExecutor {
                 }
             }
         }
+
+        self.world.rebuild_spatial_index();
+        self.world.rebuild_contact_cache();
+        let contact_pressure_post_total = self.world.contact_cache().total_overlap();
+        contact_pressure_max_over_tick =
+            contact_pressure_max_over_tick.max(self.world.contact_cache().max_overlap());
 
         // Phase B: Compute environment updates
         let heat_next = HeatAmount::new(
@@ -641,6 +743,9 @@ impl TickExecutor {
         self.world
             .resources_mut_for_commit()
             .decay_or_passive_update();
+        self.world
+            .cells_mut_for_commit()
+            .commit_contact_stimulus(config.local_interaction.stimulus_decay_per_tick);
         self.world.advance_tick();
 
         let current_tick = self.world.tick();
@@ -673,6 +778,15 @@ impl TickExecutor {
                 min_energy,
                 max_energy,
                 overlap_resolved,
+                contact_pairs_count,
+                contact_pressure_pre_total,
+                contact_pressure_post_total,
+                contact_pressure_max_over_tick,
+                contact_exchange_amount,
+                contact_exchange_pairs_count,
+                contact_exchange_rejections_no_capability,
+                contact_stimulus_generated_total,
+                contact_stimulus_readable_total_for_summary,
                 process_attempts,
                 process_rejections,
                 divisions_count,
@@ -737,6 +851,15 @@ impl TickExecutor {
         min_energy: f32,
         max_energy: f32,
         overlap_resolved: f32,
+        contact_pairs_count: u32,
+        contact_pressure_pre_total: f32,
+        contact_pressure_post_total: f32,
+        contact_pressure_max_over_tick: f32,
+        contact_exchange_amount: f32,
+        contact_exchange_pairs_count: u32,
+        contact_exchange_rejections_no_capability: u32,
+        contact_stimulus_generated_total: f32,
+        contact_stimulus_readable_total: f32,
         process_attempts: u32,
         process_rejections: u32,
         divisions_count: u32,
@@ -799,6 +922,15 @@ impl TickExecutor {
             final_used_capacity,
             final_free_capacity,
             growth_readiness,
+            contact_pairs_count,
+            contact_pressure_pre_total,
+            contact_pressure_post_total,
+            contact_pressure_max_over_tick,
+            contact_exchange_amount,
+            contact_exchange_pairs_count,
+            contact_exchange_rejections_no_capability,
+            contact_stimulus_generated_total,
+            contact_stimulus_readable_total,
             overlap_resolved,
             process_attempts,
             process_rejections,
@@ -819,6 +951,22 @@ fn baseline_process_level(raw_level: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+fn has_contact_exchange_capability(
+    world: &WorldState,
+    index: CellIndex,
+    config: &crate::core::config::LocalInteractionConfig,
+) -> bool {
+    let cells = world.cells();
+    cells.capability_level(
+        index,
+        crate::core::process::MaterialCapability::BoundaryPermeability,
+    ) >= config.min_boundary_capability
+        && cells.capability_level(
+            index,
+            crate::core::process::MaterialCapability::ResourceUptake,
+        ) >= config.min_transport_capability
 }
 
 fn run_process(

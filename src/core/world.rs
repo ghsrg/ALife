@@ -2,6 +2,7 @@ use crate::core::cell_store::{
     CellIndex, CellStore, EnergyBuffer, InitialCellState, LifecycleState,
 };
 use crate::core::config::RuntimeConfig;
+use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
 use crate::core::resources::ResourceGrid;
@@ -32,6 +33,7 @@ pub struct WorldState {
     resources: ResourceGrid,
     environment: EnvironmentState,
     spatial_index: SpatialIndex,
+    contact_cache: ContactCache,
     events: EventBuffer,
 }
 
@@ -83,6 +85,8 @@ impl WorldState {
 
         let mut spatial_index = SpatialIndex::new();
         spatial_index.rebuild(&cells, config.world.size, config.space.spatial_grid_size);
+        let mut contact_cache = ContactCache::default();
+        contact_cache.rebuild(&cells, &spatial_index);
 
         let resources = ResourceGrid::new(
             config.world.size,
@@ -101,6 +105,7 @@ impl WorldState {
             resources,
             environment,
             spatial_index,
+            contact_cache,
             events: EventBuffer::with_capacity(128),
         })
     }
@@ -153,6 +158,14 @@ impl WorldState {
         );
     }
 
+    pub fn contact_cache(&self) -> &ContactCache {
+        &self.contact_cache
+    }
+
+    pub fn rebuild_contact_cache(&mut self) {
+        self.contact_cache.rebuild(&self.cells, &self.spatial_index);
+    }
+
     pub fn events(&self) -> &EventBuffer {
         &self.events
     }
@@ -168,6 +181,7 @@ impl WorldState {
             self.config.world.size,
             self.config.space.spatial_grid_size,
         );
+        self.contact_cache.rebuild(&self.cells, &self.spatial_index);
     }
 
     pub fn validate_feasibility(
@@ -367,6 +381,11 @@ impl WorldState {
                     resource_cost: 0.0,
                 }
             }
+            ProcessId::PassiveContactExchange => FeasibilityResult::Allowed {
+                accepted_amount: action.requested_amount,
+                energy_cost: 0.0,
+                resource_cost: 0.0,
+            },
         }
     }
 

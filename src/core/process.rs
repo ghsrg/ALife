@@ -55,6 +55,7 @@ pub enum ProcessId {
     GrowthResourceAllocation,
     Division,
     ContractileDisplacement,
+    PassiveContactExchange,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -160,6 +161,15 @@ static PROCESS_REGISTRY: &[ProcessSpec] = &[
         status: ProcessStatus::Now,
         required_capabilities: &[MaterialCapability::Contractility],
         description: "Displaces cell away from collision neighbors when contact_pressure > 0.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::PassiveContactExchange,
+        status: ProcessStatus::Now,
+        required_capabilities: &[
+            MaterialCapability::BoundaryPermeability,
+            MaterialCapability::ResourceUptake,
+        ],
+        description: "Passively moves internal resources between contacting cells down a resource gradient.",
     },
     ProcessSpec {
         process_id: ProcessId::Division,

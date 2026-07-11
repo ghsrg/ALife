@@ -56,6 +56,22 @@ to    = 0.50
 steps = 5
 
 [[sweep]]
+name  = "steady_resource_flow"
+scenario = "steady_resource_flow"
+param = "mandatory_cost_per_tick"
+from  = 0.05
+to    = 5.0
+steps = 5
+
+[[sweep]]
+name  = "dormancy_survival"
+scenario = "dormancy_survival"
+param = "dormant_mandatory_cost_modifier"
+from  = 0.02
+to    = 0.50
+steps = 5
+
+[[sweep]]
 name  = "active_metabolism_viability"
 scenario = "active_metabolism_viability"
 param = "max_uptake_per_tick"
@@ -91,6 +107,14 @@ from  = 1.0
 to    = 5.0
 steps = 5
 
+[[sweep]]
+name  = "local_interaction_viability"
+scenario = "local_interaction_viability"
+param = "contact_exchange_rate"
+from  = 0.0
+to    = 1.0
+steps = 3
+
 # Scenarios Presets
 [scenarios.finite_resource_viability]
 [scenarios.passive_income_survival]
@@ -122,3 +146,15 @@ mandatory_cost_per_tick = 5.0
 decomposition_resources_per_tick = 1.0
 decomposition_materials_per_tick = 1.0
 continue_after_collapse_ticks = 50
+
+[scenarios.local_interaction_viability]
+world_size = [64.0, 64.0]
+cell_radius = 2.0
+initial_energy = 20.0
+mandatory_cost_per_tick = 0.0
+capacity_limit = 50.0
+initial_cell_count = 2
+overlap_offset = 3.0
+source_cell_resources = 10.0
+target_cell_resources = 0.0
+enable_local_interaction = true

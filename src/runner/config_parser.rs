@@ -115,6 +115,17 @@ pub struct RawResourceInteraction {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RawLocalInteraction {
+    pub enabled: Option<bool>,
+    pub contact_exchange_rate: Option<f32>,
+    pub max_exchange_per_pair: Option<f32>,
+    pub min_boundary_capability: Option<f32>,
+    pub min_transport_capability: Option<f32>,
+    pub contact_stimulus_per_overlap: Option<f32>,
+    pub stimulus_decay_per_tick: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RawMaterialEffects {
     pub transport_uptake_per_unit: Option<f32>,
     pub metabolic_conversion_per_unit: Option<f32>,
@@ -136,6 +147,7 @@ pub struct RawScenarioConfig {
     pub space: RawSpace,
     pub resources: RawResources,
     pub resource_interaction: Option<RawResourceInteraction>,
+    pub local_interaction: Option<RawLocalInteraction>,
     pub cell: RawCell,
     pub cells: Option<Vec<RawCell>>,
     pub environment: RawEnvironment,
@@ -595,8 +607,36 @@ impl RawScenarioConfig {
             }
         }
 
+        if let Some(ref raw_local) = self.local_interaction {
+            runtime_config.local_interaction.enabled = raw_local.enabled.unwrap_or(false);
+            runtime_config.local_interaction.contact_exchange_rate =
+                raw_local.contact_exchange_rate.unwrap_or(0.0);
+            runtime_config.local_interaction.max_exchange_per_pair = ResourceAmount::new(
+                raw_local.max_exchange_per_pair.unwrap_or(0.0),
+            )
+            .map_err(|e| {
+                ParseError::ValidationError(format!(
+                    "Invalid local_interaction max_exchange_per_pair: {:?}",
+                    e
+                ))
+            })?;
+            runtime_config.local_interaction.min_boundary_capability =
+                raw_local.min_boundary_capability.unwrap_or(0.0);
+            runtime_config.local_interaction.min_transport_capability =
+                raw_local.min_transport_capability.unwrap_or(0.0);
+            runtime_config
+                .local_interaction
+                .contact_stimulus_per_overlap =
+                raw_local.contact_stimulus_per_overlap.unwrap_or(0.0);
+            runtime_config.local_interaction.stimulus_decay_per_tick =
+                raw_local.stimulus_decay_per_tick.unwrap_or(0.0);
+        }
+
         runtime_config
             .validate_phase2d_options()
+            .map_err(ParseError::ConfigValidationError)?;
+        runtime_config
+            .validate_phase2f_options()
             .map_err(ParseError::ConfigValidationError)?;
 
         if !initial_cells.is_empty() {
