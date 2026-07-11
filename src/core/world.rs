@@ -381,6 +381,11 @@ impl WorldState {
                     resource_cost: 0.0,
                 }
             }
+            ProcessId::PassiveContactExchange => FeasibilityResult::Allowed {
+                accepted_amount: action.requested_amount,
+                energy_cost: 0.0,
+                resource_cost: 0.0,
+            },
         }
     }
 

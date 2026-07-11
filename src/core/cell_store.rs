@@ -289,6 +289,24 @@ impl CellStore {
         consumed
     }
 
+    pub fn transfer_resources_limited_by_effective_capacity(
+        &mut self,
+        source: CellIndex,
+        target: CellIndex,
+        requested: ResourceAmount,
+        storage_capacity_per_unit: f32,
+    ) -> ResourceAmount {
+        let source_available = self.resource_amount(source).raw();
+        let target_free = self
+            .effective_free_capacity(target, storage_capacity_per_unit)
+            .raw();
+        let accepted_raw = requested.raw().min(source_available).min(target_free);
+        let accepted = ResourceAmount::new(accepted_raw).expect("accepted transfer is clamped");
+        self.resources[source.raw()] = self.resources[source.raw()].saturating_sub(accepted);
+        self.resources[target.raw()] = self.resources[target.raw()].saturating_add(accepted);
+        accepted
+    }
+
     pub fn set_energy(&mut self, index: CellIndex, energy: EnergyBuffer) {
         self.energy_buffers[index.raw()] = energy;
     }
