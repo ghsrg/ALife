@@ -154,4 +154,5 @@ tags:
 - [[outputs/worklogs/2026-07-10-1116-REPORT-phase-2d-decomposition-sweep-calibration|2026-07-10-1116-REPORT-phase-2d-decomposition-sweep-calibration]]
 - [[outputs/worklogs/2026-07-10-2332-REPORT-phase-2d-division-sweep-calibration|2026-07-10-2332-REPORT-phase-2d-division-sweep-calibration]]
 - [[outputs/worklogs/2026-07-11-0055-REPORT-phase-2E-material-profile-coverage|2026-07-11-0055-REPORT-phase-2E-material-profile-coverage]]
+- [[outputs/worklogs/2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails|2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails]]
 

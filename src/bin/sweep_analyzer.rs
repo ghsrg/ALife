@@ -2529,84 +2529,224 @@ fn write_material_profile_outputs(out_dir: &str) {
     std::fs::create_dir_all(out_dir).expect("cannot create material profile raw output dir");
     std::fs::create_dir_all("outputs/reports").expect("cannot create reports dir");
 
+    struct MaterialProfileRow {
+        scenario_id: &'static str,
+        profile_id: &'static str,
+        role: &'static str,
+        materials: [f32; 9],
+        processes: &'static str,
+        warnings: &'static str,
+    }
+
     let profiles = [
-        (
-            "balanced_baseline",
-            "mixed-function",
-            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-            "local_resource_uptake|metabolism|growth|contractile_displacement|sensory_input_metric|repair_placeholder",
-            "none",
-        ),
-        (
-            "boundary_rich",
-            "boundary-supporting",
-            [3.0, 0.75, 0.75, 1.0, 0.5, 1.0, 0.5, 0.25, 0.25],
-            "boundary_retention_placeholder|local_resource_uptake|metabolism",
-            "TOOL_LIMITED_BOUNDARY_RETENTION",
-        ),
-        (
-            "transport_rich",
-            "transport-like",
-            [0.5, 3.0, 0.75, 1.0, 0.5, 0.5, 0.25, 0.25, 0.25],
-            "local_resource_uptake",
-            "none",
-        ),
-        (
-            "metabolic_rich",
-            "metabolic-like",
-            [0.5, 1.0, 3.0, 0.75, 0.5, 0.5, 0.25, 0.25, 0.25],
-            "metabolism",
-            "none",
-        ),
-        (
-            "storage_rich",
-            "storage-like",
-            [0.75, 1.0, 0.75, 3.0, 0.5, 0.5, 0.25, 0.25, 0.25],
-            "effective_capacity",
-            "none",
-        ),
-        (
-            "structural_rich",
-            "structural-like",
-            [0.75, 0.75, 0.75, 0.75, 1.0, 3.0, 0.5, 0.25, 0.25],
-            "growth",
-            "none",
-        ),
-        (
-            "repair_rich",
-            "repair-focused",
-            [1.0, 0.75, 0.75, 0.75, 0.75, 0.75, 3.0, 0.25, 0.25],
-            "repair_placeholder",
-            "TOOL_LIMITED_REPAIR",
-        ),
-        (
-            "contractile_rich",
-            "contractile-like",
-            [0.5, 0.75, 0.75, 0.5, 0.5, 0.75, 0.25, 3.0, 0.5],
-            "contractile_displacement",
-            "none",
-        ),
-        (
-            "sensory_rich",
-            "sensory-like",
-            [0.5, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.5, 3.0],
-            "sensory_input_metric",
-            "none",
-        ),
-        (
-            "weak_cell",
-            "undifferentiated",
-            [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
-            "negative_control",
-            "LOW_MATERIAL_SIGNAL",
-        ),
-        (
-            "mixed_specialized",
-            "mixed-function",
-            [0.75, 2.0, 2.0, 2.0, 0.75, 0.75, 0.25, 0.25, 0.25],
-            "local_resource_uptake|metabolism|effective_capacity",
-            "none",
-        ),
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "balanced_baseline",
+            role: "mixed-function",
+            materials: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            processes: "local_resource_uptake|metabolism|growth|contractile_displacement|sensory_input_metric|repair_placeholder",
+            warnings: "SCENARIO_TOO_EASY",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "boundary_rich",
+            role: "boundary-supporting",
+            materials: [3.0, 0.75, 0.75, 1.0, 0.5, 1.0, 0.5, 0.25, 0.25],
+            processes: "boundary_retention_placeholder|local_resource_uptake|metabolism",
+            warnings: "TOOL_LIMITED_BOUNDARY_RETENTION|NOT_FULL_MECHANISM",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "transport_rich",
+            role: "transport-like",
+            materials: [0.5, 3.0, 0.75, 1.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "local_resource_uptake",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "metabolic_rich",
+            role: "metabolic-like",
+            materials: [0.5, 1.0, 3.0, 0.75, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "metabolism",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "storage_rich",
+            role: "storage-like",
+            materials: [0.75, 1.0, 0.75, 3.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "effective_capacity",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "structural_rich",
+            role: "structural-like",
+            materials: [0.75, 0.75, 0.75, 0.75, 1.0, 3.0, 0.5, 0.25, 0.25],
+            processes: "growth",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "repair_rich",
+            role: "repair-focused",
+            materials: [1.0, 0.75, 0.75, 0.75, 0.75, 0.75, 3.0, 0.25, 0.25],
+            processes: "repair_placeholder",
+            warnings: "TOOL_LIMITED_REPAIR|NOT_FULL_MECHANISM",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "contractile_rich",
+            role: "contractile-like",
+            materials: [0.5, 0.75, 0.75, 0.5, 0.5, 0.75, 0.25, 3.0, 0.5],
+            processes: "contractile_displacement",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "sensory_rich",
+            role: "sensory-like",
+            materials: [0.5, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.5, 3.0],
+            processes: "sensory_input_metric",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "weak_cell",
+            role: "undifferentiated",
+            materials: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+            processes: "negative_control",
+            warnings: "LOW_MATERIAL_SIGNAL|SCENARIO_TOO_HARD",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_baseline",
+            profile_id: "mixed_specialized",
+            role: "mixed-function",
+            materials: [0.75, 2.0, 2.0, 2.0, 0.75, 0.75, 0.25, 0.25, 0.25],
+            processes: "local_resource_uptake|metabolism|effective_capacity",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "transport_low",
+            role: "transport-like",
+            materials: [0.5, 0.25, 0.75, 1.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "local_resource_uptake",
+            warnings: "PROFILE_EFFECT_TOO_SMALL",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "no_transport",
+            role: "transport-negative-control",
+            materials: [0.5, 0.0, 0.75, 1.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "negative_control",
+            warnings: "PROFILE_EFFECT_FLAT",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "metabolic_low",
+            role: "metabolic-like",
+            materials: [0.5, 1.0, 0.25, 0.75, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "metabolism",
+            warnings: "PROFILE_EFFECT_TOO_SMALL",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "no_metabolic",
+            role: "metabolic-negative-control",
+            materials: [0.5, 1.0, 0.0, 0.75, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "negative_control",
+            warnings: "PROFILE_EFFECT_FLAT",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "storage_low",
+            role: "storage-like",
+            materials: [0.75, 1.0, 0.75, 0.25, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "effective_capacity",
+            warnings: "PROFILE_EFFECT_TOO_SMALL",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "no_storage",
+            role: "storage-negative-control",
+            materials: [0.75, 1.0, 0.75, 0.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "negative_control",
+            warnings: "PROFILE_EFFECT_FLAT",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "structural_low",
+            role: "structural-like",
+            materials: [0.75, 0.75, 0.75, 0.75, 1.0, 0.25, 0.5, 0.25, 0.25],
+            processes: "growth",
+            warnings: "PROFILE_EFFECT_TOO_SMALL",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "no_structural",
+            role: "structural-negative-control",
+            materials: [0.75, 0.75, 0.75, 0.75, 1.0, 0.0, 0.5, 0.25, 0.25],
+            processes: "negative_control",
+            warnings: "PROFILE_EFFECT_FLAT",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "contractile_low",
+            role: "contractile-like",
+            materials: [0.5, 0.75, 0.75, 0.5, 0.5, 0.75, 0.25, 0.25, 0.5],
+            processes: "contractile_displacement",
+            warnings: "PROFILE_EFFECT_TOO_SMALL",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "no_contractile",
+            role: "contractile-negative-control",
+            materials: [0.5, 0.75, 0.75, 0.5, 0.5, 0.75, 0.25, 0.0, 0.5],
+            processes: "negative_control",
+            warnings: "PROFILE_EFFECT_FLAT",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "sensory_low",
+            role: "sensory-like",
+            materials: [0.5, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.5, 0.25],
+            processes: "sensory_input_metric",
+            warnings: "PROFILE_EFFECT_TOO_SMALL",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_negative_controls",
+            profile_id: "no_sensory",
+            role: "sensory-negative-control",
+            materials: [0.5, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.5, 0.0],
+            processes: "negative_control",
+            warnings: "PROFILE_EFFECT_FLAT",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_tradeoff_probe",
+            profile_id: "metabolic_rich",
+            role: "metabolic-like",
+            materials: [0.5, 0.75, 4.0, 0.25, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "metabolism",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_tradeoff_probe",
+            profile_id: "storage_rich",
+            role: "storage-like",
+            materials: [0.75, 0.25, 0.25, 4.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            processes: "effective_capacity",
+            warnings: "none",
+        },
+        MaterialProfileRow {
+            scenario_id: "material_profile_tradeoff_probe",
+            profile_id: "structural_rich",
+            role: "structural-like",
+            materials: [0.75, 0.5, 0.5, 0.25, 1.0, 6.0, 0.5, 0.25, 0.25],
+            processes: "growth",
+            warnings: "none",
+        },
     ];
 
     let summary_path = format!("{}/material_profile_summary.csv", out_dir);
@@ -2618,31 +2758,32 @@ fn write_material_profile_outputs(out_dir: &str) {
     )
     .unwrap();
 
-    for (idx, (profile_id, role, materials, processes, warnings)) in profiles.iter().enumerate() {
-        let uptake = materials[1] * 0.5;
-        let metabolism = materials[2] * 0.5;
-        let growth = materials[5] * 0.25;
-        let contractile = materials[7] * 0.1;
-        let sensory = materials[8] * 0.2 * 500.0;
+    for (idx, row) in profiles.iter().enumerate() {
+        let uptake = row.materials[1] * 0.5;
+        let metabolism = row.materials[2] * 0.5;
+        let growth = row.materials[5] * 0.25;
+        let contractile = row.materials[7] * 0.1;
+        let sensory = row.materials[8] * 0.2 * 500.0;
         let energy = metabolism * 2.0;
-        let capacity_used: f32 = materials.iter().sum::<f32>() + 2.0;
-        let capacity_free = (40.0 + materials[3] * 2.0 - capacity_used).max(0.0);
+        let capacity_used: f32 = row.materials.iter().sum::<f32>() + 2.0;
+        let capacity_free = (40.0 + row.materials[3] * 2.0 - capacity_used).max(0.0);
         writeln!(
             summary,
-            "mp-{},material_profile_baseline,{},42,120,{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},,{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},Stable,None,{},{},{}",
+            "mp-{},{},{},42,120,{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},,{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},Stable,None,{},{},{}",
             idx + 1,
-            profile_id,
-            materials[0],
-            materials[1],
-            materials[2],
-            materials[3],
-            materials[4],
-            materials[5],
-            materials[6],
-            materials[7],
-            materials[8],
-            processes,
-            processes,
+            row.scenario_id,
+            row.profile_id,
+            row.materials[0],
+            row.materials[1],
+            row.materials[2],
+            row.materials[3],
+            row.materials[4],
+            row.materials[5],
+            row.materials[6],
+            row.materials[7],
+            row.materials[8],
+            row.processes,
+            row.processes,
             uptake,
             metabolism,
             growth,
@@ -2655,9 +2796,9 @@ fn write_material_profile_outputs(out_dir: &str) {
             metabolism * 0.05,
             capacity_used,
             capacity_free,
-            role,
-            role,
-            warnings
+            row.role,
+            row.role,
+            row.warnings
         )
         .unwrap();
     }
@@ -2691,10 +2832,9 @@ fn write_material_profile_outputs(out_dir: &str) {
         ("contractile", "contractile_rich", "Contractility", "none"),
         ("sensory", "sensory_rich", "ResourceSensing", "none"),
     ] {
-        let status = if warning == "none" {
-            "covered"
-        } else {
-            "tool_limited"
+        let status = match material_id {
+            "boundary" | "repair" => "covered_as_placeholder|tool_limited|not_full_mechanism",
+            _ => "covered",
         };
         writeln!(
             coverage,
