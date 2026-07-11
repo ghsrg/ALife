@@ -62,8 +62,14 @@ impl TickExecutor {
 
             // 1. Uptake
             if config.resource_interaction.enabled {
-                let max_uptake = config.resource_interaction.max_uptake_per_tick.raw();
-                let (feasible, _) = run_process(
+                let uptake_level = self.world.cells().capability_level(
+                    index,
+                    crate::core::process::MaterialCapability::ResourceUptake,
+                );
+                let max_uptake = config.resource_interaction.max_uptake_per_tick.raw()
+                    * baseline_process_level(uptake_level)
+                    * config.material_effects.transport_uptake_per_unit;
+                let (feasible, feasibility) = run_process(
                     &self.world,
                     index,
                     ProcessId::LocalResourceUptake,
@@ -73,6 +79,12 @@ impl TickExecutor {
                     &mut process_rejections,
                 );
                 if feasible {
+                    let accepted_amount = match feasibility {
+                        FeasibilityResult::Allowed {
+                            accepted_amount, ..
+                        } => accepted_amount,
+                        FeasibilityResult::Rejected(_) => 0.0,
+                    };
                     let layer = ResourceLayerIndex::from_raw(
                         config.resource_interaction.uptake_layer_index,
                     );
@@ -85,18 +97,17 @@ impl TickExecutor {
                         .resources()
                         .amount_at(layer, coord)
                         .expect("resource interaction layer is config-validated");
-                    let free_cap = self.world.cells().free_capacity(index).raw();
-                    let max_uptake = config
-                        .resource_interaction
-                        .max_uptake_per_tick
-                        .raw()
-                        .min(free_cap);
-                    let requested = ResourceAmount::new(external_available.raw().min(max_uptake))
-                        .expect("requested uptake is clamped");
+                    let requested =
+                        ResourceAmount::new(external_available.raw().min(accepted_amount))
+                            .expect("requested uptake is clamped");
 
                     let accepted = {
                         let cells = self.world.cells_mut_for_commit();
-                        cells.add_resources_limited_by_capacity(index, requested)
+                        cells.add_resources_limited_by_effective_capacity(
+                            index,
+                            requested,
+                            config.material_effects.storage_capacity_per_unit,
+                        )
                     };
                     let remaining_external = external_available.saturating_sub(accepted);
                     self.world
@@ -112,11 +123,17 @@ impl TickExecutor {
             let mut metabolism_energy = EnergyAmount::zero();
 
             if config.resource_interaction.enabled {
+                let metabolism_level = self
+                    .world
+                    .cells()
+                    .capability_level(index, crate::core::process::MaterialCapability::Metabolism);
                 let req_amount = config
                     .resource_interaction
                     .metabolism_resource_per_tick
-                    .raw();
-                let (feasible, _) = run_process(
+                    .raw()
+                    * baseline_process_level(metabolism_level)
+                    * config.material_effects.metabolic_conversion_per_unit;
+                let (feasible, feasibility) = run_process(
                     &self.world,
                     index,
                     ProcessId::MetabolismEnergyConversion,
@@ -126,11 +143,18 @@ impl TickExecutor {
                     &mut process_rejections,
                 );
                 if feasible {
+                    let accepted_amount = match feasibility {
+                        FeasibilityResult::Allowed {
+                            accepted_amount, ..
+                        } => accepted_amount,
+                        FeasibilityResult::Rejected(_) => 0.0,
+                    };
                     let consumed = {
                         let cells = self.world.cells_mut_for_commit();
                         cells.consume_resources(
                             index,
-                            config.resource_interaction.metabolism_resource_per_tick,
+                            ResourceAmount::new(accepted_amount)
+                                .expect("accepted metabolism is clamped"),
                         )
                     };
 
@@ -360,10 +384,13 @@ impl TickExecutor {
                 .saturating_add(config.cell.passive_energy_income);
 
             let used_capacity = self.world.cells().used_capacity(index);
-            let over_capacity = used_capacity.raw() > config.cell.capacity_limit.raw();
+            let effective_capacity = self
+                .world
+                .cells()
+                .effective_capacity_limit(index, config.material_effects.storage_capacity_per_unit);
+            let over_capacity = used_capacity.raw() > effective_capacity.raw();
             let critical_capacity_exceeded = used_capacity.raw()
-                > config.cell.capacity_limit.raw()
-                    + config.lifecycle.critical_capacity_overrun.raw();
+                > effective_capacity.raw() + config.lifecycle.critical_capacity_overrun.raw();
 
             let full_cost = config.cell.mandatory_cost_per_tick;
             let dormant_cost = EnergyAmount::new(
@@ -555,7 +582,10 @@ impl TickExecutor {
                     process_id: crate::core::process::ProcessId::Division,
                     requested_amount: 1.0,
                 };
-                *diagnostics.attempts_by_process.entry(ProcessId::Division).or_insert(0) += 1;
+                *diagnostics
+                    .attempts_by_process
+                    .entry(ProcessId::Division)
+                    .or_insert(0) += 1;
                 process_attempts += 1;
                 match self.world.validate_feasibility(idx, &candidate) {
                     FeasibilityResult::Allowed { .. } => {
@@ -575,7 +605,10 @@ impl TickExecutor {
                         }
                     }
                     FeasibilityResult::Rejected(reason) => {
-                        *diagnostics.rejections_by_process.entry(ProcessId::Division).or_insert(0) += 1;
+                        *diagnostics
+                            .rejections_by_process
+                            .entry(ProcessId::Division)
+                            .or_insert(0) += 1;
                         *diagnostics.rejections_by_reason.entry(reason).or_insert(0) += 1;
                         process_rejections += 1;
                     }
@@ -584,6 +617,22 @@ impl TickExecutor {
         }
 
         let decomposed_cells_count = self.world.execute_decomposition_for_dead_cells();
+
+        let repair_placeholder_available = (0..self.world.cells().len()).any(|i| {
+            let idx = CellIndex::from_raw(i);
+            self.world.cells().lifecycle_state(idx) != LifecycleState::Dead
+                && self.world.cells().repair_material(idx).raw() > 0.0
+        });
+        if repair_placeholder_available
+            && !diagnostics
+                .tool_limited_mechanisms
+                .iter()
+                .any(|name| name == "repair")
+        {
+            diagnostics
+                .tool_limited_mechanisms
+                .push("repair".to_string());
+        }
 
         self.world.environment_mut_for_commit().set_heat(heat_next);
         self.world
@@ -701,6 +750,8 @@ impl TickExecutor {
         let mut growth_readiness = false;
         let mut alive_cells_count = 0_u32;
         let mut dead_cells_count = 0_u32;
+        let mut sensory_input_accumulated = 0.0_f32;
+        let mut repair_placeholder_available = false;
 
         for i in 0..cells.len() {
             let idx = CellIndex::from_raw(i);
@@ -713,6 +764,25 @@ impl TickExecutor {
                     final_free_capacity += cells.free_capacity(idx).raw();
                     if cells.runtime_flags(idx).division_ready {
                         growth_readiness = true;
+                    }
+                    let sensory_level = cells.sensory_material(idx).raw();
+                    if sensory_level > 0.0 {
+                        let coord = self
+                            .world
+                            .resources()
+                            .coord_for_position(cells.position(idx));
+                        let local_resource = self
+                            .world
+                            .resources()
+                            .amount_at(ResourceLayerIndex::from_raw(0), coord)
+                            .map(|amount| amount.raw())
+                            .unwrap_or(0.0);
+                        sensory_input_accumulated += sensory_level
+                            * self.world.config().material_effects.sensory_input_per_unit
+                            * (local_resource + cells.contact_pressure(idx));
+                    }
+                    if cells.repair_material(idx).raw() > 0.0 {
+                        repair_placeholder_available = true;
                     }
                 }
             }
@@ -737,7 +807,17 @@ impl TickExecutor {
             divisions_count,
             births_count,
             decomposed_cells_count,
+            sensory_input_accumulated,
+            repair_placeholder_available,
         }
+    }
+}
+
+fn baseline_process_level(raw_level: f32) -> f32 {
+    if raw_level > 0.0 {
+        raw_level.max(1.0)
+    } else {
+        0.0
     }
 }
 

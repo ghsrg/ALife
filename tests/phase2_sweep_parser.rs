@@ -8,6 +8,7 @@ pub struct RawScenarioPreset {
     pub cell_position: Vec<f32>,
     pub cell_radius: f32,
     pub initial_energy: f32,
+    pub initial_cell_resources: Option<f32>,
     pub energy_capacity: f32,
     pub mandatory_cost_per_tick: f32,
     pub passive_energy_income: f32,
@@ -22,7 +23,10 @@ pub struct RawScenarioPreset {
     pub waste_sink_rate: f32,
     pub waste_warning_threshold: f32,
     pub waste_death_threshold: f32,
+    pub max_uptake_per_tick: Option<f32>,
+    pub metabolism_resource_per_tick: Option<f32>,
     pub growth_enabled: bool,
+    pub division_energy_cost: Option<f32>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -41,6 +45,7 @@ decay_rate = 0.05
 cell_position = [64.0, 64.0]
 cell_radius = 2.0
 initial_energy = 40.0
+initial_cell_resources = 20.0
 energy_capacity = 80.0
 mandatory_cost_per_tick = 1.5
 passive_energy_income = 0.1
@@ -55,12 +60,19 @@ heat_death_threshold = 75.0
 waste_sink_rate = 0.15
 waste_warning_threshold = 12.0
 waste_death_threshold = 22.0
+max_uptake_per_tick = 0.25
+metabolism_resource_per_tick = 0.25
 growth_enabled = true
+division_energy_cost = 2.0
 "#;
     let config: TestConfig = toml::from_str(toml_str).unwrap();
     let preset = config.scenarios.get("test_preset").unwrap();
     assert_eq!(preset.decay_rate, 0.05);
+    assert_eq!(preset.initial_cell_resources, Some(20.0));
+    assert_eq!(preset.max_uptake_per_tick, Some(0.25));
+    assert_eq!(preset.metabolism_resource_per_tick, Some(0.25));
     assert_eq!(preset.growth_enabled, true);
+    assert_eq!(preset.division_energy_cost, Some(2.0));
 }
 
 #[test]
@@ -113,6 +125,7 @@ decay_rate = 0.05
 cell_position = [64.0, 64.0]
 cell_radius = 2.0
 initial_energy = 40.0
+initial_cell_resources = 20.0
 energy_capacity = 80.0
 mandatory_cost_per_tick = 1.5
 passive_energy_income = 0.1
@@ -127,7 +140,10 @@ heat_death_threshold = 75.0
 waste_sink_rate = 0.15
 waste_warning_threshold = 12.0
 waste_death_threshold = 22.0
+max_uptake_per_tick = 0.25
+metabolism_resource_per_tick = 0.25
 growth_enabled = true
+division_energy_cost = 2.0
 
 [[sweep]]
 name = "test_sweep"
@@ -142,4 +158,14 @@ scenario = "test_preset"
     let config: alife::bin::sweep_analyzer::AnalyzerConfig = toml::from_str(toml_str).unwrap();
     let sweep = &config.sweep.as_ref().unwrap()[0];
     assert_eq!(sweep.scenario.as_deref(), Some("test_preset"));
+    let preset = config
+        .scenarios
+        .as_ref()
+        .unwrap()
+        .get("test_preset")
+        .unwrap();
+    assert_eq!(preset.initial_cell_resources, Some(20.0));
+    assert_eq!(preset.division_energy_cost, Some(2.0));
+    assert_eq!(preset.max_uptake_per_tick, Some(0.25));
+    assert_eq!(preset.metabolism_resource_per_tick, Some(0.25));
 }

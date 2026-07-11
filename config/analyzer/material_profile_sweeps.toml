@@ -1,0 +1,39 @@
+[run]
+output_dir = "outputs/raw_data"
+seed = 42
+ticks = 120
+
+[cell]
+radius = 1.0
+initial_energy = 15.0
+energy_capacity = 40.0
+mandatory_cost_per_tick = 0.75
+passive_energy_income = 0.0
+capacity_limit = 40.0
+initial_metabolic_material = 1.0
+initial_transport_material = 1.0
+initial_boundary_material = 1.0
+initial_structural_material = 1.0
+
+[lifecycle]
+stress_energy_threshold = 2.0
+dormancy_allowed = true
+dormant_mandatory_cost_modifier = 0.1
+critical_capacity_overrun = 25.0
+
+[resource_interaction]
+energy_per_resource = 2.0
+heat_per_resource = 0.05
+waste_per_resource = 0.05
+decay_rate = 0.0
+default_resource_density = 500.0
+default_max_uptake_per_tick = 1.5
+default_metabolism_resource_per_tick = 0.75
+
+[environment]
+heat_dissipation_rate = 0.3
+heat_warning_threshold = 100.0
+heat_death_threshold = 200.0
+waste_sink_rate = 0.3
+waste_warning_threshold = 100.0
+waste_death_threshold = 200.0

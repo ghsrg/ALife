@@ -57,3 +57,27 @@ fn test_observed_role_execution_and_tie_breaking() {
     let obs_res3 = classify_cell_roles_observed(&window3, &config);
     assert_eq!(obs_res3.primary_label.unwrap(), "transport-like");
 }
+
+#[test]
+fn transport_rich_profile_maps_to_transport_like_as_observer_only_label() {
+    let config =
+        load_cell_role_classifier("config/observer/cell-functional-role-classifier.toml").unwrap();
+
+    let mut raw_data = HashMap::new();
+    raw_data.insert("transport_material".to_string(), 3.0);
+    raw_data.insert("metabolic_material".to_string(), 0.5);
+    raw_data.insert("boundary_material".to_string(), 0.5);
+    raw_data.insert("storage_material".to_string(), 0.5);
+    raw_data.insert("synthesis_material".to_string(), 0.5);
+    raw_data.insert("structural_material".to_string(), 0.5);
+    raw_data.insert("repair_material".to_string(), 0.25);
+    raw_data.insert("contractile_material".to_string(), 0.25);
+    raw_data.insert("sensory_material".to_string(), 0.25);
+    raw_data.insert("total_materials".to_string(), 6.25);
+    raw_data.insert("ActiveUptake_executed".to_string(), 5.0);
+
+    let window = extract_features("run-profile", EntityType::Cell, "cell-1", 0, 100, &raw_data);
+    let result = classify_cell_roles_observed(&window, &config);
+
+    assert_eq!(result.primary_label.as_deref(), Some("transport-like"));
+}

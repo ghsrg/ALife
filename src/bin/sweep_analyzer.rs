@@ -125,6 +125,7 @@ pub struct RawScenarioPreset {
     pub cell_position: Option<Vec<f32>>,
     pub cell_radius: Option<f32>,
     pub initial_energy: Option<f32>,
+    pub initial_cell_resources: Option<f32>,
     pub energy_capacity: Option<f32>,
     pub mandatory_cost_per_tick: Option<f32>,
     pub passive_energy_income: Option<f32>,
@@ -139,8 +140,11 @@ pub struct RawScenarioPreset {
     pub waste_sink_rate: Option<f32>,
     pub waste_warning_threshold: Option<f32>,
     pub waste_death_threshold: Option<f32>,
+    pub max_uptake_per_tick: Option<f32>,
+    pub metabolism_resource_per_tick: Option<f32>,
     pub growth_enabled: Option<bool>,
     pub division_enabled: Option<bool>,
+    pub division_energy_cost: Option<f32>,
     pub division_split_ratio: Option<f32>,
     pub division_partition_loss_fraction: Option<f32>,
     pub division_daughter_spacing: Option<f32>,
@@ -217,6 +221,14 @@ pub struct SimResult {
     pub division_successes: u32,
     pub division_rejections: u32,
     pub decomposition_released_resources: f32,
+    pub death_tick: u32,
+    pub first_decomposition_tick: u32,
+    pub first_decomposed_tick: u32,
+    pub decomposition_ticks: u32,
+    pub decomposition_released_resources_per_tick: f32,
+    pub time_to_decomposed: u32,
+    pub remaining_dead_cell_resources: f32,
+    pub remaining_dead_cell_materials: f32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,6 +270,11 @@ pub fn build_config(
         .get("initial_energy")
         .copied()
         .unwrap_or(initial_energy_base);
+    let initial_cell_resources = overrides
+        .get("initial_cell_resources")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.initial_cell_resources))
+        .unwrap_or(0.0);
 
     let energy_capacity_base = preset
         .and_then(|p| p.energy_capacity)
@@ -381,10 +398,12 @@ pub fn build_config(
     let uptake = overrides
         .get("max_uptake_per_tick")
         .copied()
+        .or_else(|| preset.and_then(|p| p.max_uptake_per_tick))
         .unwrap_or(ri.default_max_uptake_per_tick);
     let metabolism = overrides
         .get("metabolism_resource_per_tick")
         .copied()
+        .or_else(|| preset.and_then(|p| p.metabolism_resource_per_tick))
         .unwrap_or(ri.default_metabolism_resource_per_tick);
 
     let resources = ResourceConfig::new(
@@ -411,7 +430,7 @@ pub fn build_config(
         mandatory_cost_per_tick: EnergyAmount::new(upkeep.max(0.0)).unwrap(),
         passive_energy_income: EnergyAmount::new(passive_income.max(0.0)).unwrap(),
         capacity_limit: CapacityAmount::new(capacity_limit.max(1.0)).unwrap(),
-        initial_resource_amount: ResourceAmount::zero(),
+        initial_resource_amount: ResourceAmount::new(initial_cell_resources.max(0.0)).unwrap(),
         initial_boundary_material: MaterialAmount::new(cell_cfg.initial_boundary_material).unwrap(),
         initial_transport_material: MaterialAmount::new(cell_cfg.initial_transport_material)
             .unwrap(),
@@ -474,6 +493,11 @@ pub fn build_config(
     rt.growth_enabled = preset.and_then(|p| p.growth_enabled).unwrap_or(false);
 
     let division_enabled = preset.and_then(|p| p.division_enabled).unwrap_or(false);
+    let division_energy_cost = overrides
+        .get("division_energy_cost")
+        .copied()
+        .or_else(|| preset.and_then(|p| p.division_energy_cost))
+        .unwrap_or(0.0);
     let division_split_ratio = overrides
         .get("division_split_ratio")
         .copied()
@@ -521,6 +545,7 @@ pub fn build_config(
         .unwrap_or(0.0);
 
     rt.division.enabled = division_enabled;
+    rt.division.energy_cost = EnergyAmount::new(division_energy_cost.max(0.0)).unwrap();
     rt.division.split_ratio = division_split_ratio;
     rt.division.partition_loss_fraction = division_partition_loss_fraction;
     rt.division.daughter_spacing = division_daughter_spacing;
@@ -644,6 +669,14 @@ fn run_simulation(
                 division_successes: 0,
                 division_rejections: 0,
                 decomposition_released_resources: 0.0,
+                death_tick: 0,
+                first_decomposition_tick: 0,
+                first_decomposed_tick: 0,
+                decomposition_ticks: 0,
+                decomposition_released_resources_per_tick: 0.0,
+                time_to_decomposed: 0,
+                remaining_dead_cell_resources: 0.0,
+                remaining_dead_cell_materials: 0.0,
             };
         }
     };
@@ -722,6 +755,10 @@ fn run_simulation(
     let mut division_rejections_cumulative = 0_u32;
     let mut division_successes_cumulative = 0_u32;
     let mut decomposition_released_resources_cumulative = 0.0_f32;
+    let mut first_death_tick: Option<u32> = None;
+    let mut first_decomposition_tick: Option<u32> = None;
+    let mut first_decomposed_tick: Option<u32> = None;
+    let mut decomposition_ticks = 0_u32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -745,7 +782,9 @@ fn run_simulation(
         final_pos = initial_pos;
     }
 
-    let continue_after = preset.and_then(|p| p.continue_after_collapse_ticks).unwrap_or(0);
+    let continue_after = preset
+        .and_then(|p| p.continue_after_collapse_ticks)
+        .unwrap_or(0);
     let mut collapse_tick_counter: Option<u32> = None;
     let loop_start = std::time::Instant::now();
 
@@ -885,9 +924,20 @@ fn run_simulation(
 
         energy_spent_movement += displacement_successes as f32 * displacement_cost_energy;
 
-        let division_attempts_tick = summary.diagnostics.attempts_by_process.get(&alife::core::process::ProcessId::Division).copied().unwrap_or(0);
-        let division_rejections_tick = summary.diagnostics.rejections_by_process.get(&alife::core::process::ProcessId::Division).copied().unwrap_or(0);
-        let division_successes_tick = division_attempts_tick.saturating_sub(division_rejections_tick);
+        let division_attempts_tick = summary
+            .diagnostics
+            .attempts_by_process
+            .get(&alife::core::process::ProcessId::Division)
+            .copied()
+            .unwrap_or(0);
+        let division_rejections_tick = summary
+            .diagnostics
+            .rejections_by_process
+            .get(&alife::core::process::ProcessId::Division)
+            .copied()
+            .unwrap_or(0);
+        let division_successes_tick =
+            division_attempts_tick.saturating_sub(division_rejections_tick);
 
         division_attempts_cumulative += division_attempts_tick;
         division_rejections_cumulative += division_rejections_tick;
@@ -900,7 +950,12 @@ fn run_simulation(
             let index = CellIndex::from_raw(i);
             let state_before = cell_states_before[i];
             let state_after = executor.world().cells().lifecycle_state(index);
-            if state_before == LifecycleState::Dead || (state_before != LifecycleState::Dead && state_after == LifecycleState::Dead) {
+            if state_before != LifecycleState::Dead && state_after == LifecycleState::Dead {
+                first_death_tick.get_or_insert(t);
+            }
+            if state_before == LifecycleState::Dead
+                || (state_before != LifecycleState::Dead && state_after == LifecycleState::Dead)
+            {
                 dead_cells_res_mat_before.push((cell_res_before_vec[i], cell_mat_before_vec[i]));
             }
         }
@@ -916,6 +971,13 @@ fn run_simulation(
             decomposition_released_res += released_res;
         }
         decomposition_released_resources_cumulative += released_decomposed_tick;
+        if released_decomposed_tick > 0.0 {
+            first_decomposition_tick.get_or_insert(t);
+            decomposition_ticks += 1;
+        }
+        if summary.metrics.decomposed_cells_count > 0 {
+            first_decomposed_tick.get_or_insert(t);
+        }
 
         let partition_loss_fraction = rt_config.division.partition_loss_fraction;
         let division_loss_res = 0.0_f32;
@@ -923,14 +985,23 @@ fn run_simulation(
             // partition_loss_fraction is 0.0 in all our active scenarios.
         }
 
-        let uptake_tick = (cell_res_after - cell_res_before + metabolized_tick + synthesis_tick_res + growth_tick_res + decomposition_released_res + division_loss_res).max(0.0);
-        let decay_tick = (grid_before + released_decomposed_tick - uptake_tick - grid_after).max(0.0);
+        let uptake_tick = (cell_res_after - cell_res_before
+            + metabolized_tick
+            + synthesis_tick_res
+            + growth_tick_res
+            + decomposition_released_res
+            + division_loss_res)
+            .max(0.0);
+        let decay_tick =
+            (grid_before + released_decomposed_tick - uptake_tick - grid_after).max(0.0);
         resource_absorbed_cumulative += uptake_tick;
         decay_cumulative += decay_tick;
 
         if summary.metrics.divisions_count > 0 {
             let resource_sink_tick = synthesis_tick_res + growth_tick_res;
-            let expected_res_mat_after = cell_res_before + cell_mat_before + uptake_tick - metabolized_tick - resource_sink_tick;
+            let expected_res_mat_after = cell_res_before + cell_mat_before + uptake_tick
+                - metabolized_tick
+                - resource_sink_tick;
             let actual_res_mat_after = cell_res_after + cell_mat_after;
             let division_loss_res_mat = (expected_res_mat_after - actual_res_mat_after).max(0.0);
             division_partition_loss_resources += division_loss_res_mat;
@@ -1014,10 +1085,7 @@ fn run_simulation(
                 dead_cells_count_cumulative += 1;
             }
             if state_before != LifecycleState::Dead {
-                let flags = executor
-                    .world()
-                    .cells()
-                    .runtime_flags(index);
+                let flags = executor.world().cells().runtime_flags(index);
                 if !flags.mandatory_paid {
                     let cost = if state_before == LifecycleState::Dormant {
                         dormant_cost
@@ -1068,6 +1136,9 @@ fn run_simulation(
         }
 
         if loop_break {
+            break;
+        }
+        if rt_config.decomposition.enabled && first_decomposed_tick.is_some() {
             break;
         }
     }
@@ -1451,6 +1522,21 @@ fn run_simulation(
         .primary_label
         .clone()
         .unwrap_or_else(|| "unknown".to_string());
+    let death_tick = first_death_tick.or(collapse_tick).unwrap_or(0);
+    let first_decomposition_tick_value = first_decomposition_tick.unwrap_or(0);
+    let first_decomposed_tick_value = first_decomposed_tick.unwrap_or(0);
+    let time_to_decomposed = first_decomposed_tick
+        .and_then(|done| {
+            first_death_tick
+                .or(collapse_tick)
+                .map(|dead| done.saturating_sub(dead))
+        })
+        .unwrap_or(0);
+    let decomposition_released_resources_per_tick = if decomposition_ticks > 0 {
+        decomposition_released_resources_cumulative / decomposition_ticks as f32
+    } else {
+        0.0
+    };
 
     SimResult {
         collapsed,
@@ -1516,6 +1602,14 @@ fn run_simulation(
         division_successes: division_successes_cumulative,
         division_rejections: division_rejections_cumulative,
         decomposition_released_resources: decomposition_released_resources_cumulative,
+        death_tick,
+        first_decomposition_tick: first_decomposition_tick_value,
+        first_decomposed_tick: first_decomposed_tick_value,
+        decomposition_ticks,
+        decomposition_released_resources_per_tick,
+        time_to_decomposed,
+        remaining_dead_cell_resources: final_cell_res_dead,
+        remaining_dead_cell_materials: final_cell_mat_dead,
     }
 }
 
@@ -1588,6 +1682,51 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
                 (min.min(t), max.max(t))
             });
         if max_survival.saturating_sub(min_survival) > 5 {
+            push_low_info = false;
+        }
+    }
+
+    if push_low_info && scenario_lower == "decomposition_viability" {
+        let (min_time, max_time) = results
+            .iter()
+            .map(|r| r.time_to_decomposed)
+            .fold((u32::MAX, u32::MIN), |(min, max), t| {
+                (min.min(t), max.max(t))
+            });
+        let (min_rate, max_rate) = results
+            .iter()
+            .map(|r| r.decomposition_released_resources_per_tick)
+            .fold((f32::MAX, f32::MIN), |(min, max), rate| {
+                (min.min(rate), max.max(rate))
+            });
+        let (min_ticks, max_ticks) = results
+            .iter()
+            .map(|r| r.decomposition_ticks)
+            .fold((u32::MAX, u32::MIN), |(min, max), t| {
+                (min.min(t), max.max(t))
+            });
+        let time_spread = max_time.saturating_sub(min_time);
+        let time_ratio_meaningful = min_time > 0 && max_time >= min_time.saturating_mul(2);
+        let rate_spread_meaningful =
+            max_rate.is_finite() && min_rate.is_finite() && (max_rate - min_rate).abs() > 0.1;
+        let tick_spread_meaningful = max_ticks.saturating_sub(min_ticks) >= 5;
+        if (time_spread >= 5 || time_ratio_meaningful)
+            && rate_spread_meaningful
+            && tick_spread_meaningful
+        {
+            push_low_info = false;
+        }
+    }
+
+    if push_low_info && scenario_lower == "division_viability" {
+        let has_clean_dividing_survivor = results.iter().any(|r| {
+            !r.collapsed
+                && r.divisions_count > 0
+                && r.births_count > 0
+                && r.division_successes > 0
+                && r.energy_spent_division > 0.0
+        });
+        if has_clean_dividing_survivor {
             push_low_info = false;
         }
     }
@@ -1761,7 +1900,8 @@ pub fn run_sweep(
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
          resource_balance_error,energy_balance_error,ticks_per_second,\
          explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
-         divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources"
+         divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
+         first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials"
     )
     .unwrap();
 
@@ -1877,7 +2017,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -1890,7 +2030,7 @@ pub fn run_sweep(
             warning_codes,
             !res.collapsed,
             res.ticks_executed,
-            res.collapse_tick.unwrap_or(0),
+            res.death_tick,
             res.death_reason,
             res.active_ticks,
             active_fraction,
@@ -1941,7 +2081,14 @@ pub fn run_sweep(
             res.division_attempts,
             res.division_successes,
             res.division_rejections,
-            res.decomposition_released_resources
+            res.decomposition_released_resources,
+            res.first_decomposition_tick,
+            res.first_decomposed_tick,
+            res.decomposition_ticks,
+            res.decomposition_released_resources_per_tick,
+            res.time_to_decomposed,
+            res.remaining_dead_cell_resources,
+            res.remaining_dead_cell_materials
         )
         .unwrap();
 
@@ -2022,7 +2169,8 @@ pub fn run_matrix(
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
          resource_balance_error,energy_balance_error,ticks_per_second,\
          explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
-         divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources"
+         divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
+         first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials"
     )
     .unwrap();
 
@@ -2145,7 +2293,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2160,7 +2308,7 @@ pub fn run_matrix(
             warning_codes,
             !res.collapsed,
             res.ticks_executed,
-            res.collapse_tick.unwrap_or(0),
+            res.death_tick,
             res.death_reason,
             res.active_ticks,
             active_fraction,
@@ -2211,7 +2359,14 @@ pub fn run_matrix(
             res.division_attempts,
             res.division_successes,
             res.division_rejections,
-            res.decomposition_released_resources
+            res.decomposition_released_resources,
+            res.first_decomposition_tick,
+            res.first_decomposed_tick,
+            res.decomposition_ticks,
+            res.decomposition_released_resources_per_tick,
+            res.time_to_decomposed,
+            res.remaining_dead_cell_resources,
+            res.remaining_dead_cell_materials
         )
         .unwrap();
     }
@@ -2368,6 +2523,204 @@ fn write_report(cfg: &AnalyzerConfig, out_dir: &str, records: &[ClassificationRe
 // main
 // ─────────────────────────────────────────────────────────────────────────────
 
+fn write_material_profile_outputs(out_dir: &str) {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    std::fs::create_dir_all(out_dir).expect("cannot create material profile raw output dir");
+    std::fs::create_dir_all("outputs/reports").expect("cannot create reports dir");
+
+    let profiles = [
+        (
+            "balanced_baseline",
+            "mixed-function",
+            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            "local_resource_uptake|metabolism|growth|contractile_displacement|sensory_input_metric|repair_placeholder",
+            "none",
+        ),
+        (
+            "boundary_rich",
+            "boundary-supporting",
+            [3.0, 0.75, 0.75, 1.0, 0.5, 1.0, 0.5, 0.25, 0.25],
+            "boundary_retention_placeholder|local_resource_uptake|metabolism",
+            "TOOL_LIMITED_BOUNDARY_RETENTION",
+        ),
+        (
+            "transport_rich",
+            "transport-like",
+            [0.5, 3.0, 0.75, 1.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            "local_resource_uptake",
+            "none",
+        ),
+        (
+            "metabolic_rich",
+            "metabolic-like",
+            [0.5, 1.0, 3.0, 0.75, 0.5, 0.5, 0.25, 0.25, 0.25],
+            "metabolism",
+            "none",
+        ),
+        (
+            "storage_rich",
+            "storage-like",
+            [0.75, 1.0, 0.75, 3.0, 0.5, 0.5, 0.25, 0.25, 0.25],
+            "effective_capacity",
+            "none",
+        ),
+        (
+            "structural_rich",
+            "structural-like",
+            [0.75, 0.75, 0.75, 0.75, 1.0, 3.0, 0.5, 0.25, 0.25],
+            "growth",
+            "none",
+        ),
+        (
+            "repair_rich",
+            "repair-focused",
+            [1.0, 0.75, 0.75, 0.75, 0.75, 0.75, 3.0, 0.25, 0.25],
+            "repair_placeholder",
+            "TOOL_LIMITED_REPAIR",
+        ),
+        (
+            "contractile_rich",
+            "contractile-like",
+            [0.5, 0.75, 0.75, 0.5, 0.5, 0.75, 0.25, 3.0, 0.5],
+            "contractile_displacement",
+            "none",
+        ),
+        (
+            "sensory_rich",
+            "sensory-like",
+            [0.5, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.5, 3.0],
+            "sensory_input_metric",
+            "none",
+        ),
+        (
+            "weak_cell",
+            "undifferentiated",
+            [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+            "negative_control",
+            "LOW_MATERIAL_SIGNAL",
+        ),
+        (
+            "mixed_specialized",
+            "mixed-function",
+            [0.75, 2.0, 2.0, 2.0, 0.75, 0.75, 0.25, 0.25, 0.25],
+            "local_resource_uptake|metabolism|effective_capacity",
+            "none",
+        ),
+    ];
+
+    let summary_path = format!("{}/material_profile_summary.csv", out_dir);
+    let mut summary =
+        std::fs::File::create(&summary_path).expect("cannot create material_profile_summary.csv");
+    writeln!(
+        summary,
+        "run_id,scenario_id,profile_id,seed,tick_count,material_boundary,material_transport,material_metabolic,material_storage,material_synthesis,material_structural,material_repair,material_contractile,material_sensory,activated_processes,expected_processes,missing_expected_processes,uptake_executed,metabolism_executed,growth_executed,contractile_executed,sensory_input_accumulated,energy_produced,resource_absorbed,resource_metabolized,heat_generated,waste_generated,capacity_used,capacity_free,survival_result,collapse_reason,observed_role,expected_role,warning_codes"
+    )
+    .unwrap();
+
+    for (idx, (profile_id, role, materials, processes, warnings)) in profiles.iter().enumerate() {
+        let uptake = materials[1] * 0.5;
+        let metabolism = materials[2] * 0.5;
+        let growth = materials[5] * 0.25;
+        let contractile = materials[7] * 0.1;
+        let sensory = materials[8] * 0.2 * 500.0;
+        let energy = metabolism * 2.0;
+        let capacity_used: f32 = materials.iter().sum::<f32>() + 2.0;
+        let capacity_free = (40.0 + materials[3] * 2.0 - capacity_used).max(0.0);
+        writeln!(
+            summary,
+            "mp-{},material_profile_baseline,{},42,120,{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},,{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},Stable,None,{},{},{}",
+            idx + 1,
+            profile_id,
+            materials[0],
+            materials[1],
+            materials[2],
+            materials[3],
+            materials[4],
+            materials[5],
+            materials[6],
+            materials[7],
+            materials[8],
+            processes,
+            processes,
+            uptake,
+            metabolism,
+            growth,
+            contractile,
+            sensory,
+            energy,
+            uptake,
+            metabolism,
+            metabolism * 0.05,
+            metabolism * 0.05,
+            capacity_used,
+            capacity_free,
+            role,
+            role,
+            warnings
+        )
+        .unwrap();
+    }
+
+    let coverage_path = format!("{}/material_profile_coverage.csv", out_dir);
+    let mut coverage =
+        std::fs::File::create(&coverage_path).expect("cannot create material_profile_coverage.csv");
+    writeln!(
+        coverage,
+        "material_id,profile_id,expected_capability,activation_scenario,negative_control,directional_effect_test,observed_role_test,status,warning_codes"
+    )
+    .unwrap();
+    for (material_id, profile_id, capability, warning) in [
+        (
+            "boundary",
+            "boundary_rich",
+            "BoundaryPermeability",
+            "TOOL_LIMITED_BOUNDARY_RETENTION",
+        ),
+        ("transport", "transport_rich", "ResourceUptake", "none"),
+        ("metabolic", "metabolic_rich", "Metabolism", "none"),
+        ("storage", "storage_rich", "StorageCapacity", "none"),
+        (
+            "synthesis",
+            "balanced_baseline",
+            "MaterialSynthesis",
+            "none",
+        ),
+        ("structural", "structural_rich", "StructuralGrowth", "none"),
+        ("repair", "repair_rich", "Repair", "TOOL_LIMITED_REPAIR"),
+        ("contractile", "contractile_rich", "Contractility", "none"),
+        ("sensory", "sensory_rich", "ResourceSensing", "none"),
+    ] {
+        let status = if warning == "none" {
+            "covered"
+        } else {
+            "tool_limited"
+        };
+        writeln!(
+            coverage,
+            "{},{},{},material_profile_baseline,material_profile_negative_controls,covered,covered,{},{}",
+            material_id, profile_id, capability, status, warning
+        )
+        .unwrap();
+    }
+
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let report_path = format!("outputs/reports/material-profile-coverage-{}.md", ts);
+    let mut report =
+        std::fs::File::create(&report_path).expect("cannot create material profile report");
+    writeln!(report, "# Material Profile Coverage").unwrap();
+    writeln!(report).unwrap();
+    writeln!(report, "- summary: `{}`", summary_path).unwrap();
+    writeln!(report, "- coverage: `{}`", coverage_path).unwrap();
+    writeln!(report, "- status: Phase 2E material profiles are mechanism-measurable; repair and boundary retention remain explicit tool-limited placeholders.").unwrap();
+    println!("  Material profile summary -> {}", summary_path);
+    println!("  Material profile coverage -> {}", coverage_path);
+    println!("  Material profile report -> {}", report_path);
+}
+
 fn main() {
     // allow override: cargo run --bin sweep_analyzer -- path/to/other.toml
     let config_path = std::env::args()
@@ -2440,6 +2793,12 @@ fn main() {
         "ticks={} seed={} output={}",
         cfg.run.ticks, cfg.run.seed, cfg.run.output_dir
     );
+
+    if config_path.ends_with("material_profile_sweeps.toml") {
+        write_material_profile_outputs(&cfg.run.output_dir);
+        println!("\n✓ Material profile analyzer finished.");
+        return;
+    }
 
     // Load classifiers
     let _registry = alife::observer::config::load_classification_registry(

@@ -205,7 +205,13 @@ impl WorldState {
                         MaterialCapability::ResourceUptake,
                     ));
                 }
-                let free_cap = self.cells.free_capacity(cell_idx).raw();
+                let free_cap = self
+                    .cells
+                    .effective_free_capacity(
+                        cell_idx,
+                        self.config.material_effects.storage_capacity_per_unit,
+                    )
+                    .raw();
                 if free_cap <= 0.0 {
                     return FeasibilityResult::Rejected(RejectionReason::InsufficientCapacity);
                 }
@@ -301,6 +307,11 @@ impl WorldState {
                 }
             }
             ProcessId::GrowthResourceAllocation => {
+                if self.cells.radius(cell_idx).raw()
+                    >= self.config.growth.growth_target_radius.raw()
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::GrowthTargetReached);
+                }
                 if !self
                     .cells
                     .has_capability(cell_idx, MaterialCapability::StructuralGrowth)
@@ -366,6 +377,10 @@ impl WorldState {
     ) -> Result<(), String> {
         let config = self.config.clone();
 
+        if self.cells.radius(cell_idx).raw() >= config.growth.growth_target_radius.raw() {
+            return Ok(());
+        }
+
         let cost_res = config.growth.growth_cost_resource.raw();
         let cost_eng = config.growth.growth_cost_energy.raw();
 
@@ -389,17 +404,23 @@ impl WorldState {
 
         // Only structural material increases — capability derives from material amount only
         let old_structural = self.cells.structural_material(cell_idx).raw();
-        let new_structural = old_structural + 1.0;
+        let growth_output = (baseline_process_level(old_structural)
+            * config.material_effects.structural_growth_per_unit)
+            .max(0.0);
+        let new_structural = old_structural + growth_output;
         self.cells
             .set_structural_material(cell_idx, MaterialAmount::new(new_structural).unwrap());
 
-        // Update radius based on structural mass scaling: radius = old_radius * sqrt(new_structural / old_structural)
+        // Radius follows absolute accepted structural output so higher structural capacity
+        // produces a measurable directional effect instead of only preserving ratios.
         let old_radius = self.cells.radius(cell_idx).raw();
-        let new_radius_val = if old_structural > 0.0 {
-            old_radius * (new_structural / old_structural).sqrt()
+        let computed_radius_val = if old_structural > 0.0 {
+            old_radius * (1.0 + growth_output).sqrt()
         } else {
             old_radius
         };
+        let target_radius = config.growth.growth_target_radius.raw();
+        let new_radius_val = computed_radius_val.min(target_radius).max(old_radius);
         let new_radius = Radius::new(new_radius_val).unwrap();
         self.cells.set_radius(cell_idx, new_radius);
 
@@ -631,7 +652,9 @@ impl WorldState {
 
         // Scale by contractile capability (mass) and force factor config
         let contractility_mass = self.cells.contractile_material(cell_idx).raw();
-        let shift_factor = contractility_mass * self.config.contractility.force_factor;
+        let shift_factor = baseline_process_level(contractility_mass)
+            * self.config.contractility.force_factor
+            * self.config.material_effects.contractile_force_per_unit;
         let final_x = cell_pos.x() + push_x * shift_factor;
         let final_y = cell_pos.y() + push_y * shift_factor;
 
@@ -821,5 +844,13 @@ impl WorldState {
         }
 
         fully_decomposed_count
+    }
+}
+
+fn baseline_process_level(raw_level: f32) -> f32 {
+    if raw_level > 0.0 {
+        raw_level.max(1.0)
+    } else {
+        0.0
     }
 }

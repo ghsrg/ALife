@@ -1,4 +1,6 @@
 use crate::core::ids::CellId;
+use crate::core::materials::{MaterialComposition, MaterialSlot};
+use crate::core::process::MaterialCapability;
 use crate::core::units::{
     CapacityAmount, EnergyAmount, MaterialAmount, Position, Radius, ResourceAmount, Temperature,
 };
@@ -222,6 +224,32 @@ impl CellStore {
         CapacityAmount::new(free).expect("free capacity is clamped")
     }
 
+    pub fn effective_capacity_limit(
+        &self,
+        index: CellIndex,
+        storage_capacity_per_unit: f32,
+    ) -> CapacityAmount {
+        let storage_bonus = self
+            .material_amount_for_slot(index, MaterialSlot::Storage)
+            .raw()
+            * storage_capacity_per_unit;
+        CapacityAmount::new((self.capacity_limits[index.raw()].raw() + storage_bonus).max(0.0))
+            .expect("effective capacity is clamped")
+    }
+
+    pub fn effective_free_capacity(
+        &self,
+        index: CellIndex,
+        storage_capacity_per_unit: f32,
+    ) -> CapacityAmount {
+        let free = (self
+            .effective_capacity_limit(index, storage_capacity_per_unit)
+            .raw()
+            - self.used_capacity(index).raw())
+        .max(0.0);
+        CapacityAmount::new(free).expect("effective free capacity is clamped")
+    }
+
     pub fn resource_amount(&self, index: CellIndex) -> ResourceAmount {
         self.resources[index.raw()]
     }
@@ -231,7 +259,19 @@ impl CellStore {
         index: CellIndex,
         requested: ResourceAmount,
     ) -> ResourceAmount {
-        let accepted_raw = requested.raw().min(self.free_capacity(index).raw());
+        self.add_resources_limited_by_effective_capacity(index, requested, 0.0)
+    }
+
+    pub fn add_resources_limited_by_effective_capacity(
+        &mut self,
+        index: CellIndex,
+        requested: ResourceAmount,
+        storage_capacity_per_unit: f32,
+    ) -> ResourceAmount {
+        let accepted_raw = requested.raw().min(
+            self.effective_free_capacity(index, storage_capacity_per_unit)
+                .raw(),
+        );
         let accepted = ResourceAmount::new(accepted_raw).expect("accepted uptake is clamped");
         self.resources[index.raw()] = self.resources[index.raw()].saturating_add(accepted);
         accepted
@@ -265,35 +305,44 @@ impl CellStore {
         self.runtime_flags[index.raw()] = flags;
     }
 
-    pub fn has_capability(
-        &self,
-        index: CellIndex,
-        capability: crate::core::process::MaterialCapability,
-    ) -> bool {
+    pub fn has_capability(&self, index: CellIndex, capability: MaterialCapability) -> bool {
+        self.capability_level(index, capability) > 0.0
+    }
+
+    pub fn capability_level(&self, index: CellIndex, capability: MaterialCapability) -> f32 {
         if self.lifecycle_state(index) == LifecycleState::Dead {
-            return false;
+            return 0.0;
         }
-        use crate::core::process::MaterialCapability;
         match capability {
-            MaterialCapability::BoundaryPermeability => {
-                self.boundary_materials[index.raw()].raw() > 0.0
-            }
-            MaterialCapability::ResourceUptake => self.transport_materials[index.raw()].raw() > 0.0,
-            MaterialCapability::Metabolism => self.metabolic_materials[index.raw()].raw() > 0.0,
-            MaterialCapability::StorageCapacity => self.storage_materials[index.raw()].raw() > 0.0,
-            MaterialCapability::MaterialSynthesis => {
-                self.synthesis_materials[index.raw()].raw() > 0.0
-            }
-            MaterialCapability::StructuralGrowth => {
-                self.structural_materials[index.raw()].raw() > 0.0
-            }
-            MaterialCapability::Repair => self.repair_materials[index.raw()].raw() > 0.0,
-            MaterialCapability::Contractility => {
-                self.contractile_materials[index.raw()].raw() > 0.0
-            }
+            MaterialCapability::BoundaryPermeability => self
+                .material_amount_for_slot(index, MaterialSlot::Boundary)
+                .raw(),
+            MaterialCapability::ResourceUptake => self
+                .material_amount_for_slot(index, MaterialSlot::Transport)
+                .raw(),
+            MaterialCapability::Metabolism => self
+                .material_amount_for_slot(index, MaterialSlot::Metabolic)
+                .raw(),
+            MaterialCapability::StorageCapacity => self
+                .material_amount_for_slot(index, MaterialSlot::Storage)
+                .raw(),
+            MaterialCapability::MaterialSynthesis => self
+                .material_amount_for_slot(index, MaterialSlot::Synthesis)
+                .raw(),
+            MaterialCapability::StructuralGrowth => self
+                .material_amount_for_slot(index, MaterialSlot::Structural)
+                .raw(),
+            MaterialCapability::Repair => self
+                .material_amount_for_slot(index, MaterialSlot::Repair)
+                .raw(),
+            MaterialCapability::Contractility => self
+                .material_amount_for_slot(index, MaterialSlot::Contractile)
+                .raw(),
             MaterialCapability::ResourceSensing
             | MaterialCapability::PressureSensing
-            | MaterialCapability::DamageSensing => self.sensory_materials[index.raw()].raw() > 0.0,
+            | MaterialCapability::DamageSensing => self
+                .material_amount_for_slot(index, MaterialSlot::Sensory)
+                .raw(),
         }
     }
 
@@ -307,6 +356,61 @@ impl CellStore {
 
     pub fn material_amount(&self, index: CellIndex) -> MaterialAmount {
         self.total_materials(index)
+    }
+
+    pub fn material_amount_for_slot(&self, index: CellIndex, slot: MaterialSlot) -> MaterialAmount {
+        match slot {
+            MaterialSlot::Boundary => self.boundary_material(index),
+            MaterialSlot::Transport => self.transport_material(index),
+            MaterialSlot::Metabolic => self.metabolic_material(index),
+            MaterialSlot::Storage => self.storage_material(index),
+            MaterialSlot::Synthesis => self.synthesis_material(index),
+            MaterialSlot::Structural => self.structural_material(index),
+            MaterialSlot::Repair => self.repair_material(index),
+            MaterialSlot::Contractile => self.contractile_material(index),
+            MaterialSlot::Sensory => self.sensory_material(index),
+        }
+    }
+
+    pub fn material_composition(&self, index: CellIndex) -> MaterialComposition {
+        MaterialComposition::from_slots([
+            (
+                MaterialSlot::Boundary,
+                self.material_amount_for_slot(index, MaterialSlot::Boundary),
+            ),
+            (
+                MaterialSlot::Transport,
+                self.material_amount_for_slot(index, MaterialSlot::Transport),
+            ),
+            (
+                MaterialSlot::Metabolic,
+                self.material_amount_for_slot(index, MaterialSlot::Metabolic),
+            ),
+            (
+                MaterialSlot::Storage,
+                self.material_amount_for_slot(index, MaterialSlot::Storage),
+            ),
+            (
+                MaterialSlot::Synthesis,
+                self.material_amount_for_slot(index, MaterialSlot::Synthesis),
+            ),
+            (
+                MaterialSlot::Structural,
+                self.material_amount_for_slot(index, MaterialSlot::Structural),
+            ),
+            (
+                MaterialSlot::Repair,
+                self.material_amount_for_slot(index, MaterialSlot::Repair),
+            ),
+            (
+                MaterialSlot::Contractile,
+                self.material_amount_for_slot(index, MaterialSlot::Contractile),
+            ),
+            (
+                MaterialSlot::Sensory,
+                self.material_amount_for_slot(index, MaterialSlot::Sensory),
+            ),
+        ])
     }
 
     pub fn set_radius(&mut self, index: CellIndex, radius: Radius) {

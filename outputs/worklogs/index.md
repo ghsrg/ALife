@@ -151,4 +151,7 @@ tags:
 - [[outputs/worklogs/2026-07-09-1118-REPORT-scenario-mapping-config-validation|2026-07-09-1118-REPORT-scenario-mapping-config-validation]]
 - [[outputs/worklogs/2026-07-09-1123-REPORT-feat-scenario-mapping-accounting|2026-07-09-1123-REPORT-feat-scenario-mapping-accounting]]
 - [[outputs/worklogs/2026-07-09-1950-REPORT-phase-2E-material-profile-planning|2026-07-09-1950-REPORT-phase-2E-material-profile-planning]]
+- [[outputs/worklogs/2026-07-10-1116-REPORT-phase-2d-decomposition-sweep-calibration|2026-07-10-1116-REPORT-phase-2d-decomposition-sweep-calibration]]
+- [[outputs/worklogs/2026-07-10-2332-REPORT-phase-2d-division-sweep-calibration|2026-07-10-2332-REPORT-phase-2d-division-sweep-calibration]]
+- [[outputs/worklogs/2026-07-11-0055-REPORT-phase-2E-material-profile-coverage|2026-07-11-0055-REPORT-phase-2E-material-profile-coverage]]
 

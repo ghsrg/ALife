@@ -1,7 +1,7 @@
 use crate::core::config::{
     CellInitialConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
-    EnvironmentConfig, GrowthConfig, LifecycleConfig, ResourceConfig, ResourceInteractionConfig,
-    RuntimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
+    EnvironmentConfig, GrowthConfig, LifecycleConfig, MaterialEffectConfig, ResourceConfig,
+    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
 };
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
@@ -115,6 +115,18 @@ pub struct RawResourceInteraction {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RawMaterialEffects {
+    pub transport_uptake_per_unit: Option<f32>,
+    pub metabolic_conversion_per_unit: Option<f32>,
+    pub storage_capacity_per_unit: Option<f32>,
+    pub structural_growth_per_unit: Option<f32>,
+    pub contractile_force_per_unit: Option<f32>,
+    pub sensory_input_per_unit: Option<f32>,
+    pub boundary_retention_per_unit: Option<f32>,
+    pub repair_stress_buffer_per_unit: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RawScenarioConfig {
     pub scenario_id: String,
     pub seed: u64,
@@ -133,6 +145,7 @@ pub struct RawScenarioConfig {
     pub contractility: Option<RawContractility>,
     pub division: Option<RawDivision>,
     pub decomposition: Option<RawDecomposition>,
+    pub material_effects: Option<RawMaterialEffects>,
 }
 
 #[derive(Debug)]
@@ -505,6 +518,81 @@ impl RawScenarioConfig {
                     })?,
                 remove_when_empty: raw_dec.remove_when_empty.unwrap_or(false),
             };
+        }
+
+        if let Some(ref raw_effects) = self.material_effects {
+            let defaults = MaterialEffectConfig::default();
+            runtime_config.material_effects = MaterialEffectConfig {
+                transport_uptake_per_unit: raw_effects
+                    .transport_uptake_per_unit
+                    .unwrap_or(defaults.transport_uptake_per_unit),
+                metabolic_conversion_per_unit: raw_effects
+                    .metabolic_conversion_per_unit
+                    .unwrap_or(defaults.metabolic_conversion_per_unit),
+                storage_capacity_per_unit: raw_effects
+                    .storage_capacity_per_unit
+                    .unwrap_or(defaults.storage_capacity_per_unit),
+                structural_growth_per_unit: raw_effects
+                    .structural_growth_per_unit
+                    .unwrap_or(defaults.structural_growth_per_unit),
+                contractile_force_per_unit: raw_effects
+                    .contractile_force_per_unit
+                    .unwrap_or(defaults.contractile_force_per_unit),
+                sensory_input_per_unit: raw_effects
+                    .sensory_input_per_unit
+                    .unwrap_or(defaults.sensory_input_per_unit),
+                boundary_retention_per_unit: raw_effects
+                    .boundary_retention_per_unit
+                    .unwrap_or(defaults.boundary_retention_per_unit),
+                repair_stress_buffer_per_unit: raw_effects
+                    .repair_stress_buffer_per_unit
+                    .unwrap_or(defaults.repair_stress_buffer_per_unit),
+            };
+            for (name, value) in [
+                (
+                    "transport_uptake_per_unit",
+                    runtime_config.material_effects.transport_uptake_per_unit,
+                ),
+                (
+                    "metabolic_conversion_per_unit",
+                    runtime_config
+                        .material_effects
+                        .metabolic_conversion_per_unit,
+                ),
+                (
+                    "storage_capacity_per_unit",
+                    runtime_config.material_effects.storage_capacity_per_unit,
+                ),
+                (
+                    "structural_growth_per_unit",
+                    runtime_config.material_effects.structural_growth_per_unit,
+                ),
+                (
+                    "contractile_force_per_unit",
+                    runtime_config.material_effects.contractile_force_per_unit,
+                ),
+                (
+                    "sensory_input_per_unit",
+                    runtime_config.material_effects.sensory_input_per_unit,
+                ),
+                (
+                    "boundary_retention_per_unit",
+                    runtime_config.material_effects.boundary_retention_per_unit,
+                ),
+                (
+                    "repair_stress_buffer_per_unit",
+                    runtime_config
+                        .material_effects
+                        .repair_stress_buffer_per_unit,
+                ),
+            ] {
+                if !value.is_finite() || value < 0.0 {
+                    return Err(ParseError::ValidationError(format!(
+                        "Invalid material effect {}: {}",
+                        name, value
+                    )));
+                }
+            }
         }
 
         runtime_config

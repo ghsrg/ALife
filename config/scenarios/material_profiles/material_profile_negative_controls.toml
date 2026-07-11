@@ -1,0 +1,62 @@
+scenario_id = "material_profile_negative_controls"
+seed = 43
+tick_count = 50
+
+[world]
+size = [64.0, 64.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = ["nutrient"]
+initial_distribution = [100.0]
+optional_decay_rate = 0.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 1.0
+metabolism_resource_per_tick = 1.0
+energy_per_resource = 2.0
+heat_per_resource = 0.0
+waste_per_resource = 0.0
+
+[material_effects]
+transport_uptake_per_unit = 1.0
+metabolic_conversion_per_unit = 1.0
+storage_capacity_per_unit = 1.0
+structural_growth_per_unit = 1.0
+contractile_force_per_unit = 1.0
+sensory_input_per_unit = 1.0
+boundary_retention_per_unit = 0.0
+repair_stress_buffer_per_unit = 0.0
+
+[cell]
+initial_position = [8.0, 8.0]
+radius = 1.0
+initial_resources = { nutrient = 0.0 }
+initial_materials = { boundary = 0.0, transport = 0.0, metabolic = 0.0, storage = 0.0, synthesis = 0.0, structural = 0.0, repair = 0.0, contractile = 0.0, sensory = 0.0 }
+initial_energy = 5.0
+energy_capacity = 10.0
+mandatory_cost_per_tick = 0.1
+capacity_limit = 20.0
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.0
+heat_warning_threshold = 100.0
+heat_death_threshold = 200.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.0
+waste_warning_threshold = 100.0
+waste_death_threshold = 200.0
+
+[lifecycle]
+stress_energy_threshold = 1.0
+dormancy_allowed = false
+dormant_mandatory_cost_modifier = 0.0
+critical_capacity_overrun = 10.0

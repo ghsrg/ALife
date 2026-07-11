@@ -71,6 +71,7 @@ pub enum RejectionReason {
     InsufficientCapacity,
     LifecycleStateDead,
     RadiusBelowTarget,
+    GrowthTargetReached,
     PressureTooHigh,
     NoPressure,
     ProcessDisabled,

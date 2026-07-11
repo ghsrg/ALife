@@ -65,6 +65,14 @@ fn mock_result(collapsed: bool, final_energy: f32, dormant_ticks: u32) -> SimRes
         division_successes: 0,
         division_rejections: 0,
         decomposition_released_resources: 0.0,
+        death_tick: 0,
+        first_decomposition_tick: 0,
+        first_decomposed_tick: 0,
+        decomposition_ticks: 0,
+        decomposition_released_resources_per_tick: 0.0,
+        time_to_decomposed: 0,
+        remaining_dead_cell_resources: 0.0,
+        remaining_dead_cell_materials: 0.0,
     }
 }
 
@@ -139,7 +147,108 @@ fn mock_result_custom(
         division_successes: 0,
         division_rejections: 0,
         decomposition_released_resources: 0.0,
+        death_tick: 0,
+        first_decomposition_tick: 0,
+        first_decomposed_tick: 0,
+        decomposition_ticks: 0,
+        decomposition_released_resources_per_tick: 0.0,
+        time_to_decomposed: 0,
+        remaining_dead_cell_resources: 0.0,
+        remaining_dead_cell_materials: 0.0,
     }
+}
+
+fn mock_decomposition_result(
+    time_to_decomposed: u32,
+    release_per_tick: f32,
+    remaining_resources: f32,
+    remaining_materials: f32,
+) -> SimResult {
+    SimResult {
+        collapsed: true,
+        collapse_tick: Some(5),
+        dormant_ticks: 0,
+        active_ticks: 0,
+        stressed_ticks: 0,
+        min_energy: 0.0,
+        max_energy: 1.0,
+        final_energy: 0.0,
+        mean_energy: 0.0,
+        initial_energy: 1.0,
+        death_reason: "EnergyDepleted".to_string(),
+        energy_produced: 0.0,
+        passive_energy_received: 0.0,
+        energy_spent_upkeep: 0.0,
+        energy_spent_dormant_upkeep: 0.0,
+        energy_spent_movement: 0.0,
+        energy_spent_growth: 0.0,
+        energy_spent_repair: 0.0,
+        energy_spent_division: 0.0,
+        initial_world_resource: 0.0,
+        final_world_resource: 0.0,
+        resource_regenerated: 0.0,
+        resource_absorbed: 0.0,
+        resource_metabolized: 0.0,
+        internal_resource_final: 0.0,
+        resource_released: 0.0,
+        resource_explicit_sink: 0.0,
+        resource_balance_error: 0.0,
+        energy_balance_error: 0.0,
+        dormancy_enter_count: 0,
+        dormancy_exit_count: 0,
+        ticks_executed: 50,
+        total_resource_consumed: 0.0,
+        metabolism_count: 0,
+        potential_role: "unknown".to_string(),
+        observed_role: "unknown".to_string(),
+        behavior_profile: "unknown".to_string(),
+        ticks_per_second: 0.0,
+        bhv_res: None,
+        explicit_energy_loss: 0.0,
+        death_cleanup_loss_energy: 0.0,
+        death_cleanup_loss_resources: 0.0,
+        clamping_loss: 0.0,
+        unpaid_mandatory_cost: 0.0,
+        resource_decay: 0.0,
+        resource_sink: 0.0,
+        numerical_error_energy: 0.0,
+        numerical_error_resources: 0.0,
+        unclassified_loss_energy: 0.0,
+        unclassified_loss_resources: 0.0,
+        divisions_count: 0,
+        births_count: 0,
+        dead_cells_count: 1,
+        decomposing_cells_count: 0,
+        decomposed_cells_count: 1,
+        division_attempts: 0,
+        division_successes: 0,
+        division_rejections: 0,
+        decomposition_released_resources: 24.0,
+        death_tick: 5,
+        first_decomposition_tick: 6,
+        first_decomposed_tick: 5 + time_to_decomposed,
+        decomposition_ticks: time_to_decomposed,
+        decomposition_released_resources_per_tick: release_per_tick,
+        time_to_decomposed,
+        remaining_dead_cell_resources: remaining_resources,
+        remaining_dead_cell_materials: remaining_materials,
+    }
+}
+
+fn mock_division_result(
+    collapsed: bool,
+    final_energy: f32,
+    divisions: u32,
+    births: u32,
+    division_energy_spent: f32,
+) -> SimResult {
+    let mut result = mock_result(collapsed, final_energy, 0);
+    result.divisions_count = divisions;
+    result.births_count = births;
+    result.division_attempts = divisions;
+    result.division_successes = divisions;
+    result.energy_spent_division = division_energy_spent;
+    result
 }
 
 #[test]
@@ -185,6 +294,31 @@ fn test_scenario_finite_resource_viability_ticks_responsive() {
     ];
     let warnings_low_spread = detect_warnings(&results_low_spread, "finite_resource_viability");
     assert!(warnings_low_spread.contains(&"LOW_INFORMATION_SWEEP".to_string()));
+}
+
+#[test]
+fn test_scenario_decomposition_viability_rate_responsive() {
+    let results = vec![
+        mock_decomposition_result(24, 1.0, 0.0, 0.0),
+        mock_decomposition_result(5, 4.8, 0.0, 0.0),
+    ];
+
+    let warnings = detect_warnings(&results, "decomposition_viability");
+
+    assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
+}
+
+#[test]
+fn test_scenario_division_viability_clean_activation_is_informative() {
+    let results = vec![
+        mock_division_result(false, 58.0, 2, 2, 4.0),
+        mock_division_result(false, 62.0, 5, 5, 10.0),
+        mock_division_result(true, 44.0, 1, 1, 2.0),
+    ];
+
+    let warnings = detect_warnings(&results, "division_viability");
+
+    assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
 }
 
 #[test]

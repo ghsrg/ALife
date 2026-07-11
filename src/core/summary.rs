@@ -42,6 +42,8 @@ pub struct MetricsSummary {
     pub divisions_count: u32,
     pub births_count: u32,
     pub decomposed_cells_count: u32,
+    pub sensory_input_accumulated: f32,
+    pub repair_placeholder_available: bool,
 }
 
 use crate::core::process::{ProcessId, RejectionReason};
@@ -52,6 +54,7 @@ pub struct ProcessDiagnostics {
     pub attempts_by_process: HashMap<ProcessId, u32>,
     pub rejections_by_process: HashMap<ProcessId, u32>,
     pub rejections_by_reason: HashMap<RejectionReason, u32>,
+    pub tool_limited_mechanisms: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -7,6 +7,7 @@ pub mod environment;
 pub mod events;
 pub mod ids;
 pub mod lifecycle;
+pub mod materials;
 pub mod process;
 pub mod resources;
 pub mod snapshot;

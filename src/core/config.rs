@@ -225,6 +225,33 @@ impl Default for DecompositionConfig {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MaterialEffectConfig {
+    pub transport_uptake_per_unit: f32,
+    pub metabolic_conversion_per_unit: f32,
+    pub storage_capacity_per_unit: f32,
+    pub structural_growth_per_unit: f32,
+    pub contractile_force_per_unit: f32,
+    pub sensory_input_per_unit: f32,
+    pub boundary_retention_per_unit: f32,
+    pub repair_stress_buffer_per_unit: f32,
+}
+
+impl Default for MaterialEffectConfig {
+    fn default() -> Self {
+        Self {
+            transport_uptake_per_unit: 1.0,
+            metabolic_conversion_per_unit: 1.0,
+            storage_capacity_per_unit: 0.0,
+            structural_growth_per_unit: 1.0,
+            contractile_force_per_unit: 1.0,
+            sensory_input_per_unit: 1.0,
+            boundary_retention_per_unit: 1.0,
+            repair_stress_buffer_per_unit: 1.0,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
     pub world: WorldConfig,
@@ -241,6 +268,7 @@ pub struct RuntimeConfig {
     pub contractility: ContractilityConfig,
     pub division: DivisionConfig,
     pub decomposition: DecompositionConfig,
+    pub material_effects: MaterialEffectConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -300,6 +328,7 @@ impl RuntimeConfig {
             contractility: ContractilityConfig::default(),
             division: DivisionConfig::default(),
             decomposition: DecompositionConfig::default(),
+            material_effects: MaterialEffectConfig::default(),
         })
     }
 
@@ -394,6 +423,18 @@ impl RuntimeConfig {
             self.decomposition.resources_per_tick.raw().to_bits() as u64,
             self.decomposition.materials_per_tick.raw().to_bits() as u64,
             self.decomposition.remove_when_empty as u64,
+            self.material_effects.transport_uptake_per_unit.to_bits() as u64,
+            self.material_effects
+                .metabolic_conversion_per_unit
+                .to_bits() as u64,
+            self.material_effects.storage_capacity_per_unit.to_bits() as u64,
+            self.material_effects.structural_growth_per_unit.to_bits() as u64,
+            self.material_effects.contractile_force_per_unit.to_bits() as u64,
+            self.material_effects.sensory_input_per_unit.to_bits() as u64,
+            self.material_effects.boundary_retention_per_unit.to_bits() as u64,
+            self.material_effects
+                .repair_stress_buffer_per_unit
+                .to_bits() as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);

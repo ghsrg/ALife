@@ -10,6 +10,55 @@
 
 ---
 
+## Revision Notes After Phase 2D Calibration
+
+This plan remains the single Phase 2E implementation plan, but execution must treat it as staged work. The Phase 2D analyzer calibration performed on 2026-07-10 changed the starting assumptions:
+
+- `decomposition_viability` is now reachability-complete and mechanism-measurable through timing/rate metrics, not through final total released matter.
+- `division_viability` is now clean enough to prove division activation and survival under analyzer conditions.
+- analyzer scenario presets now support additional calibration fields:
+  - `initial_cell_resources`;
+  - `division_energy_cost`;
+  - `max_uptake_per_tick`;
+  - `metabolism_resource_per_tick`.
+- analyzer CSV output already includes decomposition timing/remains fields.
+- `BALANCE_ERROR` may still appear in division-style analyzer rows. Treat it as a separate accounting-audit signal unless it blocks a material-profile assertion. Do not treat it as a Phase 2E readiness blocker by itself.
+
+Do not copy Phase 2D probe parameters directly into Phase 2E baseline world configs. Phase 2D values were chosen to isolate mechanisms. Phase 2E baseline configs must be neutral enough to expose material-profile effects without hardcoding success.
+
+---
+
+## Phase 2D Readiness Gate
+
+Before starting Task 1, run:
+
+```powershell
+cargo test --test phase2_sweep_parser --test phase2_sweep_outputs --test phase2_sweep_warnings
+cargo run --bin sweep_analyzer -- config/analyzer/sweep_analyzer.toml
+```
+
+Required checks in generated raw data:
+
+```text
+outputs/raw_data/decomposition_viability.csv:
+  warning_codes does not contain LOW_INFORMATION_SWEEP
+  death_tick is recorded
+  first_decomposition_tick is recorded
+  time_to_decomposed changes meaningfully across rates
+  decomposition_released_resources_per_tick increases with decomposition_resources_per_tick
+
+outputs/raw_data/division_viability.csv:
+  at least one row has survived_to_end = true
+  at least one row has divisions_count > 0
+  at least one row has births_count > 0
+  at least one row has energy_spent_division > 0
+  warning_codes does not contain LOW_INFORMATION_SWEEP
+```
+
+If `BALANCE_ERROR` appears but the rows satisfy the checks above, continue Phase 2E and record it in the Phase 2E report as a known accounting warning. Stop only if material-profile claims depend on the failed accounting term.
+
+---
+
 ## Context And Scope
 
 Read before implementation:
@@ -45,6 +94,125 @@ config/
 ```
 
 The requirement is one root-level config directory, not configuration files scattered through tools or subsystem folders.
+
+---
+
+## Execution Stages
+
+Keep this as one plan, but execute it in four reviewable stages. Do not start a later stage until the previous stage's tests pass and the relevant raw evidence is checked.
+
+### Stage 2E-A: Core Capability Levels
+
+Purpose: replace boolean-only material capability checks with numeric material composition/capability levels.
+
+Includes:
+
+- Task 1: Add Core Material Mechanics Types.
+- Task 2: Derive Numeric Capability Levels From CellStore.
+- Negative controls for missing material capability.
+
+Exit gate:
+
+```powershell
+cargo test --test phase2_material_profile_gating
+```
+
+Required evidence:
+
+```text
+zero material -> missing capability
+non-zero material -> capability available
+higher material amount -> higher numeric capability level
+existing Phase 2A-D capability tests still pass
+```
+
+### Stage 2E-B: Process Effects And Trade-Offs
+
+Purpose: make material proportions change process rate, cost, capacity, or placeholder metrics without creating matter/Energy.
+
+Includes:
+
+- Task 3: Add Material Effect Config.
+- Task 4: Apply Material Strength To Feasibility And Execution.
+- Task 5: Add Minimal Repair And Sensory Placeholder Effects.
+
+Exit gate:
+
+```powershell
+cargo test --test phase2_material_profile_gating --test phase2_material_profile_effects
+```
+
+Required evidence:
+
+```text
+transport-rich increases resource_absorbed
+metabolic-rich increases energy_produced
+storage-rich increases capacity or scarcity survival with a cost/trade-off
+structural-rich changes growth/radius/stability
+contractile-rich changes deterministic displacement only when process is enabled
+sensory-rich changes sensed input metrics but does not create command behavior
+repair-rich is either a minimal placeholder effect or explicit tool_limited
+```
+
+### Stage 2E-C: Canonical Configs And Baseline Envelope
+
+Purpose: create reusable root `config/` artifacts for material profiles and a deterministic 10+ Cell baseline scenario.
+
+Includes:
+
+- Task 6: Add Material Profile Configs.
+- Task 9: Add 10+ Cell Deterministic Material Profile Scenario.
+
+Baseline envelope rules:
+
+```text
+resource inflow must permit survival without guaranteeing runaway growth
+growth/division may be possible but must not be required for every profile
+heat/waste/decomposition must not mask the targeted material effect
+baseline must not reuse Phase 2D probe values blindly
+all compared profiles must run under equal non-material conditions
+```
+
+Exit gate:
+
+```powershell
+cargo test --test phase2_material_profile_effects material_profile_baseline_is_deterministic_for_10_plus_cells
+```
+
+Required evidence:
+
+```text
+10+ Cell material-profile scenario is deterministic
+profiles differ only in material profile inputs unless a test states otherwise
+baseline does not encode hardcoded cell roles or success scripts
+```
+
+### Stage 2E-D: Analyzer, Observer, And Phase Gate
+
+Purpose: expose material-profile coverage through analyzer CSV/report artifacts and observer-derived labels.
+
+Includes:
+
+- Task 7: Extend Sweep Analyzer For Material Profile Coverage.
+- Task 8: Expose Material Profile Evidence To Observer.
+- Task 10: Update Docs And Worklog Report.
+
+Exit gate:
+
+```powershell
+cargo run --bin sweep_analyzer -- config/analyzer/material_profile_sweeps.toml
+cargo test --workspace --all-targets
+```
+
+Required evidence:
+
+```text
+outputs/raw_data/material_profile_summary.csv exists
+outputs/raw_data/material_profile_coverage.csv exists
+outputs/reports/material-profile-coverage-<timestamp>.md exists
+observer labels are derived from material effects, not behavior inputs
+warning codes distinguish inactive mechanics from expected placeholder/tool_limited mechanics
+```
 
 ---
 
@@ -1372,6 +1540,9 @@ which directional effects pass
 which mechanics remain tool_limited/deferred
 which analyzer artifacts were produced
 warning codes observed
+Phase 2D readiness gate evidence used before implementation
+whether BALANCE_ERROR appeared and whether it affected material-profile claims
+baseline envelope values and why they are not copied from Phase 2D probe scenarios
 test commands and results
 whether Phase 2F can start
 ```
@@ -1387,6 +1558,8 @@ Add links under Plans and Reports.
 Run:
 
 ```powershell
+cargo test --test phase2_sweep_parser --test phase2_sweep_outputs --test phase2_sweep_warnings
+cargo run --bin sweep_analyzer -- config/analyzer/sweep_analyzer.toml
 cargo fmt --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test
@@ -1396,6 +1569,7 @@ cargo run --bin sweep_analyzer -- config/analyzer/material_profile_sweeps.toml
 Expected:
 
 ```text
+Phase 2D readiness gate passes
 all tests pass
 clippy has zero warnings
 outputs/raw_data/material_profile_summary.csv exists
@@ -1412,6 +1586,8 @@ Do not run Python `tools/early-stability` as Phase 2E authority.
 Phase 2E is complete only when:
 
 ```text
+Phase 2D decomposition_viability remains mechanism-measurable
+Phase 2D division_viability remains clean enough to prove division survival and non-zero division energy cost
 every current Material has activation scenario and negative control
 no transport material rejects/reduces active uptake
 transport-rich increases resource_absorbed under equal conditions
@@ -1425,6 +1601,7 @@ repair-rich has a documented placeholder effect or explicit tool_limited status
 analyzer detects inactive/missing material mechanics
 observer labels match profiles only as derived roles
 10+ Cell material-profile scenario is deterministic
+material-profile baseline uses a neutral balance envelope and does not blindly copy analyzer probe configs
 no hardcoded CellType/species/organ labels are introduced
 Phase 1 and Phase 2A-D tests still pass
 ```
@@ -1442,5 +1619,8 @@ Spec coverage:
 - Observer roles are covered in Task 8.
 - Root `config/` placement is covered in Tasks 6 and 7.
 - 10+ Cell deterministic scenario is covered in Task 9.
+- Phase 2D readiness is covered by the preflight gate and verification commands.
+- Staged execution is covered by Stage 2E-A through Stage 2E-D while preserving this as one plan.
+- Baseline-world caution is covered by the Stage 2E-C baseline envelope rules.
 
 Known deferred items are explicit and do not block Phase 2E.
