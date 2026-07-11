@@ -56,6 +56,7 @@ tags:
 - [[outputs/worklogs/2026-07-08-2225-PLAN-observer-config-review|2026-07-08-2225-PLAN-observer-config-review]]
 - [[outputs/worklogs/2026-07-09-0026-PLAN-sweep-observer-review|2026-07-09-0026-PLAN-sweep-observer-review]]
 - [[outputs/worklogs/2026-07-09-1950-PLAN-phase-2E-material-profile-coverage|2026-07-09-1950-PLAN-phase-2E-material-profile-coverage]]
+- [[outputs/worklogs/2026-07-11-1042-PLAN-phase-2F-local-cell-interaction-primitives|2026-07-11-1042-PLAN-phase-2F-local-cell-interaction-primitives]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
