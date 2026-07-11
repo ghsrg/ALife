@@ -46,6 +46,11 @@ impl TickExecutor {
 
         // Rebuild Spatial Index at the start of tick
         self.world.rebuild_spatial_index();
+        self.world.rebuild_contact_cache();
+
+        let contact_pairs_count = self.world.contact_cache().pairs().len() as u32;
+        let contact_pressure_pre_total = self.world.contact_cache().total_overlap();
+        let mut contact_pressure_max_over_tick = self.world.contact_cache().max_overlap();
 
         let mut metabolism_heat_total = 0.0_f32;
         let mut metabolism_waste_total = 0.0_f32;
@@ -242,20 +247,20 @@ impl TickExecutor {
                 }
             }
 
-            let mut pairs = Vec::new();
-            {
-                let cells = self.world.cells();
-                self.world
-                    .spatial_index()
-                    .generate_candidate_pairs(cells, &mut pairs);
-            }
-
             let iterations = config.space.physics_solver_iterations;
             let world_size = config.world.size;
 
             for _ in 0..iterations {
+                self.world.rebuild_spatial_index();
+                self.world.rebuild_contact_cache();
+                contact_pressure_max_over_tick =
+                    contact_pressure_max_over_tick.max(self.world.contact_cache().max_overlap());
+                let pairs = self.world.contact_cache().pairs().to_vec();
+
                 // 1. Resolve cell-cell overlaps
-                for &(idx_i, idx_j) in &pairs {
+                for pair in &pairs {
+                    let idx_i = pair.a;
+                    let idx_j = pair.b;
                     let (pos_i, r_i) = {
                         let cells = self.world.cells();
                         if cells.runtime_flags(idx_i).inert || cells.runtime_flags(idx_j).inert {
@@ -342,6 +347,12 @@ impl TickExecutor {
                 }
             }
         }
+
+        self.world.rebuild_spatial_index();
+        self.world.rebuild_contact_cache();
+        let contact_pressure_post_total = self.world.contact_cache().total_overlap();
+        contact_pressure_max_over_tick =
+            contact_pressure_max_over_tick.max(self.world.contact_cache().max_overlap());
 
         // Phase B: Compute environment updates
         let heat_next = HeatAmount::new(
@@ -673,6 +684,10 @@ impl TickExecutor {
                 min_energy,
                 max_energy,
                 overlap_resolved,
+                contact_pairs_count,
+                contact_pressure_pre_total,
+                contact_pressure_post_total,
+                contact_pressure_max_over_tick,
                 process_attempts,
                 process_rejections,
                 divisions_count,
@@ -737,6 +752,10 @@ impl TickExecutor {
         min_energy: f32,
         max_energy: f32,
         overlap_resolved: f32,
+        contact_pairs_count: u32,
+        contact_pressure_pre_total: f32,
+        contact_pressure_post_total: f32,
+        contact_pressure_max_over_tick: f32,
         process_attempts: u32,
         process_rejections: u32,
         divisions_count: u32,
@@ -799,6 +818,10 @@ impl TickExecutor {
             final_used_capacity,
             final_free_capacity,
             growth_readiness,
+            contact_pairs_count,
+            contact_pressure_pre_total,
+            contact_pressure_post_total,
+            contact_pressure_max_over_tick,
             overlap_resolved,
             process_attempts,
             process_rejections,
