@@ -133,6 +133,31 @@ impl ResourceInteractionConfig {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LocalInteractionConfig {
+    pub enabled: bool,
+    pub contact_exchange_rate: f32,
+    pub max_exchange_per_pair: ResourceAmount,
+    pub min_boundary_capability: f32,
+    pub min_transport_capability: f32,
+    pub contact_stimulus_per_overlap: f32,
+    pub stimulus_decay_per_tick: f32,
+}
+
+impl Default for LocalInteractionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            contact_exchange_rate: 0.0,
+            max_exchange_per_pair: ResourceAmount::zero(),
+            min_boundary_capability: 0.0,
+            min_transport_capability: 0.0,
+            contact_stimulus_per_overlap: 0.0,
+            stimulus_decay_per_tick: 0.0,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GrowthConfig {
     pub growth_cost_resource: ResourceAmount,
     pub growth_cost_energy: EnergyAmount,
@@ -269,6 +294,7 @@ pub struct RuntimeConfig {
     pub division: DivisionConfig,
     pub decomposition: DecompositionConfig,
     pub material_effects: MaterialEffectConfig,
+    pub local_interaction: LocalInteractionConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -284,6 +310,7 @@ pub enum ConfigError {
     InvalidDivisionLoss,
     InvalidDaughterSpacing,
     InvalidDecompositionLayer,
+    InvalidLocalInteractionRate,
 }
 
 impl RuntimeConfig {
@@ -329,6 +356,7 @@ impl RuntimeConfig {
             division: DivisionConfig::default(),
             decomposition: DecompositionConfig::default(),
             material_effects: MaterialEffectConfig::default(),
+            local_interaction: LocalInteractionConfig::default(),
         })
     }
 
@@ -344,6 +372,23 @@ impl RuntimeConfig {
         }
         if self.decomposition.resource_layer_index >= self.resources.layer_count() {
             return Err(ConfigError::InvalidDecompositionLayer);
+        }
+        Ok(())
+    }
+
+    pub fn validate_phase2f_options(&self) -> Result<(), ConfigError> {
+        let cfg = self.local_interaction;
+        for value in [
+            cfg.contact_exchange_rate,
+            cfg.min_boundary_capability,
+            cfg.min_transport_capability,
+            cfg.contact_stimulus_per_overlap,
+            cfg.stimulus_decay_per_tick,
+            cfg.max_exchange_per_pair.raw(),
+        ] {
+            if !value.is_finite() || value < 0.0 {
+                return Err(ConfigError::InvalidLocalInteractionRate);
+            }
         }
         Ok(())
     }
@@ -435,6 +480,15 @@ impl RuntimeConfig {
             self.material_effects
                 .repair_stress_buffer_per_unit
                 .to_bits() as u64,
+            self.local_interaction.enabled as u64,
+            self.local_interaction.contact_exchange_rate.to_bits() as u64,
+            self.local_interaction.max_exchange_per_pair.raw().to_bits() as u64,
+            self.local_interaction.min_boundary_capability.to_bits() as u64,
+            self.local_interaction.min_transport_capability.to_bits() as u64,
+            self.local_interaction
+                .contact_stimulus_per_overlap
+                .to_bits() as u64,
+            self.local_interaction.stimulus_decay_per_tick.to_bits() as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);
