@@ -34,6 +34,18 @@ Core committed state + registries + run artifacts
 
 Observer has no authority over simulation behavior.
 
+## Single Observer Implementation
+
+There is one logical Observer implementation and one metric/projection contract for all consumers:
+
+```text
+alife-core committed state/events/registries
+  -> shared Observer projections and metrics
+  -> live viewer, storage, reports and sweep_analyzer
+```
+
+`sweep_analyzer` is an offline adapter and exporter over the shared Observer layer. It must not maintain a second observer model, duplicate Core formulas, or infer behavior-critical state from CSV fields. Phase 2 may add mechanism-local Observer outputs incrementally; Phase 4 completes their cross-mechanism composition and keeps live/offline semantics aligned.
+
 Allowed:
 
 - read committed snapshots;

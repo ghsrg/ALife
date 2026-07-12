@@ -196,7 +196,7 @@ This is a Phase 3 requirement and should be planned before Genome Runtime implem
 
 Joints are expected to be a random-access hot path.
 
-Phase 4 must use a separate `JointStore` with SoA endpoint arrays and an explicit conflict strategy:
+Phase 2H must use a separate `JointStore` with SoA endpoint arrays and an explicit conflict strategy:
 
 ```text
 graph coloring

@@ -75,9 +75,11 @@ UI Canon додано в `docs/ui/`. High-level план реалізації UI
 Phase 0: Technical Foundation
 Phase 1: Deterministic World Smoke
 Phase 2: Processes, Feasibility And Lifecycle
+  - Phase 2G: Chemistry And Matter Dynamics
+  - Phase 2H: Persistent Interaction Structures
 Phase 3: Genome Runtime And Inheritance
-Phase 4: Joints, Signals And Multicellular Structures
-Phase 5: Evolution Analytics And Stability Experiments
+Phase 4: Shared Observer And Multicellular Stability Experiments
+Phase 5: Long-Run Evolution Experiments
 Phase 6: Performance Scale-Up
 Phase 7: Advanced Evolution Capability
 ```

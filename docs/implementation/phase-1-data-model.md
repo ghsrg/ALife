@@ -1040,7 +1040,7 @@ JointStore
 
 Joints enter in a later phase after Cell/Resource/Space data is stable.
 
-Phase 4 requirement:
+Phase 2H requirement:
 
 ```text
 JointStore
@@ -1061,7 +1061,7 @@ partitioned independent joint batches
 or deterministic accumulate-and-commit corrections
 ```
 
-If none of these is acceptable for the target scale, Joint physics needs deeper research before Phase 4 implementation.
+If none of these is acceptable for the target scale, Joint physics needs deeper research before Phase 2H implementation.
 
 ## Processes And Feasibility
 

@@ -6,6 +6,8 @@ tags:
 
 # REPORT: Implementation Phases
 
+> Historical report. The Phase 4 Joint implementation split recorded below was superseded by Phase 2G/2H in [[outputs/worklogs/2026-07-11-1958-REPORT-phase-2-roadmap-chemistry-joints-sync|Phase 2 Roadmap Chemistry And Joints Sync Report]]. Current phase ordering lives in [[docs/implementation/implementation-phases|Implementation Phases]].
+
 ## Goal
 
 Створити high-level план реалізації на фази після прийняття технологічного стеку.

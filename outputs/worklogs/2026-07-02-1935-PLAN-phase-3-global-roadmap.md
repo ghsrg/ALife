@@ -2,7 +2,9 @@
 
 ## Goal
 
-Define Phase 3 as the Genome phase: heritable regulatory control, mutation, inheritance and lineage over the material/process body created in Phase 2.
+Define Phase 3 as the Genome phase: heritable regulatory control, mutation, inheritance and lineage over the material, chemistry and persistent-interaction body completed in Phase 2.
+
+Phase 3 depends on Phase 2G and Phase 2H. It regulates registered reactions, material repair and Joint intents; it does not introduce their physical mechanisms.
 
 ## Core Principle
 
@@ -24,6 +26,7 @@ bypass Feasibility
 read observer metrics
 issue commands outside registered processes
 encode a hardcoded body plan
+create a Reaction, ResourceType, MaterialType or Joint channel outside the registered model
 ```
 
 ## Phase 3A: Genome Carrier And Representation
@@ -68,6 +71,7 @@ local input snapshot
 runtime_state.last_decision_inputs
 runtime_state.last_regulatory_outputs
 priority outputs for registered processes only
+priority outputs for registered controlled reactions, repair and Joint actions only
 deterministic scheduled execution
 stable output commit
 ```
@@ -80,6 +84,7 @@ same seed/config reproduces outputs
 Genome outputs priorities, not actions
 unregistered output is rejected
 Feasibility remains final authority
+Genome-disabled passive chemistry and existing Joints remain deterministic
 ```
 
 ## Phase 3C: Genome-Guided ActionPlan And Material Bias
@@ -97,6 +102,7 @@ synthesis bias
 threshold modulation
 reflex sensitivity modulation
 growth/division priority modulation
+controlled reaction, repair and Joint creation/upkeep priority modulation
 cooldowns/cadence integration
 debug comparison of material reflex vs genome-modulated response
 ```
@@ -107,6 +113,7 @@ debug comparison of material reflex vs genome-modulated response
 Cells with different Genome priorities choose different feasible process ordering
 missing Material capability still rejects process
 Genome can increase/decrease bias but not bypass costs
+Genome can regulate a registered Joint or controlled reaction but cannot bypass locality, Material gates or accounting
 observer metrics remain unreadable by Cells/Genome
 ```
 
@@ -169,6 +176,7 @@ at least one scenario shows different survival/division outcome from different g
 ```text
 How compact should the first regulatory graph encoding be?
 Which Phase 2 process priorities are exposed first?
+Which registered controlled reactions and Joint actions are safe to expose in the first Genome action vocabulary?
 How many inputs can Genome Runtime read in the first implementation?
 What is the first mutation operator for direct regulatory graph?
 How much epigenetic state enters Phase 3 versus later science experiments?

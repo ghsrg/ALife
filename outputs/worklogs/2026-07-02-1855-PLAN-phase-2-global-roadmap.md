@@ -24,6 +24,8 @@ PLAN-phase-2C-...
 PLAN-phase-2D-...
 PLAN-phase-2E-...
 PLAN-phase-2F-...
+PLAN-phase-2G-...
+PLAN-phase-2H-...
 ```
 
 ## Phase 2 Principle
@@ -42,6 +44,8 @@ Can a Cell divide into daughters?
 Do Material profiles and proportions actually change Cell mechanics?
 Can sweep_analyzer explain material-profile benefits, costs and imbalance?
 Can Cells interact locally before Genome-driven evolution starts?
+Can Resources, Materials and their transformations obey explicit local chemistry and accounting?
+Can Cells build and lose persistent local structures before Genome begins regulating them?
 Can lifecycle/death/decomposition remain deterministic and accountable?
 Can we observe the system visually without viewer authority?
 ```
@@ -51,8 +55,7 @@ Out of scope for Phase 2:
 ```text
 Genome Runtime
 mutation/inheritance beyond deterministic config-driven division placeholders
-Joints
-signals
+Genome-directed Joints or signal behavior
 organism-level behavior
 selection/fitness logic
 large-scale optimization
@@ -694,7 +697,7 @@ sweep_analyzer produces CSV/report artifacts
 ### Deferred
 
 ```text
-full chemical reaction network
+full chemical reaction network (scheduled for Phase 2G)
 Genome regulation
 mutation/inheritance
 organism-level behavior
@@ -748,7 +751,7 @@ OrganismView connected components
 multicellular reproduction
 ```
 
-These deferred concepts remain candidates for Phase 3/4 depending on the final phase split, but Phase 2F must leave clean extension points.
+These are deliberately deferred to Phase 2H. Phase 2F must leave clean extension points, but it is not a substitute for persistent interactions.
 
 ### Acceptance Gates
 
@@ -759,7 +762,130 @@ passive contact exchange requires material capability
 scalar contact stimulus is local and non-command
 no Cell reads observer-only organism labels
 small population has local interaction metrics
-Phase 1 and Phase 2A-D scenarios still pass
+Phase 1 and Phase 2A-E scenarios still pass
+```
+
+## Phase 2G: Chemistry And Matter Dynamics
+
+### Goal
+
+Replace the Phase 2 placeholders for generic Resources, Material slots and direct decomposition with deterministic local matter dynamics that implement the existing Canon contracts before Genome regulation begins.
+
+### Domain Boundaries
+
+```text
+ResourceTypeId / MaterialTypeId = stable configured identities
+ResourceGrid                    = local quantities indexed by ResourceTypeId
+MaterialRegistry                = immutable type properties and reaction profiles
+MaterialFragmentStore           = World-owned external material state
+ReactionRegistry                = immutable validated reaction definitions
+Chemistry execution             = scheduled systems producing validated deterministic deltas
+Heat state                      = local Cell/environment state, never Energy Buffer
+Boundary                        = derived aggregate from Cell Materials, never a separate organ
+```
+
+### Build
+
+```text
+ResourceType registry with volume, diffusion_rate, energy_value, decay_rate, reactivity profile, permeability constraints and tags
+MaterialType registry with volume, stability, strength, permeability, energy_capacity, decay_rate, repair_requirements and reaction_profile
+signal-plastic MaterialState extension points without hardcoded neural roles
+ReactionRegistry for passive, controlled, degradation, decay, synthesis and conversion reactions
+input matching, conditions, catalyst/material gates, rate/probability and locality checks
+deterministic reaction deltas with explicit Resource, Material, Fragment, Heat and permitted Energy accounting
+validation that rejects unknown types and products without inputs, and reports unaccounted matter or undeclared sinks
+per-Resource decay and local diffusion baseline
+Material degradation state and material-specific decay behavior
+MaterialFragmentStore with stable identity, MaterialTypeId, amount, location, stability, damage and decay state
+decomposition path: Cell Material -> MaterialFragment -> explicit degradation/reaction/conversion -> Resource
+local Heat generation, capacity, dissipation and material-tolerance degradation baseline
+derived Boundary permeability/retention, leakage and damage baseline
+repair process that consumes explicit Resources/Materials/Energy, restores material state, and can fail Feasibility
+analyzer scenarios and raw outputs for chemistry, fragments, heat, boundary and repair
+```
+
+### Rules
+
+```text
+Energy Buffer is never a reaction product of a passive reaction.
+Controlled reactions require a registered process, ActionPlan/priority path, material/catalyst gate and Feasibility.
+Reaction accounting names every destination: product, retained material, fragment, residual/waste or explicit configured sink.
+Matter cannot be created by a reaction or silently disappear during decomposition.
+External MaterialFragment has no active Cell capability.
+Boundary permeability derives from MaterialType + material state + ResourceType, not a special cell class.
+Repair modifies material degradation state; it is not HP healing.
+Genome-disabled execution remains deterministic and uses only passive/reflexive registered mechanics.
+```
+
+### Acceptance Gates
+
+```text
+at least two ResourceTypes have different decay, diffusion or permeability behavior
+at least two MaterialTypes have different stability/degradation behavior
+passive, controlled and degradation reactions each have a deterministic reachability scenario
+reaction validation rejects matter creation and unknown typed inputs/outputs
+all reaction input matter has an explicit configured destination
+MaterialFragment retains material identity until an explicit conversion path executes
+death/decomposition no longer converts all Cell Materials directly into generic ResourceGrid amount
+Heat changes local temperature through configured capacity/dissipation and can cause Material degradation
+Boundary damage changes permitted leakage/retention without making all Resources freely pass
+repair consumes declared inputs, can fail, and cannot restore absent material for free
+Genome-disabled scenarios remain deterministic
+Phase 1 and Phase 2A-F scenarios still pass
+```
+
+## Phase 2H: Persistent Interaction Structures
+
+### Goal
+
+Add persistent, material-backed local connections so multicellular construction is an available physical mechanism before Genome Runtime can regulate creation, upkeep or repair.
+
+### Domain Boundaries
+
+```text
+JointId / JointStore             = World-owned persistent entities with typed CellId endpoints
+contact cache                    = derived eligibility input, never persistent adhesion state
+Joint channels                   = parameters of one Joint, not organism-level buses
+OrganismView                     = observer-only connected-component projection
+```
+
+### Build
+
+```text
+JointStore with deterministic stable JointId allocation and deterministic endpoint/iteration ordering
+material- and Resource-costed local Joint creation candidate with Feasibility gate
+minimal mechanical constraint anchored to local endpoints
+passive Resource channel with gradient, source availability, target capacity and Joint integrity limits
+delayed scalar Signal channel using Tick N write / Tick N+1 read semantics
+local Heat channel with configured conductivity and no Energy Buffer transfer
+Joint strength, damage, degradation, break and optional registered repair path
+death behavior that disables living channels immediately and leaves inert material for degradation or fragment conversion
+division behavior that breaks external Joints by default; no implicit daughter reassignment or duplication
+minimal material-gated adhesion/binding scenarios and interaction analyzer outputs
+```
+
+### Rules
+
+```text
+Joint creation is local and has material/cost basis.
+Joint transfers Resources, scalar Signals and Heat only through explicit channels.
+Joint never transfers Energy Buffer, Genome or heritable information in this phase.
+Joint state does not encode a species, tissue, organ or organism controller.
+Persistent Joint behavior is distinct from transient contact exchange.
+```
+
+### Acceptance Gates
+
+```text
+stable connected Cell structures can exist and later collapse deterministically
+Joint creation and upkeep costs affect feasibility or persistence
+Joint damage/degradation/break are reachable and deterministic
+Resource, Signal and Heat channels remain local and obey visibility/accounting rules
+Energy Buffer is never transferred through a Joint
+endpoint death stops living transfer without instant material disappearance
+division does not duplicate or silently preserve external Joints
+OrganismView, if added, is observer-only and cannot be read by Cells or Genome
+Phase 1 and Phase 2A-G scenarios still pass
 ```
 
 ## Visualization Timing
@@ -867,6 +993,37 @@ scalar_contact_stimulus_reachable
 local_interaction_determinism_reachable
 ```
 
+Minimum after 2G:
+
+```text
+typed_resource_properties_reachable
+typed_material_properties_reachable
+passive_reaction_reachable
+controlled_reaction_feasibility_reachable
+reaction_accounting_rejects_matter_creation_reachable
+material_fragment_identity_reachable
+fragment_to_resource_conversion_reachable
+per_resource_diffusion_or_decay_reachable
+heat_generation_dissipation_reachable
+heat_material_degradation_reachable
+boundary_leakage_retention_reachable
+repair_consumption_and_failure_reachable
+```
+
+Minimum after 2H:
+
+```text
+joint_creation_reachable
+joint_cost_feasibility_reachable
+joint_mechanical_constraint_reachable
+joint_passive_resource_channel_reachable
+joint_delayed_signal_channel_reachable
+joint_heat_channel_reachable
+joint_degradation_break_reachable
+joint_death_and_division_behavior_reachable
+joint_determinism_reachable
+```
+
 Python `early-stability` remains useful as an estimator/calibration assistant, not as the behavior authority.
 
 ## Performance Guardrails
@@ -922,6 +1079,8 @@ docs/implementation/phase-2-design.md
 docs/implementation/phase-2-data-model.md
 docs/implementation/phase-2-module-api.md
 docs/implementation/implementation-phases.md
+docs/implementation/phase-2g-design.md
+docs/implementation/phase-2h-design.md
 ```
 
 Optional after 2A:
@@ -945,6 +1104,10 @@ Cells can grow from accounted resources/materials
 Cells can divide with deterministic partitioning
 Cells can die and decompose through explicit rules
 Cells can interact locally through contact/material primitives
+Resources, Materials, Fragments and reactions have typed local accounting
+Cell Material becomes MaterialFragment before any explicit conversion to Resource
+Heat, Boundary damage and repair have material-based baseline behavior
+Cells can form, maintain and lose persistent local Joints without organism-level control
 small population scenarios are replayable
 first meaningful read-only viewer can show the result
 Phase 1 scenarios still pass
@@ -964,7 +1127,10 @@ Do we include contractile/reflexive displacement in 2C, or defer active movement
 Which Phase 2E Material properties become numeric strength modifiers vs binary gates?
 Which root `config/` subdirectories should be treated as canonical for material profiles, scenarios and analyzer presets?
 Should Phase 2F include a minimal adhesion primitive, or only contact exchange/stimulus?
-Do full Joints belong in late Phase 2F or early Phase 3/4 after Genome?
+Which two initial ResourceTypes and MaterialTypes best expose distinct chemistry behavior without adding a large reaction network?
+Which reaction accounting imbalance is a fatal config error versus a validation warning for an explicit sink?
+Which local heat representation is sufficient for 2G: per-Cell plus grid patch, or per-Cell with ambient sink only?
+Which Joint repair path is essential for 2H versus deferred until Genome-guided repair in Phase 3?
 Do we create the first viewer immediately after 2A, or run 2B first and then viewer?
 ```
 

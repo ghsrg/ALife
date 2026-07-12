@@ -234,7 +234,7 @@ Genome Runtime must not become an every-Cell every-Tick obligation unless profil
 
 # Joints
 
-Phase 4 must use a separate `JointStore`:
+Phase 2H must use a separate `JointStore`:
 
 ```text
 endpoint_a
@@ -289,13 +289,15 @@ batched due-cell execution
 deterministic Genome output commit
 ```
 
-Phase 4 must add:
+Phase 2H must add:
 
 ```text
 SoA JointStore
 explicit endpoint resolution
 explicit joint conflict strategy
 ```
+
+Phase 4 must add the shared Observer projections and metrics for Core, live consumers and `sweep_analyzer`; it must not recreate `JointStore` or duplicate Joint physics.
 
 Scale-up phase must add only after measurement:
 
