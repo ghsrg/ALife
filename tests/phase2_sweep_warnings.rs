@@ -546,3 +546,62 @@ fn test_scenario_local_interaction_viability_flags_no_contact() {
     let warnings = detect_warnings(&[a, b], "local_interaction_viability");
     assert!(warnings.contains(&"LOCAL_INTERACTION_NOT_ACTIVATED".to_string()));
 }
+
+#[test]
+fn test_phase2i_diffusion_variation_is_informative_without_energy_variation() {
+    let mut a = mock_result(false, 20.0, 0);
+    a.resource_diffused_amount = 0.0;
+    let mut b = mock_result(false, 20.0, 0);
+    b.resource_diffused_amount = 2.0;
+
+    let warnings = detect_warnings(&[a, b], "resource_type_decay_diffusion");
+
+    assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
+}
+
+#[test]
+fn test_phase2i_repair_variation_is_informative_without_energy_variation() {
+    let mut a = mock_result(false, 20.0, 0);
+    a.repair_success_count = 0;
+    let mut b = mock_result(false, 20.0, 0);
+    b.repair_success_count = 3;
+
+    let warnings = detect_warnings(&[a, b], "repair_viability");
+
+    assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
+}
+
+#[test]
+fn test_phase2i_heat_and_degradation_variation_is_informative_without_energy_variation() {
+    let mut cool = mock_result(false, 20.0, 0);
+    cool.heat_peak_temperature = 25.0;
+    cool.material_degradation_amount = 0.0;
+    let mut hot = mock_result(false, 20.0, 0);
+    hot.heat_peak_temperature = 32.0;
+    hot.material_degradation_amount = 1.5;
+
+    let warnings = detect_warnings(&[cool, hot], "local_heat_degradation");
+
+    assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
+}
+
+#[test]
+fn test_phase2i_joint_variation_is_informative_without_energy_variation() {
+    let mut closed = mock_result(false, 20.0, 0);
+    closed.joint_resource_transfer_amount = 0.0;
+    closed.joint_signal_readable_total = 0.0;
+    closed.joint_broken_count = 0;
+    let mut open = mock_result(false, 20.0, 0);
+    open.joint_resource_transfer_amount = 2.0;
+    open.joint_signal_readable_total = 0.75;
+    open.joint_broken_count = 1;
+
+    for scenario in [
+        "joint_resource_channel",
+        "joint_signal_delay",
+        "joint_degradation_break",
+    ] {
+        let warnings = detect_warnings(&[closed.clone(), open.clone()], scenario);
+        assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
+    }
+}

@@ -2513,6 +2513,11 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
         }
     }
 
+    if push_low_info && scenario_has_informative_mechanism_variation(results, &scenario_lower) {
+        push_low_info = false;
+        warnings.retain(|w| w != "LOW_INFORMATION_SWEEP");
+    }
+
     if push_low_info && !warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()) {
         warnings.push("LOW_INFORMATION_SWEEP".to_string());
     }
@@ -2538,6 +2543,51 @@ pub fn detect_warnings(results: &[SimResult], scenario_id: &str) -> Vec<String> 
 // ─────────────────────────────────────────────────────────────────────────────
 // Aggregate stats over a slice of SimResults
 // ─────────────────────────────────────────────────────────────────────────────
+
+fn scenario_has_informative_mechanism_variation(
+    results: &[SimResult],
+    scenario_lower: &str,
+) -> bool {
+    match scenario_lower {
+        "resource_type_decay_diffusion" => {
+            varies_by(results, 0.001, |r| r.resource_diffused_amount)
+                || varies_by(results, 0.001, |r| r.resource_decay_amount)
+        }
+        "repair_viability" => {
+            varies_by(results, 0.0, |r| r.repair_success_count as f32)
+                || varies_by(results, 0.0, |r| r.repair_rejection_count as f32)
+        }
+        "local_heat_degradation" => {
+            varies_by(results, 0.001, |r| r.heat_peak_temperature)
+                || varies_by(results, 0.001, |r| r.material_degradation_amount)
+                || varies_by(results, 0.001, |r| r.reaction_heat_generated)
+        }
+        "joint_resource_channel" => varies_by(results, 0.001, |r| r.joint_resource_transfer_amount),
+        "joint_signal_delay" => {
+            varies_by(results, 0.001, |r| r.joint_signal_generated_total)
+                || varies_by(results, 0.001, |r| r.joint_signal_readable_total)
+        }
+        "joint_degradation_break" => {
+            varies_by(results, 0.001, |r| r.joint_degradation_amount)
+                || varies_by(results, 0.0, |r| r.joint_broken_count as f32)
+        }
+        "joint_heat_channel" => varies_by(results, 0.001, |r| r.joint_heat_transfer_amount),
+        _ => false,
+    }
+}
+
+fn varies_by(results: &[SimResult], min_delta: f32, value: impl Fn(&SimResult) -> f32) -> bool {
+    if results.is_empty() {
+        return false;
+    }
+    let (min, max) = results
+        .iter()
+        .map(value)
+        .fold((f32::MAX, f32::MIN), |(min, max), value| {
+            (min.min(value), max.max(value))
+        });
+    min.is_finite() && max.is_finite() && (max - min).abs() > min_delta
+}
 
 fn varies_meaningfully(values: &[f32], min_delta: f32) -> bool {
     if values.is_empty() {
