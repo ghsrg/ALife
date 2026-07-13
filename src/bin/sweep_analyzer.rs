@@ -2,9 +2,12 @@
 
 use alife::core::cell_store::{CellIndex, LifecycleState};
 use alife::core::config::{
-    CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
+    CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryHeatConfig,
+    ChemistryMaterialConfig, ChemistryReactionConfig, ChemistryRepairConfig,
+    ChemistryResourceConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
     ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
+use alife::core::ids::ResourceTypeId;
 use alife::core::summary::SurvivalResult;
 use alife::core::tick::TickExecutor;
 use alife::core::units::{
@@ -20,7 +23,7 @@ use alife::observer::{
         BehaviorClassifierConfig, CellRoleClassifierConfig, load_behavior_profile_classifier,
         load_cell_role_classifier,
     },
-    projection::{EntityType, extract_features},
+    projection::{EntityType, extract_features, metrics_summary_features},
 };
 use std::collections::HashMap;
 use std::io::Write;
@@ -159,6 +162,8 @@ pub struct RawScenarioPreset {
     pub source_cell_resources: Option<f32>,
     pub target_cell_resources: Option<f32>,
     pub enable_local_interaction: Option<bool>,
+    pub phase2g_enabled: Option<bool>,
+    pub phase2g_mode: Option<String>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -243,6 +248,23 @@ pub struct SimResult {
     pub contact_exchange_rejections_no_capability: u32,
     pub contact_stimulus_generated_total: f32,
     pub contact_stimulus_readable_total: f32,
+    pub reaction_matched_count: u32,
+    pub reaction_executed_count: u32,
+    pub reaction_rejected_count: u32,
+    pub reaction_input_amount: f32,
+    pub reaction_output_amount: f32,
+    pub reaction_heat_generated: f32,
+    pub reaction_energy_output: f32,
+    pub reaction_accounting_error: f32,
+    pub resource_diffused_amount: f32,
+    pub resource_decay_amount: f32,
+    pub fragment_created_amount: f32,
+    pub fragment_converted_amount: f32,
+    pub heat_peak_temperature: f32,
+    pub material_degradation_amount: f32,
+    pub boundary_leakage_amount: f32,
+    pub repair_success_count: u32,
+    pub repair_rejection_count: u32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -607,12 +629,234 @@ pub fn build_config(
         rt.local_interaction.stimulus_decay_per_tick = 0.0;
     }
 
+    if preset.and_then(|p| p.phase2g_enabled).unwrap_or(false) {
+        configure_phase2g_runtime(
+            &mut rt,
+            preset
+                .and_then(|p| p.phase2g_mode.as_deref())
+                .unwrap_or("baseline"),
+            overrides,
+        );
+    }
+
     rt
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Run simulation for `ticks` steps, collect metrics
 // ─────────────────────────────────────────────────────────────────────────────
+
+fn configure_phase2g_runtime(
+    rt: &mut RuntimeConfig,
+    mode: &str,
+    overrides: &std::collections::HashMap<&str, f32>,
+) {
+    let nutrient_decay = overrides
+        .get("nutrient_decay_rate")
+        .copied()
+        .unwrap_or(0.01)
+        .clamp(0.0, 1.0);
+    let material_decay = overrides
+        .get("material_decay_rate")
+        .copied()
+        .unwrap_or(0.02)
+        .clamp(0.0, 1.0);
+    let default_passive_rate = match mode {
+        "passive_reaction_viability" => 0.25,
+        _ => 0.0,
+    };
+    let default_controlled_rate = match mode {
+        "controlled_reaction_feasibility" | "local_heat_degradation" | "repair_viability" => 0.25,
+        _ => 0.0,
+    };
+    let passive_rate = overrides
+        .get("passive_reaction_rate")
+        .copied()
+        .unwrap_or(default_passive_rate)
+        .max(0.0);
+    let controlled_rate = overrides
+        .get("controlled_reaction_rate")
+        .copied()
+        .unwrap_or(default_controlled_rate)
+        .max(0.0);
+    let heat_output = overrides
+        .get("reaction_heat_output")
+        .copied()
+        .unwrap_or(0.5)
+        .max(0.0);
+    let repair_per_tick = overrides
+        .get("repair_amount_per_tick")
+        .copied()
+        .unwrap_or(0.5)
+        .max(0.0);
+
+    rt.resources = ResourceConfig::new(
+        vec![
+            ResourceAmount::new(20.0).unwrap(),
+            ResourceAmount::new(0.0).unwrap(),
+        ],
+        if mode == "resource_type_decay_diffusion" {
+            nutrient_decay
+        } else {
+            0.0
+        },
+    )
+    .unwrap();
+    rt.resource_interaction.enabled = false;
+
+    rt.chemistry = ChemistryConfig {
+        resources: vec![
+            ChemistryResourceConfig {
+                id: "nutrient_A".to_string(),
+                volume: 1.0,
+                diffusion_rate: 0.2,
+                energy_value: 2.0,
+                decay_rate: nutrient_decay,
+                reactivity_profile: "reactive".to_string(),
+                permeability: "passive".to_string(),
+                tags: vec!["energy_source".to_string(), "dissolved".to_string()],
+            },
+            ChemistryResourceConfig {
+                id: "waste_A".to_string(),
+                volume: 1.0,
+                diffusion_rate: 0.05,
+                energy_value: 0.0,
+                decay_rate: 0.05,
+                reactivity_profile: "stable".to_string(),
+                permeability: "blocked".to_string(),
+                tags: vec!["waste".to_string()],
+            },
+        ],
+        materials: vec![
+            ChemistryMaterialConfig {
+                id: "boundary_polymer_A".to_string(),
+                volume: 1.0,
+                stability: 0.9,
+                strength: 0.8,
+                permeability: 0.1,
+                energy_capacity: 0.0,
+                decay_rate: material_decay,
+                repair_resource: "nutrient_A".to_string(),
+                repair_amount: 0.25,
+            },
+            ChemistryMaterialConfig {
+                id: "structural_polymer_A".to_string(),
+                volume: 1.0,
+                stability: 0.5,
+                strength: 0.6,
+                permeability: 0.0,
+                energy_capacity: 0.0,
+                decay_rate: (material_decay * 2.0).clamp(0.0, 1.0),
+                repair_resource: "nutrient_A".to_string(),
+                repair_amount: 0.5,
+            },
+        ],
+        reactions: vec![
+            ChemistryReactionConfig {
+                id: "passive_decay".to_string(),
+                mode: "passive".to_string(),
+                process_id: None,
+                inputs: vec![("nutrient_A".to_string(), 1.0)],
+                required_materials: Vec::new(),
+                outputs: vec![("waste_A".to_string(), 1.0)],
+                configured_sink_amount: 0.0,
+                energy_output: 0.0,
+                heat_output: if mode == "local_heat_degradation" {
+                    heat_output
+                } else {
+                    0.05
+                },
+                rate: passive_rate,
+                probability: 1.0,
+                accounting_destination: "waste_A".to_string(),
+            },
+            ChemistryReactionConfig {
+                id: "controlled_conversion".to_string(),
+                mode: "controlled".to_string(),
+                process_id: Some("energy_conversion".to_string()),
+                inputs: vec![("nutrient_A".to_string(), 1.0)],
+                required_materials: vec![("boundary_polymer_A".to_string(), 0.2)],
+                outputs: vec![("waste_A".to_string(), 0.5)],
+                configured_sink_amount: 0.5,
+                energy_output: 0.8,
+                heat_output,
+                rate: controlled_rate,
+                probability: 1.0,
+                accounting_destination: "waste_A".to_string(),
+            },
+        ],
+        heat: ChemistryHeatConfig {
+            capacity: 1.0,
+            dissipation_rate: 0.2,
+            warning_threshold: 25.2,
+            death_threshold: 40.0,
+        },
+        boundary: ChemistryBoundaryConfig {
+            default_permeability: "blocked".to_string(),
+            retention_rate: 0.9,
+        },
+        repair: ChemistryRepairConfig {
+            enabled: mode == "repair_viability",
+            energy_cost: 0.1,
+            max_amount_per_tick: repair_per_tick,
+        },
+    };
+
+    for (index, cell) in rt.initial_cells.iter_mut().enumerate() {
+        if mode == "fragment_decomposition_conversion" {
+            cell.initial_energy = EnergyAmount::new(1.0).unwrap();
+            cell.mandatory_cost_per_tick = EnergyAmount::new(5.0).unwrap();
+        } else {
+            cell.initial_energy = EnergyAmount::new(20.0).unwrap();
+            cell.mandatory_cost_per_tick = EnergyAmount::zero();
+        }
+        cell.initial_metabolic_material = MaterialAmount::new(1.0).unwrap();
+        cell.initial_transport_material = MaterialAmount::new(1.0).unwrap();
+        cell.initial_boundary_material = MaterialAmount::new(1.0).unwrap();
+        cell.initial_structural_material = MaterialAmount::new(1.0).unwrap();
+        cell.initial_resource_amount = ResourceAmount::new(match (mode, index) {
+            ("repair_viability", _) => 20.0,
+            ("boundary_retention_leakage", 0) => 10.0,
+            ("boundary_retention_leakage", _) => 0.0,
+            _ => 0.0,
+        })
+        .unwrap();
+        cell.initial_repair_material = MaterialAmount::new(if mode == "repair_viability" {
+            20.0
+        } else {
+            0.0
+        })
+        .unwrap();
+    }
+    if let Some(first) = rt.initial_cells.first().copied() {
+        rt.cell = first;
+    }
+
+    rt.initial_typed_resources = (0..rt.initial_cells.len())
+        .map(|_| {
+            vec![(
+                ResourceTypeId::from_raw(0),
+                ResourceAmount::new(5.0).unwrap(),
+            )]
+        })
+        .collect();
+
+    if mode == "boundary_retention_leakage" {
+        rt.initial_typed_resources = (0..rt.initial_cells.len()).map(|_| Vec::new()).collect();
+        rt.chemistry.reactions.clear();
+    }
+
+    if mode == "fragment_decomposition_conversion" {
+        rt.decomposition.enabled = true;
+        rt.decomposition.resource_layer_index = 0;
+        rt.decomposition.resources_per_tick = ResourceAmount::new(0.0).unwrap();
+        rt.decomposition.materials_per_tick = overrides
+            .get("decomposition_materials_per_tick")
+            .copied()
+            .map(|value| MaterialAmount::new(value.max(0.0)).unwrap())
+            .unwrap_or_else(|| MaterialAmount::new(0.5).unwrap());
+    }
+}
 
 use std::sync::OnceLock;
 
@@ -736,6 +980,23 @@ fn run_simulation(
                 contact_exchange_rejections_no_capability: 0,
                 contact_stimulus_generated_total: 0.0,
                 contact_stimulus_readable_total: 0.0,
+                reaction_matched_count: 0,
+                reaction_executed_count: 0,
+                reaction_rejected_count: 0,
+                reaction_input_amount: 0.0,
+                reaction_output_amount: 0.0,
+                reaction_heat_generated: 0.0,
+                reaction_energy_output: 0.0,
+                reaction_accounting_error: 0.0,
+                resource_diffused_amount: 0.0,
+                resource_decay_amount: 0.0,
+                fragment_created_amount: 0.0,
+                fragment_converted_amount: 0.0,
+                heat_peak_temperature: 0.0,
+                material_degradation_amount: 0.0,
+                boundary_leakage_amount: 0.0,
+                repair_success_count: 0,
+                repair_rejection_count: 0,
             };
         }
     };
@@ -827,6 +1088,23 @@ fn run_simulation(
     let mut contact_exchange_rejections_no_capability_cumulative = 0_u32;
     let mut contact_stimulus_generated_total_cumulative = 0.0_f32;
     let mut contact_stimulus_readable_total_max = 0.0_f32;
+    let mut reaction_matched_count_cumulative = 0_u32;
+    let mut reaction_executed_count_cumulative = 0_u32;
+    let mut reaction_rejected_count_cumulative = 0_u32;
+    let mut reaction_input_amount_cumulative = 0.0_f32;
+    let mut reaction_output_amount_cumulative = 0.0_f32;
+    let mut reaction_heat_generated_cumulative = 0.0_f32;
+    let mut reaction_energy_output_cumulative = 0.0_f32;
+    let mut reaction_accounting_error_cumulative = 0.0_f32;
+    let mut resource_diffused_amount_cumulative = 0.0_f32;
+    let mut resource_decay_amount_cumulative = 0.0_f32;
+    let mut fragment_created_amount_cumulative = 0.0_f32;
+    let mut fragment_converted_amount_cumulative = 0.0_f32;
+    let mut heat_peak_temperature_max = 0.0_f32;
+    let mut material_degradation_amount_cumulative = 0.0_f32;
+    let mut boundary_leakage_amount_cumulative = 0.0_f32;
+    let mut repair_success_count_cumulative = 0_u32;
+    let mut repair_rejection_count_cumulative = 0_u32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -918,6 +1196,77 @@ fn run_simulation(
             summary.metrics.contact_stimulus_generated_total;
         contact_stimulus_readable_total_max = contact_stimulus_readable_total_max
             .max(summary.metrics.contact_stimulus_readable_total);
+        let phase2g_features = metrics_summary_features(&summary.metrics);
+        reaction_matched_count_cumulative += phase2g_features
+            .get("reaction_matched_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
+        reaction_executed_count_cumulative += phase2g_features
+            .get("reaction_executed_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
+        reaction_rejected_count_cumulative += phase2g_features
+            .get("reaction_rejected_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
+        reaction_input_amount_cumulative += phase2g_features
+            .get("reaction_input_amount")
+            .copied()
+            .unwrap_or(0.0);
+        reaction_output_amount_cumulative += phase2g_features
+            .get("reaction_output_amount")
+            .copied()
+            .unwrap_or(0.0);
+        reaction_heat_generated_cumulative += phase2g_features
+            .get("reaction_heat_generated")
+            .copied()
+            .unwrap_or(0.0);
+        reaction_energy_output_cumulative += phase2g_features
+            .get("reaction_energy_output")
+            .copied()
+            .unwrap_or(0.0);
+        reaction_accounting_error_cumulative += phase2g_features
+            .get("reaction_accounting_error")
+            .copied()
+            .unwrap_or(0.0);
+        resource_diffused_amount_cumulative += phase2g_features
+            .get("resource_diffused_amount")
+            .copied()
+            .unwrap_or(0.0);
+        resource_decay_amount_cumulative += phase2g_features
+            .get("resource_decay_amount")
+            .copied()
+            .unwrap_or(0.0);
+        fragment_created_amount_cumulative += phase2g_features
+            .get("fragment_created_amount")
+            .copied()
+            .unwrap_or(0.0);
+        fragment_converted_amount_cumulative += phase2g_features
+            .get("fragment_converted_amount")
+            .copied()
+            .unwrap_or(0.0);
+        heat_peak_temperature_max = heat_peak_temperature_max.max(
+            phase2g_features
+                .get("heat_peak_temperature")
+                .copied()
+                .unwrap_or(0.0),
+        );
+        material_degradation_amount_cumulative += phase2g_features
+            .get("material_degradation_amount")
+            .copied()
+            .unwrap_or(0.0);
+        boundary_leakage_amount_cumulative += phase2g_features
+            .get("boundary_leakage_amount")
+            .copied()
+            .unwrap_or(0.0);
+        repair_success_count_cumulative += phase2g_features
+            .get("repair_success_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
+        repair_rejection_count_cumulative += phase2g_features
+            .get("repair_rejection_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
 
         let mut loop_break = false;
         if summary.survival_result == SurvivalResult::Collapse {
@@ -1703,6 +2052,23 @@ fn run_simulation(
             contact_exchange_rejections_no_capability_cumulative,
         contact_stimulus_generated_total: contact_stimulus_generated_total_cumulative,
         contact_stimulus_readable_total: contact_stimulus_readable_total_max,
+        reaction_matched_count: reaction_matched_count_cumulative,
+        reaction_executed_count: reaction_executed_count_cumulative,
+        reaction_rejected_count: reaction_rejected_count_cumulative,
+        reaction_input_amount: reaction_input_amount_cumulative,
+        reaction_output_amount: reaction_output_amount_cumulative,
+        reaction_heat_generated: reaction_heat_generated_cumulative,
+        reaction_energy_output: reaction_energy_output_cumulative,
+        reaction_accounting_error: reaction_accounting_error_cumulative,
+        resource_diffused_amount: resource_diffused_amount_cumulative,
+        resource_decay_amount: resource_decay_amount_cumulative,
+        fragment_created_amount: fragment_created_amount_cumulative,
+        fragment_converted_amount: fragment_converted_amount_cumulative,
+        heat_peak_temperature: heat_peak_temperature_max,
+        material_degradation_amount: material_degradation_amount_cumulative,
+        boundary_leakage_amount: boundary_leakage_amount_cumulative,
+        repair_success_count: repair_success_count_cumulative,
+        repair_rejection_count: repair_rejection_count_cumulative,
     }
 }
 
@@ -2032,7 +2398,8 @@ pub fn run_sweep(
          explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
-         contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total"
+         contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
+         reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count"
     )
     .unwrap();
 
@@ -2148,7 +2515,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2228,7 +2595,24 @@ pub fn run_sweep(
             res.contact_exchange_pairs_count,
             res.contact_exchange_rejections_no_capability,
             res.contact_stimulus_generated_total,
-            res.contact_stimulus_readable_total
+            res.contact_stimulus_readable_total,
+            res.reaction_matched_count,
+            res.reaction_executed_count,
+            res.reaction_rejected_count,
+            res.reaction_input_amount,
+            res.reaction_output_amount,
+            res.reaction_heat_generated,
+            res.reaction_energy_output,
+            res.reaction_accounting_error,
+            res.resource_diffused_amount,
+            res.resource_decay_amount,
+            res.fragment_created_amount,
+            res.fragment_converted_amount,
+            res.heat_peak_temperature,
+            res.material_degradation_amount,
+            res.boundary_leakage_amount,
+            res.repair_success_count,
+            res.repair_rejection_count
         )
         .unwrap();
 
@@ -2311,7 +2695,8 @@ pub fn run_matrix(
          explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
-         contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total"
+         contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
+         reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count"
     )
     .unwrap();
 
@@ -2434,7 +2819,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2516,7 +2901,24 @@ pub fn run_matrix(
             res.contact_exchange_pairs_count,
             res.contact_exchange_rejections_no_capability,
             res.contact_stimulus_generated_total,
-            res.contact_stimulus_readable_total
+            res.contact_stimulus_readable_total,
+            res.reaction_matched_count,
+            res.reaction_executed_count,
+            res.reaction_rejected_count,
+            res.reaction_input_amount,
+            res.reaction_output_amount,
+            res.reaction_heat_generated,
+            res.reaction_energy_output,
+            res.reaction_accounting_error,
+            res.resource_diffused_amount,
+            res.resource_decay_amount,
+            res.fragment_created_amount,
+            res.fragment_converted_amount,
+            res.heat_peak_temperature,
+            res.material_degradation_amount,
+            res.boundary_leakage_amount,
+            res.repair_success_count,
+            res.repair_rejection_count
         )
         .unwrap();
     }
@@ -3036,6 +3438,14 @@ fn main() {
         "division_viability",
         "decomposition_viability",
         "local_interaction_viability",
+        "resource_type_decay_diffusion",
+        "material_type_degradation",
+        "passive_reaction_viability",
+        "controlled_reaction_feasibility",
+        "fragment_decomposition_conversion",
+        "local_heat_degradation",
+        "boundary_retention_leakage",
+        "repair_viability",
     ];
 
     if let Some(sweeps) = &cfg.sweep {

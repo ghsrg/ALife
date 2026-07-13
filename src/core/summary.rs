@@ -53,6 +53,22 @@ pub struct MetricsSummary {
     pub decomposed_cells_count: u32,
     pub sensory_input_accumulated: f32,
     pub repair_placeholder_available: bool,
+    pub reaction_matched_count: u32,
+    pub reaction_executed_count: u32,
+    pub reaction_rejected_count: u32,
+    pub reaction_input_amount: f32,
+    pub reaction_output_amount: f32,
+    pub reaction_heat_generated: f32,
+    pub reaction_energy_output: f32,
+    pub reaction_accounting_error: f32,
+    pub resource_diffused_amount: f32,
+    pub resource_decay_amount: f32,
+    pub fragment_created_amount: f32,
+    pub fragment_converted_amount: f32,
+    pub material_degradation_amount: f32,
+    pub boundary_leakage_amount: f32,
+    pub repair_success_count: u32,
+    pub repair_rejection_count: u32,
 }
 
 use crate::core::process::{ProcessId, RejectionReason};

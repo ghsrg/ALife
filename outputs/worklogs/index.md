@@ -57,6 +57,7 @@ tags:
 - [[outputs/worklogs/2026-07-09-0026-PLAN-sweep-observer-review|2026-07-09-0026-PLAN-sweep-observer-review]]
 - [[outputs/worklogs/2026-07-09-1950-PLAN-phase-2E-material-profile-coverage|2026-07-09-1950-PLAN-phase-2E-material-profile-coverage]]
 - [[outputs/worklogs/2026-07-11-1042-PLAN-phase-2F-local-cell-interaction-primitives|2026-07-11-1042-PLAN-phase-2F-local-cell-interaction-primitives]]
+- [[outputs/worklogs/2026-07-11-2058-PLAN-phase-2G-chemistry-and-matter-dynamics|2026-07-11-2058-PLAN-phase-2G-chemistry-and-matter-dynamics]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
@@ -157,4 +158,5 @@ tags:
 - [[outputs/worklogs/2026-07-11-0055-REPORT-phase-2E-material-profile-coverage|2026-07-11-0055-REPORT-phase-2E-material-profile-coverage]]
 - [[outputs/worklogs/2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails|2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails]]
 - [[outputs/worklogs/2026-07-11-1159-REPORT-phase-2F-local-interactions|2026-07-11-1159-REPORT-phase-2F-local-interactions]]
+- [[outputs/worklogs/2026-07-11-2058-REPORT-phase-2G-chemistry-and-matter-dynamics|2026-07-11-2058-REPORT-phase-2G-chemistry-and-matter-dynamics]]
 

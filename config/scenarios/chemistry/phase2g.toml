@@ -1,0 +1,98 @@
+scenario_id = "phase2g"
+seed = 7
+tick_count = 10
+
+[world]
+size = [32.0, 32.0]
+[space]
+spatial_grid_size = 8.0
+[resources]
+resource_type_ids = ["nutrient_A", "waste_A"]
+initial_distribution = [10.0, 0.0]
+optional_decay_rate = 0.0
+[cell]
+initial_position = [16.0, 16.0]
+radius = 1.0
+initial_resources = { nutrient_A = 1.0 }
+initial_materials = { boundary = 1.0, structural = 1.0 }
+initial_energy = 5.0
+energy_capacity = 10.0
+mandatory_cost_per_tick = 1.0
+capacity_limit = 20.0
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.1
+heat_warning_threshold = 10.0
+heat_death_threshold = 20.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.1
+waste_warning_threshold = 10.0
+waste_death_threshold = 20.0
+[lifecycle]
+stress_energy_threshold = 1.0
+dormancy_allowed = false
+critical_capacity_overrun = 2.0
+
+[chemistry.resources.nutrient_A]
+volume = 1.0
+diffusion_rate = 0.2
+energy_value = 2.0
+decay_rate = 0.01
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["energy_source", "dissolved"]
+[chemistry.resources.waste_A]
+volume = 1.0
+diffusion_rate = 0.1
+energy_value = 0.0
+decay_rate = 0.02
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["waste"]
+[chemistry.materials.boundary_polymer_A]
+volume = 1.0
+stability = 0.8
+strength = 0.7
+permeability = 0.5
+energy_capacity = 0.0
+decay_rate = 0.01
+repair_resource = "nutrient_A"
+repair_amount = 0.25
+[chemistry.materials.structural_polymer_A]
+volume = 1.0
+stability = 0.9
+strength = 0.8
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.02
+repair_resource = "nutrient_A"
+repair_amount = 0.5
+[chemistry.reactions.passive_decay]
+mode = "passive"
+inputs = { nutrient_A = 1.0 }
+outputs = { waste_A = 1.0 }
+rate = 0.1
+probability = 1.0
+accounting_destination = "waste_A"
+[chemistry.reactions.controlled_conversion]
+mode = "controlled"
+inputs = { nutrient_A = 1.0 }
+required_materials = { boundary_polymer_A = 0.2 }
+outputs = { waste_A = 0.5 }
+rate = 0.2
+probability = 0.5
+accounting_destination = "waste_A"
+[chemistry.heat]
+capacity = 10.0
+dissipation_rate = 0.2
+warning_threshold = 8.0
+death_threshold = 10.0
+[chemistry.boundary]
+default_permeability = "blocked"
+retention_rate = 0.9
+[chemistry.repair]
+enabled = true
+energy_cost = 0.5
+max_amount_per_tick = 1.0

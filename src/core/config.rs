@@ -1,7 +1,105 @@
+use crate::core::ids::ResourceTypeId;
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
     Seed, Tick, WasteAmount, WorldSize,
 };
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryResourceConfig {
+    pub id: String,
+    pub volume: f32,
+    pub diffusion_rate: f32,
+    pub energy_value: f32,
+    pub decay_rate: f32,
+    pub reactivity_profile: String,
+    pub permeability: String,
+    pub tags: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryMaterialConfig {
+    pub id: String,
+    pub volume: f32,
+    pub stability: f32,
+    pub strength: f32,
+    pub permeability: f32,
+    pub energy_capacity: f32,
+    pub decay_rate: f32,
+    pub repair_resource: String,
+    pub repair_amount: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryReactionConfig {
+    pub id: String,
+    pub mode: String,
+    pub process_id: Option<String>,
+    pub inputs: Vec<(String, f32)>,
+    pub required_materials: Vec<(String, f32)>,
+    pub outputs: Vec<(String, f32)>,
+    pub configured_sink_amount: f32,
+    pub energy_output: f32,
+    pub heat_output: f32,
+    pub rate: f32,
+    pub probability: f32,
+    pub accounting_destination: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ChemistryHeatConfig {
+    pub capacity: f32,
+    pub dissipation_rate: f32,
+    pub warning_threshold: f32,
+    pub death_threshold: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryBoundaryConfig {
+    pub default_permeability: String,
+    pub retention_rate: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ChemistryRepairConfig {
+    pub enabled: bool,
+    pub energy_cost: f32,
+    pub max_amount_per_tick: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryConfig {
+    pub resources: Vec<ChemistryResourceConfig>,
+    pub materials: Vec<ChemistryMaterialConfig>,
+    pub reactions: Vec<ChemistryReactionConfig>,
+    pub heat: ChemistryHeatConfig,
+    pub boundary: ChemistryBoundaryConfig,
+    pub repair: ChemistryRepairConfig,
+}
+
+impl Default for ChemistryConfig {
+    fn default() -> Self {
+        Self {
+            resources: Vec::new(),
+            materials: Vec::new(),
+            reactions: Vec::new(),
+            heat: ChemistryHeatConfig {
+                capacity: 0.0,
+                dissipation_rate: 0.0,
+                warning_threshold: 0.0,
+                death_threshold: 0.0,
+            },
+            boundary: ChemistryBoundaryConfig {
+                default_permeability: "blocked".to_string(),
+                retention_rate: 1.0,
+            },
+            repair: ChemistryRepairConfig {
+                enabled: false,
+                energy_cost: 0.0,
+                max_amount_per_tick: 0.0,
+            },
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WorldConfig {
@@ -289,12 +387,14 @@ pub struct RuntimeConfig {
     pub growth: GrowthConfig,
     pub growth_enabled: bool,
     pub initial_cells: Vec<CellInitialConfig>,
+    pub initial_typed_resources: Vec<Vec<(ResourceTypeId, ResourceAmount)>>,
     pub synthesis: SynthesisConfig,
     pub contractility: ContractilityConfig,
     pub division: DivisionConfig,
     pub decomposition: DecompositionConfig,
     pub material_effects: MaterialEffectConfig,
     pub local_interaction: LocalInteractionConfig,
+    pub chemistry: ChemistryConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -351,12 +451,14 @@ impl RuntimeConfig {
             growth: GrowthConfig::default(),
             growth_enabled: false,
             initial_cells,
+            initial_typed_resources: vec![Vec::new()],
             synthesis: SynthesisConfig::default(),
             contractility: ContractilityConfig::default(),
             division: DivisionConfig::default(),
             decomposition: DecompositionConfig::default(),
             material_effects: MaterialEffectConfig::default(),
             local_interaction: LocalInteractionConfig::default(),
+            chemistry: ChemistryConfig::default(),
         })
     }
 
@@ -500,6 +602,85 @@ impl RuntimeConfig {
         hash ^= self.resources.optional_decay_rate.to_bits() as u64;
         hash = hash.wrapping_mul(0x100000001b3);
 
+        fn add(hash: &mut u64, value: u64) {
+            *hash ^= value;
+            *hash = hash.wrapping_mul(0x100000001b3);
+        }
+        fn add_text(hash: &mut u64, value: &str) {
+            for byte in value.as_bytes() {
+                add(hash, *byte as u64);
+            }
+            add(hash, 0);
+        }
+        for resource in &self.chemistry.resources {
+            add_text(&mut hash, &resource.id);
+            for value in [
+                resource.volume,
+                resource.diffusion_rate,
+                resource.energy_value,
+                resource.decay_rate,
+            ] {
+                add(&mut hash, value.to_bits() as u64);
+            }
+            add_text(&mut hash, &resource.reactivity_profile);
+            add_text(&mut hash, &resource.permeability);
+            for tag in &resource.tags {
+                add_text(&mut hash, tag);
+            }
+        }
+        for material in &self.chemistry.materials {
+            add_text(&mut hash, &material.id);
+            for value in [
+                material.volume,
+                material.stability,
+                material.strength,
+                material.permeability,
+                material.energy_capacity,
+                material.decay_rate,
+                material.repair_amount,
+            ] {
+                add(&mut hash, value.to_bits() as u64);
+            }
+            add_text(&mut hash, &material.repair_resource);
+        }
+        for reaction in &self.chemistry.reactions {
+            add_text(&mut hash, &reaction.id);
+            add_text(&mut hash, &reaction.mode);
+            add_text(&mut hash, reaction.process_id.as_deref().unwrap_or(""));
+            for (id, amount) in reaction
+                .inputs
+                .iter()
+                .chain(&reaction.required_materials)
+                .chain(&reaction.outputs)
+            {
+                add_text(&mut hash, id);
+                add(&mut hash, amount.to_bits() as u64);
+            }
+            for value in [
+                reaction.configured_sink_amount,
+                reaction.energy_output,
+                reaction.heat_output,
+                reaction.rate,
+                reaction.probability,
+            ] {
+                add(&mut hash, value.to_bits() as u64);
+            }
+            add_text(&mut hash, &reaction.accounting_destination);
+        }
+        for value in [
+            self.chemistry.heat.capacity,
+            self.chemistry.heat.dissipation_rate,
+            self.chemistry.heat.warning_threshold,
+            self.chemistry.heat.death_threshold,
+            self.chemistry.boundary.retention_rate,
+            self.chemistry.repair.energy_cost,
+            self.chemistry.repair.max_amount_per_tick,
+        ] {
+            add(&mut hash, value.to_bits() as u64);
+        }
+        add_text(&mut hash, &self.chemistry.boundary.default_permeability);
+        add(&mut hash, self.chemistry.repair.enabled as u64);
+
         for value in [
             self.resource_interaction.enabled as u64,
             self.resource_interaction.uptake_layer_index as u64,
@@ -541,6 +722,12 @@ impl RuntimeConfig {
             ] {
                 hash ^= value;
                 hash = hash.wrapping_mul(0x100000001b3);
+            }
+        }
+        for inventory in &self.initial_typed_resources {
+            for (id, amount) in inventory {
+                add(&mut hash, id.raw() as u64);
+                add(&mut hash, amount.raw().to_bits() as u64);
             }
         }
 

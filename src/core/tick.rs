@@ -2,12 +2,15 @@ use crate::core::cell_store::{CellIndex, EnergyBuffer, LifecycleState, RuntimeFl
 use crate::core::config::RuntimeConfig;
 use crate::core::deltas::CommitSummary;
 use crate::core::events::EventKind;
+use crate::core::materials::MaterialSlot;
 use crate::core::process::{ActionCandidate, FeasibilityResult, ProcessId};
 use crate::core::resources::ResourceLayerIndex;
 use crate::core::summary::{
     CollapseReason, MetricsSummary, ProcessDiagnostics, RunSummary, SurvivalResult,
 };
-use crate::core::units::{EnergyAmount, HeatAmount, Position, ResourceAmount, WasteAmount};
+use crate::core::units::{
+    EnergyAmount, HeatAmount, MaterialAmount, Position, ResourceAmount, WasteAmount,
+};
 use crate::core::world::{WorldInitError, WorldState};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -23,6 +26,43 @@ impl From<WorldInitError> for TickError {
 
 pub struct TickExecutor {
     world: WorldState,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct Phase2GMetricsDelta {
+    reaction_matched_count: u32,
+    reaction_executed_count: u32,
+    reaction_rejected_count: u32,
+    reaction_input_amount: f32,
+    reaction_output_amount: f32,
+    reaction_heat_generated: f32,
+    reaction_energy_output: f32,
+    reaction_accounting_error: f32,
+    resource_diffused_amount: f32,
+    resource_decay_amount: f32,
+    fragment_created_amount: f32,
+    fragment_converted_amount: f32,
+    material_degradation_amount: f32,
+    boundary_leakage_amount: f32,
+}
+
+impl Phase2GMetricsDelta {
+    fn add(&mut self, other: Self) {
+        self.reaction_matched_count += other.reaction_matched_count;
+        self.reaction_executed_count += other.reaction_executed_count;
+        self.reaction_rejected_count += other.reaction_rejected_count;
+        self.reaction_input_amount += other.reaction_input_amount;
+        self.reaction_output_amount += other.reaction_output_amount;
+        self.reaction_heat_generated += other.reaction_heat_generated;
+        self.reaction_energy_output += other.reaction_energy_output;
+        self.reaction_accounting_error += other.reaction_accounting_error;
+        self.resource_diffused_amount += other.resource_diffused_amount;
+        self.resource_decay_amount += other.resource_decay_amount;
+        self.fragment_created_amount += other.fragment_created_amount;
+        self.fragment_converted_amount += other.fragment_converted_amount;
+        self.material_degradation_amount += other.material_degradation_amount;
+        self.boundary_leakage_amount += other.boundary_leakage_amount;
+    }
 }
 
 impl TickExecutor {
@@ -47,6 +87,12 @@ impl TickExecutor {
         // Rebuild Spatial Index at the start of tick
         self.world.rebuild_spatial_index();
         self.world.rebuild_contact_cache();
+
+        let mut phase2g_metrics = self.commit_passive_chemistry_reactions(&config);
+        phase2g_metrics.add(self.commit_controlled_chemistry_reactions(&config));
+        phase2g_metrics.material_degradation_amount +=
+            self.commit_local_heat_material_degradation(&config);
+        phase2g_metrics.material_degradation_amount += self.commit_material_type_decay(&config);
 
         let contact_pairs_count = self.world.contact_cache().pairs().len() as u32;
         let contact_pressure_pre_total = self.world.contact_cache().total_overlap();
@@ -114,6 +160,7 @@ impl TickExecutor {
                 if moved.raw() > 0.0 {
                     contact_exchange_amount += moved.raw();
                     contact_exchange_pairs_count += 1;
+                    phase2g_metrics.boundary_leakage_amount += moved.raw();
                 }
             }
         }
@@ -147,6 +194,8 @@ impl TickExecutor {
         let mut metabolism_waste_total = 0.0_f32;
         let mut process_attempts = 0_u32;
         let mut process_rejections = 0_u32;
+        let mut repair_success_count = 0_u32;
+        let mut repair_rejection_count = 0_u32;
         let mut diagnostics = ProcessDiagnostics::default();
 
         // Phase A: Uptake, Metabolism, Synthesis, Growth, and Displacement Reflex Loop
@@ -324,6 +373,65 @@ impl TickExecutor {
             );
             if feasible {
                 let _ = self.world.execute_displacement(index);
+            }
+        }
+
+        if config.chemistry.repair.enabled {
+            for i in 0..len {
+                let index = CellIndex::from_raw(i);
+                if self.world.cells().lifecycle_state(index) == LifecycleState::Dead {
+                    continue;
+                }
+                let (feasible, feasibility) = run_process(
+                    &self.world,
+                    index,
+                    ProcessId::RepairBoundary,
+                    config.chemistry.repair.max_amount_per_tick,
+                    &mut diagnostics,
+                    &mut process_attempts,
+                    &mut process_rejections,
+                );
+                match feasibility {
+                    FeasibilityResult::Allowed {
+                        accepted_amount,
+                        energy_cost,
+                        resource_cost,
+                    } if feasible => {
+                        let cells = self.world.cells_mut_for_commit();
+                        let accepted_material =
+                            MaterialAmount::new_unchecked(accepted_amount.max(0.0));
+                        let consumed = cells.consume_resources(
+                            index,
+                            ResourceAmount::new(resource_cost)
+                                .expect("repair resource cost is clamped"),
+                        );
+                        debug_assert!(consumed.raw() + f32::EPSILON >= resource_cost);
+                        let repair_remaining = MaterialAmount::new_unchecked(
+                            (cells.repair_material(index).raw() - accepted_amount).max(0.0),
+                        );
+                        cells.set_repair_material(index, repair_remaining);
+
+                        let boundary_next = cells
+                            .boundary_material(index)
+                            .saturating_add(accepted_material);
+                        cells.set_boundary_material(index, boundary_next);
+                        let damage_next = (cells.material_damage(index, MaterialSlot::Boundary)
+                            - accepted_amount)
+                            .max(0.0);
+                        cells.set_material_damage(index, MaterialSlot::Boundary, damage_next);
+
+                        let energy = cells.energy(index);
+                        let next_energy = energy
+                            .current()
+                            .saturating_sub(EnergyAmount::new(energy_cost).unwrap());
+                        cells.set_energy(index, EnergyBuffer::new(next_energy, energy.capacity()));
+                        repair_success_count += 1;
+                    }
+                    FeasibilityResult::Rejected(_) => {
+                        repair_rejection_count += 1;
+                    }
+                    _ => {}
+                }
             }
         }
 
@@ -718,7 +826,11 @@ impl TickExecutor {
             }
         }
 
+        let fragment_amount_before = self.world.fragments().total_amount().raw();
         let decomposed_cells_count = self.world.execute_decomposition_for_dead_cells();
+        let fragment_amount_after = self.world.fragments().total_amount().raw();
+        phase2g_metrics.fragment_created_amount +=
+            (fragment_amount_after - fragment_amount_before).max(0.0);
 
         let repair_placeholder_available = (0..self.world.cells().len()).any(|i| {
             let idx = CellIndex::from_raw(i);
@@ -740,9 +852,13 @@ impl TickExecutor {
         self.world
             .environment_mut_for_commit()
             .set_waste(waste_next);
+        let resource_amount_before_decay = self.aggregate_external_resources();
         self.world
             .resources_mut_for_commit()
             .decay_or_passive_update();
+        let resource_amount_after_decay = self.aggregate_external_resources();
+        phase2g_metrics.resource_decay_amount +=
+            (resource_amount_before_decay - resource_amount_after_decay).max(0.0);
         self.world
             .cells_mut_for_commit()
             .commit_contact_stimulus(config.local_interaction.stimulus_decay_per_tick);
@@ -792,6 +908,9 @@ impl TickExecutor {
                 divisions_count,
                 births_count,
                 decomposed_cells_count,
+                phase2g_metrics,
+                repair_success_count,
+                repair_rejection_count,
             ),
             diagnostics,
         })
@@ -830,6 +949,274 @@ impl TickExecutor {
         }
     }
 
+    fn commit_passive_chemistry_reactions(
+        &mut self,
+        config: &RuntimeConfig,
+    ) -> Phase2GMetricsDelta {
+        let mut metrics = Phase2GMetricsDelta::default();
+        if config.chemistry.reactions.is_empty() {
+            return metrics;
+        }
+
+        let resource_layer = |id: &str| {
+            config
+                .chemistry
+                .resources
+                .iter()
+                .position(|resource| resource.id == id)
+                .map(ResourceLayerIndex::from_raw)
+        };
+        let width = self.world.resources().width();
+        let height = self.world.resources().height();
+        for (reaction_index, reaction) in config.chemistry.reactions.iter().enumerate() {
+            if reaction.mode != "passive" {
+                continue;
+            }
+            if reaction.rate <= 0.0 {
+                continue;
+            }
+            for y in 0..height {
+                for x in 0..width {
+                    let coord = crate::core::units::GridCoord::new(x, y);
+                    if !reaction_occurs(
+                        config.world.seed.raw(),
+                        self.world.tick().raw(),
+                        x,
+                        y,
+                        reaction_index as u32,
+                        reaction.probability,
+                    ) {
+                        continue;
+                    }
+                    metrics.reaction_matched_count += 1;
+
+                    let inputs = reaction
+                        .inputs
+                        .iter()
+                        .map(|(id, amount)| {
+                            resource_layer(id).map(|layer| (layer, amount * reaction.rate))
+                        })
+                        .collect::<Option<Vec<_>>>();
+                    let outputs = reaction
+                        .outputs
+                        .iter()
+                        .map(|(id, amount)| {
+                            resource_layer(id).map(|layer| (layer, amount * reaction.rate))
+                        })
+                        .collect::<Option<Vec<_>>>();
+                    let (Some(inputs), Some(outputs)) = (inputs, outputs) else {
+                        metrics.reaction_rejected_count += 1;
+                        continue;
+                    };
+                    if inputs.iter().any(|(layer, required)| {
+                        self.world
+                            .resources()
+                            .amount_at(*layer, coord)
+                            .map(|available| available.raw() + 1e-6 < *required)
+                            .unwrap_or(true)
+                    }) {
+                        metrics.reaction_rejected_count += 1;
+                        continue;
+                    }
+
+                    metrics.reaction_executed_count += 1;
+                    metrics.reaction_input_amount +=
+                        inputs.iter().map(|(_, amount)| *amount).sum::<f32>();
+                    metrics.reaction_output_amount +=
+                        outputs.iter().map(|(_, amount)| *amount).sum::<f32>();
+                    metrics.reaction_heat_generated += reaction.heat_output * reaction.rate;
+                    metrics.reaction_energy_output += reaction.energy_output * reaction.rate;
+                    let mut changes = vec![0.0_f32; self.world.resources().layer_count()];
+                    for (layer, amount) in inputs {
+                        changes[layer.raw()] -= amount;
+                    }
+                    for (layer, amount) in outputs {
+                        changes[layer.raw()] += amount;
+                    }
+                    for (layer, change) in changes.into_iter().enumerate() {
+                        if change == 0.0 {
+                            continue;
+                        }
+                        let layer = ResourceLayerIndex::from_raw(layer);
+                        let current = self
+                            .world
+                            .resources()
+                            .amount_at(layer, coord)
+                            .expect("chemistry layer is derived from validated config");
+                        let next = ResourceAmount::new((current.raw() + change).max(0.0))
+                            .expect("reaction amount is clamped");
+                        self.world
+                            .resources_mut_for_commit()
+                            .set_amount_at(layer, coord, next)
+                            .expect("chemistry coordinate is in grid bounds");
+                    }
+                }
+            }
+        }
+        metrics
+    }
+
+    fn commit_controlled_chemistry_reactions(
+        &mut self,
+        config: &RuntimeConfig,
+    ) -> Phase2GMetricsDelta {
+        let mut metrics = Phase2GMetricsDelta::default();
+        let resource_type = |id: &str| {
+            config
+                .chemistry
+                .resources
+                .iter()
+                .position(|resource| resource.id == id)
+                .map(|index| crate::core::ids::ResourceTypeId::from_raw(index as u32))
+        };
+        for cell_raw in 0..self.world.cells().len() {
+            let cell = CellIndex::from_raw(cell_raw);
+            for reaction in config.chemistry.reactions.iter().filter(|reaction| {
+                reaction.mode == "controlled"
+                    && reaction.process_id.as_deref() == Some("energy_conversion")
+                    && reaction.rate > 0.0
+            }) {
+                metrics.reaction_matched_count += 1;
+                if !self
+                    .world
+                    .cells()
+                    .has_capability(cell, crate::core::process::MaterialCapability::Metabolism)
+                {
+                    metrics.reaction_rejected_count += 1;
+                    continue;
+                }
+                if !reaction.required_materials.iter().all(|(id, amount)| {
+                    material_slot_for_chemistry_id(id).is_some_and(|slot| {
+                        self.world
+                            .cells()
+                            .material_amount_for_slot(cell, slot)
+                            .raw()
+                            >= *amount
+                    })
+                }) {
+                    metrics.reaction_rejected_count += 1;
+                    continue;
+                }
+                let inputs = reaction
+                    .inputs
+                    .iter()
+                    .map(|(id, amount)| resource_type(id).map(|id| (id, amount * reaction.rate)))
+                    .collect::<Option<Vec<_>>>();
+                let Some(inputs) = inputs else {
+                    metrics.reaction_rejected_count += 1;
+                    continue;
+                };
+                if inputs.iter().any(|(id, amount)| {
+                    self.world
+                        .cells()
+                        .typed_resource_amount(cell, *id)
+                        .map(|available| available.raw() + 1e-6 < *amount)
+                        .unwrap_or(true)
+                }) {
+                    metrics.reaction_rejected_count += 1;
+                    continue;
+                }
+                metrics.reaction_executed_count += 1;
+                metrics.reaction_input_amount +=
+                    inputs.iter().map(|(_, amount)| *amount).sum::<f32>();
+                metrics.reaction_output_amount += reaction
+                    .outputs
+                    .iter()
+                    .map(|(_, amount)| amount * reaction.rate)
+                    .sum::<f32>();
+                metrics.reaction_heat_generated += reaction.heat_output * reaction.rate;
+                metrics.reaction_energy_output += reaction.energy_output * reaction.rate;
+                for (id, amount) in inputs {
+                    let _ = self.world.cells_mut_for_commit().consume_typed_resource(
+                        cell,
+                        id,
+                        ResourceAmount::new(amount).expect("reaction amount is validated"),
+                    );
+                }
+                if reaction.energy_output > 0.0 {
+                    let cells = self.world.cells_mut_for_commit();
+                    let energy = cells.energy(cell);
+                    let next = energy.current().saturating_add(
+                        EnergyAmount::new(reaction.energy_output * reaction.rate)
+                            .expect("reaction energy is validated"),
+                    );
+                    cells.set_energy(cell, EnergyBuffer::new(next, energy.capacity()));
+                }
+                if reaction.heat_output > 0.0 && config.chemistry.heat.capacity > 0.0 {
+                    let cells = self.world.cells_mut_for_commit();
+                    let temperature = cells.temperature(cell);
+                    cells.set_temperature(
+                        cell,
+                        crate::core::units::Temperature::new(
+                            temperature.raw()
+                                + reaction.heat_output * reaction.rate
+                                    / config.chemistry.heat.capacity,
+                        ),
+                    );
+                }
+            }
+        }
+        metrics
+    }
+
+    fn commit_local_heat_material_degradation(&mut self, config: &RuntimeConfig) -> f32 {
+        let warning = config.chemistry.heat.warning_threshold;
+        let death = config.chemistry.heat.death_threshold;
+        if config.chemistry.heat.capacity <= 0.0 || warning <= 0.0 || death <= warning {
+            return 0.0;
+        }
+
+        let mut degraded_total = 0.0_f32;
+        for cell_raw in 0..self.world.cells().len() {
+            let cell = CellIndex::from_raw(cell_raw);
+            let temperature = self.world.cells().temperature(cell);
+            if temperature.raw() <= warning {
+                continue;
+            }
+
+            let damage_rate = ((temperature.raw() - warning) / (death - warning)).clamp(0.0, 1.0);
+            let cells = self.world.cells_mut_for_commit();
+            for slot in MaterialSlot::ALL {
+                degraded_total += cells
+                    .apply_thermal_damage(cell, slot, temperature, warning, damage_rate)
+                    .raw();
+            }
+        }
+        degraded_total
+    }
+
+    fn commit_material_type_decay(&mut self, config: &RuntimeConfig) -> f32 {
+        if config.chemistry.materials.is_empty() {
+            return 0.0;
+        }
+
+        let mut degraded_total = 0.0_f32;
+        for material in &config.chemistry.materials {
+            let Some(slot) = material_slot_for_chemistry_id(&material.id) else {
+                continue;
+            };
+            let decay_rate = material.decay_rate.clamp(0.0, 1.0);
+            if decay_rate <= 0.0 {
+                continue;
+            }
+
+            for cell_raw in 0..self.world.cells().len() {
+                let cell = CellIndex::from_raw(cell_raw);
+                let current = self.world.cells().material_amount_for_slot(cell, slot);
+                let decayed = (current.raw() * decay_rate).min(current.raw());
+                if decayed <= 0.0 {
+                    continue;
+                }
+                let remaining = MaterialAmount::new_unchecked((current.raw() - decayed).max(0.0));
+                self.world
+                    .cells_mut_for_commit()
+                    .set_material_amount_for_slot(cell, slot, remaining);
+                degraded_total += decayed;
+            }
+        }
+        degraded_total
+    }
+
     fn aggregate_external_resources(&self) -> f32 {
         (0..self.world.resources().layer_count())
             .map(|layer| {
@@ -865,6 +1252,9 @@ impl TickExecutor {
         divisions_count: u32,
         births_count: u32,
         decomposed_cells_count: u32,
+        phase2g_metrics: Phase2GMetricsDelta,
+        repair_success_count: u32,
+        repair_rejection_count: u32,
     ) -> MetricsSummary {
         let cells = self.world.cells();
         let mut final_internal_resources = 0.0_f32;
@@ -941,6 +1331,22 @@ impl TickExecutor {
             decomposed_cells_count,
             sensory_input_accumulated,
             repair_placeholder_available,
+            reaction_matched_count: phase2g_metrics.reaction_matched_count,
+            reaction_executed_count: phase2g_metrics.reaction_executed_count,
+            reaction_rejected_count: phase2g_metrics.reaction_rejected_count,
+            reaction_input_amount: phase2g_metrics.reaction_input_amount,
+            reaction_output_amount: phase2g_metrics.reaction_output_amount,
+            reaction_heat_generated: phase2g_metrics.reaction_heat_generated,
+            reaction_energy_output: phase2g_metrics.reaction_energy_output,
+            reaction_accounting_error: phase2g_metrics.reaction_accounting_error,
+            resource_diffused_amount: phase2g_metrics.resource_diffused_amount,
+            resource_decay_amount: phase2g_metrics.resource_decay_amount,
+            fragment_created_amount: phase2g_metrics.fragment_created_amount,
+            fragment_converted_amount: phase2g_metrics.fragment_converted_amount,
+            material_degradation_amount: phase2g_metrics.material_degradation_amount,
+            boundary_leakage_amount: phase2g_metrics.boundary_leakage_amount,
+            repair_success_count,
+            repair_rejection_count,
         }
     }
 }
@@ -950,6 +1356,59 @@ fn baseline_process_level(raw_level: f32) -> f32 {
         raw_level.max(1.0)
     } else {
         0.0
+    }
+}
+
+fn reaction_occurs(
+    seed: u64,
+    tick: u64,
+    x: usize,
+    y: usize,
+    reaction_index: u32,
+    probability: f32,
+) -> bool {
+    if probability >= 1.0 {
+        return true;
+    }
+    if probability <= 0.0 {
+        return false;
+    }
+    let mut value = seed
+        ^ tick.wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        ^ (x as u64).wrapping_mul(0xBF58_476D_1CE4_E5B9)
+        ^ (y as u64).wrapping_mul(0x94D0_49BB_1331_11EB)
+        ^ reaction_index as u64;
+    value ^= value >> 30;
+    value = value.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    value ^= value >> 27;
+    value = value.wrapping_mul(0x94D0_49BB_1331_11EB);
+    value ^= value >> 31;
+    let sample = (value >> 40) as f32 / (1_u32 << 24) as f32;
+    sample < probability
+}
+
+fn material_slot_for_chemistry_id(id: &str) -> Option<MaterialSlot> {
+    let normalized = id.to_ascii_lowercase();
+    if normalized.contains("boundary") {
+        Some(MaterialSlot::Boundary)
+    } else if normalized.contains("transport") {
+        Some(MaterialSlot::Transport)
+    } else if normalized.contains("metabolic") {
+        Some(MaterialSlot::Metabolic)
+    } else if normalized.contains("storage") {
+        Some(MaterialSlot::Storage)
+    } else if normalized.contains("synthesis") {
+        Some(MaterialSlot::Synthesis)
+    } else if normalized.contains("structural") {
+        Some(MaterialSlot::Structural)
+    } else if normalized.contains("repair") {
+        Some(MaterialSlot::Repair)
+    } else if normalized.contains("contractile") {
+        Some(MaterialSlot::Contractile)
+    } else if normalized.contains("sensory") {
+        Some(MaterialSlot::Sensory)
+    } else {
+        None
     }
 }
 

@@ -71,7 +71,7 @@ fn base_decomposition_config() -> RuntimeConfig {
 }
 
 #[test]
-fn decomposition_converts_dead_cell_resources_and_materials_to_grid_resources_and_marks_inert() {
+fn decomposition_moves_resources_to_grid_and_materials_to_fragments() {
     let config = base_decomposition_config();
     let mut exec = TickExecutor::new(config).unwrap();
     let idx = CellIndex::from_raw(0);
@@ -99,9 +99,9 @@ fn decomposition_converts_dead_cell_resources_and_materials_to_grid_resources_an
     // Run first tick of decomposition
     let summary = exec.step().unwrap();
 
-    // 5 resources and 1 boundary material must be decomposed.
+    // 5 resources become grid Resources; 1 boundary material becomes a Fragment.
     // internal resource becomes 5.0, boundary material becomes 0.0.
-    // grid resource becomes 5.0 + 1.0 = 6.0
+    // Material must not silently become a grid Resource.
     assert_eq!(exec.world().cells().resource_amount(idx).raw(), 5.0);
     assert_eq!(exec.world().cells().boundary_material(idx).raw(), 0.0);
     assert_eq!(
@@ -110,8 +110,9 @@ fn decomposition_converts_dead_cell_resources_and_materials_to_grid_resources_an
             .amount_at(layer, grid_coord)
             .unwrap()
             .raw(),
-        6.0
+        5.0
     );
+    assert_eq!(exec.world().fragments().total_amount().raw(), 1.0);
     assert!(!exec.world().cells().runtime_flags(idx).inert);
     assert_eq!(summary.metrics.decomposed_cells_count, 0);
 
@@ -126,7 +127,7 @@ fn decomposition_converts_dead_cell_resources_and_materials_to_grid_resources_an
             .amount_at(layer, grid_coord)
             .unwrap()
             .raw(),
-        11.0
+        10.0
     );
 
     // Now resources & materials are fully empty -> runtime flags must have inert = true

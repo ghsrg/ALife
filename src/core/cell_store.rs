@@ -1,6 +1,7 @@
-use crate::core::ids::CellId;
+use crate::core::ids::{CellId, ResourceTypeId};
 use crate::core::materials::{MaterialComposition, MaterialSlot};
 use crate::core::process::MaterialCapability;
+use crate::core::resource_types::PermeabilityConstraint;
 use crate::core::units::{
     CapacityAmount, EnergyAmount, MaterialAmount, Position, Radius, ResourceAmount, Temperature,
 };
@@ -59,6 +60,13 @@ pub struct RuntimeFlags {
     pub division_ready: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TypedResourceInventoryError {
+    AlreadyInitialized,
+    DuplicateType(ResourceTypeId),
+    UnknownType(ResourceTypeId),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct InitialCellState {
     pub position: Position,
@@ -85,6 +93,8 @@ pub struct CellStore {
     radii: Vec<Radius>,
     energy_buffers: Vec<EnergyBuffer>,
     resources: Vec<ResourceAmount>,
+    typed_resource_types: Vec<ResourceTypeId>,
+    typed_resources: Vec<ResourceAmount>,
     boundary_materials: Vec<MaterialAmount>,
     transport_materials: Vec<MaterialAmount>,
     metabolic_materials: Vec<MaterialAmount>,
@@ -94,6 +104,7 @@ pub struct CellStore {
     repair_materials: Vec<MaterialAmount>,
     contractile_materials: Vec<MaterialAmount>,
     sensory_materials: Vec<MaterialAmount>,
+    material_damage: Vec<[f32; 9]>,
     capacity_limits: Vec<CapacityAmount>,
     temperatures: Vec<Temperature>,
     lifecycle_states: Vec<LifecycleState>,
@@ -112,6 +123,8 @@ impl CellStore {
             radii: Vec::with_capacity(capacity),
             energy_buffers: Vec::with_capacity(capacity),
             resources: Vec::with_capacity(capacity),
+            typed_resource_types: Vec::new(),
+            typed_resources: Vec::new(),
             boundary_materials: Vec::with_capacity(capacity),
             transport_materials: Vec::with_capacity(capacity),
             metabolic_materials: Vec::with_capacity(capacity),
@@ -121,6 +134,7 @@ impl CellStore {
             repair_materials: Vec::with_capacity(capacity),
             contractile_materials: Vec::with_capacity(capacity),
             sensory_materials: Vec::with_capacity(capacity),
+            material_damage: Vec::with_capacity(capacity),
             capacity_limits: Vec::with_capacity(capacity),
             temperatures: Vec::with_capacity(capacity),
             lifecycle_states: Vec::with_capacity(capacity),
@@ -140,6 +154,10 @@ impl CellStore {
         self.radii.push(cell.radius);
         self.energy_buffers.push(cell.energy);
         self.resources.push(cell.resources);
+        self.typed_resources.extend(std::iter::repeat_n(
+            ResourceAmount::zero(),
+            self.typed_resource_types.len(),
+        ));
         self.boundary_materials.push(cell.boundary_material);
         self.transport_materials.push(cell.transport_material);
         self.metabolic_materials.push(cell.metabolic_material);
@@ -149,6 +167,7 @@ impl CellStore {
         self.repair_materials.push(cell.repair_material);
         self.contractile_materials.push(cell.contractile_material);
         self.sensory_materials.push(cell.sensory_material);
+        self.material_damage.push([0.0; 9]);
         self.capacity_limits.push(cell.capacity_limit);
         self.temperatures.push(cell.temperature);
         self.lifecycle_states.push(LifecycleState::Alive);
@@ -213,7 +232,7 @@ impl CellStore {
     pub fn used_capacity(&self, index: CellIndex) -> CapacityAmount {
         let genome_capacity_placeholder = 0.0;
         let internal_fragments_capacity_used = 0.0;
-        let used = self.resources[index.raw()].raw()
+        let used = self.resource_amount(index).raw()
             + self.total_materials(index).raw()
             + genome_capacity_placeholder
             + internal_fragments_capacity_used;
@@ -257,7 +276,88 @@ impl CellStore {
     }
 
     pub fn resource_amount(&self, index: CellIndex) -> ResourceAmount {
+        self.resources[index.raw()].saturating_add(self.typed_resource_total(index))
+    }
+
+    pub fn generic_resource_amount(&self, index: CellIndex) -> ResourceAmount {
         self.resources[index.raw()]
+    }
+
+    pub fn configure_typed_resource_types(
+        &mut self,
+        mut resource_types: Vec<ResourceTypeId>,
+    ) -> Result<(), TypedResourceInventoryError> {
+        if !self.ids.is_empty() || !self.typed_resource_types.is_empty() {
+            return Err(TypedResourceInventoryError::AlreadyInitialized);
+        }
+        resource_types.sort();
+        if let Some(duplicate) = resource_types
+            .windows(2)
+            .find(|pair| pair[0] == pair[1])
+            .map(|pair| pair[0])
+        {
+            return Err(TypedResourceInventoryError::DuplicateType(duplicate));
+        }
+        self.typed_resource_types = resource_types;
+        Ok(())
+    }
+
+    pub fn typed_resource_amount(
+        &self,
+        index: CellIndex,
+        resource_type: ResourceTypeId,
+    ) -> Result<ResourceAmount, TypedResourceInventoryError> {
+        let offset = self.typed_resource_offset(index, resource_type)?;
+        Ok(self.typed_resources[offset])
+    }
+
+    pub fn set_typed_resource_amount(
+        &mut self,
+        index: CellIndex,
+        resource_type: ResourceTypeId,
+        amount: ResourceAmount,
+    ) -> Result<(), TypedResourceInventoryError> {
+        let offset = self.typed_resource_offset(index, resource_type)?;
+        self.typed_resources[offset] = amount;
+        Ok(())
+    }
+
+    pub fn consume_typed_resource(
+        &mut self,
+        index: CellIndex,
+        resource_type: ResourceTypeId,
+        requested: ResourceAmount,
+    ) -> Result<ResourceAmount, TypedResourceInventoryError> {
+        let offset = self.typed_resource_offset(index, resource_type)?;
+        let consumed = self.typed_resources[offset].saturating_sub(requested);
+        let actual = self.typed_resources[offset].saturating_sub(consumed);
+        self.typed_resources[offset] = consumed;
+        Ok(actual)
+    }
+
+    fn typed_resource_total(&self, index: CellIndex) -> ResourceAmount {
+        let width = self.typed_resource_types.len();
+        if width == 0 {
+            return ResourceAmount::zero();
+        }
+        let start = index.raw() * width;
+        let total = self.typed_resources[start..start + width]
+            .iter()
+            .map(|amount| amount.raw())
+            .sum();
+        ResourceAmount::new(total).expect("typed resource amounts are validated")
+    }
+
+    fn typed_resource_offset(
+        &self,
+        index: CellIndex,
+        resource_type: ResourceTypeId,
+    ) -> Result<usize, TypedResourceInventoryError> {
+        let type_index = self
+            .typed_resource_types
+            .binary_search(&resource_type)
+            .map_err(|_| TypedResourceInventoryError::UnknownType(resource_type))?;
+        Ok(index.raw() * self.typed_resource_types.len() + type_index)
     }
 
     pub fn add_resources_limited_by_capacity(
@@ -319,6 +419,10 @@ impl CellStore {
 
     pub fn set_position(&mut self, index: CellIndex, position: Position) {
         self.positions[index.raw()] = position;
+    }
+
+    pub fn set_temperature(&mut self, index: CellIndex, temperature: Temperature) {
+        self.temperatures[index.raw()] = temperature;
     }
 
     pub fn set_lifecycle_state(&mut self, index: CellIndex, state: LifecycleState) {
@@ -413,6 +517,89 @@ impl CellStore {
             MaterialSlot::Contractile => self.contractile_material(index),
             MaterialSlot::Sensory => self.sensory_material(index),
         }
+    }
+
+    pub fn set_material_amount_for_slot(
+        &mut self,
+        index: CellIndex,
+        slot: MaterialSlot,
+        amount: MaterialAmount,
+    ) {
+        match slot {
+            MaterialSlot::Boundary => self.set_boundary_material(index, amount),
+            MaterialSlot::Transport => self.set_transport_material(index, amount),
+            MaterialSlot::Metabolic => self.set_metabolic_material(index, amount),
+            MaterialSlot::Storage => self.set_storage_material(index, amount),
+            MaterialSlot::Synthesis => self.set_synthesis_material(index, amount),
+            MaterialSlot::Structural => self.set_structural_material(index, amount),
+            MaterialSlot::Repair => self.set_repair_material(index, amount),
+            MaterialSlot::Contractile => self.set_contractile_material(index, amount),
+            MaterialSlot::Sensory => self.set_sensory_material(index, amount),
+        }
+    }
+
+    pub fn material_damage(&self, index: CellIndex, slot: MaterialSlot) -> f32 {
+        self.material_damage[index.raw()][slot.index()]
+    }
+
+    pub fn set_material_damage(&mut self, index: CellIndex, slot: MaterialSlot, damage: f32) {
+        self.material_damage[index.raw()][slot.index()] = damage.clamp(0.0, 1.0);
+    }
+
+    pub fn apply_thermal_damage(
+        &mut self,
+        index: CellIndex,
+        slot: MaterialSlot,
+        temperature: Temperature,
+        tolerance: f32,
+        damage_rate: f32,
+    ) -> MaterialAmount {
+        if temperature.raw() <= tolerance || damage_rate <= 0.0 {
+            return MaterialAmount::zero();
+        }
+
+        let current = self.material_amount_for_slot(index, slot);
+        if current.raw() <= 0.0 {
+            return MaterialAmount::zero();
+        }
+
+        let damage_delta = damage_rate.clamp(0.0, 1.0);
+        let previous_damage = self.material_damage(index, slot);
+        let next_damage = (previous_damage + damage_delta).clamp(0.0, 1.0);
+        let effective_delta = (next_damage - previous_damage).max(0.0);
+        if effective_delta <= 0.0 {
+            return MaterialAmount::zero();
+        }
+
+        let degraded =
+            MaterialAmount::new_unchecked((current.raw() * effective_delta).min(current.raw()));
+        let remaining = MaterialAmount::new_unchecked((current.raw() - degraded.raw()).max(0.0));
+        self.set_material_amount_for_slot(index, slot, remaining);
+        self.set_material_damage(index, slot, next_damage);
+        degraded
+    }
+
+    pub fn boundary_allows_passive_exchange(&self, index: CellIndex) -> bool {
+        self.boundary_material(index).raw() > 0.0
+            && self.transport_material(index).raw() > 0.0
+            && self.material_damage(index, MaterialSlot::Boundary) < 1.0
+    }
+
+    pub fn boundary_leakage_rate(
+        &self,
+        index: CellIndex,
+        resource_rule: PermeabilityConstraint,
+        material_permeability: f32,
+    ) -> f32 {
+        if resource_rule != PermeabilityConstraint::Passive
+            || self.boundary_material(index).raw() <= 0.0
+            || material_permeability <= 0.0
+        {
+            return 0.0;
+        }
+
+        let damage = self.material_damage(index, MaterialSlot::Boundary);
+        (material_permeability * damage).clamp(0.0, 1.0)
     }
 
     pub fn material_composition(&self, index: CellIndex) -> MaterialComposition {
