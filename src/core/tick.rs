@@ -1,3 +1,4 @@
+use crate::core::accounting::{IntegratedAccountingSnapshot, MatterAccountingDelta};
 use crate::core::cell_store::{CellIndex, EnergyBuffer, LifecycleState, RuntimeFlags};
 use crate::core::config::RuntimeConfig;
 use crate::core::deltas::CommitSummary;
@@ -96,6 +97,7 @@ impl TickExecutor {
     pub fn step(&mut self) -> Result<RunSummary, TickError> {
         let config = self.world.config().clone();
         let len = self.world.cells().len();
+        let accounting_before = IntegratedAccountingSnapshot::from_world(&self.world);
 
         // Rebuild Spatial Index at the start of tick
         self.world.rebuild_spatial_index();
@@ -1264,6 +1266,12 @@ impl TickExecutor {
 
         let min_energy = final_energy;
         let max_energy = final_energy;
+        let mut accounting_after = IntegratedAccountingSnapshot::from_world(&self.world);
+        accounting_after.explicit_sinks = phase2g_metrics.resource_decay_amount
+            + phase2g_metrics.material_degradation_amount
+            + phase2g_metrics.boundary_leakage_amount
+            + phase2h_metrics.joint_degradation_amount;
+        let accounting_delta = MatterAccountingDelta::between(accounting_before, accounting_after);
 
         Ok(RunSummary {
             tick: self.world.tick(),
@@ -1295,6 +1303,9 @@ impl TickExecutor {
                 repair_success_count,
                 repair_rejection_count,
                 phase2h_metrics,
+                accounting_before,
+                accounting_after,
+                accounting_delta,
             ),
             diagnostics,
         })
@@ -1665,6 +1676,9 @@ impl TickExecutor {
         repair_success_count: u32,
         repair_rejection_count: u32,
         phase2h_metrics: Phase2HMetricsDelta,
+        accounting_before: IntegratedAccountingSnapshot,
+        accounting_after: IntegratedAccountingSnapshot,
+        accounting_delta: MatterAccountingDelta,
     ) -> MetricsSummary {
         let cells = self.world.cells();
         let mut final_internal_resources = 0.0_f32;
@@ -1767,6 +1781,10 @@ impl TickExecutor {
             joint_heat_transfer_amount: phase2h_metrics.joint_heat_transfer_amount,
             joint_degradation_amount: phase2h_metrics.joint_degradation_amount,
             joint_mechanical_correction_amount: phase2h_metrics.joint_mechanical_correction_amount,
+            integrated_matter_before: accounting_before.total_matter(),
+            integrated_matter_after: accounting_after.total_matter(),
+            integrated_matter_unclassified_loss: accounting_delta.unclassified_loss,
+            integrated_matter_unclassified_gain: accounting_delta.unclassified_gain,
         }
     }
 }

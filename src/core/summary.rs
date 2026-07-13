@@ -79,6 +79,10 @@ pub struct MetricsSummary {
     pub joint_heat_transfer_amount: f32,
     pub joint_degradation_amount: f32,
     pub joint_mechanical_correction_amount: f32,
+    pub integrated_matter_before: f32,
+    pub integrated_matter_after: f32,
+    pub integrated_matter_unclassified_loss: f32,
+    pub integrated_matter_unclassified_gain: f32,
 }
 
 use crate::core::process::{ProcessId, RejectionReason};
