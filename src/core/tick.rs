@@ -53,6 +53,11 @@ struct Phase2HMetricsDelta {
     joint_creation_rejected_count: u32,
     joint_broken_count: u32,
     joint_resource_transfer_amount: f32,
+    joint_resource_transfer_gross_amount: f32,
+    joint_resource_transfer_net_amount: f32,
+    joint_resource_source_final_amount: f32,
+    joint_resource_target_final_amount: f32,
+    joint_resource_backflow_amount: f32,
     joint_signal_generated_total: f32,
     joint_signal_readable_total: f32,
     joint_heat_transfer_amount: f32,
@@ -282,6 +287,20 @@ impl TickExecutor {
                         config.material_effects.storage_capacity_per_unit,
                     );
                 phase2h_metrics.joint_resource_transfer_amount += moved.raw();
+                phase2h_metrics.joint_resource_transfer_gross_amount += moved.raw();
+                phase2h_metrics.joint_resource_transfer_net_amount += moved.raw();
+                if endpoints.a == source {
+                    phase2h_metrics.joint_resource_source_final_amount =
+                        self.world.cells().resource_amount(endpoints.a).raw();
+                    phase2h_metrics.joint_resource_target_final_amount =
+                        self.world.cells().resource_amount(endpoints.b).raw();
+                } else {
+                    phase2h_metrics.joint_resource_source_final_amount =
+                        self.world.cells().resource_amount(endpoints.b).raw();
+                    phase2h_metrics.joint_resource_target_final_amount =
+                        self.world.cells().resource_amount(endpoints.a).raw();
+                    phase2h_metrics.joint_resource_backflow_amount += moved.raw();
+                }
             }
 
             let joint_ids = self.world.joints().active_ids().collect::<Vec<_>>();
@@ -1780,6 +1799,12 @@ impl TickExecutor {
             joint_creation_rejected_count: phase2h_metrics.joint_creation_rejected_count,
             joint_broken_count: phase2h_metrics.joint_broken_count,
             joint_resource_transfer_amount: phase2h_metrics.joint_resource_transfer_amount,
+            joint_resource_transfer_gross_amount: phase2h_metrics
+                .joint_resource_transfer_gross_amount,
+            joint_resource_transfer_net_amount: phase2h_metrics.joint_resource_transfer_net_amount,
+            joint_resource_source_final_amount: phase2h_metrics.joint_resource_source_final_amount,
+            joint_resource_target_final_amount: phase2h_metrics.joint_resource_target_final_amount,
+            joint_resource_backflow_amount: phase2h_metrics.joint_resource_backflow_amount,
             joint_signal_generated_total: phase2h_metrics.joint_signal_generated_total,
             joint_signal_readable_total: phase2h_metrics.joint_signal_readable_total,
             joint_heat_transfer_amount: phase2h_metrics.joint_heat_transfer_amount,

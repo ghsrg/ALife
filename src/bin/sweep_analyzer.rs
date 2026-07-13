@@ -272,6 +272,11 @@ pub struct SimResult {
     pub joint_creation_rejected_count: u32,
     pub joint_broken_count: u32,
     pub joint_resource_transfer_amount: f32,
+    pub joint_resource_transfer_gross_amount: f32,
+    pub joint_resource_transfer_net_amount: f32,
+    pub joint_resource_source_final_amount: f32,
+    pub joint_resource_target_final_amount: f32,
+    pub joint_resource_backflow_amount: f32,
     pub joint_signal_generated_total: f32,
     pub joint_signal_readable_total: f32,
     pub joint_heat_transfer_amount: f32,
@@ -1141,6 +1146,11 @@ fn run_simulation(
                 joint_creation_rejected_count: 0,
                 joint_broken_count: 0,
                 joint_resource_transfer_amount: 0.0,
+                joint_resource_transfer_gross_amount: 0.0,
+                joint_resource_transfer_net_amount: 0.0,
+                joint_resource_source_final_amount: 0.0,
+                joint_resource_target_final_amount: 0.0,
+                joint_resource_backflow_amount: 0.0,
                 joint_signal_generated_total: 0.0,
                 joint_signal_readable_total: 0.0,
                 joint_heat_transfer_amount: 0.0,
@@ -1298,6 +1308,11 @@ fn run_simulation(
     let mut joint_creation_rejected_count_cumulative = 0_u32;
     let mut joint_broken_count_cumulative = 0_u32;
     let mut joint_resource_transfer_amount_cumulative = 0.0_f32;
+    let mut joint_resource_transfer_gross_amount_cumulative = 0.0_f32;
+    let mut joint_resource_transfer_net_amount_cumulative = 0.0_f32;
+    let mut joint_resource_source_final_amount_last = 0.0_f32;
+    let mut joint_resource_target_final_amount_last = 0.0_f32;
+    let mut joint_resource_backflow_amount_cumulative = 0.0_f32;
     let mut joint_signal_generated_total_cumulative = 0.0_f32;
     let mut joint_signal_readable_total_max = 0.0_f32;
     let mut joint_heat_transfer_amount_cumulative = 0.0_f32;
@@ -1491,6 +1506,30 @@ fn run_simulation(
             .unwrap_or(0.0) as u32;
         joint_resource_transfer_amount_cumulative += phase2g_features
             .get("joint_resource_transfer_amount")
+            .copied()
+            .unwrap_or(0.0);
+        joint_resource_transfer_gross_amount_cumulative += phase2g_features
+            .get("joint_resource_transfer_gross_amount")
+            .copied()
+            .unwrap_or(0.0);
+        joint_resource_transfer_net_amount_cumulative += phase2g_features
+            .get("joint_resource_transfer_net_amount")
+            .copied()
+            .unwrap_or(0.0);
+        let source_final = phase2g_features
+            .get("joint_resource_source_final_amount")
+            .copied()
+            .unwrap_or(0.0);
+        let target_final = phase2g_features
+            .get("joint_resource_target_final_amount")
+            .copied()
+            .unwrap_or(0.0);
+        if source_final > 0.0 || target_final > 0.0 {
+            joint_resource_source_final_amount_last = source_final;
+            joint_resource_target_final_amount_last = target_final;
+        }
+        joint_resource_backflow_amount_cumulative += phase2g_features
+            .get("joint_resource_backflow_amount")
             .copied()
             .unwrap_or(0.0);
         joint_signal_generated_total_cumulative += phase2g_features
@@ -2194,6 +2233,26 @@ fn run_simulation(
         joint_resource_transfer_amount_cumulative,
     );
     raw_data.insert(
+        "joint_resource_transfer_gross_amount".to_string(),
+        joint_resource_transfer_gross_amount_cumulative,
+    );
+    raw_data.insert(
+        "joint_resource_transfer_net_amount".to_string(),
+        joint_resource_transfer_net_amount_cumulative,
+    );
+    raw_data.insert(
+        "joint_resource_source_final_amount".to_string(),
+        joint_resource_source_final_amount_last,
+    );
+    raw_data.insert(
+        "joint_resource_target_final_amount".to_string(),
+        joint_resource_target_final_amount_last,
+    );
+    raw_data.insert(
+        "joint_resource_backflow_amount".to_string(),
+        joint_resource_backflow_amount_cumulative,
+    );
+    raw_data.insert(
         "joint_signal_generated_total".to_string(),
         joint_signal_generated_total_cumulative,
     );
@@ -2359,6 +2418,11 @@ fn run_simulation(
         joint_creation_rejected_count: joint_creation_rejected_count_cumulative,
         joint_broken_count: joint_broken_count_cumulative,
         joint_resource_transfer_amount: joint_resource_transfer_amount_cumulative,
+        joint_resource_transfer_gross_amount: joint_resource_transfer_gross_amount_cumulative,
+        joint_resource_transfer_net_amount: joint_resource_transfer_net_amount_cumulative,
+        joint_resource_source_final_amount: joint_resource_source_final_amount_last,
+        joint_resource_target_final_amount: joint_resource_target_final_amount_last,
+        joint_resource_backflow_amount: joint_resource_backflow_amount_cumulative,
         joint_signal_generated_total: joint_signal_generated_total_cumulative,
         joint_signal_readable_total: joint_signal_readable_total_max,
         joint_heat_transfer_amount: joint_heat_transfer_amount_cumulative,
@@ -2745,7 +2809,7 @@ pub fn run_sweep(
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
          contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
          reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count,\
-         joint_count,joint_created_count,joint_creation_rejected_count,joint_broken_count,joint_resource_transfer_amount,joint_signal_generated_total,joint_signal_readable_total,joint_heat_transfer_amount,joint_degradation_amount,joint_mechanical_correction_amount"
+         joint_count,joint_created_count,joint_creation_rejected_count,joint_broken_count,joint_resource_transfer_amount,joint_resource_transfer_gross_amount,joint_resource_transfer_net_amount,joint_resource_source_final_amount,joint_resource_target_final_amount,joint_resource_backflow_amount,joint_signal_generated_total,joint_signal_readable_total,joint_heat_transfer_amount,joint_degradation_amount,joint_mechanical_correction_amount"
     )
     .unwrap();
 
@@ -2861,7 +2925,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2964,6 +3028,11 @@ pub fn run_sweep(
             res.joint_creation_rejected_count,
             res.joint_broken_count,
             res.joint_resource_transfer_amount,
+            res.joint_resource_transfer_gross_amount,
+            res.joint_resource_transfer_net_amount,
+            res.joint_resource_source_final_amount,
+            res.joint_resource_target_final_amount,
+            res.joint_resource_backflow_amount,
             res.joint_signal_generated_total,
             res.joint_signal_readable_total,
             res.joint_heat_transfer_amount,
@@ -3053,7 +3122,7 @@ pub fn run_matrix(
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
          contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
          reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count,\
-         joint_count,joint_created_count,joint_creation_rejected_count,joint_broken_count,joint_resource_transfer_amount,joint_signal_generated_total,joint_signal_readable_total,joint_heat_transfer_amount,joint_degradation_amount,joint_mechanical_correction_amount"
+         joint_count,joint_created_count,joint_creation_rejected_count,joint_broken_count,joint_resource_transfer_amount,joint_resource_transfer_gross_amount,joint_resource_transfer_net_amount,joint_resource_source_final_amount,joint_resource_target_final_amount,joint_resource_backflow_amount,joint_signal_generated_total,joint_signal_readable_total,joint_heat_transfer_amount,joint_degradation_amount,joint_mechanical_correction_amount"
     )
     .unwrap();
 
@@ -3176,7 +3245,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -3281,6 +3350,11 @@ pub fn run_matrix(
             res.joint_creation_rejected_count,
             res.joint_broken_count,
             res.joint_resource_transfer_amount,
+            res.joint_resource_transfer_gross_amount,
+            res.joint_resource_transfer_net_amount,
+            res.joint_resource_source_final_amount,
+            res.joint_resource_target_final_amount,
+            res.joint_resource_backflow_amount,
             res.joint_signal_generated_total,
             res.joint_signal_readable_total,
             res.joint_heat_transfer_amount,

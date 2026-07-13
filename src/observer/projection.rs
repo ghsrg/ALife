@@ -167,6 +167,26 @@ pub fn metrics_summary_features(metrics: &MetricsSummary) -> HashMap<String, f32
         metrics.joint_resource_transfer_amount,
     );
     features.insert(
+        "joint_resource_transfer_gross_amount".to_string(),
+        metrics.joint_resource_transfer_gross_amount,
+    );
+    features.insert(
+        "joint_resource_transfer_net_amount".to_string(),
+        metrics.joint_resource_transfer_net_amount,
+    );
+    features.insert(
+        "joint_resource_source_final_amount".to_string(),
+        metrics.joint_resource_source_final_amount,
+    );
+    features.insert(
+        "joint_resource_target_final_amount".to_string(),
+        metrics.joint_resource_target_final_amount,
+    );
+    features.insert(
+        "joint_resource_backflow_amount".to_string(),
+        metrics.joint_resource_backflow_amount,
+    );
+    features.insert(
         "joint_signal_generated_total".to_string(),
         metrics.joint_signal_generated_total,
     );

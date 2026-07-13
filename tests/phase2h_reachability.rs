@@ -27,6 +27,26 @@ fn smoke_sweep_outputs_phase2h_joint_reachability_csvs() {
             "{file} missing resource metric"
         );
         assert!(
+            csv.contains("joint_resource_transfer_gross_amount"),
+            "{file} missing gross resource transfer audit metric"
+        );
+        assert!(
+            csv.contains("joint_resource_transfer_net_amount"),
+            "{file} missing net resource transfer audit metric"
+        );
+        assert!(
+            csv.contains("joint_resource_source_final_amount"),
+            "{file} missing source endpoint resource audit metric"
+        );
+        assert!(
+            csv.contains("joint_resource_target_final_amount"),
+            "{file} missing target endpoint resource audit metric"
+        );
+        assert!(
+            csv.contains("joint_resource_backflow_amount"),
+            "{file} missing backflow resource audit metric"
+        );
+        assert!(
             csv.contains("joint_signal_readable_total"),
             "{file} missing signal metric"
         );
