@@ -325,7 +325,7 @@ impl WorldState {
                         MaterialCapability::Metabolism,
                     ));
                 }
-                let internal_res = self.cells.resource_amount(cell_idx);
+                let internal_res = self.cells.generic_resource_amount(cell_idx);
                 if internal_res.raw() < action.requested_amount {
                     FeasibilityResult::Rejected(RejectionReason::InsufficientResources)
                 } else {
@@ -348,7 +348,7 @@ impl WorldState {
                 }
                 let cost_res = self.config.synthesis.cost_resource.raw();
                 let cost_eng = self.config.synthesis.cost_energy.raw();
-                let current_res = self.cells.resource_amount(cell_idx).raw();
+                let current_res = self.cells.generic_resource_amount(cell_idx).raw();
                 let current_eng = self.cells.energy(cell_idx).current().raw();
 
                 if current_res < cost_res {
@@ -406,7 +406,7 @@ impl WorldState {
                 let cost_res = self.config.growth.growth_cost_resource.raw();
                 let cost_eng = self.config.growth.growth_cost_energy.raw();
 
-                let current_res = self.cells.resource_amount(cell_idx).raw();
+                let current_res = self.cells.generic_resource_amount(cell_idx).raw();
                 let current_eng = self.cells.energy(cell_idx).current().raw();
 
                 if current_res < cost_res {
@@ -555,7 +555,7 @@ impl WorldState {
         let cost_res = config.growth.growth_cost_resource.raw();
         let cost_eng = config.growth.growth_cost_energy.raw();
 
-        let current_res = self.cells.resource_amount(cell_idx).raw();
+        let current_res = self.cells.generic_resource_amount(cell_idx).raw();
         let current_eng = self.cells.energy(cell_idx).current().raw();
 
         if current_res < cost_res || current_eng < cost_eng {
@@ -649,7 +649,7 @@ impl WorldState {
             MaterialAmount::new(amount.raw() * r * loss_keep).unwrap()
         };
 
-        let parent_resources = self.cells.resource_amount(cell_idx);
+        let parent_resources = self.cells.generic_resource_amount(cell_idx);
         let parent_boundary = self.cells.boundary_material(cell_idx);
         let parent_transport = self.cells.transport_material(cell_idx);
         let parent_metabolic = self.cells.metabolic_material(cell_idx);
@@ -740,6 +740,9 @@ impl WorldState {
 
         let daughter_b_id = self.cells.insert_partitioned_daughter(daughter_b_state);
         let daughter_b_index = self.cells.resolve_id_cold(daughter_b_id).unwrap();
+        self.cells
+            .partition_typed_resources(cell_idx, daughter_b_index, ratio, loss_keep)
+            .map_err(|err| format!("{:?}", err))?;
 
         Ok(DivisionOutcome {
             parent_id,
@@ -753,7 +756,7 @@ impl WorldState {
     pub fn execute_synthesis(&mut self, cell_idx: CellIndex) -> Result<(), String> {
         let cost_res = self.config.synthesis.cost_resource.raw();
         let cost_eng = self.config.synthesis.cost_energy.raw();
-        let current_res = self.cells.resource_amount(cell_idx).raw();
+        let current_res = self.cells.generic_resource_amount(cell_idx).raw();
         let current_eng = self.cells.energy(cell_idx).current().raw();
 
         if current_res < cost_res || current_eng < cost_eng {
@@ -868,7 +871,7 @@ impl WorldState {
             let grid_coord = self.resources.coord_for_position(pos);
 
             // 1. Decompose internal resources
-            let internal_res = self.cells.resource_amount(idx).raw();
+            let internal_res = self.cells.generic_resource_amount(idx).raw();
             let remaining_decompose_res = resources_per_tick;
             let actual_decompose_res = internal_res.min(remaining_decompose_res);
 

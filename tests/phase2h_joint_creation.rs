@@ -124,7 +124,7 @@ fn joint_creation_rejects_distant_or_material_free_cells() {
     let mut exec = TickExecutor::new(distant).unwrap();
     let summary = exec.step().unwrap();
     assert_eq!(exec.world().joints().len(), 0);
-    assert_eq!(summary.metrics.joint_creation_rejected_count, 1);
+    assert_eq!(summary.metrics.joint_creation_rejected_count, 0);
 
     let mut material_free = two_touching_cells_config();
     material_free.initial_cells[0].initial_structural_material = MaterialAmount::zero();

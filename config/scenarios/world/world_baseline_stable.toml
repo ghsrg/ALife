@@ -11,50 +11,61 @@ physics_solver_iterations = 2
 
 [resources]
 resource_type_ids = ["nutrient_A", "waste_A"]
-initial_distribution = [1200.0, 0.0]
-optional_decay_rate = 0.0001
+initial_distribution = [100.0, 0.0]
+optional_decay_rate = 0.0
+passive_energy_income_placeholder = 0.02
 
 [cell]
 initial_position = [32.0, 32.0]
 radius = 1.0
 initial_resources = { nutrient_A = 4.0 }
-initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 2.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
-initial_energy = 30.0
-energy_capacity = 80.0
-mandatory_cost_per_tick = 0.03
+initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 0.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
+initial_energy = 60.0
+energy_capacity = 100.0
+mandatory_cost_per_tick = 0.05
 capacity_limit = 120.0
 
 [[cells]]
 initial_position = [32.0, 32.0]
 radius = 1.0
 initial_resources = { nutrient_A = 4.0 }
-initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 2.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
-initial_energy = 30.0
-energy_capacity = 80.0
-mandatory_cost_per_tick = 0.03
+initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 0.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
+initial_energy = 60.0
+energy_capacity = 100.0
+mandatory_cost_per_tick = 0.05
 capacity_limit = 120.0
 
 [[cells]]
-initial_position = [34.0, 32.0]
+initial_position = [33.8, 32.0]
 radius = 1.0
 initial_resources = { nutrient_A = 2.0 }
-initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 2.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
-initial_energy = 28.0
-energy_capacity = 80.0
-mandatory_cost_per_tick = 0.03
+initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 0.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
+initial_energy = 58.0
+energy_capacity = 100.0
+mandatory_cost_per_tick = 0.05
 capacity_limit = 120.0
+
+[[cells]]
+initial_position = [70.0, 70.0]
+radius = 1.0
+initial_resources = { nutrient_A = 0.0 }
+initial_materials = { boundary = 1.0, transport = 0.0, metabolic = 0.0, storage = 1.0, synthesis = 0.0, structural = 1.0, repair = 0.0, contractile = 0.0, sensory = 0.0 }
+initial_energy = 0.1
+energy_capacity = 10.0
+mandatory_cost_per_tick = 0.05
+capacity_limit = 40.0
 
 [environment]
 heat_current = 0.0
 heat_generated_per_tick = 0.0
-heat_dissipation_rate = 0.02
-heat_warning_threshold = 50.0
-heat_death_threshold = 80.0
+heat_dissipation_rate = 0.2
+heat_warning_threshold = 200.0
+heat_death_threshold = 400.0
 waste_current = 0.0
 waste_generated_per_tick = 0.0
-waste_sink_rate = 0.02
-waste_warning_threshold = 50.0
-waste_death_threshold = 80.0
+waste_sink_rate = 0.2
+waste_warning_threshold = 500.0
+waste_death_threshold = 1000.0
 
 [lifecycle]
 stress_energy_threshold = 1.0
@@ -64,25 +75,35 @@ critical_capacity_overrun = 140.0
 [resource_interaction]
 enabled = true
 uptake_layer_index = 0
-max_uptake_per_tick = 0.25
-metabolism_resource_per_tick = 0.12
-energy_per_resource = 0.65
-heat_per_resource = 0.02
-waste_per_resource = 0.01
+max_uptake_per_tick = 2.0
+metabolism_resource_per_tick = 1.0
+energy_per_resource = 2.0
+heat_per_resource = 0.001
+waste_per_resource = 0.001
 
 [growth]
-growth_cost_resource = 1.0
-growth_cost_energy = 1.0
+growth_cost_resource = 0.01
+growth_cost_energy = 0.01
 growth_target_radius = 1.8
 max_division_pressure = 0.4
 
+[material_effects]
+transport_uptake_per_unit = 1.0
+metabolic_conversion_per_unit = 1.0
+storage_capacity_per_unit = 2.0
+structural_growth_per_unit = 0.00002
+contractile_force_per_unit = 1.0
+sensory_input_per_unit = 1.0
+boundary_retention_per_unit = 1.0
+repair_stress_buffer_per_unit = 1.0
+
 [division]
 enabled = true
-energy_cost = 8.0
+energy_cost = 80.0
 split_ratio = 0.5
 daughter_spacing = 2.2
 min_daughter_radius = 0.7
-partition_loss_fraction = 0.02
+partition_loss_fraction = 0.0
 
 [decomposition]
 enabled = true
@@ -102,7 +123,7 @@ stimulus_decay_per_tick = 0.05
 [joints]
 enabled = true
 creation_material_cost = 0.25
-creation_resource_cost = 0.05
+creation_resource_cost = 0.0
 creation_energy_cost = 0.05
 mechanical_strength = 0.2
 resource_transfer_rate = 0.08
@@ -118,7 +139,7 @@ max_joints_per_cell = 4
 volume = 1.0
 diffusion_rate = 0.05
 energy_value = 0.65
-decay_rate = 0.0001
+decay_rate = 0.0
 reactivity_profile = "reactive"
 permeability = "passive"
 tags = ["energy_source"]
@@ -127,7 +148,7 @@ tags = ["energy_source"]
 volume = 1.0
 diffusion_rate = 0.02
 energy_value = 0.0
-decay_rate = 0.001
+decay_rate = 0.0
 reactivity_profile = "stable"
 permeability = "blocked"
 tags = ["waste"]
@@ -159,16 +180,16 @@ outputs = { waste_A = 0.05 }
 required_materials = {}
 configured_sink_amount = 0.0
 energy_output = 0.0
-heat_output = 0.005
+heat_output = 0.001
 rate = 0.02
 probability = 1.0
 accounting_destination = "waste_A"
 
 [chemistry.heat]
 capacity = 1.0
-dissipation_rate = 0.02
-warning_threshold = 50.0
-death_threshold = 80.0
+dissipation_rate = 0.2
+warning_threshold = 200.0
+death_threshold = 400.0
 
 [chemistry.boundary]
 default_permeability = "passive"

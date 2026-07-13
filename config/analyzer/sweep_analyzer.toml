@@ -234,6 +234,14 @@ steps = 8
 # ─────────────────────────────────────────────
 # Двовимірне сканування
 # ─────────────────────────────────────────────
+[[sweep]]
+name = "integrated_world_baseline"
+scenario = "world_baseline_stable"
+param = "mandatory_cost_per_tick"
+from = 0.02
+to = 0.08
+steps = 8
+
 [[matrix]]
 name      = "resource_abundance"
 scenario  = "resource_abundance"
@@ -383,3 +391,6 @@ phase2h_mode = "joint_degradation_break"
 [scenarios.joint_lifecycle_division]
 phase2h_enabled = true
 phase2h_mode = "joint_lifecycle_division"
+
+[scenarios.world_baseline_stable]
+scenario_path = "config/scenarios/world/world_baseline_stable.toml"

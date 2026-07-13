@@ -227,6 +227,14 @@ from = 0.1
 to = 1.0
 steps = 2
 
+[[sweep]]
+name = "integrated_world_baseline"
+scenario = "world_baseline_stable"
+param = "mandatory_cost_per_tick"
+from = 0.02
+to = 0.08
+steps = 3
+
 # Scenarios Presets
 [scenarios.finite_resource_viability]
 [scenarios.passive_income_survival]
@@ -350,3 +358,6 @@ phase2h_mode = "joint_degradation_break"
 [scenarios.joint_lifecycle_division]
 phase2h_enabled = true
 phase2h_mode = "joint_lifecycle_division"
+
+[scenarios.world_baseline_stable]
+scenario_path = "config/scenarios/world/world_baseline_stable.toml"

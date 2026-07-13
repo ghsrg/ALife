@@ -164,3 +164,4 @@ tags:
 - [[outputs/worklogs/2026-07-13-1756-REPORT-phase-2g-reachability-fixes|2026-07-13-1756-REPORT-phase-2g-reachability-fixes]]
 - [[outputs/worklogs/2026-07-13-2017-REPORT-phase-2H-persistent-interaction-structures|2026-07-13-2017-REPORT-phase-2H-persistent-interaction-structures]]
 - [[outputs/worklogs/2026-07-13-2052-PLAN-phase-2I-integrated-world-calibration|2026-07-13-2052-PLAN-phase-2I-integrated-world-calibration]]
+- [[outputs/worklogs/2026-07-13-2301-REPORT-phase-2I-integrated-world-calibration|2026-07-13-2301-REPORT-phase-2I-integrated-world-calibration]]

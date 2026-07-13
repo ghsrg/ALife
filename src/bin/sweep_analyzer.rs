@@ -25,6 +25,7 @@ use alife::observer::{
     },
     projection::{EntityType, extract_features, metrics_summary_features},
 };
+use alife::runner::config_parser::RawScenarioConfig;
 use std::collections::HashMap;
 use std::io::Write;
 
@@ -122,6 +123,7 @@ pub struct MatrixDef {
 #[allow(dead_code)]
 #[derive(Debug, serde::Deserialize, Clone)]
 pub struct RawScenarioPreset {
+    pub scenario_path: Option<String>,
     pub world_size: Option<Vec<f32>>,
     pub initial_resources: Option<Vec<f32>>,
     pub decay_rate: Option<f32>,
@@ -171,6 +173,50 @@ pub struct RawScenarioPreset {
 // ─────────────────────────────────────────────────────────────────────────────
 // Single simulation run result
 // ─────────────────────────────────────────────────────────────────────────────
+
+fn apply_scenario_path_overrides(
+    rt: &mut RuntimeConfig,
+    overrides: &std::collections::HashMap<&str, f32>,
+) {
+    for (param, value) in overrides {
+        match *param {
+            "mandatory_cost_per_tick" => {
+                let amount = EnergyAmount::new(value.max(0.0)).unwrap();
+                rt.cell.mandatory_cost_per_tick = amount;
+                for cell in &mut rt.initial_cells {
+                    cell.mandatory_cost_per_tick = amount;
+                }
+            }
+            "passive_energy_income" => {
+                let amount = EnergyAmount::new(value.max(0.0)).unwrap();
+                rt.cell.passive_energy_income = amount;
+                for cell in &mut rt.initial_cells {
+                    cell.passive_energy_income = amount;
+                }
+            }
+            "resource_density" => {
+                if let Some(first) = rt.resources.initial_distribution.first_mut() {
+                    *first = ResourceAmount::new(value.max(0.0)).unwrap();
+                }
+            }
+            "max_uptake_per_tick" => {
+                rt.resource_interaction.max_uptake_per_tick =
+                    ResourceAmount::new(value.max(0.0)).unwrap();
+            }
+            "metabolism_resource_per_tick" => {
+                rt.resource_interaction.metabolism_resource_per_tick =
+                    ResourceAmount::new(value.max(0.0)).unwrap();
+            }
+            "repair_amount_per_tick" => {
+                rt.chemistry.repair.max_amount_per_tick = value.max(0.0);
+            }
+            "joint_decay_rate" => {
+                rt.joints.upkeep_material_decay_per_tick = value.max(0.0);
+            }
+            _ => {}
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct SimResult {
@@ -224,6 +270,10 @@ pub struct SimResult {
     pub numerical_error_resources: f32,
     pub unclassified_loss_energy: f32,
     pub unclassified_loss_resources: f32,
+    pub integrated_matter_before: f32,
+    pub integrated_matter_after: f32,
+    pub integrated_matter_unclassified_loss: f32,
+    pub integrated_matter_unclassified_gain: f32,
     pub divisions_count: u32,
     pub births_count: u32,
     pub dead_cells_count: u32,
@@ -293,6 +343,17 @@ pub fn build_config(
     preset: Option<&RawScenarioPreset>,
     overrides: &std::collections::HashMap<&str, f32>,
 ) -> RuntimeConfig {
+    if let Some(path) = preset.and_then(|p| p.scenario_path.as_deref()) {
+        let text = std::fs::read_to_string(path)
+            .unwrap_or_else(|err| panic!("failed to read scenario_path {path}: {err}"));
+        let mut rt = RawScenarioConfig::parse(&text)
+            .unwrap_or_else(|err| panic!("failed to parse scenario_path {path}: {err:?}"));
+        rt.world.tick_count = Tick::from_raw(cfg.run.ticks.into());
+        rt.world.seed = Seed::from_raw(cfg.run.seed);
+        apply_scenario_path_overrides(&mut rt, overrides);
+        return rt;
+    }
+
     let cell_cfg = &cfg.cell;
     let lc = &cfg.lifecycle;
     let ri = &cfg.resource_interaction;
@@ -1098,6 +1159,10 @@ fn run_simulation(
                 numerical_error_resources: 0.0,
                 unclassified_loss_energy: 0.0,
                 unclassified_loss_resources: 0.0,
+                integrated_matter_before: 0.0,
+                integrated_matter_after: 0.0,
+                integrated_matter_unclassified_loss: 0.0,
+                integrated_matter_unclassified_gain: 0.0,
                 divisions_count: 0,
                 births_count: 0,
                 dead_cells_count: 0,
@@ -1318,6 +1383,10 @@ fn run_simulation(
     let mut joint_heat_transfer_amount_cumulative = 0.0_f32;
     let mut joint_degradation_amount_cumulative = 0.0_f32;
     let mut joint_mechanical_correction_amount_cumulative = 0.0_f32;
+    let mut integrated_matter_before_last = 0.0_f32;
+    let mut integrated_matter_after_last = 0.0_f32;
+    let mut integrated_matter_unclassified_loss_max = 0.0_f32;
+    let mut integrated_matter_unclassified_gain_max = 0.0_f32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -1394,6 +1463,12 @@ fn run_simulation(
         };
 
         ticks_executed += 1;
+        integrated_matter_before_last = summary.metrics.integrated_matter_before;
+        integrated_matter_after_last = summary.metrics.integrated_matter_after;
+        integrated_matter_unclassified_loss_max = integrated_matter_unclassified_loss_max
+            .max(summary.metrics.integrated_matter_unclassified_loss);
+        integrated_matter_unclassified_gain_max = integrated_matter_unclassified_gain_max
+            .max(summary.metrics.integrated_matter_unclassified_gain);
         contact_pairs_count_max = contact_pairs_count_max.max(summary.metrics.contact_pairs_count);
         contact_pressure_pre_total_max =
             contact_pressure_pre_total_max.max(summary.metrics.contact_pressure_pre_total);
@@ -2369,6 +2444,10 @@ fn run_simulation(
         numerical_error_resources,
         unclassified_loss_energy,
         unclassified_loss_resources,
+        integrated_matter_before: integrated_matter_before_last,
+        integrated_matter_after: integrated_matter_after_last,
+        integrated_matter_unclassified_loss: integrated_matter_unclassified_loss_max,
+        integrated_matter_unclassified_gain: integrated_matter_unclassified_gain_max,
         divisions_count: divisions_count_cumulative,
         births_count: births_count_cumulative,
         dead_cells_count: dead_cells_count_cumulative,
@@ -2636,8 +2715,24 @@ fn scenario_has_informative_mechanism_variation(
                 || varies_by(results, 0.0, |r| r.joint_broken_count as f32)
         }
         "joint_heat_channel" => varies_by(results, 0.001, |r| r.joint_heat_transfer_amount),
+        "world_baseline_stable" => results.iter().any(|r| {
+            r.resource_diffused_amount > 0.0
+                && r.repair_success_count > 0
+                && r.fragment_created_amount > 0.0
+                && r.fragment_converted_amount > 0.0
+                && r.joint_created_count > 0
+                && r.material_degradation_amount > 0.0
+        }),
         _ => false,
     }
+}
+
+fn has_balance_warning(res: &SimResult, scenario_id: &str) -> bool {
+    if scenario_id.eq_ignore_ascii_case("world_baseline_stable") {
+        return res.integrated_matter_unclassified_loss > 0.2
+            || res.integrated_matter_unclassified_gain > 0.2;
+    }
+    res.unclassified_loss_resources > 0.0 || res.unclassified_loss_energy > 0.0
 }
 
 fn varies_by(results: &[SimResult], min_delta: f32, value: impl Fn(&SimResult) -> f32) -> bool {
@@ -2804,7 +2899,7 @@ pub fn run_sweep(
          energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
          resource_balance_error,energy_balance_error,ticks_per_second,\
-         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
+         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,integrated_matter_before,integrated_matter_after,integrated_matter_unclassified_loss,integrated_matter_unclassified_gain,\
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
          contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
@@ -2900,7 +2995,7 @@ pub fn run_sweep(
     for (val, config_hash, res, zone) in run_results {
         let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
         let mut row_warnings = Vec::new();
-        if res.unclassified_loss_resources > 0.0 || res.unclassified_loss_energy > 0.0 {
+        if has_balance_warning(&res, scenario_id) {
             row_warnings.push("BALANCE_ERROR".to_string());
         }
         for w in &sweep_warnings {
@@ -2925,7 +3020,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2981,6 +3076,10 @@ pub fn run_sweep(
             res.numerical_error_resources,
             res.unclassified_loss_energy,
             res.unclassified_loss_resources,
+            res.integrated_matter_before,
+            res.integrated_matter_after,
+            res.integrated_matter_unclassified_loss,
+            res.integrated_matter_unclassified_gain,
             res.divisions_count,
             res.births_count,
             res.dead_cells_count,
@@ -3117,7 +3216,7 @@ pub fn run_matrix(
          energy_spent_upkeep,energy_spent_dormant_upkeep,energy_spent_movement,energy_spent_growth,energy_spent_repair,energy_spent_division,\
          initial_world_resource,final_world_resource,resource_regenerated,resource_absorbed,resource_metabolized,internal_resource_final,resource_released,resource_explicit_sink,\
          resource_balance_error,energy_balance_error,ticks_per_second,\
-         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,\
+         explicit_energy_loss,death_cleanup_loss_energy,death_cleanup_loss_resources,clamping_loss,unpaid_mandatory_cost,resource_decay,resource_sink,numerical_error_energy,numerical_error_resources,unclassified_loss_energy,unclassified_loss_resources,integrated_matter_before,integrated_matter_after,integrated_matter_unclassified_loss,integrated_matter_unclassified_gain,\
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
          contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
@@ -3220,7 +3319,7 @@ pub fn run_matrix(
     for (vx, vy, config_hash, res, zone) in run_results {
         let scenario_status = if res.collapsed { "collapsed" } else { "stable" };
         let mut row_warnings = Vec::new();
-        if res.unclassified_loss_resources > 0.0 || res.unclassified_loss_energy > 0.0 {
+        if has_balance_warning(&res, scenario_id) {
             row_warnings.push("BALANCE_ERROR".to_string());
         }
         for w in &matrix_warnings {
@@ -3245,7 +3344,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -3303,6 +3402,10 @@ pub fn run_matrix(
             res.numerical_error_resources,
             res.unclassified_loss_energy,
             res.unclassified_loss_resources,
+            res.integrated_matter_before,
+            res.integrated_matter_after,
+            res.integrated_matter_unclassified_loss,
+            res.integrated_matter_unclassified_gain,
             res.divisions_count,
             res.births_count,
             res.dead_cells_count,
@@ -3893,6 +3996,7 @@ fn main() {
         "joint_heat_channel",
         "joint_degradation_break",
         "joint_lifecycle_division",
+        "world_baseline_stable",
     ];
 
     if let Some(sweeps) = &cfg.sweep {

@@ -56,6 +56,10 @@ fn mock_result(collapsed: bool, final_energy: f32, dormant_ticks: u32) -> SimRes
         numerical_error_resources: 0.0,
         unclassified_loss_energy: 0.0,
         unclassified_loss_resources: 0.0,
+        integrated_matter_before: 0.0,
+        integrated_matter_after: 0.0,
+        integrated_matter_unclassified_loss: 0.0,
+        integrated_matter_unclassified_gain: 0.0,
         divisions_count: 0,
         births_count: 0,
         dead_cells_count: 0,
@@ -179,6 +183,10 @@ fn mock_result_custom(
         numerical_error_resources: 0.0,
         unclassified_loss_energy: 0.0,
         unclassified_loss_resources: 0.0,
+        integrated_matter_before: 0.0,
+        integrated_matter_after: 0.0,
+        integrated_matter_unclassified_loss: 0.0,
+        integrated_matter_unclassified_gain: 0.0,
         divisions_count: 0,
         births_count: 0,
         dead_cells_count: 0,
@@ -297,6 +305,10 @@ fn mock_decomposition_result(
         numerical_error_resources: 0.0,
         unclassified_loss_energy: 0.0,
         unclassified_loss_resources: 0.0,
+        integrated_matter_before: 0.0,
+        integrated_matter_after: 0.0,
+        integrated_matter_unclassified_loss: 0.0,
+        integrated_matter_unclassified_gain: 0.0,
         divisions_count: 0,
         births_count: 0,
         dead_cells_count: 1,
@@ -619,4 +631,20 @@ fn test_phase2i_joint_variation_is_informative_without_energy_variation() {
         let warnings = detect_warnings(&[closed.clone(), open.clone()], scenario);
         assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
     }
+}
+
+#[test]
+fn test_phase2i_integrated_world_mechanisms_are_informative_without_energy_variation() {
+    let mut result = mock_result(false, 20.0, 0);
+    result.resource_diffused_amount = 10.0;
+    result.repair_success_count = 3;
+    result.fragment_created_amount = 1.0;
+    result.fragment_converted_amount = 1.0;
+    result.material_degradation_amount = 0.2;
+    result.joint_created_count = 1;
+    result.joint_degradation_amount = 0.1;
+
+    let warnings = detect_warnings(&[result], "world_baseline_stable");
+
+    assert!(!warnings.contains(&"LOW_INFORMATION_SWEEP".to_string()));
 }

@@ -322,6 +322,30 @@ impl CellStore {
         Ok(())
     }
 
+    pub fn partition_typed_resources(
+        &mut self,
+        source: CellIndex,
+        target: CellIndex,
+        source_ratio: f32,
+        retained_fraction: f32,
+    ) -> Result<(), TypedResourceInventoryError> {
+        let width = self.typed_resource_types.len();
+        if width == 0 {
+            return Ok(());
+        }
+        let source_start = source.raw() * width;
+        let target_start = target.raw() * width;
+        let target_ratio = 1.0 - source_ratio;
+        for offset in 0..width {
+            let current = self.typed_resources[source_start + offset].raw();
+            self.typed_resources[source_start + offset] =
+                ResourceAmount::new_unchecked(current * source_ratio * retained_fraction);
+            self.typed_resources[target_start + offset] =
+                ResourceAmount::new_unchecked(current * target_ratio * retained_fraction);
+        }
+        Ok(())
+    }
+
     pub fn consume_typed_resource(
         &mut self,
         index: CellIndex,
@@ -402,7 +426,7 @@ impl CellStore {
         requested: ResourceAmount,
         storage_capacity_per_unit: f32,
     ) -> ResourceAmount {
-        let source_available = self.resource_amount(source).raw();
+        let source_available = self.generic_resource_amount(source).raw();
         let target_free = self
             .effective_free_capacity(target, storage_capacity_per_unit)
             .raw();

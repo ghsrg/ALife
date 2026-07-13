@@ -39,12 +39,14 @@ struct Phase2GMetricsDelta {
     reaction_heat_generated: f32,
     reaction_energy_output: f32,
     reaction_accounting_error: f32,
+    resource_metabolism_sink_amount: f32,
     resource_diffused_amount: f32,
     resource_decay_amount: f32,
     fragment_created_amount: f32,
     fragment_converted_amount: f32,
     material_degradation_amount: f32,
     boundary_leakage_amount: f32,
+    repair_resource_sink_amount: f32,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -75,12 +77,14 @@ impl Phase2GMetricsDelta {
         self.reaction_heat_generated += other.reaction_heat_generated;
         self.reaction_energy_output += other.reaction_energy_output;
         self.reaction_accounting_error += other.reaction_accounting_error;
+        self.resource_metabolism_sink_amount += other.resource_metabolism_sink_amount;
         self.resource_diffused_amount += other.resource_diffused_amount;
         self.resource_decay_amount += other.resource_decay_amount;
         self.fragment_created_amount += other.fragment_created_amount;
         self.fragment_converted_amount += other.fragment_converted_amount;
         self.material_degradation_amount += other.material_degradation_amount;
         self.boundary_leakage_amount += other.boundary_leakage_amount;
+        self.repair_resource_sink_amount += other.repair_resource_sink_amount;
     }
 }
 
@@ -165,8 +169,8 @@ impl TickExecutor {
                 let energy_cost_each = config.joints.creation_energy_cost.raw() * 0.5;
                 let a_structural = self.world.cells().structural_material(pair.a).raw();
                 let b_structural = self.world.cells().structural_material(pair.b).raw();
-                let a_resource = self.world.cells().resource_amount(pair.a).raw();
-                let b_resource = self.world.cells().resource_amount(pair.b).raw();
+                let a_resource = self.world.cells().generic_resource_amount(pair.a).raw();
+                let b_resource = self.world.cells().generic_resource_amount(pair.b).raw();
                 let a_energy = self.world.cells().energy(pair.a);
                 let b_energy = self.world.cells().energy(pair.b);
                 if a_structural < cost_each
@@ -253,8 +257,16 @@ impl TickExecutor {
                 {
                     continue;
                 }
-                let a = self.world.cells().resource_amount(endpoints.a).raw();
-                let b = self.world.cells().resource_amount(endpoints.b).raw();
+                let a = self
+                    .world
+                    .cells()
+                    .generic_resource_amount(endpoints.a)
+                    .raw();
+                let b = self
+                    .world
+                    .cells()
+                    .generic_resource_amount(endpoints.b)
+                    .raw();
                 if (a - b).abs() <= f32::EPSILON {
                     continue;
                 }
@@ -378,8 +390,8 @@ impl TickExecutor {
             for pair in pairs {
                 let a = pair.a;
                 let b = pair.b;
-                let a_res = self.world.cells().resource_amount(a).raw();
-                let b_res = self.world.cells().resource_amount(b).raw();
+                let a_res = self.world.cells().generic_resource_amount(a).raw();
+                let b_res = self.world.cells().generic_resource_amount(b).raw();
                 if (a_res - b_res).abs() <= f32::EPSILON {
                     continue;
                 }
@@ -571,6 +583,7 @@ impl TickExecutor {
                                 .expect("accepted metabolism is clamped"),
                         )
                     };
+                    phase2g_metrics.resource_metabolism_sink_amount += consumed.raw();
 
                     metabolism_energy = EnergyAmount::new(
                         consumed.raw() * config.resource_interaction.energy_per_resource,
@@ -701,8 +714,9 @@ impl TickExecutor {
                                 repair_rejection_count += 1;
                                 continue;
                             }
+                            phase2g_metrics.repair_resource_sink_amount += consumed.raw();
                         } else {
-                            let available = cells.resource_amount(index);
+                            let available = cells.generic_resource_amount(index);
                             if available.raw() + f32::EPSILON < resource_cost {
                                 repair_rejection_count += 1;
                                 continue;
@@ -713,6 +727,7 @@ impl TickExecutor {
                                 repair_rejection_count += 1;
                                 continue;
                             }
+                            phase2g_metrics.repair_resource_sink_amount += consumed.raw();
                         }
                         let repair_remaining = MaterialAmount::new_unchecked(
                             (cells.repair_material(index).raw() - accepted_amount).max(0.0),
@@ -1293,6 +1308,8 @@ impl TickExecutor {
         accounting_after.explicit_sinks = phase2g_metrics.resource_decay_amount
             + phase2g_metrics.material_degradation_amount
             + phase2g_metrics.boundary_leakage_amount
+            + phase2g_metrics.resource_metabolism_sink_amount
+            + phase2g_metrics.repair_resource_sink_amount
             + phase2h_metrics.joint_degradation_amount;
         let accounting_delta = MatterAccountingDelta::between(accounting_before, accounting_after);
 
@@ -1654,6 +1671,12 @@ impl TickExecutor {
                 self.world
                     .cells_mut_for_commit()
                     .set_material_amount_for_slot(cell, slot, remaining);
+                let current_damage = self.world.cells().material_damage(cell, slot);
+                self.world.cells_mut_for_commit().set_material_damage(
+                    cell,
+                    slot,
+                    current_damage + decay_rate,
+                );
                 degraded_total += decayed;
             }
         }
