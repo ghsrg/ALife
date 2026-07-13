@@ -146,9 +146,6 @@ impl TickExecutor {
 
         if config.joints.enabled {
             let pairs = self.world.contact_cache().pairs().to_vec();
-            if pairs.is_empty() && self.world.cells().len() >= 2 {
-                phase2h_metrics.joint_creation_rejected_count += 1;
-            }
             for pair in pairs {
                 let Some(endpoints) = crate::core::joints::JointEndpoints::new(pair.a, pair.b)
                 else {
@@ -156,7 +153,6 @@ impl TickExecutor {
                     continue;
                 };
                 if self.world.joints().has_active_between(endpoints) {
-                    phase2h_metrics.joint_creation_rejected_count += 1;
                     continue;
                 }
                 let cost_each = config.joints.creation_material_cost.raw() * 0.5;
@@ -634,6 +630,14 @@ impl TickExecutor {
             for i in 0..len {
                 let index = CellIndex::from_raw(i);
                 if self.world.cells().lifecycle_state(index) == LifecycleState::Dead {
+                    continue;
+                }
+                if self
+                    .world
+                    .cells()
+                    .material_damage(index, MaterialSlot::Boundary)
+                    <= 0.0
+                {
                     continue;
                 }
                 let (feasible, feasibility) = run_process(
