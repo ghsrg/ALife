@@ -377,3 +377,53 @@ fn local_reaction_heat_degrades_material_over_tolerance_in_tick() {
     );
     assert!((cells.boundary_material(index).raw() - 0.5).abs() < 1e-5);
 }
+
+#[test]
+fn passive_reaction_heat_changes_local_cell_temperature() {
+    let mut config = passive_chemistry_config();
+    config.chemistry.heat.capacity = 10.0;
+    config.chemistry.heat.warning_threshold = 100.0;
+    config.chemistry.heat.death_threshold = 200.0;
+    config.chemistry.reactions[0].heat_output = 2.0;
+    config.chemistry.reactions[0].rate = 1.0;
+    let mut executor = TickExecutor::new(config).unwrap();
+
+    executor.step().unwrap();
+
+    let index = alife::core::cell_store::CellIndex::from_raw(0);
+    assert!(
+        executor.world().cells().temperature(index).raw() > 25.0,
+        "passive reaction heat must be committed to local cell temperature"
+    );
+}
+
+#[test]
+fn material_fragments_convert_to_resources_after_identity_retention_tick() {
+    let mut config = passive_chemistry_config();
+    config.chemistry.reactions.clear();
+    config.chemistry.heat.warning_threshold = 100.0;
+    config.chemistry.heat.death_threshold = 200.0;
+    config.decomposition.enabled = true;
+    config.decomposition.resource_layer_index = 0;
+    config.decomposition.resources_per_tick = ResourceAmount::zero();
+    config.decomposition.materials_per_tick = MaterialAmount::new(1.0).unwrap();
+    config.cell.initial_energy = EnergyAmount::zero();
+    config.initial_cells[0].initial_energy = EnergyAmount::zero();
+    config.cell.mandatory_cost_per_tick = EnergyAmount::new(1.0).unwrap();
+    config.initial_cells[0].mandatory_cost_per_tick = EnergyAmount::new(1.0).unwrap();
+    config.cell.initial_boundary_material = MaterialAmount::new(2.0).unwrap();
+    config.initial_cells[0].initial_boundary_material = MaterialAmount::new(2.0).unwrap();
+    let mut executor = TickExecutor::new(config).unwrap();
+
+    let first_decomposition = executor.step().unwrap();
+    assert!(first_decomposition.metrics.fragment_created_amount > 0.0);
+    assert_eq!(first_decomposition.metrics.fragment_converted_amount, 0.0);
+    assert!(executor.world().fragments().total_amount().raw() > 0.0);
+
+    let second_decomposition = executor.step().unwrap();
+
+    assert!(
+        second_decomposition.metrics.fragment_converted_amount > 0.0,
+        "fragment conversion should be an explicit later step, not direct material-to-resource release"
+    );
+}

@@ -48,6 +48,7 @@ fn metrics() -> MetricsSummary {
         boundary_leakage_amount: 0.4,
         repair_success_count: 5,
         repair_rejection_count: 6,
+        ..Default::default()
     }
 }
 

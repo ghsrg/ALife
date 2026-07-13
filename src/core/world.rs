@@ -7,6 +7,7 @@ use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
 use crate::core::fragments::FragmentStore;
 use crate::core::ids::ResourceTypeId;
+use crate::core::joints::JointStore;
 use crate::core::resources::ResourceGrid;
 use crate::core::spatial::SpatialIndex;
 use crate::core::units::{
@@ -38,6 +39,7 @@ pub struct WorldState {
     contact_cache: ContactCache,
     events: EventBuffer,
     fragments: FragmentStore,
+    joints: JointStore,
 }
 
 impl WorldState {
@@ -157,6 +159,7 @@ impl WorldState {
             contact_cache,
             events: EventBuffer::with_capacity(128),
             fragments: FragmentStore::default(),
+            joints: JointStore::with_capacity(4),
         })
     }
 
@@ -230,6 +233,14 @@ impl WorldState {
 
     pub fn fragments_mut_for_commit(&mut self) -> &mut FragmentStore {
         &mut self.fragments
+    }
+
+    pub fn joints(&self) -> &JointStore {
+        &self.joints
+    }
+
+    pub fn joints_mut_for_commit(&mut self) -> &mut JointStore {
+        &mut self.joints
     }
 
     pub(crate) fn advance_tick(&mut self) {
@@ -444,6 +455,38 @@ impl WorldState {
                 energy_cost: 0.0,
                 resource_cost: 0.0,
             },
+            ProcessId::JointCreate => {
+                if !self.config.joints.enabled {
+                    return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
+                }
+                if !self
+                    .cells
+                    .has_capability(cell_idx, MaterialCapability::BoundaryPermeability)
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingCapability(
+                        MaterialCapability::BoundaryPermeability,
+                    ));
+                }
+                if !self
+                    .cells
+                    .has_capability(cell_idx, MaterialCapability::StructuralGrowth)
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingCapability(
+                        MaterialCapability::StructuralGrowth,
+                    ));
+                }
+                if self.cells.structural_material(cell_idx).raw()
+                    < self.config.joints.creation_material_cost.raw() * 0.5
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientMaterial);
+                }
+                FeasibilityResult::Allowed {
+                    accepted_amount: 1.0,
+                    energy_cost: self.config.joints.creation_energy_cost.raw() * 0.5,
+                    resource_cost: self.config.joints.creation_resource_cost.raw() * 0.5,
+                }
+            }
+            ProcessId::JointRepair => FeasibilityResult::Rejected(RejectionReason::ProcessDisabled),
             ProcessId::RepairBoundary => {
                 if !self.config.chemistry.repair.enabled {
                     return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
@@ -470,12 +513,21 @@ impl WorldState {
                     return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
                 }
 
+                let available_repair_resource = repair_resource_type_id(&self.config)
+                    .and_then(|resource_type| {
+                        self.cells
+                            .typed_resource_amount(cell_idx, resource_type)
+                            .ok()
+                            .map(|amount| amount.raw())
+                    })
+                    .unwrap_or_else(|| self.cells.generic_resource_amount(cell_idx).raw());
+
                 let requested = action
                     .requested_amount
                     .min(self.config.chemistry.repair.max_amount_per_tick)
                     .min(boundary_damage)
                     .min(self.cells.repair_material(cell_idx).raw())
-                    .min(self.cells.generic_resource_amount(cell_idx).raw());
+                    .min(available_repair_resource);
                 if requested <= 0.0 {
                     return FeasibilityResult::Rejected(RejectionReason::InsufficientResources);
                 }
@@ -576,6 +628,8 @@ impl WorldState {
         let ratio = self.config.division.split_ratio;
         let inv_ratio = 1.0 - ratio;
         let loss_keep = 1.0 - self.config.division.partition_loss_fraction;
+        let current_tick = self.tick;
+        self.joints.break_for_endpoint(cell_idx, current_tick);
 
         let parent_id = self.cells.id_at(cell_idx);
         let parent_pos = self.cells.position(cell_idx);
@@ -1024,4 +1078,21 @@ fn baseline_process_level(raw_level: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+pub(crate) fn repair_resource_type_id(
+    config: &crate::core::config::RuntimeConfig,
+) -> Option<crate::core::ids::ResourceTypeId> {
+    let repair_resource = config
+        .chemistry
+        .materials
+        .iter()
+        .find(|material| !material.repair_resource.is_empty())
+        .map(|material| material.repair_resource.as_str())?;
+    config
+        .chemistry
+        .resources
+        .iter()
+        .position(|resource| resource.id == repair_resource)
+        .map(|index| crate::core::ids::ResourceTypeId::from_raw(index as u32))
 }

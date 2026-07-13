@@ -66,4 +66,38 @@ impl FragmentStore {
         )
         .expect("fragment amounts are validated")
     }
+
+    pub fn drain_convertible_before(
+        &mut self,
+        tick: Tick,
+        max_amount: MaterialAmount,
+    ) -> Vec<MaterialFragment> {
+        let mut remaining = max_amount.raw();
+        if remaining <= 0.0 {
+            return Vec::new();
+        }
+
+        let mut converted = Vec::new();
+        for fragment in &mut self.fragments {
+            if remaining <= 0.0 || fragment.created_tick.raw() >= tick.raw() {
+                continue;
+            }
+            let amount = fragment.amount.raw().min(remaining);
+            if amount <= 0.0 {
+                continue;
+            }
+            converted.push(MaterialFragment::new(
+                fragment.material_type_id,
+                MaterialAmount::new_unchecked(amount),
+                fragment.position,
+                tick,
+            ));
+            fragment.amount =
+                MaterialAmount::new_unchecked((fragment.amount.raw() - amount).max(0.0));
+            remaining -= amount;
+        }
+        self.fragments
+            .retain(|fragment| fragment.amount.raw() > 0.0);
+        converted
+    }
 }

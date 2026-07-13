@@ -9,7 +9,7 @@ use crate::core::summary::{
     CollapseReason, MetricsSummary, ProcessDiagnostics, RunSummary, SurvivalResult,
 };
 use crate::core::units::{
-    EnergyAmount, HeatAmount, MaterialAmount, Position, ResourceAmount, WasteAmount,
+    EnergyAmount, HeatAmount, MaterialAmount, Position, ResourceAmount, WasteAmount, WorldSize,
 };
 use crate::core::world::{WorldInitError, WorldState};
 
@@ -44,6 +44,19 @@ struct Phase2GMetricsDelta {
     fragment_converted_amount: f32,
     material_degradation_amount: f32,
     boundary_leakage_amount: f32,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct Phase2HMetricsDelta {
+    joint_created_count: u32,
+    joint_creation_rejected_count: u32,
+    joint_broken_count: u32,
+    joint_resource_transfer_amount: f32,
+    joint_signal_generated_total: f32,
+    joint_signal_readable_total: f32,
+    joint_heat_transfer_amount: f32,
+    joint_degradation_amount: f32,
+    joint_mechanical_correction_amount: f32,
 }
 
 impl Phase2GMetricsDelta {
@@ -87,6 +100,20 @@ impl TickExecutor {
         // Rebuild Spatial Index at the start of tick
         self.world.rebuild_spatial_index();
         self.world.rebuild_contact_cache();
+        if config.joints.enabled {
+            self.world
+                .joints_mut_for_commit()
+                .begin_tick_signal_rollover(config.joints.signal_decay);
+            let dead_endpoints = (0..self.world.cells().len())
+                .map(CellIndex::from_raw)
+                .filter(|idx| self.world.cells().lifecycle_state(*idx) == LifecycleState::Dead)
+                .collect::<Vec<_>>();
+            for endpoint in dead_endpoints {
+                self.world
+                    .joints_mut_for_commit()
+                    .make_inert_for_endpoint(endpoint);
+            }
+        }
 
         let mut phase2g_metrics = self.commit_passive_chemistry_reactions(&config);
         phase2g_metrics.add(self.commit_controlled_chemistry_reactions(&config));
@@ -103,6 +130,231 @@ impl TickExecutor {
         let mut contact_exchange_amount = 0.0_f32;
         let mut contact_exchange_pairs_count = 0_u32;
         let mut contact_exchange_rejections_no_capability = 0_u32;
+        let mut phase2h_metrics = Phase2HMetricsDelta::default();
+        if config.joints.enabled {
+            let tick = self.world.tick();
+            for joint_id in self.world.joints().active_ids().collect::<Vec<_>>() {
+                phase2h_metrics.joint_signal_readable_total += self
+                    .world
+                    .joints()
+                    .readable_signal(joint_id, tick)
+                    .unwrap_or(0.0);
+            }
+        }
+
+        if config.joints.enabled {
+            let pairs = self.world.contact_cache().pairs().to_vec();
+            if pairs.is_empty() && self.world.cells().len() >= 2 {
+                phase2h_metrics.joint_creation_rejected_count += 1;
+            }
+            for pair in pairs {
+                let Some(endpoints) = crate::core::joints::JointEndpoints::new(pair.a, pair.b)
+                else {
+                    phase2h_metrics.joint_creation_rejected_count += 1;
+                    continue;
+                };
+                if self.world.joints().has_active_between(endpoints) {
+                    phase2h_metrics.joint_creation_rejected_count += 1;
+                    continue;
+                }
+                let cost_each = config.joints.creation_material_cost.raw() * 0.5;
+                let resource_cost_each = config.joints.creation_resource_cost.raw() * 0.5;
+                let energy_cost_each = config.joints.creation_energy_cost.raw() * 0.5;
+                let a_structural = self.world.cells().structural_material(pair.a).raw();
+                let b_structural = self.world.cells().structural_material(pair.b).raw();
+                let a_resource = self.world.cells().resource_amount(pair.a).raw();
+                let b_resource = self.world.cells().resource_amount(pair.b).raw();
+                let a_energy = self.world.cells().energy(pair.a);
+                let b_energy = self.world.cells().energy(pair.b);
+                if a_structural < cost_each
+                    || b_structural < cost_each
+                    || a_resource < resource_cost_each
+                    || b_resource < resource_cost_each
+                    || a_energy.current().raw() < energy_cost_each
+                    || b_energy.current().raw() < energy_cost_each
+                {
+                    phase2h_metrics.joint_creation_rejected_count += 1;
+                    continue;
+                }
+                {
+                    let cells = self.world.cells_mut_for_commit();
+                    cells.set_structural_material(
+                        pair.a,
+                        MaterialAmount::new_unchecked((a_structural - cost_each).max(0.0)),
+                    );
+                    cells.set_structural_material(
+                        pair.b,
+                        MaterialAmount::new_unchecked((b_structural - cost_each).max(0.0)),
+                    );
+                    cells.set_resources(
+                        pair.a,
+                        ResourceAmount::new_unchecked((a_resource - resource_cost_each).max(0.0)),
+                    );
+                    cells.set_resources(
+                        pair.b,
+                        ResourceAmount::new_unchecked((b_resource - resource_cost_each).max(0.0)),
+                    );
+                    cells.set_energy(
+                        pair.a,
+                        EnergyBuffer::new(
+                            EnergyAmount::new_unchecked(
+                                (a_energy.current().raw() - energy_cost_each).max(0.0),
+                            ),
+                            a_energy.capacity(),
+                        ),
+                    );
+                    cells.set_energy(
+                        pair.b,
+                        EnergyBuffer::new(
+                            EnergyAmount::new_unchecked(
+                                (b_energy.current().raw() - energy_cost_each).max(0.0),
+                            ),
+                            b_energy.capacity(),
+                        ),
+                    );
+                }
+                let tick = self.world.tick();
+                self.world.joints_mut_for_commit().create(
+                    endpoints,
+                    config.joints.creation_material_cost,
+                    crate::core::joints::JointChannelConfig {
+                        mechanical_strength: config.joints.mechanical_strength,
+                        resource_transfer_rate: config.joints.resource_transfer_rate,
+                        max_resource_transfer_per_tick: config
+                            .joints
+                            .max_resource_transfer_per_tick
+                            .raw(),
+                        signal_conductivity: config.joints.signal_conductivity,
+                        signal_decay: config.joints.signal_decay,
+                        heat_conductivity: config.joints.heat_conductivity,
+                    },
+                    tick,
+                );
+                phase2h_metrics.joint_created_count += 1;
+            }
+
+            let joint_ids = self.world.joints().active_ids().collect::<Vec<_>>();
+            for joint_id in joint_ids {
+                let endpoints = self
+                    .world
+                    .joints()
+                    .endpoints(joint_id)
+                    .expect("active joint id has endpoints");
+                let channel = self
+                    .world
+                    .joints()
+                    .config(joint_id)
+                    .expect("active joint id has config");
+                if channel.resource_transfer_rate <= 0.0
+                    || channel.max_resource_transfer_per_tick <= 0.0
+                {
+                    continue;
+                }
+                let a = self.world.cells().resource_amount(endpoints.a).raw();
+                let b = self.world.cells().resource_amount(endpoints.b).raw();
+                if (a - b).abs() <= f32::EPSILON {
+                    continue;
+                }
+                let (source, target, gradient) = if a > b {
+                    (endpoints.a, endpoints.b, a - b)
+                } else {
+                    (endpoints.b, endpoints.a, b - a)
+                };
+                let free_target = self
+                    .world
+                    .cells()
+                    .effective_free_capacity(
+                        target,
+                        config.material_effects.storage_capacity_per_unit,
+                    )
+                    .raw();
+                let requested = (gradient * channel.resource_transfer_rate)
+                    .min(channel.max_resource_transfer_per_tick)
+                    .min(free_target);
+                if requested <= 0.0 {
+                    continue;
+                }
+                let moved = self
+                    .world
+                    .cells_mut_for_commit()
+                    .transfer_resources_limited_by_effective_capacity(
+                        source,
+                        target,
+                        ResourceAmount::new(requested).expect("joint resource transfer is clamped"),
+                        config.material_effects.storage_capacity_per_unit,
+                    );
+                phase2h_metrics.joint_resource_transfer_amount += moved.raw();
+            }
+
+            let joint_ids = self.world.joints().active_ids().collect::<Vec<_>>();
+            for joint_id in joint_ids {
+                let endpoints = self
+                    .world
+                    .joints()
+                    .endpoints(joint_id)
+                    .expect("active joint id has endpoints");
+                let channel = self
+                    .world
+                    .joints()
+                    .config(joint_id)
+                    .expect("active joint id has config");
+                if channel.signal_conductivity <= 0.0 {
+                    continue;
+                }
+                let overlap = self
+                    .world
+                    .contact_cache()
+                    .pairs()
+                    .iter()
+                    .find(|pair| {
+                        crate::core::joints::JointEndpoints::new(pair.a, pair.b) == Some(endpoints)
+                    })
+                    .map(|pair| pair.overlap)
+                    .unwrap_or(0.0);
+                let signal = (overlap * channel.signal_conductivity).clamp(0.0, 1.0);
+                if signal <= 0.0 {
+                    continue;
+                }
+                let readable_from = self.world.tick().next();
+                self.world
+                    .joints_mut_for_commit()
+                    .add_next_signal(joint_id, signal, readable_from);
+                phase2h_metrics.joint_signal_generated_total += signal;
+            }
+
+            let joint_ids = self.world.joints().active_ids().collect::<Vec<_>>();
+            for joint_id in joint_ids {
+                let endpoints = self
+                    .world
+                    .joints()
+                    .endpoints(joint_id)
+                    .expect("active joint id has endpoints");
+                let channel = self
+                    .world
+                    .joints()
+                    .config(joint_id)
+                    .expect("active joint id has config");
+                if channel.heat_conductivity <= 0.0 {
+                    continue;
+                }
+                let temp_a = self.world.cells().temperature(endpoints.a).raw();
+                let temp_b = self.world.cells().temperature(endpoints.b).raw();
+                let delta = (temp_a - temp_b) * channel.heat_conductivity.clamp(0.0, 1.0) * 0.5;
+                if delta.abs() <= f32::EPSILON {
+                    continue;
+                }
+                let cells = self.world.cells_mut_for_commit();
+                cells.set_temperature(
+                    endpoints.a,
+                    crate::core::units::Temperature::new(temp_a - delta),
+                );
+                cells.set_temperature(
+                    endpoints.b,
+                    crate::core::units::Temperature::new(temp_b + delta),
+                );
+                phase2h_metrics.joint_heat_transfer_amount += delta.abs();
+            }
+        }
 
         if config.local_interaction.enabled {
             let pairs = self.world.contact_cache().pairs().to_vec();
@@ -400,12 +652,43 @@ impl TickExecutor {
                         let cells = self.world.cells_mut_for_commit();
                         let accepted_material =
                             MaterialAmount::new_unchecked(accepted_amount.max(0.0));
-                        let consumed = cells.consume_resources(
-                            index,
-                            ResourceAmount::new(resource_cost)
-                                .expect("repair resource cost is clamped"),
-                        );
-                        debug_assert!(consumed.raw() + f32::EPSILON >= resource_cost);
+                        let requested_resource = ResourceAmount::new(resource_cost)
+                            .expect("repair resource cost is clamped");
+                        if let Some(resource_type) =
+                            crate::core::world::repair_resource_type_id(&config)
+                        {
+                            let available = cells
+                                .typed_resource_amount(index, resource_type)
+                                .expect("repair resource type is derived from validated config");
+                            if available.raw() + f32::EPSILON < resource_cost {
+                                repair_rejection_count += 1;
+                                continue;
+                            }
+                            let consumed = cells
+                                .consume_typed_resource(index, resource_type, requested_resource)
+                                .expect("repair resource type is derived from validated config");
+                            if consumed.raw() + f32::EPSILON < resource_cost {
+                                cells
+                                    .set_typed_resource_amount(index, resource_type, available)
+                                    .expect(
+                                        "repair resource type is derived from validated config",
+                                    );
+                                repair_rejection_count += 1;
+                                continue;
+                            }
+                        } else {
+                            let available = cells.resource_amount(index);
+                            if available.raw() + f32::EPSILON < resource_cost {
+                                repair_rejection_count += 1;
+                                continue;
+                            }
+                            let consumed = cells.consume_resources(index, requested_resource);
+                            if consumed.raw() + f32::EPSILON < resource_cost {
+                                cells.set_resources(index, available);
+                                repair_rejection_count += 1;
+                                continue;
+                            }
+                        }
                         let repair_remaining = MaterialAmount::new_unchecked(
                             (cells.repair_material(index).raw() - accepted_amount).max(0.0),
                         );
@@ -552,6 +835,57 @@ impl TickExecutor {
         let contact_pressure_post_total = self.world.contact_cache().total_overlap();
         contact_pressure_max_over_tick =
             contact_pressure_max_over_tick.max(self.world.contact_cache().max_overlap());
+
+        if config.joints.enabled {
+            let joint_ids = self.world.joints().active_ids().collect::<Vec<_>>();
+            for joint_id in joint_ids {
+                let endpoints = self
+                    .world
+                    .joints()
+                    .endpoints(joint_id)
+                    .expect("active joint id has endpoints");
+                let channel = self
+                    .world
+                    .joints()
+                    .config(joint_id)
+                    .expect("active joint id has config");
+                if channel.mechanical_strength <= 0.0 {
+                    continue;
+                }
+                let pos_a = self.world.cells().position(endpoints.a);
+                let pos_b = self.world.cells().position(endpoints.b);
+                let dx = pos_b.x() - pos_a.x();
+                let dy = pos_b.y() - pos_a.y();
+                let distance = (dx * dx + dy * dy).sqrt();
+                let rest = self.world.cells().radius(endpoints.a).raw()
+                    + self.world.cells().radius(endpoints.b).raw();
+                if distance <= rest || distance <= 0.001 {
+                    continue;
+                }
+                let correction =
+                    (distance - rest) * channel.mechanical_strength.clamp(0.0, 1.0) * 0.5;
+                let nx = dx / distance;
+                let ny = dy / distance;
+                let radius_a = self.world.cells().radius(endpoints.a).raw();
+                let radius_b = self.world.cells().radius(endpoints.b).raw();
+                let next_a = clamp_position_to_world(
+                    Position::new(pos_a.x() + nx * correction, pos_a.y() + ny * correction),
+                    radius_a,
+                    config.world.size,
+                );
+                let next_b = clamp_position_to_world(
+                    Position::new(pos_b.x() - nx * correction, pos_b.y() - ny * correction),
+                    radius_b,
+                    config.world.size,
+                );
+                let cells = self.world.cells_mut_for_commit();
+                cells.set_position(endpoints.a, next_a);
+                cells.set_position(endpoints.b, next_b);
+                phase2h_metrics.joint_mechanical_correction_amount += correction * 2.0;
+            }
+            self.world.rebuild_spatial_index();
+            self.world.rebuild_contact_cache();
+        }
 
         // Phase B: Compute environment updates
         let heat_next = HeatAmount::new(
@@ -826,6 +1160,32 @@ impl TickExecutor {
             }
         }
 
+        if config.decomposition.enabled && config.chemistry.resources.is_empty() == false {
+            let tick = self.world.tick();
+            let converted = self
+                .world
+                .fragments_mut_for_commit()
+                .drain_convertible_before(tick, config.decomposition.materials_per_tick);
+            for fragment in converted {
+                let layer = ResourceLayerIndex::from_raw(config.decomposition.resource_layer_index);
+                let coord = self
+                    .world
+                    .resources()
+                    .coord_for_position(fragment.position());
+                if let Ok(current) = self.world.resources().amount_at(layer, coord) {
+                    let next = current
+                        .saturating_add(ResourceAmount::new_unchecked(fragment.amount().raw()));
+                    if self
+                        .world
+                        .resources_mut_for_commit()
+                        .set_amount_at(layer, coord, next)
+                        .is_ok()
+                    {
+                        phase2g_metrics.fragment_converted_amount += fragment.amount().raw();
+                    }
+                }
+            }
+        }
         let fragment_amount_before = self.world.fragments().total_amount().raw();
         let decomposed_cells_count = self.world.execute_decomposition_for_dead_cells();
         let fragment_amount_after = self.world.fragments().total_amount().raw();
@@ -848,10 +1208,33 @@ impl TickExecutor {
                 .push("repair".to_string());
         }
 
+        if config.joints.enabled {
+            let tick = self.world.tick();
+            let (degraded, broken) = self.world.joints_mut_for_commit().degrade_active(
+                config.joints.upkeep_material_decay_per_tick,
+                config.joints.break_damage_threshold,
+                tick,
+            );
+            phase2h_metrics.joint_degradation_amount += degraded;
+            phase2h_metrics.joint_broken_count += broken;
+        }
+
         self.world.environment_mut_for_commit().set_heat(heat_next);
         self.world
             .environment_mut_for_commit()
             .set_waste(waste_next);
+        for (layer, resource) in config.chemistry.resources.iter().enumerate() {
+            if resource.diffusion_rate <= 0.0 {
+                continue;
+            }
+            if let Ok(diffused) = self
+                .world
+                .resources_mut_for_commit()
+                .diffuse_layer(ResourceLayerIndex::from_raw(layer), resource.diffusion_rate)
+            {
+                phase2g_metrics.resource_diffused_amount += diffused.raw();
+            }
+        }
         let resource_amount_before_decay = self.aggregate_external_resources();
         self.world
             .resources_mut_for_commit()
@@ -911,6 +1294,7 @@ impl TickExecutor {
                 phase2g_metrics,
                 repair_success_count,
                 repair_rejection_count,
+                phase2h_metrics,
             ),
             diagnostics,
         })
@@ -1026,6 +1410,31 @@ impl TickExecutor {
                         outputs.iter().map(|(_, amount)| *amount).sum::<f32>();
                     metrics.reaction_heat_generated += reaction.heat_output * reaction.rate;
                     metrics.reaction_energy_output += reaction.energy_output * reaction.rate;
+                    let heat_delta = if config.chemistry.heat.capacity > 0.0 {
+                        reaction.heat_output * reaction.rate / config.chemistry.heat.capacity
+                    } else {
+                        0.0
+                    };
+                    if heat_delta > 0.0 {
+                        let heated_cells = (0..self.world.cells().len())
+                            .map(CellIndex::from_raw)
+                            .filter(|cell| {
+                                self.world
+                                    .resources()
+                                    .coord_for_position(self.world.cells().position(*cell))
+                                    == coord
+                            })
+                            .collect::<Vec<_>>();
+                        for cell in heated_cells {
+                            let temperature = self.world.cells().temperature(cell);
+                            self.world.cells_mut_for_commit().set_temperature(
+                                cell,
+                                crate::core::units::Temperature::new(
+                                    temperature.raw() + heat_delta,
+                                ),
+                            );
+                        }
+                    }
                     let mut changes = vec![0.0_f32; self.world.resources().layer_count()];
                     for (layer, amount) in inputs {
                         changes[layer.raw()] -= amount;
@@ -1255,6 +1664,7 @@ impl TickExecutor {
         phase2g_metrics: Phase2GMetricsDelta,
         repair_success_count: u32,
         repair_rejection_count: u32,
+        phase2h_metrics: Phase2HMetricsDelta,
     ) -> MetricsSummary {
         let cells = self.world.cells();
         let mut final_internal_resources = 0.0_f32;
@@ -1347,6 +1757,16 @@ impl TickExecutor {
             boundary_leakage_amount: phase2g_metrics.boundary_leakage_amount,
             repair_success_count,
             repair_rejection_count,
+            joint_count: self.world.joints().active_ids().count() as u32,
+            joint_created_count: phase2h_metrics.joint_created_count,
+            joint_creation_rejected_count: phase2h_metrics.joint_creation_rejected_count,
+            joint_broken_count: phase2h_metrics.joint_broken_count,
+            joint_resource_transfer_amount: phase2h_metrics.joint_resource_transfer_amount,
+            joint_signal_generated_total: phase2h_metrics.joint_signal_generated_total,
+            joint_signal_readable_total: phase2h_metrics.joint_signal_readable_total,
+            joint_heat_transfer_amount: phase2h_metrics.joint_heat_transfer_amount,
+            joint_degradation_amount: phase2h_metrics.joint_degradation_amount,
+            joint_mechanical_correction_amount: phase2h_metrics.joint_mechanical_correction_amount,
         }
     }
 }
@@ -1357,6 +1777,13 @@ fn baseline_process_level(raw_level: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+fn clamp_position_to_world(position: Position, radius: f32, world_size: WorldSize) -> Position {
+    Position::new(
+        position.x().clamp(radius, world_size.width() - radius),
+        position.y().clamp(radius, world_size.height() - radius),
+    )
 }
 
 fn reaction_occurs(

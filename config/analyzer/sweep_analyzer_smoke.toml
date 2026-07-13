@@ -179,6 +179,54 @@ from = 0.0
 to = 1.0
 steps = 3
 
+[[sweep]]
+name = "joint_creation_viability"
+scenario = "joint_creation_viability"
+param = "joint_mechanical_strength"
+from = 0.1
+to = 1.0
+steps = 2
+
+[[sweep]]
+name = "joint_resource_channel"
+scenario = "joint_resource_channel"
+param = "joint_resource_transfer_rate"
+from = 0.0
+to = 1.0
+steps = 2
+
+[[sweep]]
+name = "joint_signal_delay"
+scenario = "joint_signal_delay"
+param = "joint_signal_conductivity"
+from = 0.0
+to = 1.0
+steps = 2
+
+[[sweep]]
+name = "joint_heat_channel"
+scenario = "joint_heat_channel"
+param = "joint_heat_conductivity"
+from = 0.0
+to = 1.0
+steps = 2
+
+[[sweep]]
+name = "joint_degradation_break"
+scenario = "joint_degradation_break"
+param = "joint_decay_rate"
+from = 0.0
+to = 0.8
+steps = 2
+
+[[sweep]]
+name = "joint_lifecycle_division"
+scenario = "joint_lifecycle_division"
+param = "joint_mechanical_strength"
+from = 0.1
+to = 1.0
+steps = 2
+
 # Scenarios Presets
 [scenarios.finite_resource_viability]
 [scenarios.passive_income_survival]
@@ -278,3 +326,27 @@ phase2g_enabled = true
 phase2g_mode = "repair_viability"
 mandatory_cost_per_tick = 0.0
 initial_energy = 20.0
+
+[scenarios.joint_creation_viability]
+phase2h_enabled = true
+phase2h_mode = "joint_creation_viability"
+
+[scenarios.joint_resource_channel]
+phase2h_enabled = true
+phase2h_mode = "joint_resource_channel"
+
+[scenarios.joint_signal_delay]
+phase2h_enabled = true
+phase2h_mode = "joint_signal_delay"
+
+[scenarios.joint_heat_channel]
+phase2h_enabled = true
+phase2h_mode = "joint_heat_channel"
+
+[scenarios.joint_degradation_break]
+phase2h_enabled = true
+phase2h_mode = "joint_degradation_break"
+
+[scenarios.joint_lifecycle_division]
+phase2h_enabled = true
+phase2h_mode = "joint_lifecycle_division"

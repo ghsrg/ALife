@@ -58,6 +58,7 @@ tags:
 - [[outputs/worklogs/2026-07-09-1950-PLAN-phase-2E-material-profile-coverage|2026-07-09-1950-PLAN-phase-2E-material-profile-coverage]]
 - [[outputs/worklogs/2026-07-11-1042-PLAN-phase-2F-local-cell-interaction-primitives|2026-07-11-1042-PLAN-phase-2F-local-cell-interaction-primitives]]
 - [[outputs/worklogs/2026-07-11-2058-PLAN-phase-2G-chemistry-and-matter-dynamics|2026-07-11-2058-PLAN-phase-2G-chemistry-and-matter-dynamics]]
+- [[outputs/worklogs/2026-07-13-1653-PLAN-phase-2H-persistent-interaction-structures|2026-07-13-1653-PLAN-phase-2H-persistent-interaction-structures]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
@@ -160,4 +161,6 @@ tags:
 - [[outputs/worklogs/2026-07-11-1159-REPORT-phase-2F-local-interactions|2026-07-11-1159-REPORT-phase-2F-local-interactions]]
 - [[outputs/worklogs/2026-07-11-1958-REPORT-phase-2-roadmap-chemistry-joints-sync|2026-07-11-1958-REPORT-phase-2-roadmap-chemistry-joints-sync]]
 - [[outputs/worklogs/2026-07-11-2058-REPORT-phase-2G-chemistry-and-matter-dynamics|2026-07-11-2058-REPORT-phase-2G-chemistry-and-matter-dynamics]]
-
+- [[outputs/worklogs/2026-07-13-1756-REPORT-phase-2g-reachability-fixes|2026-07-13-1756-REPORT-phase-2g-reachability-fixes]]
+- [[outputs/worklogs/2026-07-13-2017-REPORT-phase-2H-persistent-interaction-structures|2026-07-13-2017-REPORT-phase-2H-persistent-interaction-structures]]
+- [[outputs/worklogs/2026-07-13-2052-PLAN-phase-2I-integrated-world-calibration|2026-07-13-2052-PLAN-phase-2I-integrated-world-calibration]]

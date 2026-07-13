@@ -164,6 +164,8 @@ pub struct RawScenarioPreset {
     pub enable_local_interaction: Option<bool>,
     pub phase2g_enabled: Option<bool>,
     pub phase2g_mode: Option<String>,
+    pub phase2h_enabled: Option<bool>,
+    pub phase2h_mode: Option<String>,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -265,6 +267,16 @@ pub struct SimResult {
     pub boundary_leakage_amount: f32,
     pub repair_success_count: u32,
     pub repair_rejection_count: u32,
+    pub joint_count: u32,
+    pub joint_created_count: u32,
+    pub joint_creation_rejected_count: u32,
+    pub joint_broken_count: u32,
+    pub joint_resource_transfer_amount: f32,
+    pub joint_signal_generated_total: f32,
+    pub joint_signal_readable_total: f32,
+    pub joint_heat_transfer_amount: f32,
+    pub joint_degradation_amount: f32,
+    pub joint_mechanical_correction_amount: f32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -639,6 +651,16 @@ pub fn build_config(
         );
     }
 
+    if preset.and_then(|p| p.phase2h_enabled).unwrap_or(false) {
+        configure_phase2h_runtime(
+            &mut rt,
+            preset
+                .and_then(|p| p.phase2h_mode.as_deref())
+                .unwrap_or("joint_creation_viability"),
+            overrides,
+        );
+    }
+
     rt
 }
 
@@ -858,6 +880,123 @@ fn configure_phase2g_runtime(
     }
 }
 
+fn configure_phase2h_runtime(
+    rt: &mut RuntimeConfig,
+    mode: &str,
+    overrides: &std::collections::HashMap<&str, f32>,
+) {
+    rt.joints.enabled = true;
+    rt.local_interaction.enabled = true;
+    rt.resource_interaction.enabled = false;
+    rt.world.size = WorldSize::new(64.0, 64.0).unwrap();
+    rt.space.spatial_grid_size = 8.0;
+    rt.joints.creation_distance_margin = 0.25;
+    rt.joints.creation_material_cost = MaterialAmount::new(0.5).unwrap();
+    rt.joints.creation_resource_cost = ResourceAmount::zero();
+    rt.joints.creation_energy_cost = EnergyAmount::zero();
+    rt.joints.mechanical_strength = overrides
+        .get("joint_mechanical_strength")
+        .copied()
+        .unwrap_or(0.35)
+        .max(0.0);
+    rt.joints.resource_transfer_rate = overrides
+        .get("joint_resource_transfer_rate")
+        .copied()
+        .unwrap_or(if mode == "joint_resource_channel" {
+            0.5
+        } else {
+            0.0
+        })
+        .max(0.0);
+    rt.joints.max_resource_transfer_per_tick = ResourceAmount::new(2.0).unwrap();
+    rt.joints.signal_conductivity = overrides
+        .get("joint_signal_conductivity")
+        .copied()
+        .unwrap_or(if mode == "joint_signal_delay" {
+            1.0
+        } else {
+            0.0
+        })
+        .max(0.0);
+    rt.joints.signal_decay = 0.0;
+    rt.joints.heat_conductivity = overrides
+        .get("joint_heat_conductivity")
+        .copied()
+        .unwrap_or(if mode == "joint_heat_channel" {
+            0.5
+        } else {
+            0.0
+        })
+        .max(0.0);
+    rt.joints.upkeep_material_decay_per_tick = overrides
+        .get("joint_decay_rate")
+        .copied()
+        .unwrap_or(if mode == "joint_degradation_break" {
+            0.6
+        } else {
+            0.0
+        })
+        .clamp(0.0, 1.0);
+    rt.joints.break_damage_threshold = if mode == "joint_degradation_break" {
+        1.0
+    } else {
+        1000.0
+    };
+    rt.local_interaction.contact_exchange_rate = 0.0;
+    rt.local_interaction.max_exchange_per_pair = ResourceAmount::zero();
+    rt.local_interaction.min_boundary_capability = 0.0;
+    rt.local_interaction.min_transport_capability = 0.0;
+    rt.local_interaction.contact_stimulus_per_overlap = if mode == "joint_signal_delay" {
+        1.0
+    } else {
+        0.0
+    };
+    rt.local_interaction.stimulus_decay_per_tick = 0.0;
+
+    let mut source = rt.cell;
+    let mut target = rt.cell;
+    source.position = Position::new(30.0, 32.0);
+    target.position = Position::new(33.9, 32.0);
+    source.radius = Radius::new(2.0).unwrap();
+    target.radius = Radius::new(2.0).unwrap();
+    source.initial_energy = EnergyAmount::new(20.0).unwrap();
+    target.initial_energy = EnergyAmount::new(20.0).unwrap();
+    source.energy_capacity = EnergyAmount::new(100.0).unwrap();
+    target.energy_capacity = EnergyAmount::new(100.0).unwrap();
+    source.mandatory_cost_per_tick = EnergyAmount::zero();
+    target.mandatory_cost_per_tick = EnergyAmount::zero();
+    source.capacity_limit = CapacityAmount::new(50.0).unwrap();
+    target.capacity_limit = CapacityAmount::new(50.0).unwrap();
+    source.initial_boundary_material = MaterialAmount::new(2.0).unwrap();
+    target.initial_boundary_material = MaterialAmount::new(2.0).unwrap();
+    source.initial_transport_material = MaterialAmount::new(2.0).unwrap();
+    target.initial_transport_material = MaterialAmount::new(2.0).unwrap();
+    source.initial_structural_material = MaterialAmount::new(2.0).unwrap();
+    target.initial_structural_material = MaterialAmount::new(2.0).unwrap();
+    source.initial_sensory_material = MaterialAmount::new(1.0).unwrap();
+    target.initial_sensory_material = MaterialAmount::new(1.0).unwrap();
+    source.initial_resource_amount = ResourceAmount::new(if mode == "joint_resource_channel" {
+        10.0
+    } else {
+        5.0
+    })
+    .unwrap();
+    target.initial_resource_amount = ResourceAmount::zero();
+
+    if mode == "joint_degradation_break" {
+        rt.joints.creation_material_cost = MaterialAmount::new(1.5).unwrap();
+    }
+    if mode == "joint_lifecycle_division" {
+        rt.division.enabled = true;
+        rt.growth_enabled = true;
+        rt.growth.growth_target_radius = Radius::new(2.0).unwrap();
+        rt.growth.max_division_pressure = 100.0;
+        rt.division.energy_cost = EnergyAmount::zero();
+    }
+
+    *rt = rt.clone().with_cells(vec![source, target]);
+}
+
 use std::sync::OnceLock;
 
 static ROLE_CLASSIFIER: OnceLock<CellRoleClassifierConfig> = OnceLock::new();
@@ -997,9 +1136,58 @@ fn run_simulation(
                 boundary_leakage_amount: 0.0,
                 repair_success_count: 0,
                 repair_rejection_count: 0,
+                joint_count: 0,
+                joint_created_count: 0,
+                joint_creation_rejected_count: 0,
+                joint_broken_count: 0,
+                joint_resource_transfer_amount: 0.0,
+                joint_signal_generated_total: 0.0,
+                joint_signal_readable_total: 0.0,
+                joint_heat_transfer_amount: 0.0,
+                joint_degradation_amount: 0.0,
+                joint_mechanical_correction_amount: 0.0,
             };
         }
     };
+
+    if let Some(mode) = preset.and_then(|p| p.phase2h_mode.as_deref()) {
+        if mode == "joint_heat_channel" && executor.world().cells().len() >= 2 {
+            executor.world_mut().cells_mut_for_commit().set_temperature(
+                CellIndex::from_raw(0),
+                alife::core::units::Temperature::new(40.0),
+            );
+            executor.world_mut().cells_mut_for_commit().set_temperature(
+                CellIndex::from_raw(1),
+                alife::core::units::Temperature::new(20.0),
+            );
+        }
+    }
+
+    if let Some(mode) = preset.and_then(|p| p.phase2g_mode.as_deref()) {
+        if mode == "resource_type_decay_diffusion" {
+            let layer = alife::core::resources::ResourceLayerIndex::from_raw(0);
+            for y in 0..executor.world().resources().height() {
+                for x in 0..executor.world().resources().width() {
+                    let coord = alife::core::units::GridCoord::new(x, y);
+                    let amount = if x == 0 && y == 0 { 40.0 } else { 0.0 };
+                    let _ = executor
+                        .world_mut()
+                        .resources_mut_for_commit()
+                        .set_amount_at(layer, coord, ResourceAmount::new(amount).unwrap());
+                }
+            }
+        }
+        if mode == "repair_viability" && executor.world().cells().len() > 0 {
+            executor
+                .world_mut()
+                .cells_mut_for_commit()
+                .set_material_damage(
+                    CellIndex::from_raw(0),
+                    alife::core::materials::MaterialSlot::Boundary,
+                    0.75,
+                );
+        }
+    }
 
     let len = executor.world().cells().len();
 
@@ -1105,6 +1293,16 @@ fn run_simulation(
     let mut boundary_leakage_amount_cumulative = 0.0_f32;
     let mut repair_success_count_cumulative = 0_u32;
     let mut repair_rejection_count_cumulative = 0_u32;
+    let mut joint_count_max = 0_u32;
+    let mut joint_created_count_cumulative = 0_u32;
+    let mut joint_creation_rejected_count_cumulative = 0_u32;
+    let mut joint_broken_count_cumulative = 0_u32;
+    let mut joint_resource_transfer_amount_cumulative = 0.0_f32;
+    let mut joint_signal_generated_total_cumulative = 0.0_f32;
+    let mut joint_signal_readable_total_max = 0.0_f32;
+    let mut joint_heat_transfer_amount_cumulative = 0.0_f32;
+    let mut joint_degradation_amount_cumulative = 0.0_f32;
+    let mut joint_mechanical_correction_amount_cumulative = 0.0_f32;
 
     let mut total_synthesis_successes = 0u32;
     let mut total_growth_successes = 0u32;
@@ -1251,6 +1449,16 @@ fn run_simulation(
                 .copied()
                 .unwrap_or(0.0),
         );
+        let cell_temperature_peak = (0..executor.world().cells().len())
+            .map(|i| {
+                executor
+                    .world()
+                    .cells()
+                    .temperature(CellIndex::from_raw(i))
+                    .raw()
+            })
+            .fold(0.0_f32, f32::max);
+        heat_peak_temperature_max = heat_peak_temperature_max.max(cell_temperature_peak);
         material_degradation_amount_cumulative += phase2g_features
             .get("material_degradation_amount")
             .copied()
@@ -1267,6 +1475,46 @@ fn run_simulation(
             .get("repair_rejection_count")
             .copied()
             .unwrap_or(0.0) as u32;
+        joint_count_max =
+            joint_count_max.max(phase2g_features.get("joint_count").copied().unwrap_or(0.0) as u32);
+        joint_created_count_cumulative += phase2g_features
+            .get("joint_created_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
+        joint_creation_rejected_count_cumulative += phase2g_features
+            .get("joint_creation_rejected_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
+        joint_broken_count_cumulative += phase2g_features
+            .get("joint_broken_count")
+            .copied()
+            .unwrap_or(0.0) as u32;
+        joint_resource_transfer_amount_cumulative += phase2g_features
+            .get("joint_resource_transfer_amount")
+            .copied()
+            .unwrap_or(0.0);
+        joint_signal_generated_total_cumulative += phase2g_features
+            .get("joint_signal_generated_total")
+            .copied()
+            .unwrap_or(0.0);
+        joint_signal_readable_total_max = joint_signal_readable_total_max.max(
+            phase2g_features
+                .get("joint_signal_readable_total")
+                .copied()
+                .unwrap_or(0.0),
+        );
+        joint_heat_transfer_amount_cumulative += phase2g_features
+            .get("joint_heat_transfer_amount")
+            .copied()
+            .unwrap_or(0.0);
+        joint_degradation_amount_cumulative += phase2g_features
+            .get("joint_degradation_amount")
+            .copied()
+            .unwrap_or(0.0);
+        joint_mechanical_correction_amount_cumulative += phase2g_features
+            .get("joint_mechanical_correction_amount")
+            .copied()
+            .unwrap_or(0.0);
 
         let mut loop_break = false;
         if summary.survival_result == SurvivalResult::Collapse {
@@ -1928,6 +2176,43 @@ fn run_simulation(
         "ContractileDisplacement_executed".to_string(),
         total_displacement_successes as f32,
     );
+    raw_data.insert("joint_count".to_string(), joint_count_max as f32);
+    raw_data.insert(
+        "joint_created_count".to_string(),
+        joint_created_count_cumulative as f32,
+    );
+    raw_data.insert(
+        "joint_creation_rejected_count".to_string(),
+        joint_creation_rejected_count_cumulative as f32,
+    );
+    raw_data.insert(
+        "joint_broken_count".to_string(),
+        joint_broken_count_cumulative as f32,
+    );
+    raw_data.insert(
+        "joint_resource_transfer_amount".to_string(),
+        joint_resource_transfer_amount_cumulative,
+    );
+    raw_data.insert(
+        "joint_signal_generated_total".to_string(),
+        joint_signal_generated_total_cumulative,
+    );
+    raw_data.insert(
+        "joint_signal_readable_total".to_string(),
+        joint_signal_readable_total_max,
+    );
+    raw_data.insert(
+        "joint_heat_transfer_amount".to_string(),
+        joint_heat_transfer_amount_cumulative,
+    );
+    raw_data.insert(
+        "joint_degradation_amount".to_string(),
+        joint_degradation_amount_cumulative,
+    );
+    raw_data.insert(
+        "joint_mechanical_correction_amount".to_string(),
+        joint_mechanical_correction_amount_cumulative,
+    );
 
     let window = extract_features(
         "run-id",
@@ -2069,6 +2354,16 @@ fn run_simulation(
         boundary_leakage_amount: boundary_leakage_amount_cumulative,
         repair_success_count: repair_success_count_cumulative,
         repair_rejection_count: repair_rejection_count_cumulative,
+        joint_count: joint_count_max,
+        joint_created_count: joint_created_count_cumulative,
+        joint_creation_rejected_count: joint_creation_rejected_count_cumulative,
+        joint_broken_count: joint_broken_count_cumulative,
+        joint_resource_transfer_amount: joint_resource_transfer_amount_cumulative,
+        joint_signal_generated_total: joint_signal_generated_total_cumulative,
+        joint_signal_readable_total: joint_signal_readable_total_max,
+        joint_heat_transfer_amount: joint_heat_transfer_amount_cumulative,
+        joint_degradation_amount: joint_degradation_amount_cumulative,
+        joint_mechanical_correction_amount: joint_mechanical_correction_amount_cumulative,
     }
 }
 
@@ -2399,7 +2694,8 @@ pub fn run_sweep(
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
          contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
-         reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count"
+         reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count,\
+         joint_count,joint_created_count,joint_creation_rejected_count,joint_broken_count,joint_resource_transfer_amount,joint_signal_generated_total,joint_signal_readable_total,joint_heat_transfer_amount,joint_degradation_amount,joint_mechanical_correction_amount"
     )
     .unwrap();
 
@@ -2515,7 +2811,7 @@ pub fn run_sweep(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{}",
+            "{},1.0,{},{},{},{},{},{:.4},none,0.0,{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2612,7 +2908,17 @@ pub fn run_sweep(
             res.material_degradation_amount,
             res.boundary_leakage_amount,
             res.repair_success_count,
-            res.repair_rejection_count
+            res.repair_rejection_count,
+            res.joint_count,
+            res.joint_created_count,
+            res.joint_creation_rejected_count,
+            res.joint_broken_count,
+            res.joint_resource_transfer_amount,
+            res.joint_signal_generated_total,
+            res.joint_signal_readable_total,
+            res.joint_heat_transfer_amount,
+            res.joint_degradation_amount,
+            res.joint_mechanical_correction_amount
         )
         .unwrap();
 
@@ -2696,7 +3002,8 @@ pub fn run_matrix(
          divisions_count,births_count,dead_cells_count,decomposing_cells_count,decomposed_cells_count,division_attempts,division_successes,division_rejections,decomposition_released_resources,\
          first_decomposition_tick,first_decomposed_tick,decomposition_ticks,decomposition_released_resources_per_tick,time_to_decomposed,remaining_dead_cell_resources,remaining_dead_cell_materials,\
          contact_pairs_count,contact_pressure_pre_total,contact_pressure_post_total,contact_pressure_max_over_tick,contact_exchange_amount,contact_exchange_pairs_count,contact_exchange_rejections_no_capability,contact_stimulus_generated_total,contact_stimulus_readable_total,\
-         reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count"
+         reaction_matched_count,reaction_executed_count,reaction_rejected_count,reaction_input_amount,reaction_output_amount,reaction_heat_generated,reaction_energy_output,reaction_accounting_error,resource_diffused_amount,resource_decay_amount,fragment_created_amount,fragment_converted_amount,heat_peak_temperature,material_degradation_amount,boundary_leakage_amount,repair_success_count,repair_rejection_count,\
+         joint_count,joint_created_count,joint_creation_rejected_count,joint_broken_count,joint_resource_transfer_amount,joint_signal_generated_total,joint_signal_readable_total,joint_heat_transfer_amount,joint_degradation_amount,joint_mechanical_correction_amount"
     )
     .unwrap();
 
@@ -2819,7 +3126,7 @@ pub fn run_matrix(
 
         writeln!(
             csv,
-            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{}",
+            "{},1.0,{},{},{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{:.4},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{},{},{},{:.4},{},{},{},{:.4},{},{:.4},{:.4},{},{:.4},{:.4},{:.4},{:.4},{},{},{:.4},{:.4},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{},{},{},{},{},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}",
             scenario_id,
             config_hash,
             cfg.run.seed,
@@ -2918,7 +3225,17 @@ pub fn run_matrix(
             res.material_degradation_amount,
             res.boundary_leakage_amount,
             res.repair_success_count,
-            res.repair_rejection_count
+            res.repair_rejection_count,
+            res.joint_count,
+            res.joint_created_count,
+            res.joint_creation_rejected_count,
+            res.joint_broken_count,
+            res.joint_resource_transfer_amount,
+            res.joint_signal_generated_total,
+            res.joint_signal_readable_total,
+            res.joint_heat_transfer_amount,
+            res.joint_degradation_amount,
+            res.joint_mechanical_correction_amount
         )
         .unwrap();
     }
@@ -3446,6 +3763,12 @@ fn main() {
         "local_heat_degradation",
         "boundary_retention_leakage",
         "repair_viability",
+        "joint_creation_viability",
+        "joint_resource_channel",
+        "joint_signal_delay",
+        "joint_heat_channel",
+        "joint_degradation_break",
+        "joint_lifecycle_division",
     ];
 
     if let Some(sweeps) = &cfg.sweep {

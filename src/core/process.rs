@@ -57,6 +57,8 @@ pub enum ProcessId {
     ContractileDisplacement,
     PassiveContactExchange,
     RepairBoundary,
+    JointCreate,
+    JointRepair,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -78,6 +80,10 @@ pub enum RejectionReason {
     NoPressure,
     ProcessDisabled,
     MissingTargetDamage,
+    JointNotLocal,
+    JointEndpointLimitReached,
+    JointAlreadyExists,
+    InsufficientMaterial,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -178,6 +184,21 @@ static PROCESS_REGISTRY: &[ProcessSpec] = &[
         status: ProcessStatus::Now,
         required_capabilities: &[MaterialCapability::Repair],
         description: "Consumes local inputs to restore damaged boundary material.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::JointCreate,
+        status: ProcessStatus::Now,
+        required_capabilities: &[
+            MaterialCapability::BoundaryPermeability,
+            MaterialCapability::StructuralGrowth,
+        ],
+        description: "Creates a local material-backed joint between contacting cells.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::JointRepair,
+        status: ProcessStatus::Future,
+        required_capabilities: &[MaterialCapability::Repair],
+        description: "Repairs damaged joint material using local resources.",
     },
     ProcessSpec {
         process_id: ProcessId::Division,

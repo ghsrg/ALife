@@ -241,6 +241,45 @@ pub struct LocalInteractionConfig {
     pub stimulus_decay_per_tick: f32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct JointConfig {
+    pub enabled: bool,
+    pub creation_distance_margin: f32,
+    pub creation_material_cost: MaterialAmount,
+    pub creation_resource_cost: ResourceAmount,
+    pub creation_energy_cost: EnergyAmount,
+    pub upkeep_material_decay_per_tick: f32,
+    pub break_damage_threshold: f32,
+    pub max_joints_per_cell: u32,
+    pub mechanical_strength: f32,
+    pub resource_transfer_rate: f32,
+    pub max_resource_transfer_per_tick: ResourceAmount,
+    pub signal_conductivity: f32,
+    pub signal_decay: f32,
+    pub heat_conductivity: f32,
+}
+
+impl Default for JointConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            creation_distance_margin: 0.25,
+            creation_material_cost: MaterialAmount::new_unchecked(1.0),
+            creation_resource_cost: ResourceAmount::zero(),
+            creation_energy_cost: EnergyAmount::zero(),
+            upkeep_material_decay_per_tick: 0.0,
+            break_damage_threshold: 1.0,
+            max_joints_per_cell: 4,
+            mechanical_strength: 0.25,
+            resource_transfer_rate: 0.0,
+            max_resource_transfer_per_tick: ResourceAmount::zero(),
+            signal_conductivity: 0.0,
+            signal_decay: 0.0,
+            heat_conductivity: 0.0,
+        }
+    }
+}
+
 impl Default for LocalInteractionConfig {
     fn default() -> Self {
         Self {
@@ -394,6 +433,7 @@ pub struct RuntimeConfig {
     pub decomposition: DecompositionConfig,
     pub material_effects: MaterialEffectConfig,
     pub local_interaction: LocalInteractionConfig,
+    pub joints: JointConfig,
     pub chemistry: ChemistryConfig,
 }
 
@@ -411,6 +451,7 @@ pub enum ConfigError {
     InvalidDaughterSpacing,
     InvalidDecompositionLayer,
     InvalidLocalInteractionRate,
+    InvalidJointRate,
 }
 
 impl RuntimeConfig {
@@ -458,6 +499,7 @@ impl RuntimeConfig {
             decomposition: DecompositionConfig::default(),
             material_effects: MaterialEffectConfig::default(),
             local_interaction: LocalInteractionConfig::default(),
+            joints: JointConfig::default(),
             chemistry: ChemistryConfig::default(),
         })
     }
@@ -490,6 +532,29 @@ impl RuntimeConfig {
         ] {
             if !value.is_finite() || value < 0.0 {
                 return Err(ConfigError::InvalidLocalInteractionRate);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn validate_phase2h_options(&self) -> Result<(), ConfigError> {
+        let cfg = self.joints;
+        for value in [
+            cfg.creation_distance_margin,
+            cfg.creation_material_cost.raw(),
+            cfg.creation_resource_cost.raw(),
+            cfg.creation_energy_cost.raw(),
+            cfg.upkeep_material_decay_per_tick,
+            cfg.break_damage_threshold,
+            cfg.mechanical_strength,
+            cfg.resource_transfer_rate,
+            cfg.max_resource_transfer_per_tick.raw(),
+            cfg.signal_conductivity,
+            cfg.signal_decay,
+            cfg.heat_conductivity,
+        ] {
+            if !value.is_finite() || value < 0.0 {
+                return Err(ConfigError::InvalidJointRate);
             }
         }
         Ok(())
@@ -591,6 +656,20 @@ impl RuntimeConfig {
                 .contact_stimulus_per_overlap
                 .to_bits() as u64,
             self.local_interaction.stimulus_decay_per_tick.to_bits() as u64,
+            self.joints.enabled as u64,
+            self.joints.creation_distance_margin.to_bits() as u64,
+            self.joints.creation_material_cost.raw().to_bits() as u64,
+            self.joints.creation_resource_cost.raw().to_bits() as u64,
+            self.joints.creation_energy_cost.raw().to_bits() as u64,
+            self.joints.upkeep_material_decay_per_tick.to_bits() as u64,
+            self.joints.break_damage_threshold.to_bits() as u64,
+            self.joints.max_joints_per_cell as u64,
+            self.joints.mechanical_strength.to_bits() as u64,
+            self.joints.resource_transfer_rate.to_bits() as u64,
+            self.joints.max_resource_transfer_per_tick.raw().to_bits() as u64,
+            self.joints.signal_conductivity.to_bits() as u64,
+            self.joints.signal_decay.to_bits() as u64,
+            self.joints.heat_conductivity.to_bits() as u64,
         ] {
             hash ^= value;
             hash = hash.wrapping_mul(0x100000001b3);

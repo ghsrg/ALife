@@ -149,5 +149,86 @@ pub fn metrics_summary_features(metrics: &MetricsSummary) -> HashMap<String, f32
         "repair_rejection_count".to_string(),
         metrics.repair_rejection_count as f32,
     );
+    features.insert("joint_count".to_string(), metrics.joint_count as f32);
+    features.insert(
+        "joint_created_count".to_string(),
+        metrics.joint_created_count as f32,
+    );
+    features.insert(
+        "joint_creation_rejected_count".to_string(),
+        metrics.joint_creation_rejected_count as f32,
+    );
+    features.insert(
+        "joint_broken_count".to_string(),
+        metrics.joint_broken_count as f32,
+    );
+    features.insert(
+        "joint_resource_transfer_amount".to_string(),
+        metrics.joint_resource_transfer_amount,
+    );
+    features.insert(
+        "joint_signal_generated_total".to_string(),
+        metrics.joint_signal_generated_total,
+    );
+    features.insert(
+        "joint_signal_readable_total".to_string(),
+        metrics.joint_signal_readable_total,
+    );
+    features.insert(
+        "joint_heat_transfer_amount".to_string(),
+        metrics.joint_heat_transfer_amount,
+    );
+    features.insert(
+        "joint_degradation_amount".to_string(),
+        metrics.joint_degradation_amount,
+    );
+    features.insert(
+        "joint_mechanical_correction_amount".to_string(),
+        metrics.joint_mechanical_correction_amount,
+    );
     features
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OrganismViewFeatures {
+    pub component_count: u32,
+    pub largest_component_size: u32,
+    pub isolated_cell_count: u32,
+}
+
+pub fn organism_view_features(
+    cell_count: usize,
+    active_edges: &[(usize, usize)],
+) -> OrganismViewFeatures {
+    let mut parent: Vec<usize> = (0..cell_count).collect();
+
+    fn find(parent: &mut [usize], x: usize) -> usize {
+        if parent[x] != x {
+            parent[x] = find(parent, parent[x]);
+        }
+        parent[x]
+    }
+
+    for &(a, b) in active_edges {
+        if a >= cell_count || b >= cell_count || a == b {
+            continue;
+        }
+        let root_a = find(&mut parent, a);
+        let root_b = find(&mut parent, b);
+        if root_a != root_b {
+            parent[root_b] = root_a;
+        }
+    }
+
+    let mut sizes = std::collections::BTreeMap::<usize, u32>::new();
+    for cell in 0..cell_count {
+        let root = find(&mut parent, cell);
+        *sizes.entry(root).or_insert(0) += 1;
+    }
+
+    OrganismViewFeatures {
+        component_count: sizes.len() as u32,
+        largest_component_size: sizes.values().copied().max().unwrap_or(0),
+        isolated_cell_count: sizes.values().filter(|&&size| size == 1).count() as u32,
+    }
 }

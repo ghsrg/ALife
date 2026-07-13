@@ -10,7 +10,10 @@ fn test_every_process_id_has_registry_entry() {
         ProcessId::GrowthResourceAllocation,
         ProcessId::Division,
         ProcessId::ContractileDisplacement,
+        ProcessId::PassiveContactExchange,
         ProcessId::RepairBoundary,
+        ProcessId::JointCreate,
+        ProcessId::JointRepair,
     ];
     for id in all_ids {
         let spec = ProcessSpec::for_id(id);

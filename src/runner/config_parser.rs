@@ -136,6 +136,24 @@ pub struct RawLocalInteraction {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RawJointConfig {
+    pub enabled: Option<bool>,
+    pub creation_distance_margin: Option<f32>,
+    pub creation_material_cost: Option<f32>,
+    pub creation_resource_cost: Option<f32>,
+    pub creation_energy_cost: Option<f32>,
+    pub upkeep_material_decay_per_tick: Option<f32>,
+    pub break_damage_threshold: Option<f32>,
+    pub max_joints_per_cell: Option<u32>,
+    pub mechanical_strength: Option<f32>,
+    pub resource_transfer_rate: Option<f32>,
+    pub max_resource_transfer_per_tick: Option<f32>,
+    pub signal_conductivity: Option<f32>,
+    pub signal_decay: Option<f32>,
+    pub heat_conductivity: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RawMaterialEffects {
     pub transport_uptake_per_unit: Option<f32>,
     pub metabolic_conversion_per_unit: Option<f32>,
@@ -244,6 +262,7 @@ pub struct RawScenarioConfig {
     pub division: Option<RawDivision>,
     pub decomposition: Option<RawDecomposition>,
     pub material_effects: Option<RawMaterialEffects>,
+    pub joints: Option<RawJointConfig>,
     pub chemistry: Option<RawChemistry>,
 }
 
@@ -719,6 +738,78 @@ impl RawScenarioConfig {
                 raw_local.stimulus_decay_per_tick.unwrap_or(0.0);
         }
 
+        if let Some(ref raw_joints) = self.joints {
+            runtime_config.joints.enabled = raw_joints.enabled.unwrap_or(false);
+            runtime_config.joints.creation_distance_margin = raw_joints
+                .creation_distance_margin
+                .unwrap_or(runtime_config.joints.creation_distance_margin);
+            runtime_config.joints.creation_material_cost = MaterialAmount::new(
+                raw_joints
+                    .creation_material_cost
+                    .unwrap_or(runtime_config.joints.creation_material_cost.raw()),
+            )
+            .map_err(|e| {
+                ParseError::ValidationError(format!(
+                    "Invalid joints creation_material_cost: {:?}",
+                    e
+                ))
+            })?;
+            runtime_config.joints.creation_resource_cost = ResourceAmount::new(
+                raw_joints
+                    .creation_resource_cost
+                    .unwrap_or(runtime_config.joints.creation_resource_cost.raw()),
+            )
+            .map_err(|e| {
+                ParseError::ValidationError(format!(
+                    "Invalid joints creation_resource_cost: {:?}",
+                    e
+                ))
+            })?;
+            runtime_config.joints.creation_energy_cost = EnergyAmount::new(
+                raw_joints
+                    .creation_energy_cost
+                    .unwrap_or(runtime_config.joints.creation_energy_cost.raw()),
+            )
+            .map_err(|e| {
+                ParseError::ValidationError(format!("Invalid joints creation_energy_cost: {:?}", e))
+            })?;
+            runtime_config.joints.upkeep_material_decay_per_tick = raw_joints
+                .upkeep_material_decay_per_tick
+                .unwrap_or(runtime_config.joints.upkeep_material_decay_per_tick);
+            runtime_config.joints.break_damage_threshold = raw_joints
+                .break_damage_threshold
+                .unwrap_or(runtime_config.joints.break_damage_threshold);
+            runtime_config.joints.max_joints_per_cell = raw_joints
+                .max_joints_per_cell
+                .unwrap_or(runtime_config.joints.max_joints_per_cell);
+            runtime_config.joints.mechanical_strength = raw_joints
+                .mechanical_strength
+                .unwrap_or(runtime_config.joints.mechanical_strength);
+            runtime_config.joints.resource_transfer_rate = raw_joints
+                .resource_transfer_rate
+                .unwrap_or(runtime_config.joints.resource_transfer_rate);
+            runtime_config.joints.max_resource_transfer_per_tick = ResourceAmount::new(
+                raw_joints
+                    .max_resource_transfer_per_tick
+                    .unwrap_or(runtime_config.joints.max_resource_transfer_per_tick.raw()),
+            )
+            .map_err(|e| {
+                ParseError::ValidationError(format!(
+                    "Invalid joints max_resource_transfer_per_tick: {:?}",
+                    e
+                ))
+            })?;
+            runtime_config.joints.signal_conductivity = raw_joints
+                .signal_conductivity
+                .unwrap_or(runtime_config.joints.signal_conductivity);
+            runtime_config.joints.signal_decay = raw_joints
+                .signal_decay
+                .unwrap_or(runtime_config.joints.signal_decay);
+            runtime_config.joints.heat_conductivity = raw_joints
+                .heat_conductivity
+                .unwrap_or(runtime_config.joints.heat_conductivity);
+        }
+
         runtime_config.chemistry = parse_chemistry(
             self.chemistry.unwrap_or_default(),
             &self.resources.resource_type_ids,
@@ -748,6 +839,9 @@ impl RawScenarioConfig {
             .map_err(ParseError::ConfigValidationError)?;
         runtime_config
             .validate_phase2f_options()
+            .map_err(ParseError::ConfigValidationError)?;
+        runtime_config
+            .validate_phase2h_options()
             .map_err(ParseError::ConfigValidationError)?;
 
         if !initial_cells.is_empty() {

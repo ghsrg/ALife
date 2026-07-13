@@ -99,6 +99,16 @@ fn mock_result(collapsed: bool, final_energy: f32, dormant_ticks: u32) -> SimRes
         boundary_leakage_amount: 0.0,
         repair_success_count: 0,
         repair_rejection_count: 0,
+        joint_count: 0,
+        joint_created_count: 0,
+        joint_creation_rejected_count: 0,
+        joint_broken_count: 0,
+        joint_resource_transfer_amount: 0.0,
+        joint_signal_generated_total: 0.0,
+        joint_signal_readable_total: 0.0,
+        joint_heat_transfer_amount: 0.0,
+        joint_degradation_amount: 0.0,
+        joint_mechanical_correction_amount: 0.0,
     }
 }
 
@@ -207,6 +217,16 @@ fn mock_result_custom(
         boundary_leakage_amount: 0.0,
         repair_success_count: 0,
         repair_rejection_count: 0,
+        joint_count: 0,
+        joint_created_count: 0,
+        joint_creation_rejected_count: 0,
+        joint_broken_count: 0,
+        joint_resource_transfer_amount: 0.0,
+        joint_signal_generated_total: 0.0,
+        joint_signal_readable_total: 0.0,
+        joint_heat_transfer_amount: 0.0,
+        joint_degradation_amount: 0.0,
+        joint_mechanical_correction_amount: 0.0,
     }
 }
 
@@ -310,6 +330,16 @@ fn mock_decomposition_result(
         boundary_leakage_amount: 0.0,
         repair_success_count: 0,
         repair_rejection_count: 0,
+        joint_count: 0,
+        joint_created_count: 0,
+        joint_creation_rejected_count: 0,
+        joint_broken_count: 0,
+        joint_resource_transfer_amount: 0.0,
+        joint_signal_generated_total: 0.0,
+        joint_signal_readable_total: 0.0,
+        joint_heat_transfer_amount: 0.0,
+        joint_degradation_amount: 0.0,
+        joint_mechanical_correction_amount: 0.0,
     }
 }
 

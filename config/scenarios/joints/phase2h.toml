@@ -1,0 +1,16 @@
+[scenario]
+id = "phase2h_persistent_joints"
+version = "1.0"
+
+[joints]
+enabled = true
+creation_material_cost = 1.0
+creation_resource_cost = 1.0
+creation_energy_cost = 1.0
+mechanical_strength = 0.5
+resource_transfer_rate = 0.5
+signal_conductivity = 1.0
+heat_conductivity = 0.5
+decay_rate = 0.05
+break_damage_threshold = 1.0
+max_joints_per_cell = 4

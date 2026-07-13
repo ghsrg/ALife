@@ -214,6 +214,39 @@ fn resource_grid_applies_different_decay_rates_by_resource_type() {
 }
 
 #[test]
+fn resource_grid_diffuses_non_uniform_layer_and_conserves_without_decay() {
+    use alife::core::resources::{ResourceGrid, ResourceLayerIndex};
+    use alife::core::units::{GridCoord, ResourceAmount, WorldSize};
+
+    let mut grid = ResourceGrid::new(
+        WorldSize::new(2.0, 1.0).unwrap(),
+        1.0,
+        vec![ResourceAmount::zero()],
+        0.0,
+    )
+    .unwrap();
+    let layer = ResourceLayerIndex::from_raw(0);
+    grid.set_amount_at(
+        layer,
+        GridCoord::new(0, 0),
+        ResourceAmount::new(10.0).unwrap(),
+    )
+    .unwrap();
+    grid.set_amount_at(layer, GridCoord::new(1, 0), ResourceAmount::zero())
+        .unwrap();
+
+    let moved = grid.diffuse_layer(layer, 0.25).unwrap();
+
+    assert!(moved.raw() > 0.0);
+    assert!(grid.amount_at(layer, GridCoord::new(0, 0)).unwrap().raw() < 10.0);
+    assert!(grid.amount_at(layer, GridCoord::new(1, 0)).unwrap().raw() > 0.0);
+    assert!(
+        (grid.total_amount_for_layer(layer).unwrap().raw() - 10.0).abs() < 1e-6,
+        "diffusion must conserve Resource amount when decay is zero"
+    );
+}
+
+#[test]
 fn resource_tag_discriminants_are_stable() {
     assert_eq!(ResourceTag::EnergySource as u8, 0);
     assert_eq!(ResourceTag::Dissolved as u8, 1);

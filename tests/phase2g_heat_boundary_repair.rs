@@ -1,6 +1,7 @@
 use alife::core::cell_store::{CellIndex, CellStore, EnergyBuffer, InitialCellState};
 use alife::core::config::{
-    CellInitialConfig, ChemistryConfig, ChemistryRepairConfig, EnvironmentConfig, LifecycleConfig,
+    CellInitialConfig, ChemistryConfig, ChemistryMaterialConfig, ChemistryReactionConfig,
+    ChemistryRepairConfig, ChemistryResourceConfig, EnvironmentConfig, LifecycleConfig,
     ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
 };
 use alife::core::heat::LocalHeat;
@@ -11,6 +12,8 @@ use alife::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
     Seed, Temperature, Tick, WasteAmount, WorldSize,
 };
+
+use alife::bin::sweep_analyzer::{AnalyzerConfig, build_config};
 
 fn cell() -> InitialCellState {
     InitialCellState {
@@ -224,6 +227,170 @@ fn repair_reduces_material_damage_when_feasibility_passes() {
     );
     assert_eq!(summary.metrics.repair_success_count, 1);
     assert_eq!(summary.metrics.repair_rejection_count, 0);
+}
+
+#[test]
+fn repair_can_consume_declared_typed_resource_when_generic_resource_is_absent() {
+    let mut config = repair_config();
+    config.cell.initial_resource_amount = ResourceAmount::zero();
+    config.initial_cells[0].initial_resource_amount = ResourceAmount::zero();
+    config.chemistry.resources = vec![ChemistryResourceConfig {
+        id: "nutrient_A".to_string(),
+        volume: 1.0,
+        diffusion_rate: 0.0,
+        energy_value: 0.0,
+        decay_rate: 0.0,
+        reactivity_profile: "stable".to_string(),
+        permeability: "passive".to_string(),
+        tags: Vec::new(),
+    }];
+    config.chemistry.materials = vec![ChemistryMaterialConfig {
+        id: "boundary_polymer_A".to_string(),
+        volume: 1.0,
+        stability: 0.8,
+        strength: 0.7,
+        permeability: 0.1,
+        energy_capacity: 0.0,
+        decay_rate: 0.0,
+        repair_resource: "nutrient_A".to_string(),
+        repair_amount: 0.25,
+    }];
+    config.initial_typed_resources = vec![vec![(
+        alife::core::ids::ResourceTypeId::from_raw(0),
+        ResourceAmount::new(1.0).unwrap(),
+    )]];
+    let mut executor = TickExecutor::new(config).unwrap();
+    let index = CellIndex::from_raw(0);
+    executor
+        .world_mut()
+        .cells_mut_for_commit()
+        .set_material_damage(index, MaterialSlot::Boundary, 0.5);
+
+    let summary = executor.step().unwrap();
+
+    assert_eq!(summary.metrics.repair_success_count, 1);
+    assert_eq!(
+        executor
+            .world()
+            .cells()
+            .typed_resource_amount(index, alife::core::ids::ResourceTypeId::from_raw(0))
+            .unwrap(),
+        ResourceAmount::new(0.75).unwrap()
+    );
+}
+
+#[test]
+fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
+    let mut config = repair_config();
+    config.cell.initial_resource_amount = ResourceAmount::zero();
+    config.initial_cells[0].initial_resource_amount = ResourceAmount::zero();
+    config.cell.initial_metabolic_material = MaterialAmount::new(1.0).unwrap();
+    config.initial_cells[0].initial_metabolic_material = MaterialAmount::new(1.0).unwrap();
+    config.chemistry.resources = vec![
+        ChemistryResourceConfig {
+            id: "nutrient_A".to_string(),
+            volume: 1.0,
+            diffusion_rate: 0.0,
+            energy_value: 0.0,
+            decay_rate: 0.0,
+            reactivity_profile: "reactive".to_string(),
+            permeability: "passive".to_string(),
+            tags: Vec::new(),
+        },
+        ChemistryResourceConfig {
+            id: "waste_A".to_string(),
+            volume: 1.0,
+            diffusion_rate: 0.0,
+            energy_value: 0.0,
+            decay_rate: 0.0,
+            reactivity_profile: "stable".to_string(),
+            permeability: "blocked".to_string(),
+            tags: Vec::new(),
+        },
+    ];
+    config.chemistry.materials = vec![ChemistryMaterialConfig {
+        id: "boundary_polymer_A".to_string(),
+        volume: 1.0,
+        stability: 0.8,
+        strength: 0.7,
+        permeability: 0.1,
+        energy_capacity: 0.0,
+        decay_rate: 0.0,
+        repair_resource: "nutrient_A".to_string(),
+        repair_amount: 0.25,
+    }];
+    config.chemistry.reactions = vec![ChemistryReactionConfig {
+        id: "controlled_competes_with_repair".to_string(),
+        mode: "controlled".to_string(),
+        process_id: Some("energy_conversion".to_string()),
+        inputs: vec![("nutrient_A".to_string(), 1.0)],
+        required_materials: vec![("boundary_polymer_A".to_string(), 0.2)],
+        outputs: vec![("waste_A".to_string(), 1.0)],
+        configured_sink_amount: 0.0,
+        energy_output: 0.0,
+        heat_output: 0.0,
+        rate: 1.0,
+        probability: 1.0,
+        accounting_destination: "waste_A".to_string(),
+    }];
+    config.initial_typed_resources = vec![vec![(
+        alife::core::ids::ResourceTypeId::from_raw(0),
+        ResourceAmount::new(1.0).unwrap(),
+    )]];
+
+    let mut executor = TickExecutor::new(config).unwrap();
+    let index = CellIndex::from_raw(0);
+    executor
+        .world_mut()
+        .cells_mut_for_commit()
+        .set_material_damage(index, MaterialSlot::Boundary, 0.5);
+
+    let summary = executor.step().unwrap();
+
+    let cells = executor.world().cells();
+    assert_eq!(summary.metrics.repair_success_count, 0);
+    assert_eq!(summary.metrics.repair_rejection_count, 1);
+    assert_eq!(
+        cells.repair_material(index),
+        MaterialAmount::new(1.0).unwrap()
+    );
+    assert_eq!(
+        cells.boundary_material(index),
+        MaterialAmount::new(0.5).unwrap()
+    );
+}
+
+#[test]
+fn analyzer_repair_viability_does_not_panic_when_repair_resource_runs_out() {
+    let cfg: AnalyzerConfig =
+        toml::from_str(include_str!("../config/analyzer/sweep_analyzer.toml")).unwrap();
+    let preset = cfg
+        .scenarios
+        .as_ref()
+        .unwrap()
+        .get("repair_viability")
+        .unwrap();
+    let mut overrides = std::collections::HashMap::new();
+    overrides.insert("repair_amount_per_tick", 1.0);
+    let runtime = build_config(&cfg, Some(preset), &overrides);
+    let mut executor = TickExecutor::new(runtime).unwrap();
+    executor
+        .world_mut()
+        .cells_mut_for_commit()
+        .set_material_damage(CellIndex::from_raw(0), MaterialSlot::Boundary, 0.75);
+
+    let mut repair_success_total = 0;
+    let mut repair_rejection_total = 0;
+    let mut summary = executor.step().unwrap();
+    repair_success_total += summary.metrics.repair_success_count;
+    repair_rejection_total += summary.metrics.repair_rejection_count;
+    for _ in 1..cfg.run.ticks {
+        summary = executor.step().unwrap();
+        repair_success_total += summary.metrics.repair_success_count;
+        repair_rejection_total += summary.metrics.repair_rejection_count;
+    }
+    assert!(repair_success_total > 0);
+    assert!(repair_rejection_total > 0);
 }
 
 #[test]

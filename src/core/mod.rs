@@ -9,6 +9,7 @@ pub mod events;
 pub mod fragments;
 pub mod heat;
 pub mod ids;
+pub mod joints;
 pub mod lifecycle;
 pub mod material_types;
 pub mod materials;

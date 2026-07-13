@@ -22,7 +22,7 @@ pub enum CollapseReason {
     ViewerAuthorityViolation,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct MetricsSummary {
     pub final_energy: f32,
     pub heat: f32,
@@ -69,6 +69,16 @@ pub struct MetricsSummary {
     pub boundary_leakage_amount: f32,
     pub repair_success_count: u32,
     pub repair_rejection_count: u32,
+    pub joint_count: u32,
+    pub joint_created_count: u32,
+    pub joint_creation_rejected_count: u32,
+    pub joint_broken_count: u32,
+    pub joint_resource_transfer_amount: f32,
+    pub joint_signal_generated_total: f32,
+    pub joint_signal_readable_total: f32,
+    pub joint_heat_transfer_amount: f32,
+    pub joint_degradation_amount: f32,
+    pub joint_mechanical_correction_amount: f32,
 }
 
 use crate::core::process::{ProcessId, RejectionReason};

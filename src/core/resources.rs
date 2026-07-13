@@ -161,6 +161,52 @@ impl ResourceGrid {
         }
     }
 
+    pub fn diffuse_layer(
+        &mut self,
+        layer: ResourceLayerIndex,
+        rate: f32,
+    ) -> Result<ResourceAmount, ResourceGridError> {
+        if layer.raw() >= self.layer_count {
+            return Err(ResourceGridError::LayerOutOfBounds);
+        }
+        let rate = rate.clamp(0.0, 1.0);
+        if rate <= 0.0 {
+            return Ok(ResourceAmount::zero());
+        }
+
+        let cell_count = self.cell_count();
+        let start = layer.raw() * cell_count;
+        let end = start + cell_count;
+        let current = self.quantities[start..end]
+            .iter()
+            .map(|amount| amount.raw())
+            .collect::<Vec<_>>();
+        let mut delta = vec![0.0_f32; cell_count];
+        let mut moved_total = 0.0_f32;
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let idx = y * self.width + x;
+                if x + 1 < self.width {
+                    let other = y * self.width + (x + 1);
+                    moved_total += diffuse_pair(&current, &mut delta, idx, other, rate);
+                }
+                if y + 1 < self.height {
+                    let other = (y + 1) * self.width + x;
+                    moved_total += diffuse_pair(&current, &mut delta, idx, other, rate);
+                }
+            }
+        }
+
+        for (offset, change) in delta.into_iter().enumerate() {
+            let next = (current[offset] + change).max(0.0);
+            self.quantities[start + offset] =
+                ResourceAmount::new(next).unwrap_or_else(|_| ResourceAmount::zero());
+        }
+
+        Ok(ResourceAmount::new(moved_total).unwrap_or_else(|_| ResourceAmount::zero()))
+    }
+
     pub fn amount_at_type(
         &self,
         resource_type: ResourceTypeId,
@@ -254,4 +300,20 @@ impl ResourceGrid {
             .map(ResourceLayerIndex::from_raw)
             .ok_or(ResourceGridError::LayerOutOfBounds)
     }
+}
+
+fn diffuse_pair(current: &[f32], delta: &mut [f32], a: usize, b: usize, rate: f32) -> f32 {
+    let gradient = current[a] - current[b];
+    if gradient.abs() <= f32::EPSILON {
+        return 0.0;
+    }
+    let moved = gradient.abs() * rate * 0.5;
+    if gradient > 0.0 {
+        delta[a] -= moved;
+        delta[b] += moved;
+    } else {
+        delta[a] += moved;
+        delta[b] -= moved;
+    }
+    moved
 }
