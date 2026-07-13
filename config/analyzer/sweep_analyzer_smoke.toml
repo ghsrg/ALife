@@ -128,7 +128,7 @@ name = "material_type_degradation"
 scenario = "material_type_degradation"
 param = "material_decay_rate"
 from = 0.0
-to = 0.25
+to = 0.5
 steps = 3
 
 [[sweep]]
@@ -136,7 +136,7 @@ name = "passive_reaction_viability"
 scenario = "passive_reaction_viability"
 param = "passive_reaction_rate"
 from = 0.0
-to = 1.0
+to = 1.5
 steps = 3
 
 [[sweep]]
@@ -183,9 +183,9 @@ steps = 3
 name = "joint_creation_viability"
 scenario = "joint_creation_viability"
 param = "joint_mechanical_strength"
-from = 0.1
-to = 1.0
-steps = 2
+from = 0.05
+to = 1.25
+steps = 3
 
 [[sweep]]
 name = "joint_resource_channel"
