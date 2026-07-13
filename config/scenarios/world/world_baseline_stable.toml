@@ -1,0 +1,180 @@
+scenario_id = "world_baseline_stable"
+seed = 42
+tick_count = 10000
+
+[world]
+size = [128.0, 128.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = ["nutrient_A", "waste_A"]
+initial_distribution = [1200.0, 0.0]
+optional_decay_rate = 0.0001
+
+[cell]
+initial_position = [32.0, 32.0]
+radius = 1.0
+initial_resources = { nutrient_A = 4.0 }
+initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 2.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
+initial_energy = 30.0
+energy_capacity = 80.0
+mandatory_cost_per_tick = 0.03
+capacity_limit = 120.0
+
+[[cells]]
+initial_position = [32.0, 32.0]
+radius = 1.0
+initial_resources = { nutrient_A = 4.0 }
+initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 2.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
+initial_energy = 30.0
+energy_capacity = 80.0
+mandatory_cost_per_tick = 0.03
+capacity_limit = 120.0
+
+[[cells]]
+initial_position = [34.0, 32.0]
+radius = 1.0
+initial_resources = { nutrient_A = 2.0 }
+initial_materials = { boundary = 2.0, transport = 2.0, metabolic = 2.0, storage = 4.0, synthesis = 2.0, structural = 4.0, repair = 2.0, contractile = 0.5, sensory = 0.5 }
+initial_energy = 28.0
+energy_capacity = 80.0
+mandatory_cost_per_tick = 0.03
+capacity_limit = 120.0
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.02
+heat_warning_threshold = 50.0
+heat_death_threshold = 80.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.02
+waste_warning_threshold = 50.0
+waste_death_threshold = 80.0
+
+[lifecycle]
+stress_energy_threshold = 1.0
+dormancy_allowed = false
+critical_capacity_overrun = 140.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 0.25
+metabolism_resource_per_tick = 0.12
+energy_per_resource = 0.65
+heat_per_resource = 0.02
+waste_per_resource = 0.01
+
+[growth]
+growth_cost_resource = 1.0
+growth_cost_energy = 1.0
+growth_target_radius = 1.8
+max_division_pressure = 0.4
+
+[division]
+enabled = true
+energy_cost = 8.0
+split_ratio = 0.5
+daughter_spacing = 2.2
+min_daughter_radius = 0.7
+partition_loss_fraction = 0.02
+
+[decomposition]
+enabled = true
+resource_layer_index = 0
+resources_per_tick = 0.1
+materials_per_tick = 0.05
+
+[local_interaction]
+enabled = true
+contact_exchange_rate = 0.08
+max_exchange_per_pair = 0.1
+min_boundary_capability = 0.1
+min_transport_capability = 0.1
+contact_stimulus_per_overlap = 0.05
+stimulus_decay_per_tick = 0.05
+
+[joints]
+enabled = true
+creation_material_cost = 0.25
+creation_resource_cost = 0.05
+creation_energy_cost = 0.05
+mechanical_strength = 0.2
+resource_transfer_rate = 0.08
+max_resource_transfer_per_tick = 0.2
+signal_conductivity = 0.2
+signal_decay = 0.05
+heat_conductivity = 0.1
+upkeep_material_decay_per_tick = 0.001
+break_damage_threshold = 2.0
+max_joints_per_cell = 4
+
+[chemistry.resources.nutrient_A]
+volume = 1.0
+diffusion_rate = 0.05
+energy_value = 0.65
+decay_rate = 0.0001
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["energy_source"]
+
+[chemistry.resources.waste_A]
+volume = 1.0
+diffusion_rate = 0.02
+energy_value = 0.0
+decay_rate = 0.001
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["waste"]
+
+[chemistry.materials.boundary_polymer_A]
+volume = 1.0
+stability = 0.9
+strength = 0.8
+permeability = 0.1
+energy_capacity = 0.0
+decay_rate = 0.0002
+repair_resource = "nutrient_A"
+repair_amount = 0.2
+
+[chemistry.materials.structural_polymer_A]
+volume = 1.0
+stability = 0.7
+strength = 0.9
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0004
+repair_resource = "nutrient_A"
+repair_amount = 0.3
+
+[chemistry.reactions.passive_decay]
+mode = "passive"
+inputs = { nutrient_A = 0.05 }
+outputs = { waste_A = 0.05 }
+required_materials = {}
+configured_sink_amount = 0.0
+energy_output = 0.0
+heat_output = 0.005
+rate = 0.02
+probability = 1.0
+accounting_destination = "waste_A"
+
+[chemistry.heat]
+capacity = 1.0
+dissipation_rate = 0.02
+warning_threshold = 50.0
+death_threshold = 80.0
+
+[chemistry.boundary]
+default_permeability = "passive"
+retention_rate = 0.98
+
+[chemistry.repair]
+enabled = true
+energy_cost = 0.05
+max_amount_per_tick = 0.05
