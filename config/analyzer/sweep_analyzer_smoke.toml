@@ -115,6 +115,70 @@ from  = 0.0
 to    = 1.0
 steps = 3
 
+[[sweep]]
+name = "resource_type_decay_diffusion"
+scenario = "resource_type_decay_diffusion"
+param = "nutrient_decay_rate"
+from = 0.0
+to = 0.2
+steps = 3
+
+[[sweep]]
+name = "material_type_degradation"
+scenario = "material_type_degradation"
+param = "material_decay_rate"
+from = 0.0
+to = 0.25
+steps = 3
+
+[[sweep]]
+name = "passive_reaction_viability"
+scenario = "passive_reaction_viability"
+param = "passive_reaction_rate"
+from = 0.0
+to = 1.0
+steps = 3
+
+[[sweep]]
+name = "controlled_reaction_feasibility"
+scenario = "controlled_reaction_feasibility"
+param = "controlled_reaction_rate"
+from = 0.0
+to = 1.0
+steps = 3
+
+[[sweep]]
+name = "fragment_decomposition_conversion"
+scenario = "fragment_decomposition_conversion"
+param = "decomposition_materials_per_tick"
+from = 0.0
+to = 1.0
+steps = 3
+
+[[sweep]]
+name = "local_heat_degradation"
+scenario = "local_heat_degradation"
+param = "reaction_heat_output"
+from = 0.0
+to = 2.0
+steps = 3
+
+[[sweep]]
+name = "boundary_retention_leakage"
+scenario = "boundary_retention_leakage"
+param = "contact_exchange_rate"
+from = 0.0
+to = 1.0
+steps = 3
+
+[[sweep]]
+name = "repair_viability"
+scenario = "repair_viability"
+param = "repair_amount_per_tick"
+from = 0.0
+to = 1.0
+steps = 3
+
 # Scenarios Presets
 [scenarios.finite_resource_viability]
 [scenarios.passive_income_survival]
@@ -158,3 +222,59 @@ overlap_offset = 3.0
 source_cell_resources = 10.0
 target_cell_resources = 0.0
 enable_local_interaction = true
+
+[scenarios.resource_type_decay_diffusion]
+phase2g_enabled = true
+phase2g_mode = "resource_type_decay_diffusion"
+mandatory_cost_per_tick = 0.0
+initial_energy = 20.0
+
+[scenarios.material_type_degradation]
+phase2g_enabled = true
+phase2g_mode = "material_type_degradation"
+mandatory_cost_per_tick = 0.0
+initial_energy = 20.0
+
+[scenarios.passive_reaction_viability]
+phase2g_enabled = true
+phase2g_mode = "passive_reaction_viability"
+mandatory_cost_per_tick = 0.0
+initial_energy = 20.0
+
+[scenarios.controlled_reaction_feasibility]
+phase2g_enabled = true
+phase2g_mode = "controlled_reaction_feasibility"
+mandatory_cost_per_tick = 0.0
+initial_energy = 20.0
+
+[scenarios.fragment_decomposition_conversion]
+phase2g_enabled = true
+phase2g_mode = "fragment_decomposition_conversion"
+decomposition_enabled = true
+initial_energy = 1.0
+mandatory_cost_per_tick = 5.0
+continue_after_collapse_ticks = 20
+
+[scenarios.local_heat_degradation]
+phase2g_enabled = true
+phase2g_mode = "local_heat_degradation"
+mandatory_cost_per_tick = 0.0
+initial_energy = 20.0
+
+[scenarios.boundary_retention_leakage]
+phase2g_enabled = true
+phase2g_mode = "boundary_retention_leakage"
+world_size = [64.0, 64.0]
+cell_radius = 2.0
+initial_cell_count = 2
+overlap_offset = 3.0
+source_cell_resources = 10.0
+target_cell_resources = 0.0
+enable_local_interaction = true
+mandatory_cost_per_tick = 0.0
+
+[scenarios.repair_viability]
+phase2g_enabled = true
+phase2g_mode = "repair_viability"
+mandatory_cost_per_tick = 0.0
+initial_energy = 20.0

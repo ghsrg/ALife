@@ -1,11 +1,21 @@
 use crate::core::config::{
-    CellInitialConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
+    CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryHeatConfig,
+    ChemistryMaterialConfig, ChemistryReactionConfig, ChemistryRepairConfig,
+    ChemistryResourceConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
     EnvironmentConfig, GrowthConfig, LifecycleConfig, MaterialEffectConfig, ResourceConfig,
     ResourceInteractionConfig, RuntimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
 };
+use crate::core::ids::{MaterialTypeId, ResourceTypeId};
+use crate::core::material_types::{
+    MaterialProperties, MaterialRegistry, ReactionProfile, RepairRequirements, SignalProperties,
+};
+use crate::core::resource_types::{
+    PermeabilityConstraint, ReactivityProfile, ResourceProperties, ResourceRegistry, ResourceTags,
+};
 use crate::core::units::{
-    CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
-    Seed, Tick, WasteAmount, WorldSize,
+    CapacityAmount, DecayRate, DiffusionRate, EnergyAmount, EnergyCapacity, EnergyValue,
+    HeatAmount, MaterialAmount, Position, Radius, ResourceAmount, Seed, SignalAmount, Strength,
+    Tick, Volume, WasteAmount, WorldSize,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -137,6 +147,82 @@ pub struct RawMaterialEffects {
     pub repair_stress_buffer_per_unit: Option<f32>,
 }
 
+#[derive(Deserialize, Debug, Default)]
+pub struct RawChemistry {
+    #[serde(default)]
+    pub resources: HashMap<String, RawChemistryResource>,
+    #[serde(default)]
+    pub materials: HashMap<String, RawChemistryMaterial>,
+    #[serde(default)]
+    pub reactions: HashMap<String, RawChemistryReaction>,
+    pub heat: Option<RawChemistryHeat>,
+    pub boundary: Option<RawChemistryBoundary>,
+    pub repair: Option<RawChemistryRepair>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawChemistryResource {
+    pub volume: f32,
+    pub diffusion_rate: f32,
+    pub energy_value: f32,
+    pub decay_rate: f32,
+    pub reactivity_profile: String,
+    pub permeability: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawChemistryMaterial {
+    pub volume: f32,
+    pub stability: f32,
+    pub strength: f32,
+    pub permeability: f32,
+    pub energy_capacity: f32,
+    pub decay_rate: f32,
+    pub repair_resource: String,
+    pub repair_amount: f32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawChemistryReaction {
+    pub mode: String,
+    pub process_id: Option<String>,
+    #[serde(default)]
+    pub inputs: HashMap<String, f32>,
+    #[serde(default)]
+    pub required_materials: HashMap<String, f32>,
+    #[serde(default)]
+    pub outputs: HashMap<String, f32>,
+    pub configured_sink_amount: f32,
+    pub energy_output: f32,
+    pub heat_output: f32,
+    pub rate: f32,
+    pub probability: f32,
+    pub accounting_destination: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawChemistryHeat {
+    pub capacity: f32,
+    pub dissipation_rate: f32,
+    pub warning_threshold: f32,
+    pub death_threshold: f32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawChemistryBoundary {
+    pub default_permeability: String,
+    pub retention_rate: f32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawChemistryRepair {
+    pub enabled: bool,
+    pub energy_cost: f32,
+    pub max_amount_per_tick: f32,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct RawScenarioConfig {
     pub scenario_id: String,
@@ -158,6 +244,7 @@ pub struct RawScenarioConfig {
     pub division: Option<RawDivision>,
     pub decomposition: Option<RawDecomposition>,
     pub material_effects: Option<RawMaterialEffects>,
+    pub chemistry: Option<RawChemistry>,
 }
 
 #[derive(Debug)]
@@ -632,6 +719,30 @@ impl RawScenarioConfig {
                 raw_local.stimulus_decay_per_tick.unwrap_or(0.0);
         }
 
+        runtime_config.chemistry = parse_chemistry(
+            self.chemistry.unwrap_or_default(),
+            &self.resources.resource_type_ids,
+        )?;
+        runtime_config.initial_typed_resources = if runtime_config.chemistry.resources.is_empty() {
+            if let Some(raw_cells) = &self.cells {
+                vec![Vec::new(); raw_cells.len()]
+            } else {
+                vec![Vec::new()]
+            }
+        } else {
+            let mut raw_cell_inventories = vec![typed_resource_inventory(
+                &self.cell,
+                &self.resources.resource_type_ids,
+            )?];
+            if let Some(raw_cells) = &self.cells {
+                raw_cell_inventories = raw_cells
+                    .iter()
+                    .map(|cell| typed_resource_inventory(cell, &self.resources.resource_type_ids))
+                    .collect::<Result<_, _>>()?;
+            }
+            raw_cell_inventories
+        };
+
         runtime_config
             .validate_phase2d_options()
             .map_err(ParseError::ConfigValidationError)?;
@@ -749,4 +860,398 @@ fn parse_materials_inventory(
         wrap(contractile, "contractile")?,
         wrap(sensory, "sensory")?,
     ))
+}
+
+fn parse_chemistry(
+    raw: RawChemistry,
+    declared_resource_ids: &[String],
+) -> Result<ChemistryConfig, ParseError> {
+    if raw.resources.is_empty()
+        && raw.materials.is_empty()
+        && raw.reactions.is_empty()
+        && raw.heat.is_none()
+        && raw.boundary.is_none()
+        && raw.repair.is_none()
+    {
+        return Ok(ChemistryConfig::default());
+    }
+    let mut declared = declared_resource_ids.to_vec();
+    declared.sort();
+    if declared.windows(2).any(|pair| pair[0] == pair[1]) {
+        return Err(ParseError::ValidationError(
+            "Duplicate resource type id".to_string(),
+        ));
+    }
+    if declared.iter().any(|id| !raw.resources.contains_key(id)) {
+        return Err(ParseError::ValidationError(
+            "Unknown declared resource type id".to_string(),
+        ));
+    }
+    if raw.resources.len() != declared.len() {
+        return Err(ParseError::ValidationError(
+            "Chemistry resources must match declared resource type ids".to_string(),
+        ));
+    }
+    let resource_names = declared;
+    let mut material_names: Vec<_> = raw.materials.keys().cloned().collect();
+    material_names.sort();
+
+    let mut resource_values = Vec::new();
+    let mut resource_types = Vec::new();
+    for (index, id) in resource_names.iter().enumerate() {
+        let value = &raw.resources[id];
+        let volume =
+            Volume::new(value.volume).map_err(|e| chemistry_value("resource volume", e))?;
+        let diffusion = DiffusionRate::new(value.diffusion_rate)
+            .map_err(|e| chemistry_value("resource diffusion_rate", e))?;
+        let energy = EnergyValue::new(value.energy_value)
+            .map_err(|e| chemistry_value("resource energy_value", e))?;
+        let decay = DecayRate::new(value.decay_rate)
+            .map_err(|e| chemistry_value("resource decay_rate", e))?;
+        let reactivity_profile = match value.reactivity_profile.as_str() {
+            "stable" => ("stable", ReactivityProfile::Stable),
+            "reactive" => ("reactive", ReactivityProfile::Reactive),
+            other => {
+                return Err(ParseError::ValidationError(format!(
+                    "Unknown reactivity profile: {other}"
+                )));
+            }
+        };
+        let permeability = match value.permeability.as_str() {
+            "blocked" => ("blocked", PermeabilityConstraint::Blocked),
+            "passive" => ("passive", PermeabilityConstraint::Passive),
+            "active_required" => ("active_required", PermeabilityConstraint::ActiveRequired),
+            other => {
+                return Err(ParseError::ValidationError(format!(
+                    "Unknown permeability: {other}"
+                )));
+            }
+        };
+        let tags = value
+            .tags
+            .iter()
+            .map(|tag| match tag.as_str() {
+                "energy_source" => Ok(crate::core::resource_types::ResourceTag::EnergySource),
+                "dissolved" => Ok(crate::core::resource_types::ResourceTag::Dissolved),
+                "structural_precursor" => {
+                    Ok(crate::core::resource_types::ResourceTag::StructuralPrecursor)
+                }
+                "waste" => Ok(crate::core::resource_types::ResourceTag::Waste),
+                other => Err(ParseError::ValidationError(format!(
+                    "Unknown resource tag: {other}"
+                ))),
+            })
+            .collect::<Result<ResourceTags, _>>()?;
+        resource_types.push(crate::core::resource_types::ResourceType::new(
+            ResourceTypeId::from_raw(index as u32),
+            ResourceProperties::new(
+                volume,
+                diffusion,
+                energy,
+                decay,
+                reactivity_profile.1,
+                permeability.1,
+                tags,
+            ),
+        ));
+        resource_values.push(ChemistryResourceConfig {
+            id: id.clone(),
+            volume: value.volume,
+            diffusion_rate: value.diffusion_rate,
+            energy_value: value.energy_value,
+            decay_rate: value.decay_rate,
+            reactivity_profile: reactivity_profile.0.to_string(),
+            permeability: permeability.0.to_string(),
+            tags: value.tags.clone(),
+        });
+    }
+    ResourceRegistry::new(resource_types)
+        .map_err(|e| ParseError::ValidationError(format!("Invalid resource registry: {e:?}")))?;
+
+    let mut material_values = Vec::new();
+    let mut material_types = Vec::new();
+    for (index, id) in material_names.iter().enumerate() {
+        let value = &raw.materials[id];
+        let volume =
+            Volume::new(value.volume).map_err(|e| chemistry_value("material volume", e))?;
+        let stability =
+            Strength::new(value.stability).map_err(|e| chemistry_value("material stability", e))?;
+        let strength =
+            Strength::new(value.strength).map_err(|e| chemistry_value("material strength", e))?;
+        let permeability = Strength::new(value.permeability)
+            .map_err(|e| chemistry_value("material permeability", e))?;
+        let energy_capacity = EnergyCapacity::new(value.energy_capacity)
+            .map_err(|e| chemistry_value("material energy_capacity", e))?;
+        let decay = DecayRate::new(value.decay_rate)
+            .map_err(|e| chemistry_value("material decay_rate", e))?;
+        let repair_amount = non_negative(value.repair_amount, "material repair_amount")?;
+        material_types.push(crate::core::material_types::MaterialType::new(
+            MaterialTypeId::from_raw(index as u32),
+            MaterialProperties::new(
+                volume,
+                stability,
+                strength,
+                permeability,
+                energy_capacity,
+                decay,
+                RepairRequirements::new(volume),
+                ReactionProfile::Passive,
+                SignalProperties::new(
+                    Strength::new(0.0).unwrap(),
+                    SignalAmount::new(0.0).unwrap(),
+                    Strength::new(0.0).unwrap(),
+                ),
+            ),
+        ));
+        material_values.push(ChemistryMaterialConfig {
+            id: id.clone(),
+            volume: value.volume,
+            stability: value.stability,
+            strength: value.strength,
+            permeability: value.permeability,
+            energy_capacity: value.energy_capacity,
+            decay_rate: value.decay_rate,
+            repair_resource: value.repair_resource.clone(),
+            repair_amount,
+        });
+    }
+    MaterialRegistry::new(material_types)
+        .map_err(|e| ParseError::ValidationError(format!("Invalid material registry: {e:?}")))?;
+
+    let resource_ids: std::collections::HashSet<_> = resource_names.iter().collect();
+    let material_ids: std::collections::HashSet<_> = material_names.iter().collect();
+    for material in &material_values {
+        if !resource_ids.contains(&material.repair_resource) {
+            return Err(ParseError::ValidationError(format!(
+                "Unknown repair resource: {}",
+                material.repair_resource
+            )));
+        }
+    }
+    let mut reaction_names: Vec<_> = raw.reactions.keys().cloned().collect();
+    reaction_names.sort();
+    let mut reactions = Vec::new();
+    for id in reaction_names {
+        let value = &raw.reactions[&id];
+        if !matches!(value.mode.as_str(), "passive" | "controlled") {
+            return Err(ParseError::ValidationError(format!(
+                "Unknown reaction mode: {}",
+                value.mode
+            )));
+        }
+        let process_id = match value.mode.as_str() {
+            "passive" => {
+                if value.process_id.is_some() {
+                    return Err(ParseError::ValidationError(
+                        "Passive reaction cannot declare process_id".to_string(),
+                    ));
+                }
+                None
+            }
+            "controlled" => match value.process_id.as_deref() {
+                Some("energy_conversion") => Some("energy_conversion".to_string()),
+                Some(other) => {
+                    return Err(ParseError::ValidationError(format!(
+                        "Unsupported controlled reaction process_id: {other}"
+                    )));
+                }
+                None => {
+                    return Err(ParseError::ValidationError(
+                        "Controlled reaction requires process_id = energy_conversion".to_string(),
+                    ));
+                }
+            },
+            _ => unreachable!("reaction mode is validated above"),
+        };
+        let rate = non_negative(value.rate, "reaction rate")?;
+        if !value.probability.is_finite() || !(0.0..=1.0).contains(&value.probability) {
+            return Err(ParseError::ValidationError(
+                "Reaction probability must be in 0..=1".to_string(),
+            ));
+        }
+        if value.accounting_destination.is_empty()
+            || !resource_ids.contains(&value.accounting_destination)
+        {
+            return Err(ParseError::ValidationError(
+                "Reaction accounting destination is unknown or missing".to_string(),
+            ));
+        }
+        let inputs = normalize_amounts(&value.inputs, &resource_ids, "reaction input")?;
+        let outputs = normalize_amounts(&value.outputs, &resource_ids, "reaction output")?;
+        let configured_sink_amount = non_negative(
+            value.configured_sink_amount,
+            "reaction configured_sink_amount",
+        )?;
+        let energy_output = non_negative(value.energy_output, "reaction energy_output")?;
+        let heat_output = non_negative(value.heat_output, "reaction heat_output")?;
+        let required_materials = normalize_amounts(
+            &value.required_materials,
+            &material_ids,
+            "reaction catalyst",
+        )?;
+        if inputs.is_empty() && !outputs.is_empty() {
+            return Err(ParseError::ValidationError(
+                "Reaction products require inputs".to_string(),
+            ));
+        }
+        let input_total: f32 = inputs.iter().map(|(_, amount)| amount).sum();
+        let destination_total: f32 =
+            outputs.iter().map(|(_, amount)| amount).sum::<f32>() + configured_sink_amount;
+        if (input_total - destination_total).abs() > 1e-5 {
+            return Err(ParseError::ValidationError(
+                "Reaction inputs must be fully accounted by outputs and configured sink"
+                    .to_string(),
+            ));
+        }
+        reactions.push(ChemistryReactionConfig {
+            id,
+            mode: value.mode.clone(),
+            process_id,
+            inputs,
+            required_materials,
+            outputs,
+            configured_sink_amount,
+            energy_output,
+            heat_output,
+            rate,
+            probability: value.probability,
+            accounting_destination: value.accounting_destination.clone(),
+        });
+    }
+
+    let heat = raw
+        .heat
+        .map(|value| ChemistryHeatConfig {
+            capacity: value.capacity,
+            dissipation_rate: value.dissipation_rate,
+            warning_threshold: value.warning_threshold,
+            death_threshold: value.death_threshold,
+        })
+        .unwrap_or(ChemistryHeatConfig {
+            capacity: 0.0,
+            dissipation_rate: 0.0,
+            warning_threshold: 0.0,
+            death_threshold: 0.0,
+        });
+    for value in [
+        heat.capacity,
+        heat.dissipation_rate,
+        heat.warning_threshold,
+        heat.death_threshold,
+    ] {
+        non_negative(value, "heat value")?;
+    }
+    if heat.warning_threshold > heat.death_threshold {
+        return Err(ParseError::ValidationError(
+            "Heat warning threshold exceeds death threshold".to_string(),
+        ));
+    }
+    let boundary = raw
+        .boundary
+        .map(|value| {
+            if !matches!(
+                value.default_permeability.as_str(),
+                "blocked" | "passive" | "active_required"
+            ) {
+                return Err(ParseError::ValidationError(
+                    "Unknown boundary permeability".to_string(),
+                ));
+            }
+            Ok(ChemistryBoundaryConfig {
+                default_permeability: value.default_permeability,
+                retention_rate: value.retention_rate,
+            })
+        })
+        .transpose()?
+        .unwrap_or(ChemistryBoundaryConfig {
+            default_permeability: "blocked".to_string(),
+            retention_rate: 1.0,
+        });
+    if !boundary.retention_rate.is_finite() || !(0.0..=1.0).contains(&boundary.retention_rate) {
+        return Err(ParseError::ValidationError(
+            "Boundary retention_rate must be in 0..=1".to_string(),
+        ));
+    }
+    let repair = raw
+        .repair
+        .map(|value| {
+            Ok(ChemistryRepairConfig {
+                enabled: value.enabled,
+                energy_cost: non_negative(value.energy_cost, "repair energy_cost")?,
+                max_amount_per_tick: non_negative(
+                    value.max_amount_per_tick,
+                    "repair max_amount_per_tick",
+                )?,
+            })
+        })
+        .transpose()?
+        .unwrap_or(ChemistryRepairConfig {
+            enabled: false,
+            energy_cost: 0.0,
+            max_amount_per_tick: 0.0,
+        });
+    Ok(ChemistryConfig {
+        resources: resource_values,
+        materials: material_values,
+        reactions,
+        heat,
+        boundary,
+        repair,
+    })
+}
+
+fn normalize_amounts(
+    values: &HashMap<String, f32>,
+    known: &std::collections::HashSet<&String>,
+    label: &str,
+) -> Result<Vec<(String, f32)>, ParseError> {
+    let mut ids: Vec<_> = values.keys().cloned().collect();
+    ids.sort();
+    ids.into_iter()
+        .map(|id| {
+            if !known.contains(&id) {
+                return Err(ParseError::ValidationError(format!(
+                    "Unknown {label}: {id}"
+                )));
+            }
+            Ok((id.clone(), non_negative(values[&id], label)?))
+        })
+        .collect()
+}
+
+fn non_negative(value: f32, label: &str) -> Result<f32, ParseError> {
+    if !value.is_finite() || value < 0.0 {
+        Err(ParseError::ValidationError(format!(
+            "Invalid {label}: {value}"
+        )))
+    } else {
+        Ok(value)
+    }
+}
+
+fn typed_resource_inventory(
+    raw: &RawCell,
+    declared_resource_ids: &[String],
+) -> Result<Vec<(ResourceTypeId, ResourceAmount)>, ParseError> {
+    let mut inventory = Vec::new();
+    for (id, amount) in &raw.initial_resources {
+        let type_index = declared_resource_ids
+            .iter()
+            .position(|known| known == id)
+            .ok_or_else(|| {
+                ParseError::ValidationError(format!("Unknown initial cell resource: {id}"))
+            })?;
+        inventory.push((
+            ResourceTypeId::from_raw(type_index as u32),
+            ResourceAmount::new(*amount).map_err(|error| {
+                ParseError::ValidationError(format!("Invalid initial cell resource: {error:?}"))
+            })?,
+        ));
+    }
+    inventory.sort_by_key(|(id, _)| *id);
+    Ok(inventory)
+}
+
+fn chemistry_value(label: &str, error: crate::core::units::AmountError) -> ParseError {
+    ParseError::ValidationError(format!("Invalid {label}: {error:?}"))
 }

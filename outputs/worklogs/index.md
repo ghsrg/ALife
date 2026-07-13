@@ -159,4 +159,5 @@ tags:
 - [[outputs/worklogs/2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails|2026-07-11-1009-REPORT-phase-2E-material-profile-guardrails]]
 - [[outputs/worklogs/2026-07-11-1159-REPORT-phase-2F-local-interactions|2026-07-11-1159-REPORT-phase-2F-local-interactions]]
 - [[outputs/worklogs/2026-07-11-1958-REPORT-phase-2-roadmap-chemistry-joints-sync|2026-07-11-1958-REPORT-phase-2-roadmap-chemistry-joints-sync]]
+- [[outputs/worklogs/2026-07-11-2058-REPORT-phase-2G-chemistry-and-matter-dynamics|2026-07-11-2058-REPORT-phase-2G-chemistry-and-matter-dynamics]]
 

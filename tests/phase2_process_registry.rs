@@ -10,11 +10,23 @@ fn test_every_process_id_has_registry_entry() {
         ProcessId::GrowthResourceAllocation,
         ProcessId::Division,
         ProcessId::ContractileDisplacement,
+        ProcessId::RepairBoundary,
     ];
     for id in all_ids {
         let spec = ProcessSpec::for_id(id);
         assert_eq!(spec.process_id, id, "Missing registry entry for {:?}", id);
     }
+}
+
+#[test]
+fn repair_boundary_process_requires_repair_capability() {
+    let spec = ProcessSpec::for_id(ProcessId::RepairBoundary);
+
+    assert_eq!(spec.status, ProcessStatus::Now);
+    assert!(
+        spec.required_capabilities
+            .contains(&MaterialCapability::Repair)
+    );
 }
 
 #[test]

@@ -33,8 +33,59 @@ impl Seed {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AmountError {
     Negative,
+    OutOfRange,
     NonFinite,
 }
+
+macro_rules! non_negative_unit {
+    ($name:ident) => {
+        #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+        #[repr(transparent)]
+        pub struct $name(f32);
+
+        impl $name {
+            pub fn new(value: f32) -> Result<Self, AmountError> {
+                validate_non_negative(value).map(Self)
+            }
+
+            pub const fn raw(self) -> f32 {
+                self.0
+            }
+        }
+    };
+}
+
+macro_rules! unit_interval {
+    ($name:ident) => {
+        #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+        #[repr(transparent)]
+        pub struct $name(f32);
+
+        impl $name {
+            pub fn new(value: f32) -> Result<Self, AmountError> {
+                if !value.is_finite() {
+                    return Err(AmountError::NonFinite);
+                }
+                if !(0.0..=1.0).contains(&value) {
+                    return Err(AmountError::OutOfRange);
+                }
+                Ok(Self(value))
+            }
+
+            pub const fn raw(self) -> f32 {
+                self.0
+            }
+        }
+    };
+}
+
+non_negative_unit!(Volume);
+non_negative_unit!(DiffusionRate);
+non_negative_unit!(EnergyValue);
+non_negative_unit!(DecayRate);
+non_negative_unit!(EnergyCapacity);
+unit_interval!(Strength);
+unit_interval!(SignalAmount);
 
 fn validate_non_negative(value: f32) -> Result<f32, AmountError> {
     if !value.is_finite() {

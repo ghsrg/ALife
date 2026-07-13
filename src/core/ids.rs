@@ -8,6 +8,9 @@ pub struct ResourceTypeId(u32);
 pub struct MaterialTypeId(u32);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct MaterialFragmentId(u32);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventId(u32);
 
 macro_rules! impl_id {
@@ -27,4 +30,5 @@ macro_rules! impl_id {
 impl_id!(CellId);
 impl_id!(ResourceTypeId);
 impl_id!(MaterialTypeId);
+impl_id!(MaterialFragmentId);
 impl_id!(EventId);

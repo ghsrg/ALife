@@ -1,6 +1,8 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
+use crate::core::summary::MetricsSummary;
+
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub enum EntityType {
     Cell,
@@ -78,4 +80,74 @@ pub fn extract_features(
         data_completeness: 1.0,
         projection_version: "1.0.0".to_string(),
     }
+}
+
+pub fn metrics_summary_features(metrics: &MetricsSummary) -> HashMap<String, f32> {
+    let mut features = HashMap::new();
+    features.insert(
+        "reaction_matched_count".to_string(),
+        metrics.reaction_matched_count as f32,
+    );
+    features.insert(
+        "reaction_executed_count".to_string(),
+        metrics.reaction_executed_count as f32,
+    );
+    features.insert(
+        "reaction_rejected_count".to_string(),
+        metrics.reaction_rejected_count as f32,
+    );
+    features.insert(
+        "reaction_input_amount".to_string(),
+        metrics.reaction_input_amount,
+    );
+    features.insert(
+        "reaction_output_amount".to_string(),
+        metrics.reaction_output_amount,
+    );
+    features.insert(
+        "reaction_heat_generated".to_string(),
+        metrics.reaction_heat_generated,
+    );
+    features.insert(
+        "reaction_energy_output".to_string(),
+        metrics.reaction_energy_output,
+    );
+    features.insert(
+        "reaction_accounting_error".to_string(),
+        metrics.reaction_accounting_error,
+    );
+    features.insert(
+        "resource_diffused_amount".to_string(),
+        metrics.resource_diffused_amount,
+    );
+    features.insert(
+        "resource_decay_amount".to_string(),
+        metrics.resource_decay_amount,
+    );
+    features.insert(
+        "fragment_created_amount".to_string(),
+        metrics.fragment_created_amount,
+    );
+    features.insert(
+        "fragment_converted_amount".to_string(),
+        metrics.fragment_converted_amount,
+    );
+    features.insert("heat_peak_temperature".to_string(), metrics.heat);
+    features.insert(
+        "material_degradation_amount".to_string(),
+        metrics.material_degradation_amount,
+    );
+    features.insert(
+        "boundary_leakage_amount".to_string(),
+        metrics.boundary_leakage_amount,
+    );
+    features.insert(
+        "repair_success_count".to_string(),
+        metrics.repair_success_count as f32,
+    );
+    features.insert(
+        "repair_rejection_count".to_string(),
+        metrics.repair_rejection_count as f32,
+    );
+    features
 }

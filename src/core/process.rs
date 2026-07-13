@@ -56,6 +56,7 @@ pub enum ProcessId {
     Division,
     ContractileDisplacement,
     PassiveContactExchange,
+    RepairBoundary,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -76,6 +77,7 @@ pub enum RejectionReason {
     PressureTooHigh,
     NoPressure,
     ProcessDisabled,
+    MissingTargetDamage,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -170,6 +172,12 @@ static PROCESS_REGISTRY: &[ProcessSpec] = &[
             MaterialCapability::ResourceUptake,
         ],
         description: "Passively moves internal resources between contacting cells down a resource gradient.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::RepairBoundary,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::Repair],
+        description: "Consumes local inputs to restore damaged boundary material.",
     },
     ProcessSpec {
         process_id: ProcessId::Division,

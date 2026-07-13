@@ -1,3 +1,5 @@
+use crate::core::ids::ResourceTypeId;
+use crate::core::resource_types::ResourceRegistry;
 use crate::core::units::{GridCoord, Position, ResourceAmount, WorldSize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -30,6 +32,7 @@ pub struct ResourceGrid {
     quantities: Vec<ResourceAmount>,
     optional_decay_rate: f32,
     spatial_grid_size: f32,
+    type_ids: Option<Vec<ResourceTypeId>>,
 }
 
 impl ResourceGrid {
@@ -68,7 +71,26 @@ impl ResourceGrid {
             quantities,
             optional_decay_rate: decay_rate,
             spatial_grid_size,
+            type_ids: None,
         })
+    }
+
+    pub fn new_typed(
+        world_size: WorldSize,
+        spatial_grid_size: f32,
+        initial_distribution: Vec<(ResourceTypeId, ResourceAmount)>,
+    ) -> Result<Self, ResourceGridError> {
+        if initial_distribution.is_empty() {
+            return Err(ResourceGridError::EmptyInitialDistribution);
+        }
+        let type_ids = initial_distribution.iter().map(|(id, _)| *id).collect();
+        let amounts = initial_distribution
+            .into_iter()
+            .map(|(_, amount)| amount)
+            .collect();
+        let mut grid = Self::new(world_size, spatial_grid_size, amounts, 0.0)?;
+        grid.type_ids = Some(type_ids);
+        Ok(grid)
     }
 
     pub fn coord_for_position(&self, position: Position) -> GridCoord {
@@ -139,6 +161,70 @@ impl ResourceGrid {
         }
     }
 
+    pub fn amount_at_type(
+        &self,
+        resource_type: ResourceTypeId,
+        coord: GridCoord,
+    ) -> Result<ResourceAmount, ResourceGridError> {
+        let layer = self.layer_for_type(resource_type)?;
+        self.amount_at(layer, coord)
+    }
+
+    pub fn set_amount_at_type(
+        &mut self,
+        resource_type: ResourceTypeId,
+        coord: GridCoord,
+        amount: ResourceAmount,
+    ) -> Result<(), ResourceGridError> {
+        let layer = self.layer_for_type(resource_type)?;
+        self.set_amount_at(layer, coord, amount)
+    }
+
+    pub fn decay_with_registry(&mut self, registry: &ResourceRegistry) {
+        let Some(type_ids) = self.type_ids.clone() else {
+            self.decay_or_passive_update();
+            return;
+        };
+        for (layer, resource_type) in type_ids.iter().enumerate() {
+            let Ok(properties) = registry.lookup(*resource_type) else {
+                continue;
+            };
+            let decay = properties.properties().decay_rate().raw();
+            let start = layer * self.cell_count();
+            let end = start + self.cell_count();
+            for amount in &mut self.quantities[start..end] {
+                *amount = ResourceAmount::new(amount.raw() * (1.0 - decay))
+                    .unwrap_or_else(|_| ResourceAmount::zero());
+            }
+        }
+    }
+
+    pub fn diffuse_resource_type(
+        &mut self,
+        resource_type: ResourceTypeId,
+        source: GridCoord,
+        target: GridCoord,
+        registry: &ResourceRegistry,
+    ) -> Result<ResourceAmount, ResourceGridError> {
+        let layer = self.layer_for_type(resource_type)?;
+        let rate = registry
+            .lookup(resource_type)
+            .map_err(|_| ResourceGridError::LayerOutOfBounds)?
+            .properties()
+            .diffusion_rate()
+            .raw()
+            .clamp(0.0, 1.0);
+        let source_amount = self.amount_at(layer, source)?.raw();
+        let target_amount = self.amount_at(layer, target)?.raw();
+        let moved = ((source_amount - target_amount).max(0.0) * rate).min(source_amount);
+        let moved_amount = ResourceAmount::new(moved).unwrap_or_else(|_| ResourceAmount::zero());
+        let source_next = ResourceAmount::new(source_amount - moved).unwrap();
+        let target_next = ResourceAmount::new(target_amount + moved).unwrap();
+        self.set_amount_at(layer, source, source_next)?;
+        self.set_amount_at(layer, target, target_next)?;
+        Ok(moved_amount)
+    }
+
     pub fn quantities(&self) -> &[ResourceAmount] {
         &self.quantities
     }
@@ -156,5 +242,16 @@ impl ResourceGrid {
         }
 
         Ok(layer.raw() * self.cell_count() + coord.y() * self.width + coord.x())
+    }
+
+    fn layer_for_type(
+        &self,
+        resource_type: ResourceTypeId,
+    ) -> Result<ResourceLayerIndex, ResourceGridError> {
+        self.type_ids
+            .as_ref()
+            .and_then(|ids| ids.iter().position(|id| *id == resource_type))
+            .map(ResourceLayerIndex::from_raw)
+            .ok_or(ResourceGridError::LayerOutOfBounds)
     }
 }

@@ -1,3 +1,4 @@
+use crate::core::ids::MaterialTypeId;
 use crate::core::units::MaterialAmount;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -26,7 +27,7 @@ impl MaterialSlot {
         Self::Sensory,
     ];
 
-    const fn index(self) -> usize {
+    pub(crate) const fn index(self) -> usize {
         match self {
             Self::Boundary => 0,
             Self::Transport => 1,
@@ -38,6 +39,10 @@ impl MaterialSlot {
             Self::Contractile => 7,
             Self::Sensory => 8,
         }
+    }
+
+    pub const fn material_type_id(self) -> MaterialTypeId {
+        MaterialTypeId::from_raw(self.index() as u32)
     }
 }
 

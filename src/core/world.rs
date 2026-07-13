@@ -5,6 +5,8 @@ use crate::core::config::RuntimeConfig;
 use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
+use crate::core::fragments::FragmentStore;
+use crate::core::ids::ResourceTypeId;
 use crate::core::resources::ResourceGrid;
 use crate::core::spatial::SpatialIndex;
 use crate::core::units::{
@@ -35,17 +37,35 @@ pub struct WorldState {
     spatial_index: SpatialIndex,
     contact_cache: ContactCache,
     events: EventBuffer,
+    fragments: FragmentStore,
 }
 
 impl WorldState {
     pub fn from_config(config: RuntimeConfig) -> Result<Self, WorldInitError> {
         let mut cells = CellStore::with_capacity(config.initial_cells.len());
+        if !config.chemistry.resources.is_empty() {
+            cells
+                .configure_typed_resource_types(
+                    (0..config.chemistry.resources.len())
+                        .map(|index| ResourceTypeId::from_raw(index as u32))
+                        .collect(),
+                )
+                .map_err(|_| WorldInitError::InvalidInitialState)?;
+        }
         if config.initial_cells.len() == 1 {
             cells.insert_initial(InitialCellState {
                 position: config.cell.position,
                 radius: config.cell.radius,
                 energy: EnergyBuffer::new(config.cell.initial_energy, config.cell.energy_capacity),
-                resources: config.cell.initial_resource_amount,
+                resources: if config
+                    .initial_typed_resources
+                    .first()
+                    .is_some_and(|inventory| !inventory.is_empty())
+                {
+                    ResourceAmount::zero()
+                } else {
+                    config.cell.initial_resource_amount
+                },
                 boundary_material: config.cell.initial_boundary_material,
                 transport_material: config.cell.initial_transport_material,
                 metabolic_material: config.cell.initial_metabolic_material,
@@ -58,8 +78,15 @@ impl WorldState {
                 capacity_limit: config.cell.capacity_limit,
                 temperature: crate::core::units::Temperature::new(25.0),
             });
+            for (resource_type, amount) in
+                config.initial_typed_resources.first().into_iter().flatten()
+            {
+                cells
+                    .set_typed_resource_amount(CellIndex::from_raw(0), *resource_type, *amount)
+                    .map_err(|_| WorldInitError::InvalidInitialState)?;
+            }
         } else {
-            for cell_config in &config.initial_cells {
+            for (cell_index, cell_config) in config.initial_cells.iter().enumerate() {
                 cells.insert_initial(InitialCellState {
                     position: cell_config.position,
                     radius: cell_config.radius,
@@ -67,7 +94,15 @@ impl WorldState {
                         cell_config.initial_energy,
                         cell_config.energy_capacity,
                     ),
-                    resources: cell_config.initial_resource_amount,
+                    resources: if config
+                        .initial_typed_resources
+                        .get(cell_index)
+                        .is_some_and(|inventory| !inventory.is_empty())
+                    {
+                        ResourceAmount::zero()
+                    } else {
+                        cell_config.initial_resource_amount
+                    },
                     boundary_material: cell_config.initial_boundary_material,
                     transport_material: cell_config.initial_transport_material,
                     metabolic_material: cell_config.initial_metabolic_material,
@@ -80,6 +115,20 @@ impl WorldState {
                     capacity_limit: cell_config.capacity_limit,
                     temperature: crate::core::units::Temperature::new(25.0),
                 });
+                for (resource_type, amount) in config
+                    .initial_typed_resources
+                    .get(cell_index)
+                    .into_iter()
+                    .flatten()
+                {
+                    cells
+                        .set_typed_resource_amount(
+                            CellIndex::from_raw(cell_index),
+                            *resource_type,
+                            *amount,
+                        )
+                        .map_err(|_| WorldInitError::InvalidInitialState)?;
+                }
             }
         }
 
@@ -107,6 +156,7 @@ impl WorldState {
             spatial_index,
             contact_cache,
             events: EventBuffer::with_capacity(128),
+            fragments: FragmentStore::default(),
         })
     }
 
@@ -172,6 +222,14 @@ impl WorldState {
 
     pub fn events_mut_for_commit(&mut self) -> &mut EventBuffer {
         &mut self.events
+    }
+
+    pub fn fragments(&self) -> &FragmentStore {
+        &self.fragments
+    }
+
+    pub fn fragments_mut_for_commit(&mut self) -> &mut FragmentStore {
+        &mut self.fragments
     }
 
     pub(crate) fn advance_tick(&mut self) {
@@ -386,6 +444,48 @@ impl WorldState {
                 energy_cost: 0.0,
                 resource_cost: 0.0,
             },
+            ProcessId::RepairBoundary => {
+                if !self.config.chemistry.repair.enabled {
+                    return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
+                }
+                if !self
+                    .cells
+                    .has_capability(cell_idx, MaterialCapability::Repair)
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingCapability(
+                        MaterialCapability::Repair,
+                    ));
+                }
+
+                let boundary_damage = self
+                    .cells
+                    .material_damage(cell_idx, crate::core::materials::MaterialSlot::Boundary);
+                if boundary_damage <= 0.0 {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingTargetDamage);
+                }
+
+                let current_energy = self.cells.energy(cell_idx).current().raw();
+                let energy_cost = self.config.chemistry.repair.energy_cost;
+                if current_energy < energy_cost {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
+                }
+
+                let requested = action
+                    .requested_amount
+                    .min(self.config.chemistry.repair.max_amount_per_tick)
+                    .min(boundary_damage)
+                    .min(self.cells.repair_material(cell_idx).raw())
+                    .min(self.cells.generic_resource_amount(cell_idx).raw());
+                if requested <= 0.0 {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientResources);
+                }
+
+                FeasibilityResult::Allowed {
+                    accepted_amount: requested,
+                    energy_cost,
+                    resource_cost: requested,
+                }
+            }
         }
     }
 
@@ -747,6 +847,13 @@ impl WorldState {
                 remaining_decompose_mat -= to_decompose;
                 self.cells
                     .set_boundary_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Boundary.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // transport
@@ -757,6 +864,13 @@ impl WorldState {
                 remaining_decompose_mat -= to_decompose;
                 self.cells
                     .set_transport_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Transport.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // metabolic
@@ -767,6 +881,13 @@ impl WorldState {
                 remaining_decompose_mat -= to_decompose;
                 self.cells
                     .set_metabolic_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Metabolic.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // storage
@@ -777,6 +898,13 @@ impl WorldState {
                 remaining_decompose_mat -= to_decompose;
                 self.cells
                     .set_storage_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Storage.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // synthesis
@@ -787,6 +915,13 @@ impl WorldState {
                 remaining_decompose_mat -= to_decompose;
                 self.cells
                     .set_synthesis_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Synthesis.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // structural
@@ -797,6 +932,13 @@ impl WorldState {
                 remaining_decompose_mat -= to_decompose;
                 self.cells
                     .set_structural_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Structural.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // repair
@@ -807,6 +949,13 @@ impl WorldState {
                 remaining_decompose_mat -= to_decompose;
                 self.cells
                     .set_repair_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Repair.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // contractile
@@ -819,6 +968,13 @@ impl WorldState {
                     idx,
                     MaterialAmount::new(val - to_decompose).unwrap(),
                 );
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Contractile.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
             // sensory
@@ -828,20 +984,16 @@ impl WorldState {
                 decomposed_mat_sum += to_decompose;
                 self.cells
                     .set_sensory_material(idx, MaterialAmount::new(val - to_decompose).unwrap());
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::MaterialSlot::Sensory.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
             }
 
-            if decomposed_mat_sum > 0.0 {
-                let current_grid_res = self
-                    .resources
-                    .amount_at(layer, grid_coord)
-                    .map(|a| a.raw())
-                    .unwrap_or(0.0);
-                let _ = self.resources.set_amount_at(
-                    layer,
-                    grid_coord,
-                    ResourceAmount::new(current_grid_res + decomposed_mat_sum).unwrap(),
-                );
-            }
+            let _ = decomposed_mat_sum;
 
             // 3. Check if empty
             if self.cells.resource_amount(idx).raw() == 0.0
