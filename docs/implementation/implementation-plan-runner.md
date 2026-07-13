@@ -18,7 +18,7 @@ Runner:
 
 - запускає Core симуляцію з TOML конфігу;
 - керує lifecycle run-у (start, pause, resume, step, stop);
-- збирає committed snapshots у ring buffer;
+- транслює committed snapshots у WS clients з обмеженою частотою (≤30 fps);
 - в режимі `--serve` надає HTTP API і WebSocket frame stream.
 
 При конфлікті пріоритет мають:
@@ -46,7 +46,7 @@ alife-runner        (binary crate, orchestration)
   CLI entry point
   config/scenario loading and validation
   run state machine
-  ring buffer management
+  time-based frame broadcast (≤30 fps)
   command queue (receives from HTTP or CLI)
 
 alife-viewer-server (library crate, HTTP + WS adapter)
@@ -71,19 +71,19 @@ WS /stream  ← push-only frame stream (Runner → UI)
 
 HTTP дозволяє тестувати команди через curl. WS не змішує типи повідомлень.
 
-### Frame streaming — full snapshot, ring buffer
+### Frame streaming — time-based broadcast, client-side history
 
 ```text
-Core commits Snapshot[tick N]
-  ↓ (in-memory, no wait)
-Runner записує у ring_buffer[N % capacity]
-  ↓ (async, non-blocking)
-viewer-server зчитує і пушить всім WS-клієнтам
+Core commits Snapshot[tick N]  (runs at full speed, unbounded)
+  ↓
+Runner tick loop перевіряє: elapsed ≥ frame_interval (default 33ms = 30fps)
+  ↓ (якщо так — encode + broadcast; інакше — skip)
+Broadcast channel → всі підключені WS-клієнти отримують frame
 ```
 
-Core ніколи не чекає на WS-клієнтів. Повільний клієнт пропускає кадри і отримує найновіший. Це впливає виключно на плавність перегляду, не на Core.
+Core ніколи не чекає на WS-клієнтів. Повільний клієнт отримує `Lagged` помилку і продовжує з найновішого кадру. Це впливає виключно на плавність перегляду, не на Core.
 
-Ring buffer дозволяє UI "прокрутити назад" у межах `snapshot_buffer_size` останніх Tick-ів.
+**Немає серверного ring buffer.** Scroll-back — виключно відповідальність UI клієнта (browser зберігає останню хвилину кадрів у пам'яті; при паузі зберігає всі кадри до memory limit).
 
 ### Scenario discovery — HTTP API
 
@@ -234,17 +234,21 @@ Frame format: бінарний, версіонований. Точна схем�
 
 Кожне WS-з'єднання є незалежним підписником. Runner пушить кожному клієнту паралельно. Повільний клієнт пропускає кадри без впливу на Core або інших клієнтів.
 
-### Scroll back
+### Scroll-back і seek — відповідальність клієнта
 
-Клієнт може запросити frame за tick-ом у межах ring buffer:
+Сервер не зберігає history і не реалізує seek. Scroll-back реалізується на стороні UI:
 
 ```text
-{ type: "seek", tick: N }
-→ сервер відповідає frame для tick N (або найближчий доступний)
-→ сервер продовжує push live frames
+UI (browser) — стратегія утримання кадрів:
+  live mode:   зберігати 1 кадр/сек (відкидати решту з 30fps потоку)
+  paused mode: зберігати всі кадри що приходять (≤60 кадрів = ~1 хв)
+  memory limit: evict oldest при переповненні
+
+Seek: scroll по локальному масиву кадрів у браузері
+"Jump to live": reset scroll position → стежити за live кадрами
 ```
 
-Якщо tick не в буфері — відповідь `{ type: "seek_error", reason: "not_in_buffer", oldest_available_tick: M }`.
+Сервер надсилає лише `{ type: "status" }` text і binary frames. Клієнт вирішує що тримати.
 
 ---
 
@@ -274,17 +278,18 @@ Stopping (transitional)
 
 ---
 
-## Ring Buffer
+## Frame Rate Config
 
 ```toml
 [server]
-snapshot_buffer_size = 300   # кількість Tick-ів у пам'яті (scroll back window)
-stream_frame_interval = 3    # пушити кожні N Tick-ів до WS клієнтів
+bind_host = "127.0.0.1"
+port = 8080
+target_broadcast_fps = 30    # max кадрів/сек до WS клієнтів (time-based)
 ```
 
-`snapshot_buffer_size = 300` при 30 ticks/sec = 10 секунд scroll back.
+`target_broadcast_fps = 30` → frame_interval = 33ms. Core тікає необмежено швидко; broadcast відбувається не частіше ніж раз на frame_interval.
 
-Ring buffer живе виключно у пам'яті. Він не є Storage — для довгострокового replay використовується `alife-storage` (майбутній crate).
+Сервер не зберігає history у пам'яті. Клієнт тримає власну ring queue кадрів (browser-side).
 
 ---
 
@@ -297,8 +302,7 @@ Ring buffer живе виключно у пам'яті. Він не є Storage �
 bind_host = "127.0.0.1"       # local-only за замовчуванням
 port = 8080
 allow_remote_viewer = false
-snapshot_buffer_size = 300
-stream_frame_interval = 3
+target_broadcast_fps = 30     # max WS frame push rate (time-based, не tick-based)
 
 # Remote viewer mode (opt-in):
 # bind_host = "0.0.0.0"
@@ -332,7 +336,7 @@ Remote mode (`0.0.0.0`): явно opt-in, для trusted LAN.
 
 ### Runner-1: Headless Run Loop And State Machine
 
-Мета: чистий поділ `alife-core` від entry-point; state machine; ring buffer; scenario directory.
+Мета: чистий поділ `alife-core` від entry-point; state machine; scenario directory.
 
 Build:
 
@@ -341,8 +345,7 @@ Build:
 CLI: cargo run --bin runner -- <scenario.toml>
 config/scenarios/ directory зі стартовими demo сценаріями
 run state machine (Idle / Running / Paused / Stopping)
-ring buffer (CommittedSnapshot, configurable size)
-deterministic replay test через ring buffer
+deterministic replay test (same seed + config → same result)
 ```
 
 Gate:
@@ -350,8 +353,8 @@ Gate:
 ```text
 headless run стартує і завершується детерміновано
 state transitions покриті тестами
-ring buffer зберігає N останніх snapshot-ів
 scenario TOML знаходиться і валідується при старті
+toy simulation → очікуваний tick count
 ```
 
 ---
@@ -396,18 +399,18 @@ POST /run/resume відновлює
 
 ### Runner-3: WebSocket Frame Stream
 
-Мета: WS /stream; binary frame encoding; multiple clients; scroll back.
+Мета: WS /stream; binary frame encoding; multiple clients; time-based broadcast.
 
 Build:
 
 ```text
-WS /stream endpoint (axum WebSocket або tokio-tungstenite)
-CommittedSnapshot → binary frame encoder (версіонований формат)
-push до всіх connected clients кожні stream_frame_interval Tick-ів
-незалежний підписник per connection (slow client не блокує Core)
-status messages при зміні state
-seek by tick (scroll back в межах ring buffer)
-seek_error коли tick поза буфером
+WS /stream endpoint (axum WebSocket)
+CommittedSnapshot → binary frame encoder (версіонований формат ALIF v1)
+time-based broadcast: push не частіше target_broadcast_fps (default 30fps)
+незалежний підписник per connection (tokio::sync::broadcast)
+slow client → RecvError::Lagged → skip, continue (не блокує Core)
+status JSON messages при зміні RunState (start/pause/resume/stop)
+initial status message при підключенні клієнта
 ```
 
 Gate:
@@ -415,10 +418,10 @@ Gate:
 ```text
 два browser tabs отримують незалежні frame streams
 повільний клієнт пропускає кадри без впливу на Core
-seek до tick у ring buffer повертає правильний frame
-seek поза буфером повертає seek_error з oldest_available_tick
-frame містить tick і бінарний payload
+frame містить tick і бінарний payload (ALIF magic bytes)
 binary frame decoder може відновити Cell positions і lifecycle states
+нові підключення отримують initial status без seek запитів
+tick loop не тримає mutex під час broadcast
 ```
 
 ---
@@ -458,7 +461,7 @@ HTTP відповідь ніколи не містить uncommitted simulation 
 Core Tick ніколи не чекає на WS clients або HTTP responses.
 Runner state machine є єдиним авторитетом для run state.
 Команди від UI проходять Runner validation перед впливом на Core.
-Ring buffer — тільки in-memory; не є заміною Storage.
+Сервер не зберігає frame history; scroll-back — відповідальність UI клієнта.
 ```
 
 ---
@@ -493,10 +496,10 @@ GET /run/status відображає tick, state, config_hash, seed
 POST /run/pause і /run/resume працюють через HTTP
 POST /run/step виконує N Tick-ів і повертає tick_after
 POST /run/stop повертає в Idle
-WS /stream отримує frame кожні stream_frame_interval Tick-ів
+WS /stream отримує frame ≤target_broadcast_fps разів на секунду
 два підключені клієнти отримують незалежні stream-и
 Core ніколи не чекає на WS клієнтів
-seek у ring buffer повертає frame або seek_error
+new WS connect → initial status message (idle/running/paused)
 reconnect клієнта не повторює команди
 той самий seed + той самий config → той самий результат
 collapse зупиняє run з collapse_reason у /run/status
