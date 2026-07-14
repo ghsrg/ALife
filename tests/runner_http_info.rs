@@ -9,6 +9,7 @@ fn make_state() -> alife::viewer_server::state::AppState {
     new_app_state(
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/scenarios"),
         10,
+        30,
     )
 }
 

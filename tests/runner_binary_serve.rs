@@ -1,7 +1,9 @@
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
+use futures_util::StreamExt;
 use serde_json::Value;
+use tokio_tungstenite::tungstenite::Message;
 
 struct ChildGuard(Child);
 
@@ -34,6 +36,23 @@ async fn serve_flag_starts_http_server() {
                 let body: Value = response.json().await.expect("server info should be JSON");
                 assert_eq!(body["api_version"], "1");
                 assert_eq!(body["allow_remote_viewer"], false);
+
+                let (mut ws, _) = tokio_tungstenite::connect_async("ws://127.0.0.1:8080/stream")
+                    .await
+                    .expect("runner --serve should accept WebSocket stream connections");
+                let message = ws
+                    .next()
+                    .await
+                    .expect("WebSocket should emit initial status")
+                    .expect("initial WebSocket status should be readable");
+                let Message::Text(text) = message else {
+                    panic!("initial WebSocket message should be text status");
+                };
+                let status: Value =
+                    serde_json::from_str(&text).expect("WebSocket status should be JSON");
+                assert_eq!(status["type"], "status");
+                assert_eq!(status["process_state"], "ready");
+                assert_eq!(status["active_run_state"], "idle");
                 return;
             }
             Ok(response) => format!("HTTP {}", response.status()),

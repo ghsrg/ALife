@@ -101,7 +101,7 @@ async fn serve_http(server_config: ServerConfig, scenarios_dir: PathBuf) -> Resu
     let listener = tokio::net::TcpListener::bind(&bind_addr)
         .await
         .map_err(|err| format!("failed to bind HTTP server on {bind_addr}: {err}"))?;
-    let app_state = new_app_state(scenarios_dir, 300);
+    let app_state = new_app_state(scenarios_dir, 300, server_config.target_broadcast_fps);
     let app = create_app(app_state);
 
     println!("[runner] HTTP server listening on http://{bind_addr}");

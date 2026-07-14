@@ -4,7 +4,9 @@ use crate::runner::engine::{RunEngine, RunEngineConfig};
 use crate::runner::lifecycle::{ActiveRunState, RunnerProcessState};
 use crate::runner::scenario::{load_scenario_document, scan_scenarios};
 use crate::runner::scenario_doc::ScenarioDocument;
-use crate::viewer_server::state::{AppState, dispatch_command, spawn_tick_loop};
+use crate::viewer_server::state::{
+    AppState, dispatch_command, spawn_tick_loop, status_ws_text_from_state,
+};
 use axum::{
     Json, Router,
     extract::{Json as ExtractJson, State},
@@ -105,6 +107,17 @@ fn error_response(
             current_state: "see /run/status".to_string(),
         }),
     )
+}
+
+fn broadcast_status(state: &AppState) {
+    let (text, broadcaster) = {
+        let locked = state.lock().unwrap();
+        (
+            status_ws_text_from_state(&locked),
+            locked.broadcaster.sender(),
+        )
+    };
+    let _ = broadcaster.send(crate::viewer_server::broadcaster::WsMessage::Status(text));
 }
 
 async fn handle_run_status(State(state): State<AppState>) -> Json<RunStatus> {
@@ -210,6 +223,7 @@ async fn handle_run_start(
         locked.terminal_reason = None;
     }
 
+    broadcast_status(&state);
     spawn_tick_loop(state);
 
     Ok(Json(StartResponse {
@@ -239,33 +253,41 @@ fn command_result_response(
 async fn handle_run_pause(
     State(state): State<AppState>,
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
-    dispatch_command(&state, RunnerCommand::PauseRun)
+    let response = dispatch_command(&state, RunnerCommand::PauseRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot pause run"))
+        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot pause run"))?;
+    broadcast_status(&state);
+    Ok(response)
 }
 
 async fn handle_run_resume(
     State(state): State<AppState>,
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
-    dispatch_command(&state, RunnerCommand::ResumeRun)
+    let response = dispatch_command(&state, RunnerCommand::ResumeRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot resume run"))
+        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot resume run"))?;
+    broadcast_status(&state);
+    Ok(response)
 }
 
 async fn handle_run_step(
     State(state): State<AppState>,
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
-    dispatch_command(&state, RunnerCommand::StepRun)
+    let response = dispatch_command(&state, RunnerCommand::StepRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot step run"))
+        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot step run"))?;
+    broadcast_status(&state);
+    Ok(response)
 }
 
 async fn handle_run_stop(
     State(state): State<AppState>,
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
-    dispatch_command(&state, RunnerCommand::StopRun)
+    let response = dispatch_command(&state, RunnerCommand::StopRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot stop run"))
+        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot stop run"))?;
+    broadcast_status(&state);
+    Ok(response)
 }
 
 pub fn router(state: AppState) -> Router {
