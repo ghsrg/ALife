@@ -37,6 +37,27 @@ async fn next_text(
     serde_json::from_str(&text).expect("status message should be JSON")
 }
 
+async fn wait_for_status(
+    ws: &mut tokio_tungstenite::WebSocketStream<
+        tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+    >,
+    active_run_state: &str,
+) -> Value {
+    tokio::time::timeout(std::time::Duration::from_secs(1), async {
+        loop {
+            let msg = ws.next().await.unwrap().unwrap();
+            if let Message::Text(text) = msg {
+                let status: Value = serde_json::from_str(&text).unwrap();
+                if status["type"] == "status" && status["active_run_state"] == active_run_state {
+                    return status;
+                }
+            }
+        }
+    })
+    .await
+    .expect("timed out waiting for requested WS status")
+}
+
 #[tokio::test]
 async fn ws_connect_receives_initial_status_idle() {
     let (base_url, _) = spawn_test_server().await;
@@ -119,4 +140,90 @@ async fn slow_ws_client_does_not_block_simulation() {
     tokio::time::sleep(std::time::Duration::from_millis(300)).await;
 
     assert!(state.lock().unwrap().committed_tick > 0);
+}
+
+#[tokio::test]
+async fn ws_receives_running_status_after_http_start() {
+    let (base_url, _) = spawn_test_server().await;
+    let ws_url = base_url.replace("http://", "ws://") + "/stream";
+    let (mut ws, _) = connect_async(&ws_url).await.unwrap();
+    let _ = next_text(&mut ws).await;
+
+    let client = reqwest::Client::new();
+    let start = client
+        .post(format!("{base_url}/run/start"))
+        .json(&serde_json::json!({
+            "scenario_id": "world_baseline_stable",
+            "request_id": "ws-running-status-test"
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(start.status(), 200);
+
+    let status = wait_for_status(&mut ws, "running").await;
+    assert_eq!(status["process_state"], "ready");
+    assert_eq!(status["scenario_id"], "world_baseline_stable");
+    assert_eq!(status["run_id"], "ws-running-status-test");
+    assert!(
+        status["scenario_hash"]
+            .as_str()
+            .unwrap()
+            .starts_with("scenario_hash_v1:")
+    );
+    assert!(status["effective_seed"].as_u64().is_some());
+}
+
+#[tokio::test]
+async fn ws_receives_pause_resume_and_completed_statuses() {
+    let (base_url, _) = spawn_test_server().await;
+    let ws_url = base_url.replace("http://", "ws://") + "/stream";
+    let (mut ws, _) = connect_async(&ws_url).await.unwrap();
+    let _ = next_text(&mut ws).await;
+
+    let client = reqwest::Client::new();
+    let start = client
+        .post(format!("{base_url}/run/start"))
+        .json(&serde_json::json!({
+            "scenario_id": "world_baseline_stable",
+            "request_id": "ws-control-status-test"
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(start.status(), 200);
+    let _ = wait_for_status(&mut ws, "running").await;
+
+    let pause = client
+        .post(format!("{base_url}/run/pause"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(pause.status(), 200);
+    assert_eq!(
+        wait_for_status(&mut ws, "paused").await["active_run_state"],
+        "paused"
+    );
+
+    let resume = client
+        .post(format!("{base_url}/run/resume"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resume.status(), 200);
+    assert_eq!(
+        wait_for_status(&mut ws, "running").await["active_run_state"],
+        "running"
+    );
+
+    let stop = client
+        .post(format!("{base_url}/run/stop"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(stop.status(), 200);
+    assert_eq!(
+        wait_for_status(&mut ws, "completed").await["active_run_state"],
+        "completed"
+    );
 }
