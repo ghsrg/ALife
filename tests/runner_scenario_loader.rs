@@ -37,3 +37,27 @@ fn load_scenario_document_resolves_path_through_scenario_document() {
     assert_eq!(document.id, "bootstrap_minimal_viable_world");
     assert_eq!(document.runtime_config.world.seed.raw(), 42);
 }
+
+#[test]
+fn demo_living_world_is_available_for_manual_runner_usage() {
+    let scenarios = scan_scenarios("config/scenarios").unwrap();
+    let meta = scenarios
+        .iter()
+        .find(|scenario| scenario.id == "demo_living_world")
+        .expect("demo_living_world should be listed for manual use");
+    let document = load_scenario_document(meta).unwrap();
+    let config = &document.runtime_config;
+
+    assert_eq!(document.id, "demo_living_world");
+    assert_eq!(config.world.size.width(), 256.0);
+    assert_eq!(config.world.size.height(), 256.0);
+    assert_eq!(config.world.tick_count.raw(), 50_000);
+    assert_eq!(config.initial_cells.len(), 24);
+    assert_eq!(config.initial_cell_genome_templates.len(), 24);
+    assert!(config.resource_interaction.enabled);
+    assert!(config.division.enabled);
+    assert!(config.decomposition.enabled);
+    assert!(config.local_interaction.enabled);
+    assert!(config.joints.enabled);
+    assert!(config.cell.initial_energy.raw() <= config.cell.energy_capacity.raw());
+}

@@ -62,6 +62,9 @@ Scenario Source
 - [[docs/implementation/implementation-plan-runner|Runner Implementation Plan]]
 - [[docs/implementation/implementation-plan-ui|UI Implementation Plan]]
 
+## Practical Usage
+- [[docs/RUNNER_USAGE|Runner Usage Guide]]
+
 ## Invariants
 ```text
 Canon defines behavior before implementation.

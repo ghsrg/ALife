@@ -48,6 +48,7 @@ Mechanics cards are routing checklists, not sources of truth.
 - Planning phase work -> [[docs/ROADMAP]] + [[docs/implementation/INDEX]] + relevant mechanics cards.
 - Working with configs -> [[docs/config/INDEX]] + [[docs/mechanics/config-to-runtime|Config -> Runtime]].
 - Working with runner orchestration, execution modes, Scenario resolution, Bootstrap, commands, or projections -> [[docs/runner/INDEX]] + [[docs/implementation/implementation-plan-runner|Runner Implementation Plan]].
+- Running Runner manually from terminal -> [[docs/RUNNER_USAGE|Runner Usage Guide]].
 - Working with viewer/UI -> [[docs/ui/INDEX]] + [[docs/implementation/implementation-plan-ui|UI Implementation Plan]].
 - Working with observer/projections/coverage -> [[docs/observer/INDEX]] + [[docs/mechanics/observer-projection|Observer Projection]].
 - Looking for saved plans/reports -> [[outputs/worklogs/index|Worklogs Index]].

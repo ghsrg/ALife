@@ -17,6 +17,8 @@ tags:
 
 Робочі плани й звіти зібрані окремо: [[outputs/worklogs/index|Worklogs]].
 
+Практичні команди для запуску Runner: [[docs/RUNNER_USAGE|Runner Usage Guide]].
+
 ---
 
 # Як читати

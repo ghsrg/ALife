@@ -1,0 +1,495 @@
+scenario_id = "demo_living_world"
+seed = 20260714
+tick_count = 50000
+legacy_material_distribution = false
+
+[world]
+size = [256.0, 256.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = ["nutrient_A", "waste_A"]
+initial_distribution = [9000.0, 0.0]
+optional_decay_rate = 0.00001
+passive_energy_income_placeholder = 0.0
+
+[cell]
+initial_position = [48.0, 48.0]
+radius = 1.02
+initial_resources = { nutrient_A = 8.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 90.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+
+[cell.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [48.0, 48.0]
+radius = 1.02
+initial_resources = { nutrient_A = 10.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 90.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [49.75, 48.0]
+radius = 1.02
+initial_resources = { nutrient_A = 4.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 86.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [48.0, 49.75]
+radius = 1.02
+initial_resources = { nutrient_A = 7.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 88.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [49.75, 49.75]
+radius = 1.02
+initial_resources = { nutrient_A = 2.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 84.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [96.0, 48.0]
+radius = 1.02
+initial_resources = { nutrient_A = 9.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 91.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [97.75, 48.0]
+radius = 1.02
+initial_resources = { nutrient_A = 3.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 85.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [96.0, 49.75]
+radius = 1.02
+initial_resources = { nutrient_A = 6.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 89.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [97.75, 49.75]
+radius = 1.02
+initial_resources = { nutrient_A = 1.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 82.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [144.0, 48.0]
+radius = 1.02
+initial_resources = { nutrient_A = 8.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 90.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [145.75, 48.0]
+radius = 1.02
+initial_resources = { nutrient_A = 5.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 87.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [144.0, 49.75]
+radius = 1.02
+initial_resources = { nutrient_A = 7.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 89.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [145.75, 49.75]
+radius = 1.02
+initial_resources = { nutrient_A = 2.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 83.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [48.0, 112.0]
+radius = 1.02
+initial_resources = { nutrient_A = 9.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 92.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [49.75, 112.0]
+radius = 1.02
+initial_resources = { nutrient_A = 3.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 85.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [48.0, 113.75]
+radius = 1.02
+initial_resources = { nutrient_A = 6.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 88.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [49.75, 113.75]
+radius = 1.02
+initial_resources = { nutrient_A = 1.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 82.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [96.0, 112.0]
+radius = 1.02
+initial_resources = { nutrient_A = 8.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 90.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [97.75, 112.0]
+radius = 1.02
+initial_resources = { nutrient_A = 4.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 86.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [96.0, 113.75]
+radius = 1.02
+initial_resources = { nutrient_A = 7.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 89.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [97.75, 113.75]
+radius = 1.02
+initial_resources = { nutrient_A = 2.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 83.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [144.0, 112.0]
+radius = 1.02
+initial_resources = { nutrient_A = 9.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 91.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [145.75, 112.0]
+radius = 1.02
+initial_resources = { nutrient_A = 3.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 85.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [144.0, 113.75]
+radius = 1.02
+initial_resources = { nutrient_A = 6.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 88.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [145.75, 113.75]
+radius = 1.02
+initial_resources = { nutrient_A = 1.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 8.0, synthesis = 3.0, structural = 6.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 82.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 180.0
+[cells.genome]
+template = "balanced"
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.25
+heat_warning_threshold = 400.0
+heat_death_threshold = 800.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.25
+waste_warning_threshold = 1200.0
+waste_death_threshold = 2400.0
+
+[lifecycle]
+stress_energy_threshold = 2.0
+dormancy_allowed = false
+critical_capacity_overrun = 220.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 1.4
+metabolism_resource_per_tick = 0.7
+energy_per_resource = 1.8
+heat_per_resource = 0.002
+waste_per_resource = 0.002
+
+[synthesis]
+cost_resource = 0.1
+cost_energy = 0.1
+
+[growth]
+growth_cost_resource = 0.02
+growth_cost_energy = 0.02
+growth_target_radius = 1.05
+max_division_pressure = 2.0
+
+[material_effects]
+transport_uptake_per_unit = 1.0
+metabolic_conversion_per_unit = 1.0
+storage_capacity_per_unit = 2.0
+structural_growth_per_unit = 0.00008
+contractile_force_per_unit = 1.0
+sensory_input_per_unit = 1.0
+boundary_retention_per_unit = 1.0
+repair_stress_buffer_per_unit = 1.0
+
+[division]
+enabled = true
+energy_cost = 20.0
+split_ratio = 0.5
+daughter_spacing = 2.4
+min_daughter_radius = 0.7
+partition_loss_fraction = 0.02
+
+[decomposition]
+enabled = true
+resource_layer_index = 0
+resources_per_tick = 0.15
+materials_per_tick = 0.08
+remove_when_empty = true
+
+[local_interaction]
+enabled = true
+contact_exchange_rate = 0.15
+max_exchange_per_pair = 0.25
+min_boundary_capability = 0.1
+min_transport_capability = 0.1
+contact_stimulus_per_overlap = 0.08
+stimulus_decay_per_tick = 0.04
+
+[joints]
+enabled = true
+creation_distance_margin = 0.3
+creation_material_cost = 0.08
+creation_resource_cost = 0.02
+creation_energy_cost = 0.02
+mechanical_strength = 0.25
+resource_transfer_rate = 0.18
+max_resource_transfer_per_tick = 0.35
+signal_conductivity = 0.45
+signal_decay = 0.04
+heat_conductivity = 0.2
+upkeep_material_decay_per_tick = 0.0005
+break_damage_threshold = 4.0
+max_joints_per_cell = 4
+
+[genome_templates.balanced]
+variation_amplitude = 0.08
+runtime_interval_ticks = 1
+
+[genome_templates.balanced.carrier]
+material_id = "genome_carrier_A"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.balanced.outputs]
+resource_uptake_priority = 0.8
+energy_conversion_priority = 0.75
+material_synthesis_priority = 0.45
+division_preparation_priority = 0.5
+repair_priority = 0.2
+
+[chemistry.resources.nutrient_A]
+volume = 1.0
+diffusion_rate = 0.05
+energy_value = 1.8
+decay_rate = 0.00001
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["energy_source"]
+
+[chemistry.resources.waste_A]
+volume = 1.0
+diffusion_rate = 0.03
+energy_value = 0.0
+decay_rate = 0.001
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["waste"]
+
+[chemistry.materials.boundary_polymer_A]
+volume = 1.0
+stability = 0.9
+strength = 0.8
+permeability = 0.1
+energy_capacity = 0.0
+decay_rate = 0.0002
+repair_resource = "nutrient_A"
+repair_amount = 0.2
+
+[chemistry.materials.structural_polymer_A]
+volume = 1.0
+stability = 0.7
+strength = 0.9
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0004
+repair_resource = "nutrient_A"
+repair_amount = 0.3
+
+[chemistry.materials.genome_carrier_A]
+volume = 0.2
+stability = 0.8
+strength = 0.2
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.00005
+repair_resource = "nutrient_A"
+repair_amount = 0.05
+
+[chemistry.reactions.passive_decay]
+mode = "passive"
+inputs = { nutrient_A = 0.02 }
+outputs = { waste_A = 0.02 }
+required_materials = {}
+configured_sink_amount = 0.0
+energy_output = 0.0
+heat_output = 0.001
+rate = 0.01
+probability = 1.0
+accounting_destination = "waste_A"
+
+[chemistry.heat]
+capacity = 1.0
+dissipation_rate = 0.25
+warning_threshold = 400.0
+death_threshold = 800.0
+
+[chemistry.boundary]
+default_permeability = "passive"
+retention_rate = 0.98
+
+[chemistry.repair]
+enabled = true
+energy_cost = 0.02
+max_amount_per_tick = 0.08
