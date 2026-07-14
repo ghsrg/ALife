@@ -131,3 +131,31 @@ fn high_priority_missing_capability_is_still_rejected_by_feasibility() {
 
     assert!(metabolism_rejections > 0);
 }
+
+#[test]
+fn repair_priority_is_present_in_action_plan_trace_when_damage_exists() {
+    let mut config = config_with_genome(vec![
+        (GenomeOutputId::RepairPriority, 1.0),
+        (GenomeOutputId::ResourceUptakePriority, 0.1),
+    ]);
+    config.chemistry.repair.enabled = true;
+    config.chemistry.repair.energy_cost = 0.1;
+    config.chemistry.repair.max_amount_per_tick = 0.5;
+    config.cell.initial_repair_material = MaterialAmount::new(1.0).unwrap();
+    config.cell.initial_boundary_material = MaterialAmount::new(1.0).unwrap();
+    config.cell.initial_resource_amount = ResourceAmount::new(2.0).unwrap();
+
+    let mut executor = TickExecutor::new(config).unwrap();
+    let cell = alife::core::cell_store::CellIndex::from_raw(0);
+    executor
+        .world_mut()
+        .cells_mut_for_commit()
+        .set_material_damage(cell, alife::core::materials::MaterialSlot::Boundary, 0.5);
+
+    let summary = executor.step().unwrap();
+
+    assert_eq!(
+        summary.diagnostics.attempt_order_by_process.get(0),
+        Some(&ProcessId::RepairBoundary)
+    );
+}

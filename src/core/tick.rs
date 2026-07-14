@@ -663,106 +663,26 @@ impl TickExecutor {
                             let _ = self.world.execute_displacement(index);
                         }
                     }
-                    ProcessId::RepairBoundary => {}
-                    _ => {}
-                }
-            }
-        }
-
-        if config.chemistry.repair.enabled {
-            for i in 0..len {
-                let index = CellIndex::from_raw(i);
-                if self.world.cells().lifecycle_state(index) == LifecycleState::Dead {
-                    continue;
-                }
-                if self
-                    .world
-                    .cells()
-                    .material_damage(index, MaterialSlot::Boundary)
-                    <= 0.0
-                {
-                    continue;
-                }
-                let (feasible, feasibility) = run_process(
-                    &self.world,
-                    index,
-                    ProcessId::RepairBoundary,
-                    config.chemistry.repair.max_amount_per_tick,
-                    &mut diagnostics,
-                    &mut process_attempts,
-                    &mut process_rejections,
-                );
-                match feasibility {
-                    FeasibilityResult::Allowed {
-                        accepted_amount,
-                        energy_cost,
-                        resource_cost,
-                    } if feasible => {
-                        let cells = self.world.cells_mut_for_commit();
-                        let accepted_material =
-                            MaterialAmount::new_unchecked(accepted_amount.max(0.0));
-                        let requested_resource = ResourceAmount::new(resource_cost)
-                            .expect("repair resource cost is clamped");
-                        if let Some(resource_type) =
-                            crate::core::world::repair_resource_type_id(&config)
+                    ProcessId::RepairBoundary => {
+                        if config.chemistry.repair.enabled
+                            && self
+                                .world
+                                .cells()
+                                .material_damage(index, MaterialSlot::Boundary)
+                                > 0.0
                         {
-                            let available = cells
-                                .typed_resource_amount(index, resource_type)
-                                .expect("repair resource type is derived from validated config");
-                            if available.raw() + f32::EPSILON < resource_cost {
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            let consumed = cells
-                                .consume_typed_resource(index, resource_type, requested_resource)
-                                .expect("repair resource type is derived from validated config");
-                            if consumed.raw() + f32::EPSILON < resource_cost {
-                                cells
-                                    .set_typed_resource_amount(index, resource_type, available)
-                                    .expect(
-                                        "repair resource type is derived from validated config",
-                                    );
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            phase2g_metrics.repair_resource_sink_amount += consumed.raw();
-                        } else {
-                            let available = cells.generic_resource_amount(index);
-                            if available.raw() + f32::EPSILON < resource_cost {
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            let consumed = cells.consume_resources(index, requested_resource);
-                            if consumed.raw() + f32::EPSILON < resource_cost {
-                                cells.set_resources(index, available);
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+                            try_repair_boundary(
+                                &mut self.world,
+                                &config,
+                                index,
+                                &mut diagnostics,
+                                &mut process_attempts,
+                                &mut process_rejections,
+                                &mut repair_success_count,
+                                &mut repair_rejection_count,
+                                &mut phase2g_metrics,
+                            );
                         }
-                        let repair_remaining = MaterialAmount::new_unchecked(
-                            (cells.repair_material(index).raw() - accepted_amount).max(0.0),
-                        );
-                        cells.set_repair_material(index, repair_remaining);
-
-                        let boundary_next = cells
-                            .boundary_material(index)
-                            .saturating_add(accepted_material);
-                        cells.set_boundary_material(index, boundary_next);
-                        let damage_next = (cells.material_damage(index, MaterialSlot::Boundary)
-                            - accepted_amount)
-                            .max(0.0);
-                        cells.set_material_damage(index, MaterialSlot::Boundary, damage_next);
-
-                        let energy = cells.energy(index);
-                        let next_energy = energy
-                            .current()
-                            .saturating_sub(EnergyAmount::new(energy_cost).unwrap());
-                        cells.set_energy(index, EnergyBuffer::new(next_energy, energy.capacity()));
-                        repair_success_count += 1;
-                    }
-                    FeasibilityResult::Rejected(_) => {
-                        repair_rejection_count += 1;
                     }
                     _ => {}
                 }
@@ -1968,5 +1888,95 @@ fn run_process(
             *diagnostics.rejections_by_reason.entry(reason).or_insert(0) += 1;
             (false, feasibility)
         }
+    }
+}
+
+fn try_repair_boundary(
+    world: &mut WorldState,
+    config: &RuntimeConfig,
+    index: CellIndex,
+    diagnostics: &mut ProcessDiagnostics,
+    process_attempts: &mut u32,
+    process_rejections: &mut u32,
+    repair_success_count: &mut u32,
+    repair_rejection_count: &mut u32,
+    phase2g_metrics: &mut Phase2GMetricsDelta,
+) {
+    let (feasible, feasibility) = run_process(
+        world,
+        index,
+        ProcessId::RepairBoundary,
+        config.chemistry.repair.max_amount_per_tick,
+        diagnostics,
+        process_attempts,
+        process_rejections,
+    );
+    match feasibility {
+        FeasibilityResult::Allowed {
+            accepted_amount,
+            energy_cost,
+            resource_cost,
+        } if feasible => {
+            let cells = world.cells_mut_for_commit();
+            let accepted_material = MaterialAmount::new_unchecked(accepted_amount.max(0.0));
+            let requested_resource =
+                ResourceAmount::new(resource_cost).expect("repair resource cost is clamped");
+            if let Some(resource_type) = crate::core::world::repair_resource_type_id(config) {
+                let available = cells
+                    .typed_resource_amount(index, resource_type)
+                    .expect("repair resource type is derived from validated config");
+                if available.raw() + f32::EPSILON < resource_cost {
+                    *repair_rejection_count += 1;
+                    return;
+                }
+                let consumed = cells
+                    .consume_typed_resource(index, resource_type, requested_resource)
+                    .expect("repair resource type is derived from validated config");
+                if consumed.raw() + f32::EPSILON < resource_cost {
+                    cells
+                        .set_typed_resource_amount(index, resource_type, available)
+                        .expect("repair resource type is derived from validated config");
+                    *repair_rejection_count += 1;
+                    return;
+                }
+                phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+            } else {
+                let available = cells.generic_resource_amount(index);
+                if available.raw() + f32::EPSILON < resource_cost {
+                    *repair_rejection_count += 1;
+                    return;
+                }
+                let consumed = cells.consume_resources(index, requested_resource);
+                if consumed.raw() + f32::EPSILON < resource_cost {
+                    cells.set_resources(index, available);
+                    *repair_rejection_count += 1;
+                    return;
+                }
+                phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+            }
+            let repair_remaining = MaterialAmount::new_unchecked(
+                (cells.repair_material(index).raw() - accepted_amount).max(0.0),
+            );
+            cells.set_repair_material(index, repair_remaining);
+
+            let boundary_next = cells
+                .boundary_material(index)
+                .saturating_add(accepted_material);
+            cells.set_boundary_material(index, boundary_next);
+            let damage_next =
+                (cells.material_damage(index, MaterialSlot::Boundary) - accepted_amount).max(0.0);
+            cells.set_material_damage(index, MaterialSlot::Boundary, damage_next);
+
+            let energy = cells.energy(index);
+            let next_energy = energy
+                .current()
+                .saturating_sub(EnergyAmount::new(energy_cost).unwrap());
+            cells.set_energy(index, EnergyBuffer::new(next_energy, energy.capacity()));
+            *repair_success_count += 1;
+        }
+        FeasibilityResult::Rejected(_) => {
+            *repair_rejection_count += 1;
+        }
+        _ => {}
     }
 }
