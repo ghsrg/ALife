@@ -3,6 +3,8 @@ use alife::runner::engine::{RunEngine, RunEngineConfig};
 use alife::runner::lifecycle::ActiveRunState;
 use alife::runner::progress::{ProgressInterval, ProgressSnapshot, format_progress_table};
 use alife::runner::scenario::{ScenarioMeta, load_scenario_document, scan_scenarios};
+use alife::runner::server_config::{ServerConfig, load_server_config};
+use alife::viewer_server::{create_app, state::new_app_state};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -53,12 +55,13 @@ fn parse_cli(args: &[String]) -> Result<RunnerCli, String> {
     Ok(cli)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = std::env::args().collect::<Vec<_>>();
     let cli = parse_cli(&args).unwrap_or_else(|err| {
         eprintln!("[runner] {err}");
         eprintln!(
-            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --list"
+            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --list | --serve"
         );
         std::process::exit(2);
     });
@@ -69,12 +72,20 @@ fn main() {
         return;
     }
     if cli.serve {
-        eprintln!("[runner] --serve mode is planned for Runner-2");
-        std::process::exit(2);
+        let server_config_path = PathBuf::from("config/server.toml");
+        let server_config = load_server_config(&server_config_path).unwrap_or_else(|err| {
+            eprintln!("[runner] {err}");
+            std::process::exit(1);
+        });
+        if let Err(err) = serve_http(server_config, scenarios_dir).await {
+            eprintln!("[runner] {err}");
+            std::process::exit(1);
+        }
+        return;
     }
     let Some(scenario) = cli.scenario.as_deref() else {
         eprintln!(
-            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --list"
+            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --list | --serve"
         );
         std::process::exit(2);
     };
@@ -83,6 +94,25 @@ fn main() {
         eprintln!("[runner] {err}");
         std::process::exit(1);
     }
+}
+
+async fn serve_http(server_config: ServerConfig, scenarios_dir: PathBuf) -> Result<(), String> {
+    let bind_addr = server_config.bind_addr();
+    let listener = tokio::net::TcpListener::bind(&bind_addr)
+        .await
+        .map_err(|err| format!("failed to bind HTTP server on {bind_addr}: {err}"))?;
+    let app_state = new_app_state(scenarios_dir, 300);
+    let app = create_app(app_state);
+
+    println!("[runner] HTTP server listening on http://{bind_addr}");
+    println!("[runner] GET  /server/info");
+    println!("[runner] GET  /scenarios");
+    println!("[runner] GET  /run/status");
+    println!("[runner] POST /run/start");
+
+    axum::serve(listener, app)
+        .await
+        .map_err(|err| format!("HTTP server failed: {err}"))
 }
 
 fn list_scenarios(scenarios_dir: &Path) {

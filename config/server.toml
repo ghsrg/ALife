@@ -1,0 +1,5 @@
+[server]
+bind_host = "127.0.0.1"
+port = 8080
+allow_remote_viewer = false
+target_broadcast_fps = 30
