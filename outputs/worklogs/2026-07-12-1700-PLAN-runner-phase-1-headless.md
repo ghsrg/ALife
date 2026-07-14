@@ -15,14 +15,15 @@
 ```
 src/
   bin/
-    runner.rs            [NEW] — binary entry point, CLI arg parsing
+    runner.rs            [NEW] — binary entry point, CLI arg parsing, debug progress output
     sweep_analyzer.rs    [EXISTING, не змінюємо]
   runner/
-    mod.rs               [MODIFY] — додати pub mod engine, pub mod scenario
+    mod.rs               [MODIFY] — додати pub mod engine, pub mod scenario, pub mod progress
     config_parser.rs     [EXISTING, не змінюємо]
     engine.rs            [NEW] — RunEngine, RunState, run state machine
     scenario.rs          [NEW] — ScenarioConfig, scan_scenarios, load_scenario
     ring_buffer.rs       [NEW] — RingBuffer<T>
+    progress.rs          [NEW] — debug progress status table formatting
   lib.rs                 [MODIFY] — додати pub mod bin::runner
 config/
   scenarios/
@@ -33,6 +34,7 @@ tests/
   runner_ring_buffer.rs        [NEW] — ring buffer unit tests
   runner_scenario_loader.rs    [NEW] — scenario scan + load tests
   runner_headless_e2e.rs       [NEW] — end-to-end: build RunEngine, run N ticks
+  runner_progress.rs           [NEW] — debug progress formatting and CLI interval behavior
 Cargo.toml                     [MODIFY] — додати [[bin]] для runner
 ```
 
@@ -857,6 +859,9 @@ git commit -m "feat(runner): add RunEngine with state machine and ring buffer"
 
 **Files:**
 - Create: `src/bin/runner.rs`
+- Create: `src/runner/progress.rs`
+- Test: `tests/runner_progress.rs`
+- Modify: `src/runner/mod.rs`
 - Modify: `Cargo.toml` — додати `[[bin]]`
 
 - [ ] **Step 1: Додати `[[bin]]` у `Cargo.toml`**
@@ -881,6 +886,145 @@ toml = "0.8"
 serde_json = "1.0"
 ```
 
+- [ ] **Step 1A: Add debug progress tests**
+
+`--debug` is intentionally minimal: it is only an observability switch for early runner work. It must not become a full CLI control surface in Runner-1.
+
+```rust
+// tests/runner_progress.rs
+use std::time::Duration;
+
+use alife::runner::progress::{
+    format_progress_table, ProgressInterval, ProgressSnapshot,
+};
+
+#[test]
+fn debug_progress_interval_defaults_to_2000_ms() {
+    assert_eq!(ProgressInterval::default().as_duration(), Duration::from_millis(2000));
+}
+
+#[test]
+fn progress_interval_can_be_overridden_in_ms() {
+    let interval = ProgressInterval::from_millis(500).expect("valid interval");
+    assert_eq!(interval.as_duration(), Duration::from_millis(500));
+}
+
+#[test]
+fn progress_interval_rejects_zero_ms() {
+    assert!(ProgressInterval::from_millis(0).is_err());
+}
+
+#[test]
+fn progress_table_contains_minimum_runtime_status() {
+    let output = format_progress_table(&ProgressSnapshot {
+        elapsed_ms: 2000,
+        tick: 120,
+        max_ticks: 1000,
+        ticks_per_second: 60.0,
+        cells: 5,
+        alive_cells: Some(4),
+        dead_cells: Some(1),
+        heat: 0.25,
+        waste: 0.10,
+        state: "Running".to_string(),
+        collapse_reason: None,
+    });
+
+    assert!(output.contains("elapsed"));
+    assert!(output.contains("tick"));
+    assert!(output.contains("tps"));
+    assert!(output.contains("cells"));
+    assert!(output.contains("alive"));
+    assert!(output.contains("dead"));
+    assert!(output.contains("heat"));
+    assert!(output.contains("waste"));
+    assert!(output.contains("Running"));
+}
+```
+
+- [ ] **Step 1B: Create `src/runner/progress.rs`**
+
+Keep this module formatting-only. It reads already-committed runner/snapshot data and returns strings. It must not own the simulation loop, mutate `RunEngine`, or read random state.
+
+```rust
+use std::time::Duration;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProgressInterval(Duration);
+
+impl Default for ProgressInterval {
+    fn default() -> Self {
+        Self(Duration::from_millis(2000))
+    }
+}
+
+impl ProgressInterval {
+    pub fn from_millis(ms: u64) -> Result<Self, String> {
+        if ms == 0 {
+            return Err("--progress-interval-ms must be greater than 0".to_string());
+        }
+        Ok(Self(Duration::from_millis(ms)))
+    }
+
+    pub fn as_duration(&self) -> Duration {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProgressSnapshot {
+    pub elapsed_ms: u128,
+    pub tick: u32,
+    pub max_ticks: u32,
+    pub ticks_per_second: f32,
+    pub cells: usize,
+    pub alive_cells: Option<usize>,
+    pub dead_cells: Option<usize>,
+    pub heat: f32,
+    pub waste: f32,
+    pub state: String,
+    pub collapse_reason: Option<String>,
+}
+
+pub fn format_progress_table(snapshot: &ProgressSnapshot) -> String {
+    let elapsed_s = snapshot.elapsed_ms as f32 / 1000.0;
+    let alive = snapshot
+        .alive_cells
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| "-".to_string());
+    let dead = snapshot
+        .dead_cells
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| "-".to_string());
+    let status = snapshot
+        .collapse_reason
+        .as_deref()
+        .unwrap_or(snapshot.state.as_str());
+
+    format!(
+        "\
++-----------+-------------+---------+-------+-------+------+-------+-------+-----------+\n\
+| elapsed_s | tick        | tps     | cells | alive | dead | heat  | waste | state     |\n\
++-----------+-------------+---------+-------+-------+------+-------+-------+-----------+\n\
+| {elapsed_s:<9.2} | {tick:<4}/{max:<5} | {tps:<7.1} | {cells:<5} | {alive:<5} | {dead:<4} | {heat:<5.2} | {waste:<5.2} | {status:<9} |\n\
++-----------+-------------+---------+-------+-------+------+-------+-------+-----------+",
+        tick = snapshot.tick,
+        max = snapshot.max_ticks,
+        tps = snapshot.ticks_per_second,
+        cells = snapshot.cells,
+        heat = snapshot.heat,
+        waste = snapshot.waste,
+    )
+}
+```
+
+- [ ] **Step 1C: Export progress module**
+
+```rust
+// src/runner/mod.rs
+pub mod progress;
+```
+
 - [ ] **Step 2: Create `src/bin/runner.rs`**
 
 ```rust
@@ -888,36 +1032,92 @@ serde_json = "1.0"
 //!
 //! Usage:
 //!   cargo run --bin runner -- config/scenarios/single_cell_survival.toml
+//!   cargo run --bin runner -- --debug config/scenarios/single_cell_survival.toml
+//!   cargo run --bin runner -- --debug --progress-interval-ms 500 config/scenarios/single_cell_survival.toml
 //!   cargo run --bin runner -- --list
 //!   cargo run --bin runner -- --serve config/scenarios/single_cell_survival.toml  (future)
 
 use alife::runner::engine::{RunEngine, RunEngineConfig};
+use alife::runner::progress::{format_progress_table, ProgressInterval, ProgressSnapshot};
 use alife::runner::scenario::{scan_scenarios, load_scenario, ScenarioMeta};
 use std::path::{Path, PathBuf};
+
+#[derive(Debug, Clone)]
+struct RunnerCli {
+    scenario: Option<PathBuf>,
+    list: bool,
+    serve: bool,
+    debug: bool,
+    progress_interval: ProgressInterval,
+}
+
+fn parse_cli(args: &[String]) -> Result<RunnerCli, String> {
+    let mut cli = RunnerCli {
+        scenario: None,
+        list: false,
+        serve: false,
+        debug: false,
+        progress_interval: ProgressInterval::default(),
+    };
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--list" => cli.list = true,
+            "--serve" => cli.serve = true,
+            "--debug" => cli.debug = true,
+            "--progress-interval-ms" => {
+                i += 1;
+                let raw = args.get(i).ok_or("--progress-interval-ms requires a value")?;
+                let ms = raw
+                    .parse::<u64>()
+                    .map_err(|_| "--progress-interval-ms must be an integer")?;
+                cli.progress_interval = ProgressInterval::from_millis(ms)?;
+            }
+            value if value.starts_with("--") => return Err(format!("unknown flag: {value}")),
+            value => {
+                if cli.scenario.is_some() {
+                    return Err("only one scenario path/id is supported".to_string());
+                }
+                cli.scenario = Some(PathBuf::from(value));
+            }
+        }
+        i += 1;
+    }
+
+    Ok(cli)
+}
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len() < 2 {
-        eprintln!("Usage: runner <scenario.toml> | --list");
-        eprintln!("  --list   List available scenarios in config/scenarios/");
+    let cli = parse_cli(&args).unwrap_or_else(|e| {
+        eprintln!("Error: {e}");
+        eprintln!("Usage: runner [--debug] [--progress-interval-ms N] <scenario.toml> | --list");
+        eprintln!("  --debug                  Print progress status table while running");
+        eprintln!("  --progress-interval-ms   Override debug progress interval; default is 2000");
+        eprintln!("  --list                   List available scenarios in config/scenarios/");
         std::process::exit(1);
-    }
+    });
 
     let scenarios_dir = PathBuf::from("config/scenarios");
 
-    match args[1].as_str() {
-        "--list" => {
-            list_scenarios(&scenarios_dir);
-        }
-        "--serve" => {
-            eprintln!("[runner] --serve mode: not yet implemented (Runner-2)");
-            std::process::exit(1);
-        }
-        path => {
-            run_headless(Path::new(path), &scenarios_dir);
-        }
+    if cli.list {
+        list_scenarios(&scenarios_dir);
+        return;
     }
+
+    if cli.serve {
+        eprintln!("[runner] --serve mode: not yet implemented (Runner-2)");
+        std::process::exit(1);
+    }
+
+    let Some(path) = cli.scenario.as_deref() else {
+        eprintln!("Usage: runner [--debug] [--progress-interval-ms N] <scenario.toml> | --list");
+        std::process::exit(1);
+    };
+
+    run_headless(path, &scenarios_dir, cli.debug, cli.progress_interval);
 }
 
 fn list_scenarios(dir: &Path) {
@@ -935,7 +1135,12 @@ fn list_scenarios(dir: &Path) {
     }
 }
 
-fn run_headless(scenario_path: &Path, scenarios_dir: &Path) {
+fn run_headless(
+    scenario_path: &Path,
+    scenarios_dir: &Path,
+    debug: bool,
+    progress_interval: ProgressInterval,
+) {
     // Accept either a full path or a scenario id
     let meta = resolve_scenario(scenario_path, scenarios_dir);
 
@@ -961,9 +1166,26 @@ fn run_headless(scenario_path: &Path, scenarios_dir: &Path) {
     let start = std::time::Instant::now();
     println!("[runner] Running {} ticks...", total_ticks);
 
-    engine.step(total_ticks).unwrap_or_else(|e| {
-        eprintln!("[runner] Simulation error at tick {}: {}", engine.current_tick(), e);
-    });
+    if debug {
+        let mut next_progress_at = start + progress_interval.as_duration();
+
+        while engine.current_tick() < total_ticks {
+            if let Err(e) = engine.step(1) {
+                eprintln!("[runner] Simulation error at tick {}: {}", engine.current_tick(), e);
+                break;
+            }
+
+            let now = std::time::Instant::now();
+            if engine.current_tick() == 1 || now >= next_progress_at {
+                print_debug_progress(&engine, start, total_ticks);
+                next_progress_at = now + progress_interval.as_duration();
+            }
+        }
+    } else {
+        engine.step(total_ticks).unwrap_or_else(|e| {
+            eprintln!("[runner] Simulation error at tick {}: {}", engine.current_tick(), e);
+        });
+    }
 
     let elapsed = start.elapsed();
     let tps = if elapsed.as_secs_f32() > 0.0 {
@@ -991,6 +1213,34 @@ fn run_headless(scenario_path: &Path, scenarios_dir: &Path) {
 
     engine.stop().expect("RunEngine::stop failed");
     println!("[runner] Done.");
+}
+
+fn print_debug_progress(engine: &RunEngine, start: std::time::Instant, total_ticks: u32) {
+    let elapsed = start.elapsed();
+    let elapsed_s = elapsed.as_secs_f32();
+    let tps = if elapsed_s > 0.0 {
+        engine.current_tick() as f32 / elapsed_s
+    } else {
+        0.0
+    };
+
+    if let Some(snap) = engine.snapshots().newest() {
+        let progress = ProgressSnapshot {
+            elapsed_ms: elapsed.as_millis(),
+            tick: engine.current_tick(),
+            max_ticks: total_ticks,
+            ticks_per_second: tps,
+            cells: snap.cells.len(),
+            alive_cells: None, // Fill from lifecycle state when snapshot exposes stable alive/dead semantics.
+            dead_cells: None,
+            heat: snap.heat,
+            waste: snap.waste,
+            state: format!("{:?}", engine.state()),
+            collapse_reason: None,
+        };
+
+        println!("{}", format_progress_table(&progress));
+    }
 }
 
 fn resolve_scenario(path: &Path, scenarios_dir: &Path) -> ScenarioMeta {
@@ -1065,7 +1315,47 @@ Expected output (приблизно):
 [runner] Done.
 ```
 
-- [ ] **Step 7: Verify all workspace tests still pass**
+- [ ] **Step 7: Test binary — debug progress table**
+
+Use a scenario long enough to run for at least one interval, or temporarily set a short interval for the test run.
+
+```bash
+cargo run --bin runner -- --debug --progress-interval-ms 200 config/scenarios/single_cell_survival.toml
+```
+
+Expected output includes at least one progress table before the final summary:
+
+```
+[runner] Loading scenario: single_cell_survival (config/scenarios/single_cell_survival.toml)
+[runner] Running 1000 ticks...
++-----------+-------------+---------+-------+-------+------+-------+-------+-----------+
+| elapsed_s | tick        | tps     | cells | alive | dead | heat  | waste | state     |
++-----------+-------------+---------+-------+-------+------+-------+-------+-----------+
+| ...       | .../1000    | ...     | ...   | ...   | ...  | ...   | ...   | Running   |
++-----------+-------------+---------+-------+-------+------+-------+-------+-----------+
+[runner] Completed 1000 ticks in X.XXs (XXXX ticks/sec)
+[runner] Final tick: 1000, cells: N, heat: X.XX, waste: X.XX
+[runner] Done.
+```
+
+Default behavior requirement:
+
+```bash
+cargo run --bin runner -- --debug config/scenarios/single_cell_survival.toml
+```
+
+Expected: first progress table is printed after the first committed tick, then the progress table interval is `2000 ms`.
+
+Determinism requirement:
+
+```bash
+cargo run --bin runner -- config/scenarios/single_cell_survival.toml
+cargo run --bin runner -- --debug --progress-interval-ms 200 config/scenarios/single_cell_survival.toml
+```
+
+Expected: final tick/cell/heat/waste summary matches for the same seed and scenario. Debug output must not change final simulation state.
+
+- [ ] **Step 8: Verify all workspace tests still pass**
 
 ```bash
 cargo test --workspace
@@ -1073,11 +1363,11 @@ cargo test --workspace
 
 Expected: всі існуючі тести `PASS`, без регресій.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/bin/runner.rs Cargo.toml
-git commit -m "feat(runner): add headless runner binary with --list and scenario execution"
+git add src/bin/runner.rs src/runner/progress.rs src/runner/mod.rs tests/runner_progress.rs Cargo.toml
+git commit -m "feat(runner): add headless runner binary with debug progress output"
 ```
 
 ---
@@ -1141,6 +1431,9 @@ git commit -m "fix(runner): resolve lib.rs bin module conflict if present"
 | State transitions покриті тестами | ✅ Task 3 (9 тестів) |
 | Ring buffer зберігає N останніх snapshot-ів | ✅ Task 1 + Task 4 |
 | `--list` команда | ✅ Task 5 |
+| `--debug` progress table | ✅ Task 5 Step 1A/1B/7 |
+| `--progress-interval-ms` override | ✅ Task 5 Step 1A/7 |
+| debug output does not change deterministic result | ✅ Task 5 Step 7 |
 
 **Gaps:** `Stopping` state не реалізований як окремий transitional state (є тільки `Stop` → `Idle` direct). Це прийнятно для Runner-1 — transitional state потрібен тільки коли є HTTP async stop.
 
@@ -1167,8 +1460,10 @@ cargo test --test runner_ring_buffer       → всі 5 PASS
 cargo test --test runner_state_machine     → всі 9 PASS
 cargo test --test runner_scenario_loader   → всі 3 PASS
 cargo test --test runner_headless_e2e      → всі 6 PASS
+cargo test --test runner_progress          → всі PASS
 cargo test --workspace                     → без регресій
 cargo run --bin runner -- --list           → виводить сценарії
 cargo run --bin runner -- config/scenarios/single_cell_survival.toml → запускається і друкує статистику
+cargo run --bin runner -- --debug --progress-interval-ms 200 config/scenarios/single_cell_survival.toml → друкує progress table під час виконання
 cargo run --bin runner -- config/scenarios/division_test.toml → запускається
 ```

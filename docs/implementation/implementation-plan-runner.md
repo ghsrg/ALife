@@ -317,6 +317,15 @@ Remote mode (`0.0.0.0`): явно opt-in, для trusted LAN.
 
 ## Headless Mode
 
+Debug progress output:
+
+- `--debug` enables a terminal status table while the headless runner is active.
+- Default progress interval: `2000 ms`.
+- `--progress-interval-ms <N>` overrides the debug progress interval.
+- First debug status is printed after the first committed tick, then repeated by interval.
+- Debug output is observer-only: it must not mutate simulation state, change random seeds, or change deterministic replay results.
+- Minimum table fields: elapsed time, current tick / max ticks, ticks per second, total cells, alive/dead cells when available, heat, waste, runner state/collapse reason when available.
+
 Без `--serve` Runner:
 
 - завантажує конфіг;
@@ -343,6 +352,7 @@ Build:
 ```text
 виділити alife-runner як окремий crate (або чіткий binary module)
 CLI: cargo run --bin runner -- <scenario.toml>
+CLI debug: cargo run --bin runner -- --debug --progress-interval-ms 2000 <scenario.toml>
 config/scenarios/ directory зі стартовими demo сценаріями
 run state machine (Idle / Running / Paused / Stopping)
 deterministic replay test (same seed + config → same result)
@@ -355,6 +365,9 @@ headless run стартує і завершується детермінован
 state transitions покриті тестами
 scenario TOML знаходиться і валідується при старті
 toy simulation → очікуваний tick count
+--debug prints a terminal status table every 2000 ms by default
+--progress-interval-ms <N> changes the debug table refresh interval
+debug progress output does not change deterministic final snapshots
 ```
 
 ---
@@ -488,6 +501,7 @@ Runner план вважається завершеним, коли:
 
 ```text
 headless run: cargo run --bin runner -- <scenario> стартує і завершується детерміновано
+debug headless run: cargo run --bin runner -- --debug --progress-interval-ms 2000 <scenario> prints periodic status table while running
 serve run: cargo run --bin runner -- --serve <scenario> стартує HTTP + WS
 GET /scenarios повертає список з config/scenarios/
 GET /scenarios/{id} повертає TOML вміст
