@@ -5,6 +5,9 @@ use crate::core::config::{
     EnvironmentConfig, GrowthConfig, LifecycleConfig, MaterialEffectConfig, ResourceConfig,
     ResourceInteractionConfig, RuntimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
 };
+use crate::core::genome::{
+    GenomeCarrierState, GenomeOutputId, GenomeOutputValue, GenomeTemplate, GenomeTemplateId,
+};
 use crate::core::ids::{MaterialTypeId, ResourceTypeId};
 use crate::core::material_types::{
     MaterialProperties, MaterialRegistry, ReactionProfile, RepairRequirements, SignalProperties,
@@ -50,6 +53,28 @@ pub struct RawCell {
     pub mandatory_cost_per_tick: f32,
     pub dormant_mandatory_cost_modifier: Option<f32>,
     pub capacity_limit: f32,
+    pub genome: Option<RawCellGenome>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawCellGenome {
+    pub template: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawGenomeTemplate {
+    pub variation_amplitude: f32,
+    pub runtime_interval_ticks: Option<u64>,
+    pub carrier: RawGenomeCarrier,
+    #[serde(default)]
+    pub outputs: HashMap<String, f32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawGenomeCarrier {
+    pub material_id: String,
+    pub amount: f32,
+    pub integrity: f32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -264,6 +289,8 @@ pub struct RawScenarioConfig {
     pub material_effects: Option<RawMaterialEffects>,
     pub joints: Option<RawJointConfig>,
     pub chemistry: Option<RawChemistry>,
+    #[serde(default)]
+    pub genome_templates: HashMap<String, RawGenomeTemplate>,
 }
 
 #[derive(Debug)]
@@ -848,8 +875,97 @@ impl RawScenarioConfig {
             runtime_config = runtime_config.with_cells(initial_cells);
         }
 
+        let genome_templates = parse_genome_templates(&self.genome_templates)?;
+        let known_templates: std::collections::HashSet<_> = genome_templates
+            .iter()
+            .map(|template| template.id().as_str())
+            .collect();
+        let mut initial_cell_genome_templates = vec![
+            self.cell
+                .genome
+                .as_ref()
+                .map(|genome| GenomeTemplateId::new(genome.template.clone()))
+                .transpose()
+                .map_err(|error| {
+                    ParseError::ValidationError(format!(
+                        "Invalid Genome template reference: {error:?}"
+                    ))
+                })?,
+        ];
+
+        if let Some(raw_cells) = &self.cells {
+            initial_cell_genome_templates = raw_cells
+                .iter()
+                .map(|cell| {
+                    cell.genome
+                        .as_ref()
+                        .map(|genome| GenomeTemplateId::new(genome.template.clone()))
+                        .transpose()
+                        .map_err(|error| {
+                            ParseError::ValidationError(format!(
+                                "Invalid Genome template reference: {error:?}"
+                            ))
+                        })
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+        }
+
+        for assignment in initial_cell_genome_templates.iter().flatten() {
+            if !known_templates.contains(assignment.as_str()) {
+                return Err(ParseError::ValidationError(format!(
+                    "Unknown Genome template: {}",
+                    assignment.as_str()
+                )));
+            }
+        }
+
+        runtime_config.genome_templates = genome_templates;
+        runtime_config.initial_cell_genome_templates = initial_cell_genome_templates;
+
         Ok(runtime_config)
     }
+}
+
+fn parse_genome_templates(
+    raw: &HashMap<String, RawGenomeTemplate>,
+) -> Result<Vec<GenomeTemplate>, ParseError> {
+    let mut names: Vec<_> = raw.keys().cloned().collect();
+    names.sort();
+    names
+        .into_iter()
+        .map(|name| {
+            let value = &raw[&name];
+            let outputs = value
+                .outputs
+                .iter()
+                .map(|(id, output)| {
+                    let id = GenomeOutputId::parse(id).map_err(|_| {
+                        ParseError::ValidationError(format!("Unknown Genome output: {id}"))
+                    })?;
+                    Ok((id, GenomeOutputValue::new(*output)))
+                })
+                .collect::<Result<Vec<_>, ParseError>>()?;
+            GenomeTemplate::new(
+                GenomeTemplateId::new(name.clone()).map_err(|error| {
+                    ParseError::ValidationError(format!("Invalid Genome template id: {error:?}"))
+                })?,
+                value.variation_amplitude,
+                value.runtime_interval_ticks.unwrap_or(1),
+                GenomeCarrierState::new(
+                    value.carrier.material_id.clone(),
+                    value.carrier.amount,
+                    value.carrier.integrity,
+                )
+                .map_err(|error| {
+                    ParseError::ValidationError(format!("Invalid Genome carrier: {error:?}"))
+                })?,
+                outputs,
+            )
+            .map_err(|error| {
+                ParseError::ValidationError(format!("Invalid Genome template: {error:?}"))
+            })
+        })
+        .collect()
 }
 
 #[allow(clippy::type_complexity)]
