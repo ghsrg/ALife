@@ -14,6 +14,60 @@
 
 ---
 
+## Canon Sync 2026-07-14
+
+This plan is subordinate to the Runner Canon:
+
+```text
+docs/runner/runner.md
+docs/runner/execution-modes.md
+docs/runner/run-lifecycle.md
+docs/runner/command-contract.md
+docs/runner/scenario-resolution.md
+docs/runner/projections.md
+docs/runner/bootstrap.md
+```
+
+If any lower task snippet conflicts with these documents, implement the Canon behavior and update the snippet before coding.
+
+Phase 3 must preserve the Runner-2 HTTP command contract:
+
+- HTTP/CLI/UI adapters translate input into shared Runner commands.
+- WS is push-only and never accepts control commands.
+- `StartRun` still performs Scenario Resolution -> Bootstrap -> PreparedWorld validation -> Core start.
+- `StepRun` remains Paused-only and commits exactly one Tick.
+- `GetRunStatus` and WS status messages are read-only projections and must not mutate state.
+- No server-side frame history, seek, or scroll-back contract is introduced.
+
+Use the existing Bootstrap-compatible scenario fixture unless a later plan adds a new fixture:
+
+```text
+bootstrap_minimal_viable_world
+config/scenarios/bootstrap/minimal_viable_world.toml
+```
+
+Do not use `single_cell_survival` in tests or smoke commands unless that scenario is explicitly added first.
+
+Canonical status payload fields for Runner-3:
+
+```text
+type = "status"              # WS envelope only
+process_state
+active_run_state
+run_id
+committed_tick
+scenario_id
+scenario_hash
+effective_seed
+terminal_reason
+```
+
+`ticks_per_second` and richer performance metrics are useful but remain out of scope for this WS-stream slice unless already available as a projection field.
+
+Implementation rule: build WS status text through one shared `RunStatusProjection` -> WS envelope helper. Do not duplicate status-field selection independently in `stream.rs` and `run.rs`. Any `serde_json::json!` snippets below are illustrative and must be replaced or routed through the shared projection helper during implementation.
+
+---
+
 ## Binary Frame Format v1 (ALIF)
 
 ```
@@ -50,7 +104,9 @@ Server → Client (text JSON, serialized `RunStatusProjection` envelope):
   "active_run_state": "running",
   "run_id": "run-...",
   "committed_tick": 42,
+  "scenario_id": "bootstrap_minimal_viable_world",
   "scenario_hash": "scenario_hash_v1:...",
+  "effective_seed": 42,
   "terminal_reason": null
 }
 ```
@@ -144,7 +200,9 @@ process_state
 active_run_state
 run_id
 committed_tick
+scenario_id
 scenario_hash
+effective_seed
 terminal_reason
 ```
 
@@ -515,7 +573,7 @@ use tokio::sync::broadcast;
 pub enum WsMessage {
     /// ALIF v1 binary frame.
     Frame(Vec<u8>),
-    /// JSON status, e.g. {"type":"status","active_run_state":"running","committed_tick":42}
+    /// JSON status, e.g. {"type":"status","active_run_state":"running","committed_tick":42,"scenario_id":"bootstrap_minimal_viable_world","effective_seed":42}
     Status(String),
 }
 
@@ -631,6 +689,10 @@ git commit -m "feat(viewer-server): add Broadcaster over tokio::broadcast with W
 **Files:**
 - Modify: `src/viewer_server/state.rs`
 - Modify: `src/bin/runner.rs`
+
+> **Canon patch:** do not rewrite `SharedState` into a simplified WS-only state. Extend the Runner-2 state in place. The state must keep `process_state`, `active_run_state`, `run_id`, `scenario_id`, `scenario_hash`, `effective_seed`, `committed_tick`, `terminal_reason`, `engine`, `tick_signal`, `scenarios_dir`, and `engine_snapshot_buffer_size`. Add only WS-specific fields such as `target_broadcast_fps` and `broadcaster`.
+>
+> Any code block below that omits existing Runner-2 lifecycle/status fields is illustrative only and must be adapted before implementation.
 
 Ключові зміни vs Runner-2:
 - Не додавати server-side frame history або public scroll-back state
@@ -899,12 +961,14 @@ git commit -m "feat(viewer-server): integrate Broadcaster + time-based fps into 
 - Modify: `src/viewer_server/api/mod.rs` — register /stream
 - Test: `tests/runner_ws_stream.rs`
 
+> **Canon/test patch:** use `bootstrap_minimal_viable_world` for all start requests. Because the scenario is intentionally short, tests that poll `/run/status` after start may observe either `running` or `completed`. Tests that need to prove a `running` status broadcast should listen to the WS status message emitted immediately by `StartRun`, not infer it from a later poll.
+
 - [ ] **Step 1: Write the failing WS tests**
 
 ```rust
 // tests/runner_ws_stream.rs
 use alife::viewer_server::{create_app, state::new_app_state};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::StreamExt;
 use std::path::PathBuf;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
@@ -970,7 +1034,7 @@ async fn ws_receives_binary_alif_frame_after_start() {
     // Start simulation
     let client = reqwest::Client::new();
     client.post(format!("{}/run/start", base))
-        .json(&serde_json::json!({ "scenario_id": "single_cell_survival" }))
+        .json(&serde_json::json!({ "scenario_id": "bootstrap_minimal_viable_world" }))
         .send().await.unwrap();
 
     // Wait for binary frame (up to 1 sec)
@@ -996,7 +1060,7 @@ async fn slow_ws_client_does_not_block_simulation() {
 
     let client = reqwest::Client::new();
     client.post(format!("{}/run/start", base))
-        .json(&serde_json::json!({ "scenario_id": "single_cell_survival" }))
+        .json(&serde_json::json!({ "scenario_id": "bootstrap_minimal_viable_world" }))
         .send().await.unwrap();
 
     tokio::time::sleep(std::time::Duration::from_millis(300)).await;
@@ -1021,7 +1085,7 @@ async fn ws_receives_running_status_after_http_start() {
 
     let client = reqwest::Client::new();
     client.post(format!("{}/run/start", base))
-        .json(&serde_json::json!({ "scenario_id": "single_cell_survival" }))
+        .json(&serde_json::json!({ "scenario_id": "bootstrap_minimal_viable_world" }))
         .send().await.unwrap();
 
     // Wait for "running" status
@@ -1047,7 +1111,7 @@ async fn ws_receives_idle_status_after_http_stop() {
 
     let client = reqwest::Client::new();
     client.post(format!("{}/run/start", base))
-        .json(&serde_json::json!({ "scenario_id": "single_cell_survival" }))
+        .json(&serde_json::json!({ "scenario_id": "bootstrap_minimal_viable_world" }))
         .send().await.unwrap();
 
     // Drain initial + running status
@@ -1131,7 +1195,9 @@ async fn handle_ws_client(mut socket: WebSocket, state: AppState) {
             "active_run_state": active_state_label(locked.active_run_state),
             "run_id": locked.run_id,
             "committed_tick": locked.committed_tick,
+            "scenario_id": locked.scenario_id,
             "scenario_hash": locked.scenario_hash,
+            "effective_seed": locked.effective_seed,
             "terminal_reason": locked.terminal_reason
         }).to_string()
     };
@@ -1261,7 +1327,9 @@ fn broadcast_status(state: &AppState) {
         "active_run_state": active_state_label(locked.active_run_state),
         "run_id": locked.run_id,
         "committed_tick": locked.committed_tick,
+        "scenario_id": locked.scenario_id,
         "scenario_hash": locked.scenario_hash,
+        "effective_seed": locked.effective_seed,
         "terminal_reason": locked.terminal_reason
     }).to_string();
     locked.broadcaster.send_status(msg);
@@ -1321,7 +1389,7 @@ wscat -c ws://127.0.0.1:8080/stream
 # Terminal 3:
 curl -s -X POST http://127.0.0.1:8080/run/start \
      -H "Content-Type: application/json" \
-     -d '{"scenario_id":"single_cell_survival"}'
+     -d '{"scenario_id":"bootstrap_minimal_viable_world"}'
 # → Terminal 2 отримує: {"type":"status","active_run_state":"running","committed_tick":0,...}
 # → Terminal 2 отримує: binary frames (ALIF, ≤30 per sec)
 
@@ -1382,7 +1450,7 @@ git commit -m "test(runner-3): smoke verify --serve WS push-only stream end-to-e
 ## Acceptance Gate
 
 ```
-cargo test --test runner_frame_encoder     → 10 PASS
+cargo test --test runner_frame_encoder     → 11 PASS
 cargo test -p alife viewer_server::broadcaster → 5 PASS
 cargo test --test runner_ws_stream         → 6 PASS
 cargo test --workspace                     → без регресій
@@ -1391,7 +1459,7 @@ cargo run --bin runner -- --serve
 wscat -c ws://127.0.0.1:8080/stream
   → {"type":"status","active_run_state":"idle","committed_tick":0,...}
 
-POST /run/start single_cell_survival
+POST /run/start bootstrap_minimal_viable_world
   → WS: {"type":"status","active_run_state":"running",...}
   → WS: <ALIF binary frames at ≤30fps>
 
