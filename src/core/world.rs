@@ -6,6 +6,8 @@ use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
 use crate::core::fragments::FragmentStore;
+use crate::core::genome::{GenomeId, GenomeState};
+use crate::core::genome_bootstrap::instantiate_initial_genome;
 use crate::core::ids::ResourceTypeId;
 use crate::core::joints::JointStore;
 use crate::core::resources::ResourceGrid;
@@ -40,6 +42,7 @@ pub struct WorldState {
     events: EventBuffer,
     fragments: FragmentStore,
     joints: JointStore,
+    genomes: Vec<GenomeState>,
 }
 
 impl WorldState {
@@ -134,6 +137,29 @@ impl WorldState {
             }
         }
 
+        let mut genomes = Vec::new();
+        let world_seed = config.world.seed.raw();
+        for cell_raw in 0..cells.len() {
+            let Some(template_id) = config
+                .initial_cell_genome_templates
+                .get(cell_raw)
+                .and_then(|assignment| assignment.as_ref())
+            else {
+                continue;
+            };
+            let template = config
+                .genome_templates
+                .iter()
+                .find(|candidate| candidate.id().as_str() == template_id.as_str())
+                .ok_or(WorldInitError::InvalidInitialState)?;
+            let genome = instantiate_initial_genome(world_seed, cell_raw, template);
+            let genome_id = genome.id;
+            let cell = CellIndex::from_raw(cell_raw);
+            cells.set_genome_id(cell, Some(genome_id));
+            cells.set_genome_carrier_amount(cell, genome.carrier.amount);
+            genomes.push(genome);
+        }
+
         let mut spatial_index = SpatialIndex::new();
         spatial_index.rebuild(&cells, config.world.size, config.space.spatial_grid_size);
         let mut contact_cache = ContactCache::default();
@@ -160,6 +186,7 @@ impl WorldState {
             events: EventBuffer::with_capacity(128),
             fragments: FragmentStore::default(),
             joints: JointStore::with_capacity(4),
+            genomes,
         })
     }
 
@@ -241,6 +268,10 @@ impl WorldState {
 
     pub fn joints_mut_for_commit(&mut self) -> &mut JointStore {
         &mut self.joints
+    }
+
+    pub fn genome(&self, id: GenomeId) -> Option<&GenomeState> {
+        self.genomes.iter().find(|genome| genome.id == id)
     }
 
     pub(crate) fn advance_tick(&mut self) {

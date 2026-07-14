@@ -253,3 +253,68 @@ fn genome_bootstrap_noise_stream_is_stable_when_new_output_is_added() {
 
     assert_eq!(base_uptake, extended_uptake);
 }
+
+#[test]
+fn world_initializes_genome_state_for_assigned_initial_cell() {
+    use alife::core::tick::TickExecutor;
+
+    let mut config = base_runtime_config();
+    config.genome_templates.push(
+        GenomeTemplate::new(
+            GenomeTemplateId::new("balanced").unwrap(),
+            0.0,
+            1,
+            GenomeCarrierState::new("genome_carrier_A".to_string(), 1.0, 1.0).unwrap(),
+            vec![(
+                GenomeOutputId::ResourceUptakePriority,
+                GenomeOutputValue::new(0.7),
+            )],
+        )
+        .unwrap(),
+    );
+    config.initial_cell_genome_templates =
+        vec![Some(GenomeTemplateId::new("balanced").unwrap())];
+
+    let executor = TickExecutor::new(config).unwrap();
+    let cell = alife::core::cell_store::CellIndex::from_raw(0);
+    let genome_id = executor.world().cells().genome_id(cell).unwrap();
+    let genome = executor.world().genome(genome_id).unwrap();
+
+    assert_eq!(genome.template_id.as_str(), "balanced");
+    assert_eq!(
+        genome
+            .output(GenomeOutputId::ResourceUptakePriority)
+            .unwrap()
+            .raw(),
+        0.7
+    );
+}
+
+#[test]
+fn genome_carrier_amount_counts_against_used_capacity() {
+    use alife::core::tick::TickExecutor;
+
+    let mut config = base_runtime_config();
+    config.cell.initial_resource_amount = ResourceAmount::zero();
+    config.cell.capacity_limit = CapacityAmount::new(20.0).unwrap();
+    config.genome_templates.push(
+        GenomeTemplate::new(
+            GenomeTemplateId::new("balanced").unwrap(),
+            0.0,
+            1,
+            GenomeCarrierState::new("genome_carrier_A".to_string(), 1.5, 1.0).unwrap(),
+            vec![(GenomeOutputId::RepairPriority, GenomeOutputValue::new(0.5))],
+        )
+        .unwrap(),
+    );
+    config.initial_cell_genome_templates =
+        vec![Some(GenomeTemplateId::new("balanced").unwrap())];
+
+    let executor = TickExecutor::new(config).unwrap();
+    let cell = alife::core::cell_store::CellIndex::from_raw(0);
+
+    assert!(
+        executor.world().cells().used_capacity(cell).raw() >= 10.5,
+        "9 material slots at 1.0 each plus 1.5 genome carrier should use at least 10.5 capacity"
+    );
+}
