@@ -131,3 +131,18 @@ template = "missing"
         matches!(err, ParseError::ValidationError(message) if message.contains("Unknown Genome template"))
     );
 }
+
+#[test]
+fn phase3a_demo_scenario_parses_with_genome_template() {
+    let text = std::fs::read_to_string("config/scenarios/genome/phase3a_genome_bootstrap.toml")
+        .unwrap();
+    let config = RawScenarioConfig::parse(&text).unwrap();
+
+    assert_eq!(config.genome_templates.len(), 1);
+    assert!(
+        config
+            .initial_cell_genome_templates
+            .iter()
+            .any(|id| id.is_some())
+    );
+}

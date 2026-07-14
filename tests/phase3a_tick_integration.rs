@@ -159,3 +159,24 @@ fn repair_priority_is_present_in_action_plan_trace_when_damage_exists() {
         Some(&ProcessId::RepairBoundary)
     );
 }
+
+#[test]
+fn phase3a_demo_scenario_replays_same_seed_and_config() {
+    let text = std::fs::read_to_string("config/scenarios/genome/phase3a_genome_bootstrap.toml")
+        .unwrap();
+    let config_a = alife::runner::config_parser::RawScenarioConfig::parse(&text).unwrap();
+    let config_b = alife::runner::config_parser::RawScenarioConfig::parse(&text).unwrap();
+
+    let mut a = TickExecutor::new(config_a).unwrap();
+    let mut b = TickExecutor::new(config_b).unwrap();
+
+    let summary_a = a.step().unwrap();
+    let summary_b = b.step().unwrap();
+
+    assert_eq!(summary_a.config_hash, summary_b.config_hash);
+    assert_eq!(
+        summary_a.diagnostics.attempt_order_by_process,
+        summary_b.diagnostics.attempt_order_by_process
+    );
+    assert_eq!(summary_a.metrics.final_energy, summary_b.metrics.final_energy);
+}
