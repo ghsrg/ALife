@@ -6,3 +6,4 @@ pub mod progress;
 pub mod ring_buffer;
 pub mod scenario;
 pub mod scenario_doc;
+pub mod server_config;
