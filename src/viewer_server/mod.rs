@@ -1,4 +1,5 @@
 pub mod api;
+pub mod frame_encoder;
 pub mod state;
 
 use axum::Router;
