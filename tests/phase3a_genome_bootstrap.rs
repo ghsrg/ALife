@@ -1,6 +1,7 @@
 use alife::core::genome::{
     GenomeCarrierState, GenomeOutputId, GenomeOutputValue, GenomeTemplate, GenomeTemplateId,
 };
+use alife::core::genome_bootstrap::instantiate_initial_genome;
 use alife::core::{
     config::{
         CellInitialConfig, EnvironmentConfig, LifecycleConfig, ResourceConfig,
@@ -161,4 +162,94 @@ fn runtime_config_hash_changes_when_genome_template_changes() {
         vec![Some(GenomeTemplateId::new("balanced").unwrap())];
 
     assert_ne!(config_a.config_hash(), config_b.config_hash());
+}
+
+#[test]
+fn genome_bootstrap_is_deterministic_for_same_seed_cell_and_template() {
+    let template = GenomeTemplate::new(
+        GenomeTemplateId::new("balanced").unwrap(),
+        0.08,
+        1,
+        GenomeCarrierState::new("genome_carrier_A".to_string(), 1.0, 1.0).unwrap(),
+        vec![
+            (
+                GenomeOutputId::ResourceUptakePriority,
+                GenomeOutputValue::new(0.7),
+            ),
+            (
+                GenomeOutputId::EnergyConversionPriority,
+                GenomeOutputValue::new(0.6),
+            ),
+        ],
+    )
+    .unwrap();
+
+    let a = instantiate_initial_genome(42, 0, &template);
+    let b = instantiate_initial_genome(42, 0, &template);
+
+    assert_eq!(a.outputs, b.outputs);
+}
+
+#[test]
+fn genome_bootstrap_varies_different_initial_cell_ordinals() {
+    let template = GenomeTemplate::new(
+        GenomeTemplateId::new("balanced").unwrap(),
+        0.08,
+        1,
+        GenomeCarrierState::new("genome_carrier_A".to_string(), 1.0, 1.0).unwrap(),
+        vec![(
+            GenomeOutputId::ResourceUptakePriority,
+            GenomeOutputValue::new(0.7),
+        )],
+    )
+    .unwrap();
+
+    let a = instantiate_initial_genome(42, 0, &template);
+    let b = instantiate_initial_genome(42, 1, &template);
+
+    assert_ne!(a.outputs, b.outputs);
+}
+
+#[test]
+fn genome_bootstrap_noise_stream_is_stable_when_new_output_is_added() {
+    let carrier = GenomeCarrierState::new("genome_carrier_A".to_string(), 1.0, 1.0).unwrap();
+    let base = GenomeTemplate::new(
+        GenomeTemplateId::new("base").unwrap(),
+        0.08,
+        1,
+        carrier.clone(),
+        vec![(
+            GenomeOutputId::ResourceUptakePriority,
+            GenomeOutputValue::new(0.7),
+        )],
+    )
+    .unwrap();
+    let extended = GenomeTemplate::new(
+        GenomeTemplateId::new("base").unwrap(),
+        0.08,
+        1,
+        carrier,
+        vec![
+            (
+                GenomeOutputId::ResourceUptakePriority,
+                GenomeOutputValue::new(0.7),
+            ),
+            (
+                GenomeOutputId::EnergyConversionPriority,
+                GenomeOutputValue::new(0.6),
+            ),
+        ],
+    )
+    .unwrap();
+
+    let base_genome = instantiate_initial_genome(42, 0, &base);
+    let extended_genome = instantiate_initial_genome(42, 0, &extended);
+    let base_uptake = base_genome
+        .output(GenomeOutputId::ResourceUptakePriority)
+        .unwrap();
+    let extended_uptake = extended_genome
+        .output(GenomeOutputId::ResourceUptakePriority)
+        .unwrap();
+
+    assert_eq!(base_uptake, extended_uptake);
 }

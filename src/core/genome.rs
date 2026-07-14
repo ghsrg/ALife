@@ -181,6 +181,15 @@ pub struct GenomeState {
     pub outputs: Vec<(GenomeOutputId, GenomeOutputValue)>,
 }
 
+impl GenomeState {
+    pub fn output(&self, id: GenomeOutputId) -> Option<GenomeOutputValue> {
+        self.outputs
+            .iter()
+            .find(|(candidate, _)| *candidate == id)
+            .map(|(_, value)| *value)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GenomeError {
     EmptyTemplateId,
