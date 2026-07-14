@@ -1,5 +1,6 @@
 extern crate self as alife;
 
+pub mod bootstrap;
 pub mod core;
 pub mod runner;
 
