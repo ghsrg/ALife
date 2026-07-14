@@ -1,10 +1,14 @@
 use crate::runner::commands::RunnerCommand;
 use crate::runner::engine::RunEngine;
 use crate::runner::lifecycle::{ActiveRunState, RunnerProcessState};
+use crate::runner::projections::WorldFrameProjection;
 use crate::runner::scenario_doc::{ScenarioDocument, ScenarioSource};
+use crate::viewer_server::broadcaster::{Broadcaster, WsMessage};
+use crate::viewer_server::frame_encoder::encode_world_frame;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 pub struct TickLoopSignal {
     stop: Arc<AtomicBool>,
@@ -69,10 +73,16 @@ pub struct SharedState {
     pub scenarios_dir: PathBuf,
     pub tick_signal: Option<Arc<TickLoopSignal>>,
     pub engine_snapshot_buffer_size: usize,
+    pub target_broadcast_fps: u32,
+    pub broadcaster: Broadcaster,
 }
 
 impl SharedState {
-    pub fn new(scenarios_dir: PathBuf, engine_snapshot_buffer_size: usize) -> Self {
+    pub fn new(
+        scenarios_dir: PathBuf,
+        engine_snapshot_buffer_size: usize,
+        target_broadcast_fps: u32,
+    ) -> Self {
         Self {
             engine: None,
             process_state: RunnerProcessState::Ready,
@@ -86,6 +96,8 @@ impl SharedState {
             scenarios_dir,
             tick_signal: None,
             engine_snapshot_buffer_size,
+            target_broadcast_fps,
+            broadcaster: Broadcaster::new(128),
         }
     }
 
@@ -114,10 +126,15 @@ impl SharedState {
 
 pub type AppState = Arc<Mutex<SharedState>>;
 
-pub fn new_app_state(scenarios_dir: PathBuf, engine_snapshot_buffer_size: usize) -> AppState {
+pub fn new_app_state(
+    scenarios_dir: PathBuf,
+    engine_snapshot_buffer_size: usize,
+    target_broadcast_fps: u32,
+) -> AppState {
     Arc::new(Mutex::new(SharedState::new(
         scenarios_dir,
         engine_snapshot_buffer_size,
+        target_broadcast_fps,
     )))
 }
 
@@ -210,40 +227,72 @@ pub fn dispatch_command(
 
 pub fn spawn_tick_loop(state: AppState) {
     let signal = Arc::new(TickLoopSignal::new());
+    let (broadcast_sender, target_broadcast_fps) = {
+        let locked = state.lock().unwrap();
+        (locked.broadcaster.sender(), locked.target_broadcast_fps)
+    };
     {
         let mut locked = state.lock().unwrap();
         locked.tick_signal = Some(Arc::clone(&signal));
     }
 
     std::thread::spawn(move || {
+        let frame_interval =
+            Duration::from_millis(1000_u64.saturating_div(target_broadcast_fps.max(1) as u64));
+        let mut last_broadcast = Instant::now() - frame_interval;
         loop {
             if signal.is_stop_requested() {
                 break;
             }
             if signal.is_pause_requested() {
-                std::thread::sleep(std::time::Duration::from_millis(10));
+                std::thread::sleep(Duration::from_millis(10));
                 continue;
             }
 
             let result = {
                 let mut locked = state.lock().unwrap();
-                match locked.engine.as_mut() {
-                    Some(engine) => {
-                        let result = engine.run_one_tick();
-                        if result.is_ok() {
-                            locked.committed_tick = engine.current_tick();
+                let should_broadcast = last_broadcast.elapsed() >= frame_interval;
+                let tick_result = match locked.engine.as_mut() {
+                    Some(engine) => match engine.run_one_tick() {
+                        Ok(()) => {
+                            let committed_tick = engine.current_tick();
+                            let frame = if should_broadcast {
+                                engine.snapshots().newest().map(|snapshot| {
+                                    let projection =
+                                        WorldFrameProjection::from_committed_snapshot(snapshot);
+                                    encode_world_frame(&projection)
+                                })
+                            } else {
+                                None
+                            };
+                            Ok((committed_tick, frame))
                         }
-                        result
-                    }
+                        Err(err) => Err(err.to_string()),
+                    },
                     None => break,
+                };
+
+                match tick_result {
+                    Ok((committed_tick, frame)) => {
+                        locked.committed_tick = committed_tick;
+                        Ok(frame)
+                    }
+                    Err(err) => Err(err),
                 }
             };
 
-            if result.is_err() {
-                let mut locked = state.lock().unwrap();
-                locked.active_run_state = ActiveRunState::Failed;
-                locked.terminal_reason = Some("core_error".to_string());
-                break;
+            match result {
+                Ok(Some(bytes)) => {
+                    let _ = broadcast_sender.send(WsMessage::Frame(bytes));
+                    last_broadcast = Instant::now();
+                }
+                Ok(None) => {}
+                Err(_) => {
+                    let mut locked = state.lock().unwrap();
+                    locked.active_run_state = ActiveRunState::Failed;
+                    locked.terminal_reason = Some("core_error".to_string());
+                    break;
+                }
             }
         }
 

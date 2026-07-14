@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 async fn spawn_test_server() -> (String, tokio::task::JoinHandle<()>) {
     let scenarios_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/scenarios");
-    let state = new_app_state(scenarios_dir, 20);
+    let state = new_app_state(scenarios_dir, 20, 30);
     let app = create_app(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")

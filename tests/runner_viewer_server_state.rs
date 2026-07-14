@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 #[test]
 fn new_app_state_starts_ready_and_idle() {
-    let state = new_app_state(PathBuf::from("config/scenarios"), 300);
+    let state = new_app_state(PathBuf::from("config/scenarios"), 300, 30);
     let locked = state.lock().unwrap();
 
     assert_eq!(locked.process_state, RunnerProcessState::Ready);
