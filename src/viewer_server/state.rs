@@ -126,6 +126,42 @@ impl SharedState {
 
 pub type AppState = Arc<Mutex<SharedState>>;
 
+pub fn process_state_label(state: RunnerProcessState) -> &'static str {
+    match state {
+        RunnerProcessState::Starting => "starting",
+        RunnerProcessState::Ready => "ready",
+        RunnerProcessState::ShuttingDown => "shutting_down",
+        RunnerProcessState::Failed => "failed",
+    }
+}
+
+pub fn active_state_label(state: ActiveRunState) -> &'static str {
+    match state {
+        ActiveRunState::Idle => "idle",
+        ActiveRunState::Preparing => "preparing",
+        ActiveRunState::Running => "running",
+        ActiveRunState::Paused => "paused",
+        ActiveRunState::Stopping => "stopping",
+        ActiveRunState::Completed => "completed",
+        ActiveRunState::Failed => "failed",
+    }
+}
+
+pub fn status_ws_text_from_state(state: &SharedState) -> String {
+    serde_json::json!({
+        "type": "status",
+        "process_state": process_state_label(state.process_state),
+        "active_run_state": active_state_label(state.active_run_state),
+        "run_id": state.run_id,
+        "committed_tick": state.committed_tick,
+        "scenario_id": state.scenario_id,
+        "scenario_hash": state.scenario_hash,
+        "effective_seed": state.effective_seed,
+        "terminal_reason": state.terminal_reason,
+    })
+    .to_string()
+}
+
 pub fn new_app_state(
     scenarios_dir: PathBuf,
     engine_snapshot_buffer_size: usize,
