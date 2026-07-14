@@ -20,3 +20,4 @@ pub mod bin {
 }
 
 pub mod observer;
+pub mod viewer_server;
