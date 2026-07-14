@@ -86,8 +86,7 @@ fn config_with_genome(outputs: Vec<(GenomeOutputId, f32)>) -> RuntimeConfig {
         )
         .unwrap(),
     );
-    config.initial_cell_genome_templates =
-        vec![Some(GenomeTemplateId::new("balanced").unwrap())];
+    config.initial_cell_genome_templates = vec![Some(GenomeTemplateId::new("balanced").unwrap())];
     config
 }
 
@@ -102,7 +101,7 @@ fn genome_priority_changes_attempt_order_visible_in_diagnostics_trace() {
     let summary = executor.step().unwrap();
 
     assert_eq!(
-        summary.diagnostics.attempt_order_by_process.get(0),
+        summary.diagnostics.attempt_order_by_process.first(),
         Some(&ProcessId::MaterialSynthesis)
     );
     assert!(
@@ -155,15 +154,15 @@ fn repair_priority_is_present_in_action_plan_trace_when_damage_exists() {
     let summary = executor.step().unwrap();
 
     assert_eq!(
-        summary.diagnostics.attempt_order_by_process.get(0),
+        summary.diagnostics.attempt_order_by_process.first(),
         Some(&ProcessId::RepairBoundary)
     );
 }
 
 #[test]
 fn phase3a_demo_scenario_replays_same_seed_and_config() {
-    let text = std::fs::read_to_string("config/scenarios/genome/phase3a_genome_bootstrap.toml")
-        .unwrap();
+    let text =
+        std::fs::read_to_string("config/scenarios/genome/phase3a_genome_bootstrap.toml").unwrap();
     let config_a = alife::runner::config_parser::RawScenarioConfig::parse(&text).unwrap();
     let config_b = alife::runner::config_parser::RawScenarioConfig::parse(&text).unwrap();
 
@@ -178,5 +177,8 @@ fn phase3a_demo_scenario_replays_same_seed_and_config() {
         summary_a.diagnostics.attempt_order_by_process,
         summary_b.diagnostics.attempt_order_by_process
     );
-    assert_eq!(summary_a.metrics.final_energy, summary_b.metrics.final_energy);
+    assert_eq!(
+        summary_a.metrics.final_energy,
+        summary_b.metrics.final_energy
+    );
 }

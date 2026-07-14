@@ -1225,17 +1225,18 @@ fn run_simulation(
         }
     };
 
-    if let Some(mode) = preset.and_then(|p| p.phase2h_mode.as_deref()) {
-        if mode == "joint_heat_channel" && executor.world().cells().len() >= 2 {
-            executor.world_mut().cells_mut_for_commit().set_temperature(
-                CellIndex::from_raw(0),
-                alife::core::units::Temperature::new(40.0),
-            );
-            executor.world_mut().cells_mut_for_commit().set_temperature(
-                CellIndex::from_raw(1),
-                alife::core::units::Temperature::new(20.0),
-            );
-        }
+    if let Some(mode) = preset.and_then(|p| p.phase2h_mode.as_deref())
+        && mode == "joint_heat_channel"
+        && executor.world().cells().len() >= 2
+    {
+        executor.world_mut().cells_mut_for_commit().set_temperature(
+            CellIndex::from_raw(0),
+            alife::core::units::Temperature::new(40.0),
+        );
+        executor.world_mut().cells_mut_for_commit().set_temperature(
+            CellIndex::from_raw(1),
+            alife::core::units::Temperature::new(20.0),
+        );
     }
 
     if let Some(mode) = preset.and_then(|p| p.phase2g_mode.as_deref()) {
@@ -1252,7 +1253,7 @@ fn run_simulation(
                 }
             }
         }
-        if mode == "repair_viability" && executor.world().cells().len() > 0 {
+        if mode == "repair_viability" && !executor.world().cells().is_empty() {
             executor
                 .world_mut()
                 .cells_mut_for_commit()

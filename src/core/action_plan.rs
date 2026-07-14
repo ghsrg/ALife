@@ -30,25 +30,30 @@ impl ActionPlan {
                 (process, priority, priority.is_some())
             })
             .collect::<Vec<_>>();
-        weighted.sort_by(|(left_id, left_priority, left_present), (right_id, right_priority, right_present)| {
-            right_priority
-                .unwrap_or(0.0)
-                .total_cmp(&left_priority.unwrap_or(0.0))
-                .then_with(|| right_present.cmp(left_present))
-                .then_with(|| {
-                    if *left_present && *right_present {
-                        left_id
-                            .phase3a_baseline_order()
-                            .cmp(&right_id.phase3a_baseline_order())
-                    } else {
-                        right_id
-                            .phase3a_baseline_order()
-                            .cmp(&left_id.phase3a_baseline_order())
-                    }
-                })
-        });
+        weighted.sort_by(
+            |(left_id, left_priority, left_present), (right_id, right_priority, right_present)| {
+                right_priority
+                    .unwrap_or(0.0)
+                    .total_cmp(&left_priority.unwrap_or(0.0))
+                    .then_with(|| right_present.cmp(left_present))
+                    .then_with(|| {
+                        if *left_present && *right_present {
+                            left_id
+                                .phase3a_baseline_order()
+                                .cmp(&right_id.phase3a_baseline_order())
+                        } else {
+                            right_id
+                                .phase3a_baseline_order()
+                                .cmp(&left_id.phase3a_baseline_order())
+                        }
+                    })
+            },
+        );
         Self {
-            ordered_processes: weighted.into_iter().map(|(process, _, _)| process).collect(),
+            ordered_processes: weighted
+                .into_iter()
+                .map(|(process, _, _)| process)
+                .collect(),
         }
     }
 

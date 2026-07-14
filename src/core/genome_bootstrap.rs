@@ -25,8 +25,7 @@ pub fn instantiate_initial_genome(
 }
 
 fn deterministic_noise(world_seed: u64, initial_cell_ordinal: usize, output_id: &str) -> f32 {
-    let mut value =
-        world_seed ^ (initial_cell_ordinal as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+    let mut value = world_seed ^ (initial_cell_ordinal as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
     for byte in output_id.as_bytes() {
         value ^= *byte as u64;
         value = value.wrapping_mul(0xBF58_476D_1CE4_E5B9);

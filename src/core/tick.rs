@@ -663,27 +663,25 @@ impl TickExecutor {
                             let _ = self.world.execute_displacement(index);
                         }
                     }
-                    ProcessId::RepairBoundary => {
+                    ProcessId::RepairBoundary
                         if config.chemistry.repair.enabled
                             && self
                                 .world
                                 .cells()
                                 .material_damage(index, MaterialSlot::Boundary)
-                                > 0.0
-                        {
-                            try_repair_boundary(
-                                &mut self.world,
-                                &config,
-                                index,
-                                &mut diagnostics,
-                                &mut process_attempts,
-                                &mut process_rejections,
-                                &mut repair_success_count,
-                                &mut repair_rejection_count,
-                                &mut phase2g_metrics,
-                            );
-                        }
+                                > 0.0 =>
+                    {
+                        let mut repair_context = RepairExecutionContext {
+                            diagnostics: &mut diagnostics,
+                            process_attempts: &mut process_attempts,
+                            process_rejections: &mut process_rejections,
+                            repair_success_count: &mut repair_success_count,
+                            repair_rejection_count: &mut repair_rejection_count,
+                            phase2g_metrics: &mut phase2g_metrics,
+                        };
+                        try_repair_boundary(&mut self.world, &config, index, &mut repair_context);
                     }
+                    ProcessId::RepairBoundary => {}
                     _ => {}
                 }
             }
@@ -1131,7 +1129,7 @@ impl TickExecutor {
             }
         }
 
-        if config.decomposition.enabled && config.chemistry.resources.is_empty() == false {
+        if config.decomposition.enabled && !config.chemistry.resources.is_empty() {
             let tick = self.world.tick();
             let converted = self
                 .world
@@ -1891,25 +1889,29 @@ fn run_process(
     }
 }
 
+struct RepairExecutionContext<'a> {
+    diagnostics: &'a mut ProcessDiagnostics,
+    process_attempts: &'a mut u32,
+    process_rejections: &'a mut u32,
+    repair_success_count: &'a mut u32,
+    repair_rejection_count: &'a mut u32,
+    phase2g_metrics: &'a mut Phase2GMetricsDelta,
+}
+
 fn try_repair_boundary(
     world: &mut WorldState,
     config: &RuntimeConfig,
     index: CellIndex,
-    diagnostics: &mut ProcessDiagnostics,
-    process_attempts: &mut u32,
-    process_rejections: &mut u32,
-    repair_success_count: &mut u32,
-    repair_rejection_count: &mut u32,
-    phase2g_metrics: &mut Phase2GMetricsDelta,
+    context: &mut RepairExecutionContext<'_>,
 ) {
     let (feasible, feasibility) = run_process(
         world,
         index,
         ProcessId::RepairBoundary,
         config.chemistry.repair.max_amount_per_tick,
-        diagnostics,
-        process_attempts,
-        process_rejections,
+        context.diagnostics,
+        context.process_attempts,
+        context.process_rejections,
     );
     match feasibility {
         FeasibilityResult::Allowed {
@@ -1926,7 +1928,7 @@ fn try_repair_boundary(
                     .typed_resource_amount(index, resource_type)
                     .expect("repair resource type is derived from validated config");
                 if available.raw() + f32::EPSILON < resource_cost {
-                    *repair_rejection_count += 1;
+                    *context.repair_rejection_count += 1;
                     return;
                 }
                 let consumed = cells
@@ -1936,23 +1938,23 @@ fn try_repair_boundary(
                     cells
                         .set_typed_resource_amount(index, resource_type, available)
                         .expect("repair resource type is derived from validated config");
-                    *repair_rejection_count += 1;
+                    *context.repair_rejection_count += 1;
                     return;
                 }
-                phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+                context.phase2g_metrics.repair_resource_sink_amount += consumed.raw();
             } else {
                 let available = cells.generic_resource_amount(index);
                 if available.raw() + f32::EPSILON < resource_cost {
-                    *repair_rejection_count += 1;
+                    *context.repair_rejection_count += 1;
                     return;
                 }
                 let consumed = cells.consume_resources(index, requested_resource);
                 if consumed.raw() + f32::EPSILON < resource_cost {
                     cells.set_resources(index, available);
-                    *repair_rejection_count += 1;
+                    *context.repair_rejection_count += 1;
                     return;
                 }
-                phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+                context.phase2g_metrics.repair_resource_sink_amount += consumed.raw();
             }
             let repair_remaining = MaterialAmount::new_unchecked(
                 (cells.repair_material(index).raw() - accepted_amount).max(0.0),
@@ -1972,10 +1974,10 @@ fn try_repair_boundary(
                 .current()
                 .saturating_sub(EnergyAmount::new(energy_cost).unwrap());
             cells.set_energy(index, EnergyBuffer::new(next_energy, energy.capacity()));
-            *repair_success_count += 1;
+            *context.repair_success_count += 1;
         }
         FeasibilityResult::Rejected(_) => {
-            *repair_rejection_count += 1;
+            *context.repair_rejection_count += 1;
         }
         _ => {}
     }

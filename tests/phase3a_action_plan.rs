@@ -75,5 +75,8 @@ fn action_plan_keeps_stable_tie_break_order() {
         .position(|id| *id == ProcessId::MaterialSynthesis)
         .unwrap();
 
-    assert!(uptake < synthesis, "baseline order must break priority ties");
+    assert!(
+        uptake < synthesis,
+        "baseline order must break priority ties"
+    );
 }

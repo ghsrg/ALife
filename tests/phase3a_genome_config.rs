@@ -134,8 +134,8 @@ template = "missing"
 
 #[test]
 fn phase3a_demo_scenario_parses_with_genome_template() {
-    let text = std::fs::read_to_string("config/scenarios/genome/phase3a_genome_bootstrap.toml")
-        .unwrap();
+    let text =
+        std::fs::read_to_string("config/scenarios/genome/phase3a_genome_bootstrap.toml").unwrap();
     let config = RawScenarioConfig::parse(&text).unwrap();
 
     assert_eq!(config.genome_templates.len(), 1);

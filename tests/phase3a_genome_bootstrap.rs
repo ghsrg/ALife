@@ -8,8 +8,8 @@ use alife::core::{
         ResourceInteractionConfig, RuntimeConfig, SpaceConfig, WorldConfig,
     },
     units::{
-        CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius,
-        ResourceAmount, Seed, Tick, WasteAmount, WorldSize,
+        CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
+        Seed, Tick, WasteAmount, WorldSize,
     },
 };
 
@@ -158,8 +158,7 @@ fn runtime_config_hash_changes_when_genome_template_changes() {
         )
         .unwrap(),
     );
-    config_b.initial_cell_genome_templates =
-        vec![Some(GenomeTemplateId::new("balanced").unwrap())];
+    config_b.initial_cell_genome_templates = vec![Some(GenomeTemplateId::new("balanced").unwrap())];
 
     assert_ne!(config_a.config_hash(), config_b.config_hash());
 }
@@ -272,8 +271,7 @@ fn world_initializes_genome_state_for_assigned_initial_cell() {
         )
         .unwrap(),
     );
-    config.initial_cell_genome_templates =
-        vec![Some(GenomeTemplateId::new("balanced").unwrap())];
+    config.initial_cell_genome_templates = vec![Some(GenomeTemplateId::new("balanced").unwrap())];
 
     let executor = TickExecutor::new(config).unwrap();
     let cell = alife::core::cell_store::CellIndex::from_raw(0);
@@ -307,8 +305,7 @@ fn genome_carrier_amount_counts_against_used_capacity() {
         )
         .unwrap(),
     );
-    config.initial_cell_genome_templates =
-        vec![Some(GenomeTemplateId::new("balanced").unwrap())];
+    config.initial_cell_genome_templates = vec![Some(GenomeTemplateId::new("balanced").unwrap())];
 
     let executor = TickExecutor::new(config).unwrap();
     let cell = alife::core::cell_store::CellIndex::from_raw(0);
