@@ -107,6 +107,58 @@ loop {
 
 ---
 
+## Canon Supersession: Runner-3 Projections
+
+This phase must use `docs/runner/projections.md` as the public data contract.
+
+Required projection pipeline:
+
+```text
+Committed Core State -> Projection Builder -> WorldFrameProjection v1 -> ALIF frame bytes
+```
+
+The binary frame encoder must not expose internal `WorldState` and should not treat `CommittedSnapshot` as the public wire schema. `CommittedSnapshot` may be the input to the projection builder, but the externally documented payload is `WorldFrameProjection v1`.
+
+Required projection modules:
+
+```text
+src/runner/projections.rs              [MODIFY] RunStatusProjection, WorldFrameProjection
+src/viewer_server/frame_encoder.rs     [NEW] encode WorldFrameProjection v1 -> ALIF bytes
+tests/runner_projection_world_frame.rs [NEW] projection schema tests
+```
+
+Status messages use `RunStatusProjection` fields:
+
+```text
+process_state
+active_run_state
+run_id
+committed_tick
+scenario_hash
+terminal_reason
+```
+
+No WS handler may mutate Runner or Core state. WS remains push-only; commands stay HTTP/CLI adapters over the shared Runner command dispatcher.
+
+The existing no-server-scroll-back decision remains valid:
+
+```text
+No server seek.
+No server frame history contract.
+Client-side scroll-back only.
+```
+
+Additional acceptance:
+
+```text
+WorldFrameProjection v1 declares schema version and committed Tick
+ALIF encoder accepts WorldFrameProjection v1, not mutable WorldState
+WS initial status uses RunStatusProjection
+slow clients cannot block Tick execution or projection building
+```
+
+---
+
 ## File Structure
 
 ```
@@ -1315,6 +1367,8 @@ git commit -m "test(runner-3): smoke verify --serve WS push-only stream end-to-e
 - `encode_snapshot(&CommittedSnapshot) -> Vec<u8>` — однаково у frame_encoder.rs і state.rs
 - `new_app_state(path, size, fps)` — 3 аргументи скрізь
 - `target_broadcast_fps: u32` — замінює `stream_frame_interval` у всіх файлах
+- `WorldFrameProjection v1` — public WS payload source; `CommittedSnapshot` is internal input only
+- `RunStatusProjection` — public status text payload source
 
 ---
 

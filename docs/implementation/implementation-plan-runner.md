@@ -25,9 +25,65 @@ Runner:
 
 ```text
 docs/PRINCIPLES.md
+docs/runner/INDEX.md
+docs/runner/runner.md
+docs/runner/execution-modes.md
+docs/runner/run-lifecycle.md
+docs/runner/command-contract.md
+docs/runner/scenario-resolution.md
+docs/runner/projections.md
+docs/runner/bootstrap.md
+docs/implementation/implementation-plan-bootstrap.md
 docs/implementation/architecture.md
 docs/implementation/implementation-phases.md
 docs/engine/technology-stack.md
+```
+
+Runner Canon in `docs/runner/` supersedes older implementation-plan wording. If a worklog snippet still shows direct TOML-to-Core startup, simplified `Idle/Running/Paused` state, server-side frame history, or multi-tick `StepRun`, the Canon contract is authoritative.
+
+---
+
+## Canon Alignment Requirements
+
+All Runner phases must implement or preserve these contracts from `docs/runner/`:
+
+```text
+Source -> Load -> Parse -> Normalize -> Resolve References
+       -> Validate -> Canonicalize -> Hash -> ScenarioDocument
+       -> Bootstrap -> PreparedWorld -> Core Start -> Committed Projections
+```
+
+Required boundaries:
+
+- CLI, HTTP, UI, tests, and batch tools adapt input into shared Runner commands.
+- Adapters must not call Core or Bootstrap directly.
+- Runner owns orchestration, lifecycle, command validation, and projections.
+- Runner must not define world laws or simulation mechanics.
+- Scenario resolution must not generate World state.
+- Bootstrap prepares Tick 0 and must not execute a Tick.
+- External consumers receive versioned read-only projections, not mutable `WorldState`.
+
+Mandatory shared commands:
+
+```text
+ValidateScenario
+PrepareScenario
+StartRun
+PauseRun
+ResumeRun
+StepRun
+StopRun
+GetRunStatus
+```
+
+`StepRun` contract:
+
+```text
+Executes exactly one committed Tick.
+Valid only when Active Run is Paused.
+Returns Paused state and updated committed_tick.
+Multi-tick advancement is intentionally out of scope for this Runner phase.
+A future command may add bounded tick advancement, but it must not reuse StepRun semantics.
 ```
 
 ---
@@ -115,11 +171,11 @@ HTTP server налаштовується у `config/server.toml` або чере
 ```text
 Runner observes CommittedSnapshot.
 Runner does not mutate WorldState.
-HTTP client sends commands to Runner.
-Runner validates and applies to run state machine.
-Core executes next Tick.
-Runner reads new CommittedSnapshot.
-viewer-server pushes to WS clients.
+CLI/HTTP/UI adapters translate input into shared Runner commands.
+Runner resolves ScenarioDocument, validates it, invokes Bootstrap, and starts Core only from PreparedWorld.
+Core executes Tick only after Runner reaches Running.
+Runner reads committed Core outputs and builds versioned projections.
+viewer-server pushes projections to WS clients.
 ```
 
 Runner не є частиною simulation hot path.
@@ -140,6 +196,17 @@ config/scenarios/
 Файли з інших директорій (`config/analyzer/`, `config/observer/`) не відображаються через `/scenarios` API — вони для headless tools.
 
 ---
+
+Scenario files are sources, not runtime input. Every run must resolve source input into an immutable `ScenarioDocument` before Bootstrap:
+
+```text
+local path | scenario id | inline document
+  -> ScenarioDocument
+  -> scenario_hash
+  -> Bootstrap
+```
+
+`scenario_hash` is computed from the canonical normalized document, not from filesystem path, request id, UI state, or raw TOML bytes.
 
 ## HTTP API
 
@@ -173,10 +240,11 @@ GET /scenarios/{id}
 ```text
 GET /run/status
 → {
-    state: "idle" | "running" | "paused" | "stopping",
-    tick: N,
-    scenario_id: "...",
-    config_hash: "...",
+    process_state: "starting" | "ready" | "shutting_down" | "failed",
+    active_run_state: "idle" | "preparing" | "running" | "paused" | "stopping" | "completed" | "failed",
+    run_id: "...",
+    committed_tick: N,
+    scenario_hash: "...",
     seed: N,
     ticks_per_second: N,
     collapse_reason: null | "..."
@@ -187,8 +255,10 @@ GET /run/status
 
 ```text
 POST /run/start
-  body: { scenario_id: "single_cell_survival", seed: 42 }
-  → { ok: true, run_id: "...", config_hash: "...", seed: 42 }
+  body: { scenario_id: "single_cell_survival", seed_override: 42, request_id: "optional-id" }
+  -> shared command: StartRun
+  -> Scenario Resolution -> Bootstrap -> PreparedWorld validation -> Core start
+  → { ok: true, run_id: "...", scenario_hash: "...", bootstrap_manifest: {...}, seed: 42, active_run_state: "running" }
   → 409 Conflict якщо run вже активний
 
 POST /run/pause
@@ -198,8 +268,10 @@ POST /run/resume
   → { ok: true }
 
 POST /run/step
-  body: { ticks: 1 }
-  → { ok: true, tick_after: N }
+  body: {}
+  valid only when Active Run is Paused
+  executes exactly one committed Tick
+  → { ok: true, active_run_state: "paused", committed_tick: N }
 
 POST /run/stop
   → { ok: true }
@@ -230,6 +302,12 @@ WS /stream
 
 Frame format: бінарний, версіонований. Точна схема визначається при реалізації Runner-3.
 
+Wire frames encode `WorldFrameProjection`, not internal `WorldState`. The allowed pipeline is:
+
+```text
+Committed Core State -> Projection Builder -> WorldFrameProjection v1 -> ALIF frame bytes
+```
+
 ### Кілька клієнтів
 
 Кожне WS-з'єднання є незалежним підписником. Runner пушить кожному клієнту паралельно. Повільний клієнт пропускає кадри без впливу на Core або інших клієнтів.
@@ -253,6 +331,38 @@ Seek: scroll по локальному масиву кадрів у браузе
 ---
 
 ## Run State Machine
+
+Canon state model from `docs/runner/run-lifecycle.md` is authoritative. Any older simplified diagrams in this file or worklogs are legacy sketches and must not be implemented when they conflict with this model.
+
+```text
+Runner Process:
+Starting -> Ready | Failed
+Ready -> ShuttingDown
+
+Active Run:
+Idle -> Preparing
+Preparing -> Running | Failed | Idle
+Running -> Paused | Stopping | Completed | Failed
+Paused -> Running | Stopping | Completed | Failed
+Stopping -> Completed | Failed
+Completed -> Idle
+Failed -> Idle
+```
+
+Command validity:
+
+```text
+StartRun: Idle
+PauseRun: Running
+ResumeRun: Paused
+StepRun: Paused only; exactly one committed Tick; returns Paused + committed_tick
+StopRun: Preparing, Running, or Paused
+GetRunStatus: every non-process-failed state
+```
+
+No Tick may execute in `Preparing`. Failed preparation must not expose a partial World. Invalid commands return a stable state-conflict error without changing state.
+
+Legacy pre-Canon sketch below is retained only as historical context until detailed worklogs are regenerated:
 
 ```text
 Idle
@@ -345,6 +455,15 @@ Debug progress output:
 
 ### Runner-1: Headless Run Loop And State Machine
 
+Prerequisite:
+
+```text
+Bootstrap-1 Foundation complete:
+outputs/worklogs/2026-07-14-1635-PLAN-bootstrap-1-foundation.md
+```
+
+Runner-1 must start Core only from `PreparedWorld`. It must not reimplement Bootstrap generation and must not keep a direct TOML-to-`RuntimeConfig`-to-Core startup path except as an explicitly superseded pre-Canon snippet.
+
 Мета: чистий поділ `alife-core` від entry-point; state machine; scenario directory.
 
 Build:
@@ -354,8 +473,13 @@ Build:
 CLI: cargo run --bin runner -- <scenario.toml>
 CLI debug: cargo run --bin runner -- --debug --progress-interval-ms 2000 <scenario.toml>
 config/scenarios/ directory зі стартовими demo сценаріями
-run state machine (Idle / Running / Paused / Stopping)
-deterministic replay test (same seed + config → same result)
+RunnerProcessState + ActiveRunState from docs/runner/run-lifecycle.md
+ScenarioDocument resolution and canonical scenario_hash
+Bootstrap boundary: ScenarioDocument -> PreparedWorld + BootstrapManifest
+shared RunnerCommand enum and command dispatcher
+RunStatusProjection for CLI/debug output
+deterministic replay test uses same seed + canonical ScenarioDocument -> same result
+deterministic replay test (same seed + ScenarioDocument + PreparedWorld -> same result)
 ```
 
 Gate:
@@ -368,6 +492,17 @@ toy simulation → очікуваний tick count
 --debug prints a terminal status table every 2000 ms by default
 --progress-interval-ms <N> changes the debug table refresh interval
 debug progress output does not change deterministic final snapshots
+```
+
+Canon Gate Addendum:
+
+```text
+scenario source resolves to immutable ScenarioDocument before Bootstrap
+Bootstrap prepares Tick 0 and executes no Tick
+Bootstrap-1 deterministic constrained generation acceptance gate passes before Runner-1 implementation starts
+StartRun goes Idle -> Preparing -> Running atomically
+failed resolution/validation/bootstrap leaves no partial active World
+StepRun is not part of Runner-1 headless fast path unless the run is explicitly Paused
 ```
 
 ---
@@ -392,6 +527,9 @@ endpoints:
   POST /run/resume
   POST /run/step
   POST /run/stop
+shared RunnerCommand dispatcher behind every endpoint
+HTTP handlers do not call Core or Bootstrap directly
+POST /run/step maps to StepRun: exactly one committed Tick, Paused only
 integration tests через reqwest або curl
 ```
 
@@ -418,6 +556,7 @@ Build:
 
 ```text
 WS /stream endpoint (axum WebSocket)
+CommittedSnapshot -> WorldFrameProjection v1 -> binary frame encoder
 CommittedSnapshot → binary frame encoder (версіонований формат ALIF v1)
 time-based broadcast: push не частіше target_broadcast_fps (default 30fps)
 незалежний підписник per connection (tokio::sync::broadcast)
@@ -448,6 +587,8 @@ Build:
 ```text
 allow_remote_viewer = true mode (0.0.0.0 + CORS)
 allowed_origins validation
+canonical ScenarioDocument hashing, not raw TOML hashing
+Scenario Resolution / Bootstrap errors use stable Runner error categories
 config validation errors через HTTP (не тільки CLI)
 graceful shutdown (Ctrl+C зупиняє Core і закриває WS з'єднання)
 reconnect handling (клієнт перепідключається — отримує статус + останній frame)
@@ -502,13 +643,17 @@ Runner план вважається завершеним, коли:
 ```text
 headless run: cargo run --bin runner -- <scenario> стартує і завершується детерміновано
 debug headless run: cargo run --bin runner -- --debug --progress-interval-ms 2000 <scenario> prints periodic status table while running
+Scenario source resolves to immutable ScenarioDocument before any World generation
+Bootstrap-1 Foundation acceptance gate passes before Runner-1 implementation starts
+Bootstrap produces PreparedWorld + BootstrapManifest and executes no Tick
+StartRun failure during resolution/validation/bootstrap leaves active run Idle/Failed without partial World
 serve run: cargo run --bin runner -- --serve <scenario> стартує HTTP + WS
 GET /scenarios повертає список з config/scenarios/
 GET /scenarios/{id} повертає TOML вміст
 POST /run/start запускає Core з коректним seed і config
-GET /run/status відображає tick, state, config_hash, seed
+GET /run/status відображає process_state, active_run_state, run_id, committed_tick, scenario_hash, seed
 POST /run/pause і /run/resume працюють через HTTP
-POST /run/step виконує N Tick-ів і повертає tick_after
+POST /run/step виконує рівно один committed Tick тільки з Paused і повертає Paused + committed_tick
 POST /run/stop повертає в Idle
 WS /stream отримує frame ≤target_broadcast_fps разів на секунду
 два підключені клієнти отримують незалежні stream-и

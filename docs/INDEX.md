@@ -34,6 +34,7 @@ Mechanics cards are routing checklists, not sources of truth.
 - [[docs/observer/INDEX|Observer Index]] `#observer` `#projection` `#coverage`
 - [[docs/config/INDEX|Config Index]] `#config` `#bounds`
 - [[docs/engine/INDEX|Engine Index]] `#runtime` `#performance` `#storage`
+- [[docs/runner/INDEX|Runner Index]] `#runner` `#orchestration` `#bootstrap`
 - [[docs/ui/INDEX|UI Index]] `#viewer` `#control-center`
 - [[docs/implementation/INDEX|Implementation Index]] `#phases` `#api` `#data-model`
 - [[docs/decisions/INDEX|Decisions Index]] `#adr`
@@ -46,6 +47,7 @@ Mechanics cards are routing checklists, not sources of truth.
 - Changing Canon rule -> [[docs/PRINCIPLES]] -> relevant area index -> Canon document -> ADR check.
 - Planning phase work -> [[docs/ROADMAP]] + [[docs/implementation/INDEX]] + relevant mechanics cards.
 - Working with configs -> [[docs/config/INDEX]] + [[docs/mechanics/config-to-runtime|Config -> Runtime]].
+- Working with runner orchestration, execution modes, Scenario resolution, Bootstrap, commands, or projections -> [[docs/runner/INDEX]] + [[docs/implementation/implementation-plan-runner|Runner Implementation Plan]].
 - Working with viewer/UI -> [[docs/ui/INDEX]] + [[docs/implementation/implementation-plan-ui|UI Implementation Plan]].
 - Working with observer/projections/coverage -> [[docs/observer/INDEX]] + [[docs/mechanics/observer-projection|Observer Projection]].
 - Looking for saved plans/reports -> [[outputs/worklogs/index|Worklogs Index]].

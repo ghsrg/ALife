@@ -22,6 +22,7 @@ Mechanics cards are routing checklists, not sources of truth.
 ## Architecture And Phases
 
 - [[docs/implementation/architecture|Architecture]] `#architecture`
+- [[docs/runner/INDEX|Runner Canon]] `#runner` `#bootstrap` `#commands`
 - [[docs/observer/observer-layer|Observer Layer]] `#observer` `#projection`
 - [[docs/implementation/implementation-phases|Implementation Phases]] `#phases`
 - [[docs/implementation/phase-1-design|Phase 1 Design]] `#phase1`
@@ -40,6 +41,11 @@ Mechanics cards are routing checklists, not sources of truth.
 
 - [[docs/implementation/implementation-plan-ui|UI Implementation Plan]] `#ui`
 - [[docs/implementation/ui-technology-stack.md|UI Implementation technology Stack]] `#technology-stack`
+
+## Runner Implementation
+
+- [[docs/implementation/implementation-plan-bootstrap|Bootstrap Implementation Plan]] `#bootstrap` `#scenario-resolution` `#tick0`
+- [[docs/implementation/implementation-plan-runner|Runner Implementation Plan]] `#runner` `#api` `#bootstrap`
 
 ## Local README
 

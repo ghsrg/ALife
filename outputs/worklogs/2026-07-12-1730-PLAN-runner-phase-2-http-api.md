@@ -12,6 +12,72 @@
 
 ---
 
+## Canon Supersession: Runner-2 HTTP Adapter
+
+This plan is valid only after the Runner-1 Canon foundation exists:
+
+```text
+ScenarioDocument
+scenario_hash
+Bootstrap / PreparedWorld / BootstrapManifest
+RunnerProcessState
+ActiveRunState
+RunnerCommand dispatcher
+RunStatusProjection
+```
+
+HTTP handlers are adapters. They must translate request/response bodies to shared Runner commands and must not call Core or Bootstrap directly.
+
+Required endpoint mapping:
+
+```text
+GET  /run/status -> GetRunStatus
+POST /run/start  -> StartRun
+POST /run/pause  -> PauseRun
+POST /run/resume -> ResumeRun
+POST /run/step   -> StepRun
+POST /run/stop   -> StopRun
+```
+
+`POST /run/step` Canon contract:
+
+```text
+Request body: {}
+Valid only when Active Run is Paused.
+Executes exactly one committed Tick.
+Returns active_run_state = "paused" and committed_tick.
+Multi-tick advancement is intentionally out of scope for this Runner phase.
+A future command may add bounded tick advancement, but it must not reuse StepRun semantics.
+```
+
+Status and start responses use Canon fields:
+
+```text
+process_state
+active_run_state
+run_id
+committed_tick
+scenario_hash
+effective_seed
+bootstrap_manifest summary
+terminal_reason
+```
+
+Do not use `"tbd"` hashes. `scenario_hash` comes from canonical `ScenarioDocument`, created before Bootstrap. `config_hash` wording in older snippets means `scenario_hash` unless a later ADR creates a separate config hash.
+
+Server-side `SharedState.snapshots: RingBuffer<CommittedSnapshot>` is not a public scroll-back contract. If retained temporarily, it is internal only and must not be exposed as seek/history behavior.
+
+Additional acceptance:
+
+```text
+HTTP StartRun failure during Scenario Resolution or Bootstrap returns stable Runner error category
+HTTP invalid command returns state_conflict without changing state
+HTTP /run/step from Running returns 409 state_conflict
+HTTP /run/step from Paused commits exactly one Tick and remains Paused
+```
+
+---
+
 ## File Structure
 
 ```
@@ -1787,10 +1853,10 @@ git commit -m "test(viewer-server): add real-port integration smoke test"
 | `POST /run/start` → 409 якщо вже активний | ✅ Task 5 |
 | `POST /run/pause` | ✅ Task 5 |
 | `POST /run/resume` | ✅ Task 5 |
-| `POST /run/step { ticks: N }` | ✅ Task 5 |
+| `POST /run/step {}` exactly one committed Tick from Paused | ✅ Task 5 + Canon Supersession |
 | `POST /run/stop` | ✅ Task 5 |
 | integration tests через reqwest | ✅ Task 7 |
-| config hash і seed у /run/status | ⚠️ config_hash = "tbd" — Runner-4 |
+| scenario_hash і seed у /run/status | ✅ from Runner-1 ScenarioDocument + Runner-2 GetRunStatusProjection |
 | `ticks_per_second` у /run/status | ⚠️ Runner-4 |
 
 **Gaps:** config_hash та ticks_per_second позначені як Runner-4 hardening. Не блокують прийнятність Runner-2.
@@ -1828,6 +1894,8 @@ POST /run/start single_cell_survival          → {"ok": true}
 GET  /run/status                              → {"state": "running", ...}
 POST /run/pause                               → {"ok": true, "tick": N}
 POST /run/resume                              → {"ok": true}
+POST /run/step from Paused                    → exactly one committed Tick, remains Paused
+POST /run/step from Running                   → HTTP 409 state_conflict
 POST /run/stop                                → {"ok": true}
 POST /run/start коли вже Running             → HTTP 409
 GET  /scenarios/nonexistent                   → HTTP 404

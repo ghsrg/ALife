@@ -12,6 +12,71 @@
 
 **New deps:** `tower-http = { version = "0.6", features = ["cors"] }`.
 
+## Canon Supersession: Runner-4 Hardening
+
+This plan must harden the Canon contracts from `docs/runner/`, not the older ad-hoc status/hash model.
+
+Required replacements:
+
+```text
+config_hash -> scenario_hash
+raw TOML hash -> canonical ScenarioDocument hash
+direct validation errors -> stable Runner error categories
+RunState-only status -> RunStatusProjection
+```
+
+Do not implement `compute_config_hash(toml: &str)` with `DefaultHasher`. If older snippets below mention it, they are superseded. The correct source is:
+
+```text
+ScenarioSource
+  -> ScenarioDocument canonical serialization
+  -> scenario_hash
+```
+
+`/run/status` must expose Canon status fields:
+
+```text
+process_state
+active_run_state
+run_id
+committed_tick
+scenario_hash
+effective_seed
+ticks_per_second
+terminal_reason
+```
+
+Hardening must preserve command semantics:
+
+```text
+StepRun: Paused only, exactly one committed Tick, returns Paused + committed_tick.
+StopRun: Preparing | Running | Paused -> Stopping -> Completed | Failed.
+Completed and Failed retain final status, manifest, and committed outputs until transition to Idle.
+```
+
+HTTP errors must use stable categories from `docs/runner/command-contract.md`:
+
+```text
+invalid_command
+state_conflict
+scenario_error
+bootstrap_error
+core_error
+run_not_found
+unsupported_operation
+```
+
+Scenario/Bootstrap errors must include actionable message, command identity, scenario identity when available, and current process/run state.
+
+Additional acceptance:
+
+```text
+same canonical ScenarioDocument + seed -> same scenario_hash and deterministic result
+changing path only does not change scenario_hash
+changing behavior-affecting Scenario value changes scenario_hash
+Bootstrap failure returns bootstrap_error and exposes no partial active World
+```
+
 **Передумови:** Runner-3 завершений: WS /stream, Broadcaster, ALIF v1 encoder, time-based broadcast, status messages, `src/bin/runner.rs --serve`.
 
 ---

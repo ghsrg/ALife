@@ -6,7 +6,98 @@
 
 **Architecture:** `src/runner/` отримує новий модуль `engine.rs` з `RunEngine` struct, яка обгортає `TickExecutor` і `RunState`. `src/bin/runner.rs` — новий binary entry point, що читає TOML з `config/scenarios/`, будує `RuntimeConfig` через існуючий `config_parser.rs`, і делегує виконання в `RunEngine`. Ring buffer (`RingBuffer<CommittedSnapshot>`) зберігає N останніх snapshot-ів у пам'яті.
 
+**Canon correction:** the direct TOML → `RuntimeConfig` → `RunEngine` path above is superseded. Active implementation path is Scenario Resolution → `ScenarioDocument` → Bootstrap-1 → `PreparedWorld` → Core start. The existing parser may still be used inside Scenario Resolution/Bootstrap compatibility code, but Runner-1 must not treat raw `RuntimeConfig` as the run-start contract.
+
 **Tech Stack:** Rust 2024 edition, `TickExecutor` з `alife::core::tick`, `CommittedSnapshot` з `alife::core::snapshot`, `RuntimeConfig` з `alife::core::config`, TOML через `alife::runner::config_parser`.
+
+---
+
+## Canon Supersession: Runner-1 Foundation
+
+This plan was originally written before `docs/runner/` Canon. The following requirements supersede older snippets in this file when they conflict.
+
+Must read before implementation:
+
+```text
+docs/runner/INDEX.md
+docs/runner/runner.md
+docs/runner/execution-modes.md
+docs/runner/run-lifecycle.md
+docs/runner/command-contract.md
+docs/runner/scenario-resolution.md
+docs/runner/projections.md
+docs/runner/bootstrap.md
+docs/implementation/implementation-plan-bootstrap.md
+outputs/worklogs/2026-07-14-1635-PLAN-bootstrap-1-foundation.md
+```
+
+Runner-1 must create the Canon foundation, even if some internals are minimal:
+
+```text
+ScenarioSource -> ScenarioDocument -> scenario_hash -> Bootstrap -> PreparedWorld -> Core start
+```
+
+Bootstrap-1 prerequisite:
+
+```text
+outputs/worklogs/2026-07-14-1635-PLAN-bootstrap-1-foundation.md
+```
+
+Runner-1 implementation must not start until Bootstrap-1 acceptance passes. Runner-1 consumes `PreparedWorld` and `BootstrapManifest`; it must not implement its own world generation or keep direct TOML-to-`RuntimeConfig`-to-Core startup as the active path.
+
+Required implementation adjustments:
+
+- Replace direct TOML-to-`RuntimeConfig` startup with a `ScenarioDocument` resolution boundary.
+- Compute `scenario_hash` from canonical normalized `ScenarioDocument`; do not use filesystem path, request id, UI state, or raw TOML bytes as the hash contract.
+- Add a Bootstrap boundary under `src/bootstrap/`: `ScenarioDocument -> PreparedWorld + BootstrapManifest + warnings`.
+- Bootstrap prepares Tick 0 and must not execute a Tick.
+- `RunEngine::start` must start only from a valid `PreparedWorld`.
+- Failed resolution, validation, Bootstrap, or `PreparedWorld` validation must not leave a partial active World.
+- Replace simplified `RunState` with Canon states:
+
+```text
+RunnerProcessState: Starting | Ready | ShuttingDown | Failed
+ActiveRunState: Idle | Preparing | Running | Paused | Stopping | Completed | Failed
+```
+
+- Add shared command types/dispatcher before CLI-specific code:
+
+```text
+ValidateScenario
+PrepareScenario
+StartRun
+PauseRun
+ResumeRun
+StepRun
+StopRun
+GetRunStatus
+```
+
+- `StepRun` is not a multi-tick helper. It executes exactly one committed Tick, is valid only while Active Run is `Paused`, and returns `Paused` with updated `committed_tick`.
+- Debug progress output must read from `RunStatusProjection` / summary projection data, not from mutable Core internals.
+- `RingBuffer<CommittedSnapshot>` in this phase is allowed only as internal Runner/engine recent-output storage for tests/debug. It is not a server-side scroll-back contract.
+
+Add/modify files before or inside the existing tasks:
+
+```text
+src/runner/commands.rs      [NEW] shared command enum, command result, error categories
+src/runner/lifecycle.rs     [NEW] RunnerProcessState, ActiveRunState, transition validation
+src/runner/scenario_doc.rs  [NEW] ScenarioSource, ScenarioDocument, scenario_hash
+src/runner/projections.rs   [NEW] RunStatusProjection, SummaryProjection stubs
+src/bootstrap/mod.rs        [NEW] imported from Bootstrap-1, Bootstrap trait/function boundary
+src/bootstrap/prepared.rs   [NEW] imported from Bootstrap-1, PreparedWorld
+src/bootstrap/manifest.rs   [NEW] imported from Bootstrap-1, BootstrapManifest
+```
+
+Additional acceptance:
+
+```text
+ValidateScenario validates without World generation
+PrepareScenario returns BootstrapManifest and executes no Tick
+StartRun transitions Idle -> Preparing -> Running atomically
+StartRun failure transitions Preparing -> Failed or Idle without partial World
+GetRunStatus returns process_state, active_run_state, run_id, committed_tick, scenario_hash, seed
+```
 
 ---
 
@@ -1461,6 +1552,10 @@ cargo test --test runner_state_machine     → всі 9 PASS
 cargo test --test runner_scenario_loader   → всі 3 PASS
 cargo test --test runner_headless_e2e      → всі 6 PASS
 cargo test --test runner_progress          → всі PASS
+cargo test --test runner_lifecycle         → Canon process/run states PASS
+cargo test --test runner_commands          → shared command validity PASS
+cargo test --test runner_scenario_doc      → canonical ScenarioDocument + scenario_hash PASS
+cargo test --test runner_bootstrap         → Bootstrap prepares Tick 0 and executes no Tick PASS
 cargo test --workspace                     → без регресій
 cargo run --bin runner -- --list           → виводить сценарії
 cargo run --bin runner -- config/scenarios/single_cell_survival.toml → запускається і друкує статистику
