@@ -8,6 +8,7 @@ pub mod deltas;
 pub mod environment;
 pub mod events;
 pub mod fragments;
+pub mod genome;
 pub mod heat;
 pub mod ids;
 pub mod joints;
