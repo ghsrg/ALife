@@ -1,5 +1,6 @@
 pub const CORE_MODULE_NAME: &str = "alife-core";
 
+pub mod action_plan;
 pub mod accounting;
 pub mod cell_store;
 pub mod config;
