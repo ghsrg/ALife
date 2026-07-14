@@ -1,3 +1,4 @@
+use crate::core::genome::GenomeId;
 use crate::core::ids::{CellId, ResourceTypeId};
 use crate::core::materials::{MaterialComposition, MaterialSlot};
 use crate::core::process::MaterialCapability;
@@ -112,6 +113,8 @@ pub struct CellStore {
     pressures: Vec<f32>,
     contact_stimulus_current: Vec<f32>,
     contact_stimulus_next: Vec<f32>,
+    genome_ids: Vec<Option<GenomeId>>,
+    genome_carrier_amounts: Vec<f32>,
     next_cell_id: u32,
 }
 
@@ -142,6 +145,8 @@ impl CellStore {
             pressures: Vec::with_capacity(capacity),
             contact_stimulus_current: Vec::with_capacity(capacity),
             contact_stimulus_next: Vec::with_capacity(capacity),
+            genome_ids: Vec::with_capacity(capacity),
+            genome_carrier_amounts: Vec::with_capacity(capacity),
             next_cell_id: 1,
         }
     }
@@ -175,6 +180,8 @@ impl CellStore {
         self.pressures.push(0.0);
         self.contact_stimulus_current.push(0.0);
         self.contact_stimulus_next.push(0.0);
+        self.genome_ids.push(None);
+        self.genome_carrier_amounts.push(0.0);
         id
     }
 
@@ -229,12 +236,24 @@ impl CellStore {
         self.runtime_flags[index.raw()]
     }
 
+    pub fn genome_id(&self, index: CellIndex) -> Option<GenomeId> {
+        self.genome_ids[index.raw()]
+    }
+
+    pub fn set_genome_id(&mut self, index: CellIndex, genome_id: Option<GenomeId>) {
+        self.genome_ids[index.raw()] = genome_id;
+    }
+
+    pub fn set_genome_carrier_amount(&mut self, index: CellIndex, amount: f32) {
+        self.genome_carrier_amounts[index.raw()] = amount.max(0.0);
+    }
+
     pub fn used_capacity(&self, index: CellIndex) -> CapacityAmount {
-        let genome_capacity_placeholder = 0.0;
+        let genome_capacity_used = self.genome_carrier_amounts[index.raw()];
         let internal_fragments_capacity_used = 0.0;
         let used = self.resource_amount(index).raw()
             + self.total_materials(index).raw()
-            + genome_capacity_placeholder
+            + genome_capacity_used
             + internal_fragments_capacity_used;
         CapacityAmount::new(used).expect("resource/material amounts are validated")
     }

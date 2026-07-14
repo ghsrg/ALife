@@ -99,6 +99,7 @@ pub struct ProcessDiagnostics {
     pub rejections_by_process: HashMap<ProcessId, u32>,
     pub rejections_by_reason: HashMap<RejectionReason, u32>,
     pub tool_limited_mechanisms: Vec<String>,
+    pub attempt_order_by_process: Vec<ProcessId>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -1,4 +1,5 @@
 use crate::core::accounting::{IntegratedAccountingSnapshot, MatterAccountingDelta};
+use crate::core::action_plan::ActionPlan;
 use crate::core::cell_store::{CellIndex, EnergyBuffer, LifecycleState, RuntimeFlags};
 use crate::core::config::RuntimeConfig;
 use crate::core::deltas::CommitSummary;
@@ -486,273 +487,201 @@ impl TickExecutor {
                 continue;
             }
 
-            // 1. Uptake
-            if config.resource_interaction.enabled {
-                let uptake_level = self.world.cells().capability_level(
-                    index,
-                    crate::core::process::MaterialCapability::ResourceUptake,
-                );
-                let max_uptake = config.resource_interaction.max_uptake_per_tick.raw()
-                    * baseline_process_level(uptake_level)
-                    * config.material_effects.transport_uptake_per_unit;
-                let (feasible, feasibility) = run_process(
-                    &self.world,
-                    index,
-                    ProcessId::LocalResourceUptake,
-                    max_uptake,
-                    &mut diagnostics,
-                    &mut process_attempts,
-                    &mut process_rejections,
-                );
-                if feasible {
-                    let accepted_amount = match feasibility {
-                        FeasibilityResult::Allowed {
-                            accepted_amount, ..
-                        } => accepted_amount,
-                        FeasibilityResult::Rejected(_) => 0.0,
-                    };
-                    let layer = ResourceLayerIndex::from_raw(
-                        config.resource_interaction.uptake_layer_index,
-                    );
-                    let coord = self
-                        .world
-                        .resources()
-                        .coord_for_position(self.world.cells().position(index));
-                    let external_available = self
-                        .world
-                        .resources()
-                        .amount_at(layer, coord)
-                        .expect("resource interaction layer is config-validated");
-                    let requested =
-                        ResourceAmount::new(external_available.raw().min(accepted_amount))
-                            .expect("requested uptake is clamped");
+            let genome = self
+                .world
+                .cells()
+                .genome_id(index)
+                .and_then(|id| self.world.genome(id));
+            let action_plan = ActionPlan::from_genome(genome);
 
-                    let accepted = {
-                        let cells = self.world.cells_mut_for_commit();
-                        cells.add_resources_limited_by_effective_capacity(
-                            index,
-                            requested,
-                            config.material_effects.storage_capacity_per_unit,
-                        )
-                    };
-                    let remaining_external = external_available.saturating_sub(accepted);
-                    self.world
-                        .resources_mut_for_commit()
-                        .set_amount_at(layer, coord, remaining_external)
-                        .expect("resource interaction coord is derived from grid bounds");
-                }
-            }
-
-            // 2. Metabolism
-            let mut metabolism_heat = 0.0_f32;
-            let mut metabolism_waste = 0.0_f32;
-            let mut metabolism_energy = EnergyAmount::zero();
-
-            if config.resource_interaction.enabled {
-                let metabolism_level = self
-                    .world
-                    .cells()
-                    .capability_level(index, crate::core::process::MaterialCapability::Metabolism);
-                let req_amount = config
-                    .resource_interaction
-                    .metabolism_resource_per_tick
-                    .raw()
-                    * baseline_process_level(metabolism_level)
-                    * config.material_effects.metabolic_conversion_per_unit;
-                let (feasible, feasibility) = run_process(
-                    &self.world,
-                    index,
-                    ProcessId::MetabolismEnergyConversion,
-                    req_amount,
-                    &mut diagnostics,
-                    &mut process_attempts,
-                    &mut process_rejections,
-                );
-                if feasible {
-                    let accepted_amount = match feasibility {
-                        FeasibilityResult::Allowed {
-                            accepted_amount, ..
-                        } => accepted_amount,
-                        FeasibilityResult::Rejected(_) => 0.0,
-                    };
-                    let consumed = {
-                        let cells = self.world.cells_mut_for_commit();
-                        cells.consume_resources(
-                            index,
-                            ResourceAmount::new(accepted_amount)
-                                .expect("accepted metabolism is clamped"),
-                        )
-                    };
-                    phase2g_metrics.resource_metabolism_sink_amount += consumed.raw();
-
-                    metabolism_energy = EnergyAmount::new(
-                        consumed.raw() * config.resource_interaction.energy_per_resource,
-                    )
-                    .expect("metabolism energy is config-validated");
-                    metabolism_heat =
-                        consumed.raw() * config.resource_interaction.heat_per_resource;
-                    metabolism_waste =
-                        consumed.raw() * config.resource_interaction.waste_per_resource;
-                }
-            }
-
-            metabolism_heat_total += metabolism_heat;
-            metabolism_waste_total += metabolism_waste;
-
-            if metabolism_energy.raw() > 0.0 {
-                let cells = self.world.cells_mut_for_commit();
-                let current = cells.energy(index);
-                let new_current = current
-                    .current()
-                    .saturating_add(metabolism_energy)
-                    .clamp_max(current.capacity());
-                cells.set_energy(index, EnergyBuffer::new(new_current, current.capacity()));
-            }
-
-            // 3. Material Synthesis
-            let (feasible, _) = run_process(
-                &self.world,
-                index,
-                ProcessId::MaterialSynthesis,
-                1.0,
-                &mut diagnostics,
-                &mut process_attempts,
-                &mut process_rejections,
-            );
-            if feasible {
-                let _ = self.world.execute_synthesis(index);
-            }
-
-            // 4. Structural Growth
-            if config.growth_enabled && config.resource_interaction.enabled {
-                let (feasible, _) = run_process(
-                    &self.world,
-                    index,
-                    ProcessId::GrowthResourceAllocation,
-                    1.0,
-                    &mut diagnostics,
-                    &mut process_attempts,
-                    &mut process_rejections,
-                );
-                if feasible {
-                    let candidate_growth = ActionCandidate {
-                        process_id: ProcessId::GrowthResourceAllocation,
-                        requested_amount: 1.0,
-                    };
-                    let _ = self.world.execute_growth(index, &candidate_growth);
-                }
-            }
-
-            // 5. Contractile Displacement
-            let (feasible, _) = run_process(
-                &self.world,
-                index,
-                ProcessId::ContractileDisplacement,
-                1.0,
-                &mut diagnostics,
-                &mut process_attempts,
-                &mut process_rejections,
-            );
-            if feasible {
-                let _ = self.world.execute_displacement(index);
-            }
-        }
-
-        if config.chemistry.repair.enabled {
-            for i in 0..len {
-                let index = CellIndex::from_raw(i);
-                if self.world.cells().lifecycle_state(index) == LifecycleState::Dead {
-                    continue;
-                }
-                if self
-                    .world
-                    .cells()
-                    .material_damage(index, MaterialSlot::Boundary)
-                    <= 0.0
-                {
-                    continue;
-                }
-                let (feasible, feasibility) = run_process(
-                    &self.world,
-                    index,
-                    ProcessId::RepairBoundary,
-                    config.chemistry.repair.max_amount_per_tick,
-                    &mut diagnostics,
-                    &mut process_attempts,
-                    &mut process_rejections,
-                );
-                match feasibility {
-                    FeasibilityResult::Allowed {
-                        accepted_amount,
-                        energy_cost,
-                        resource_cost,
-                    } if feasible => {
-                        let cells = self.world.cells_mut_for_commit();
-                        let accepted_material =
-                            MaterialAmount::new_unchecked(accepted_amount.max(0.0));
-                        let requested_resource = ResourceAmount::new(resource_cost)
-                            .expect("repair resource cost is clamped");
-                        if let Some(resource_type) =
-                            crate::core::world::repair_resource_type_id(&config)
-                        {
-                            let available = cells
-                                .typed_resource_amount(index, resource_type)
-                                .expect("repair resource type is derived from validated config");
-                            if available.raw() + f32::EPSILON < resource_cost {
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            let consumed = cells
-                                .consume_typed_resource(index, resource_type, requested_resource)
-                                .expect("repair resource type is derived from validated config");
-                            if consumed.raw() + f32::EPSILON < resource_cost {
-                                cells
-                                    .set_typed_resource_amount(index, resource_type, available)
-                                    .expect(
-                                        "repair resource type is derived from validated config",
-                                    );
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            phase2g_metrics.repair_resource_sink_amount += consumed.raw();
-                        } else {
-                            let available = cells.generic_resource_amount(index);
-                            if available.raw() + f32::EPSILON < resource_cost {
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            let consumed = cells.consume_resources(index, requested_resource);
-                            if consumed.raw() + f32::EPSILON < resource_cost {
-                                cells.set_resources(index, available);
-                                repair_rejection_count += 1;
-                                continue;
-                            }
-                            phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+            for process_id in action_plan.ordered_processes() {
+                match *process_id {
+                    ProcessId::LocalResourceUptake => {
+                        if !config.resource_interaction.enabled {
+                            continue;
                         }
-                        let repair_remaining = MaterialAmount::new_unchecked(
-                            (cells.repair_material(index).raw() - accepted_amount).max(0.0),
+                        let uptake_level = self.world.cells().capability_level(
+                            index,
+                            crate::core::process::MaterialCapability::ResourceUptake,
                         );
-                        cells.set_repair_material(index, repair_remaining);
-
-                        let boundary_next = cells
-                            .boundary_material(index)
-                            .saturating_add(accepted_material);
-                        cells.set_boundary_material(index, boundary_next);
-                        let damage_next = (cells.material_damage(index, MaterialSlot::Boundary)
-                            - accepted_amount)
-                            .max(0.0);
-                        cells.set_material_damage(index, MaterialSlot::Boundary, damage_next);
-
-                        let energy = cells.energy(index);
-                        let next_energy = energy
-                            .current()
-                            .saturating_sub(EnergyAmount::new(energy_cost).unwrap());
-                        cells.set_energy(index, EnergyBuffer::new(next_energy, energy.capacity()));
-                        repair_success_count += 1;
+                        let max_uptake = config.resource_interaction.max_uptake_per_tick.raw()
+                            * baseline_process_level(uptake_level)
+                            * config.material_effects.transport_uptake_per_unit;
+                        let (feasible, feasibility) = run_process(
+                            &self.world,
+                            index,
+                            ProcessId::LocalResourceUptake,
+                            max_uptake,
+                            &mut diagnostics,
+                            &mut process_attempts,
+                            &mut process_rejections,
+                        );
+                        if feasible {
+                            let accepted_amount = match feasibility {
+                                FeasibilityResult::Allowed {
+                                    accepted_amount, ..
+                                } => accepted_amount,
+                                FeasibilityResult::Rejected(_) => 0.0,
+                            };
+                            let layer = ResourceLayerIndex::from_raw(
+                                config.resource_interaction.uptake_layer_index,
+                            );
+                            let coord = self
+                                .world
+                                .resources()
+                                .coord_for_position(self.world.cells().position(index));
+                            let external_available = self
+                                .world
+                                .resources()
+                                .amount_at(layer, coord)
+                                .expect("resource interaction layer is config-validated");
+                            let requested =
+                                ResourceAmount::new(external_available.raw().min(accepted_amount))
+                                    .expect("requested uptake is clamped");
+                            let accepted = {
+                                let cells = self.world.cells_mut_for_commit();
+                                cells.add_resources_limited_by_effective_capacity(
+                                    index,
+                                    requested,
+                                    config.material_effects.storage_capacity_per_unit,
+                                )
+                            };
+                            let remaining_external = external_available.saturating_sub(accepted);
+                            self.world
+                                .resources_mut_for_commit()
+                                .set_amount_at(layer, coord, remaining_external)
+                                .expect("resource interaction coord is derived from grid bounds");
+                        }
                     }
-                    FeasibilityResult::Rejected(_) => {
-                        repair_rejection_count += 1;
+                    ProcessId::MetabolismEnergyConversion => {
+                        if !config.resource_interaction.enabled {
+                            continue;
+                        }
+                        let metabolism_level = self.world.cells().capability_level(
+                            index,
+                            crate::core::process::MaterialCapability::Metabolism,
+                        );
+                        let req_amount = config
+                            .resource_interaction
+                            .metabolism_resource_per_tick
+                            .raw()
+                            * baseline_process_level(metabolism_level)
+                            * config.material_effects.metabolic_conversion_per_unit;
+                        let (feasible, feasibility) = run_process(
+                            &self.world,
+                            index,
+                            ProcessId::MetabolismEnergyConversion,
+                            req_amount,
+                            &mut diagnostics,
+                            &mut process_attempts,
+                            &mut process_rejections,
+                        );
+                        if feasible {
+                            let accepted_amount = match feasibility {
+                                FeasibilityResult::Allowed {
+                                    accepted_amount, ..
+                                } => accepted_amount,
+                                FeasibilityResult::Rejected(_) => 0.0,
+                            };
+                            let consumed = {
+                                let cells = self.world.cells_mut_for_commit();
+                                cells.consume_resources(
+                                    index,
+                                    ResourceAmount::new(accepted_amount)
+                                        .expect("accepted metabolism is clamped"),
+                                )
+                            };
+                            phase2g_metrics.resource_metabolism_sink_amount += consumed.raw();
+                            let metabolism_energy = EnergyAmount::new(
+                                consumed.raw() * config.resource_interaction.energy_per_resource,
+                            )
+                            .expect("metabolism energy is config-validated");
+                            metabolism_heat_total +=
+                                consumed.raw() * config.resource_interaction.heat_per_resource;
+                            metabolism_waste_total +=
+                                consumed.raw() * config.resource_interaction.waste_per_resource;
+                            if metabolism_energy.raw() > 0.0 {
+                                let cells = self.world.cells_mut_for_commit();
+                                let current = cells.energy(index);
+                                let new_current = current
+                                    .current()
+                                    .saturating_add(metabolism_energy)
+                                    .clamp_max(current.capacity());
+                                cells.set_energy(
+                                    index,
+                                    EnergyBuffer::new(new_current, current.capacity()),
+                                );
+                            }
+                        }
                     }
+                    ProcessId::MaterialSynthesis => {
+                        let (feasible, _) = run_process(
+                            &self.world,
+                            index,
+                            ProcessId::MaterialSynthesis,
+                            1.0,
+                            &mut diagnostics,
+                            &mut process_attempts,
+                            &mut process_rejections,
+                        );
+                        if feasible {
+                            let _ = self.world.execute_synthesis(index);
+                        }
+                    }
+                    ProcessId::GrowthResourceAllocation => {
+                        if !(config.growth_enabled && config.resource_interaction.enabled) {
+                            continue;
+                        }
+                        let (feasible, _) = run_process(
+                            &self.world,
+                            index,
+                            ProcessId::GrowthResourceAllocation,
+                            1.0,
+                            &mut diagnostics,
+                            &mut process_attempts,
+                            &mut process_rejections,
+                        );
+                        if feasible {
+                            let candidate_growth = ActionCandidate {
+                                process_id: ProcessId::GrowthResourceAllocation,
+                                requested_amount: 1.0,
+                            };
+                            let _ = self.world.execute_growth(index, &candidate_growth);
+                        }
+                    }
+                    ProcessId::ContractileDisplacement => {
+                        let (feasible, _) = run_process(
+                            &self.world,
+                            index,
+                            ProcessId::ContractileDisplacement,
+                            1.0,
+                            &mut diagnostics,
+                            &mut process_attempts,
+                            &mut process_rejections,
+                        );
+                        if feasible {
+                            let _ = self.world.execute_displacement(index);
+                        }
+                    }
+                    ProcessId::RepairBoundary
+                        if config.chemistry.repair.enabled
+                            && self
+                                .world
+                                .cells()
+                                .material_damage(index, MaterialSlot::Boundary)
+                                > 0.0 =>
+                    {
+                        let mut repair_context = RepairExecutionContext {
+                            diagnostics: &mut diagnostics,
+                            process_attempts: &mut process_attempts,
+                            process_rejections: &mut process_rejections,
+                            repair_success_count: &mut repair_success_count,
+                            repair_rejection_count: &mut repair_rejection_count,
+                            phase2g_metrics: &mut phase2g_metrics,
+                        };
+                        try_repair_boundary(&mut self.world, &config, index, &mut repair_context);
+                    }
+                    ProcessId::RepairBoundary => {}
                     _ => {}
                 }
             }
@@ -1200,7 +1129,7 @@ impl TickExecutor {
             }
         }
 
-        if config.decomposition.enabled && config.chemistry.resources.is_empty() == false {
+        if config.decomposition.enabled && !config.chemistry.resources.is_empty() {
             let tick = self.world.tick();
             let converted = self
                 .world
@@ -1943,6 +1872,7 @@ fn run_process(
         .attempts_by_process
         .entry(process_id)
         .or_insert(0) += 1;
+    diagnostics.attempt_order_by_process.push(process_id);
 
     let feasibility = world.validate_feasibility(index, &candidate);
     match feasibility {
@@ -1956,5 +1886,99 @@ fn run_process(
             *diagnostics.rejections_by_reason.entry(reason).or_insert(0) += 1;
             (false, feasibility)
         }
+    }
+}
+
+struct RepairExecutionContext<'a> {
+    diagnostics: &'a mut ProcessDiagnostics,
+    process_attempts: &'a mut u32,
+    process_rejections: &'a mut u32,
+    repair_success_count: &'a mut u32,
+    repair_rejection_count: &'a mut u32,
+    phase2g_metrics: &'a mut Phase2GMetricsDelta,
+}
+
+fn try_repair_boundary(
+    world: &mut WorldState,
+    config: &RuntimeConfig,
+    index: CellIndex,
+    context: &mut RepairExecutionContext<'_>,
+) {
+    let (feasible, feasibility) = run_process(
+        world,
+        index,
+        ProcessId::RepairBoundary,
+        config.chemistry.repair.max_amount_per_tick,
+        context.diagnostics,
+        context.process_attempts,
+        context.process_rejections,
+    );
+    match feasibility {
+        FeasibilityResult::Allowed {
+            accepted_amount,
+            energy_cost,
+            resource_cost,
+        } if feasible => {
+            let cells = world.cells_mut_for_commit();
+            let accepted_material = MaterialAmount::new_unchecked(accepted_amount.max(0.0));
+            let requested_resource =
+                ResourceAmount::new(resource_cost).expect("repair resource cost is clamped");
+            if let Some(resource_type) = crate::core::world::repair_resource_type_id(config) {
+                let available = cells
+                    .typed_resource_amount(index, resource_type)
+                    .expect("repair resource type is derived from validated config");
+                if available.raw() + f32::EPSILON < resource_cost {
+                    *context.repair_rejection_count += 1;
+                    return;
+                }
+                let consumed = cells
+                    .consume_typed_resource(index, resource_type, requested_resource)
+                    .expect("repair resource type is derived from validated config");
+                if consumed.raw() + f32::EPSILON < resource_cost {
+                    cells
+                        .set_typed_resource_amount(index, resource_type, available)
+                        .expect("repair resource type is derived from validated config");
+                    *context.repair_rejection_count += 1;
+                    return;
+                }
+                context.phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+            } else {
+                let available = cells.generic_resource_amount(index);
+                if available.raw() + f32::EPSILON < resource_cost {
+                    *context.repair_rejection_count += 1;
+                    return;
+                }
+                let consumed = cells.consume_resources(index, requested_resource);
+                if consumed.raw() + f32::EPSILON < resource_cost {
+                    cells.set_resources(index, available);
+                    *context.repair_rejection_count += 1;
+                    return;
+                }
+                context.phase2g_metrics.repair_resource_sink_amount += consumed.raw();
+            }
+            let repair_remaining = MaterialAmount::new_unchecked(
+                (cells.repair_material(index).raw() - accepted_amount).max(0.0),
+            );
+            cells.set_repair_material(index, repair_remaining);
+
+            let boundary_next = cells
+                .boundary_material(index)
+                .saturating_add(accepted_material);
+            cells.set_boundary_material(index, boundary_next);
+            let damage_next =
+                (cells.material_damage(index, MaterialSlot::Boundary) - accepted_amount).max(0.0);
+            cells.set_material_damage(index, MaterialSlot::Boundary, damage_next);
+
+            let energy = cells.energy(index);
+            let next_energy = energy
+                .current()
+                .saturating_sub(EnergyAmount::new(energy_cost).unwrap());
+            cells.set_energy(index, EnergyBuffer::new(next_energy, energy.capacity()));
+            *context.repair_success_count += 1;
+        }
+        FeasibilityResult::Rejected(_) => {
+            *context.repair_rejection_count += 1;
+        }
+        _ => {}
     }
 }

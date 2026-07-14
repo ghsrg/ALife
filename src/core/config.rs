@@ -1,3 +1,4 @@
+use crate::core::genome::{GenomeTemplate, GenomeTemplateId};
 use crate::core::ids::ResourceTypeId;
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
@@ -427,6 +428,8 @@ pub struct RuntimeConfig {
     pub growth_enabled: bool,
     pub initial_cells: Vec<CellInitialConfig>,
     pub initial_typed_resources: Vec<Vec<(ResourceTypeId, ResourceAmount)>>,
+    pub genome_templates: Vec<GenomeTemplate>,
+    pub initial_cell_genome_templates: Vec<Option<GenomeTemplateId>>,
     pub synthesis: SynthesisConfig,
     pub contractility: ContractilityConfig,
     pub division: DivisionConfig,
@@ -493,6 +496,8 @@ impl RuntimeConfig {
             growth_enabled: false,
             initial_cells,
             initial_typed_resources: vec![Vec::new()],
+            genome_templates: Vec::new(),
+            initial_cell_genome_templates: vec![None],
             synthesis: SynthesisConfig::default(),
             contractility: ContractilityConfig::default(),
             division: DivisionConfig::default(),
@@ -570,6 +575,9 @@ impl RuntimeConfig {
         }
         if let Some(first) = cells.first() {
             self.cell = *first;
+        }
+        if self.initial_cell_genome_templates.len() != cells.len() {
+            self.initial_cell_genome_templates = vec![None; cells.len()];
         }
         self.initial_cells = cells;
         self
@@ -808,6 +816,24 @@ impl RuntimeConfig {
                 add(&mut hash, id.raw() as u64);
                 add(&mut hash, amount.raw().to_bits() as u64);
             }
+        }
+        for template in &self.genome_templates {
+            add_text(&mut hash, template.id().as_str());
+            add(&mut hash, template.variation_amplitude().to_bits() as u64);
+            add(&mut hash, template.runtime_interval_ticks());
+            add_text(&mut hash, &template.carrier().material_id);
+            add(&mut hash, template.carrier().amount.to_bits() as u64);
+            add(&mut hash, template.carrier().integrity.to_bits() as u64);
+            for (output_id, value) in template.outputs() {
+                add_text(&mut hash, output_id.as_str());
+                add(&mut hash, value.raw().to_bits() as u64);
+            }
+        }
+        for assignment in &self.initial_cell_genome_templates {
+            add_text(
+                &mut hash,
+                assignment.as_ref().map(|id| id.as_str()).unwrap_or(""),
+            );
         }
 
         hash

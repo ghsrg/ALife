@@ -2,11 +2,13 @@ use alife::observer::projection::{metrics_summary_features, organism_view_featur
 
 #[test]
 fn metrics_projection_exposes_joint_features_without_behavior_authority() {
-    let mut metrics = alife::core::summary::MetricsSummary::default();
-    metrics.joint_count = 2;
-    metrics.joint_resource_transfer_amount = 1.5;
-    metrics.joint_signal_readable_total = 0.25;
-    metrics.joint_heat_transfer_amount = 0.75;
+    let metrics = alife::core::summary::MetricsSummary {
+        joint_count: 2,
+        joint_resource_transfer_amount: 1.5,
+        joint_signal_readable_total: 0.25,
+        joint_heat_transfer_amount: 0.75,
+        ..Default::default()
+    };
 
     let features = metrics_summary_features(&metrics);
 

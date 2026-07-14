@@ -1,6 +1,7 @@
 pub const CORE_MODULE_NAME: &str = "alife-core";
 
 pub mod accounting;
+pub mod action_plan;
 pub mod cell_store;
 pub mod config;
 pub mod contact;
@@ -8,6 +9,8 @@ pub mod deltas;
 pub mod environment;
 pub mod events;
 pub mod fragments;
+pub mod genome;
+pub mod genome_bootstrap;
 pub mod heat;
 pub mod ids;
 pub mod joints;

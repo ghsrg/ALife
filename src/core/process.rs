@@ -61,6 +61,20 @@ pub enum ProcessId {
     JointRepair,
 }
 
+impl ProcessId {
+    pub const fn phase3a_baseline_order(self) -> Option<usize> {
+        match self {
+            ProcessId::LocalResourceUptake => Some(0),
+            ProcessId::MetabolismEnergyConversion => Some(1),
+            ProcessId::MaterialSynthesis => Some(2),
+            ProcessId::GrowthResourceAllocation => Some(3),
+            ProcessId::ContractileDisplacement => Some(4),
+            ProcessId::RepairBoundary => Some(5),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ActionCandidate {
     pub process_id: ProcessId,
