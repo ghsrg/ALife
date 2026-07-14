@@ -6,11 +6,11 @@
 
 **Goal:** Додати WebSocket endpoint `GET /stream` до viewer-server: time-based бінарний frame stream (≤30fps), незалежні підписники per WS-з'єднання, повільний клієнт пропускає кадри без впливу на Core, JSON status messages при зміні run state.
 
-**Architecture:** `tokio::sync::broadcast::channel` — центральний hub. Tick loop (std::thread) перевіряє `elapsed ≥ frame_interval` і надсилає через `Sender::send()` (sync, без async). Кожен WS-handler отримує незалежний `Receiver`. Slow client: `RecvError::Lagged(n)` — skip, continue. Status: broadcast JSON text при кожній зміні `RunState`. WS handler: `tokio::select!` між broadcast receiver і вхідними WS повідомленнями. **Немає ring buffer у SharedState. Немає seek на сервері.**
+**Architecture:** `tokio::sync::broadcast::channel` — центральний hub for already-built projection messages. Runner tick loop observes committed Core state, builds `WorldFrameProjection v1`, encodes it to ALIF bytes, then sends through `Sender::send()` without holding the Runner/Core lock. Кожен WS-handler отримує незалежний `Receiver`. Slow client: `RecvError::Lagged(n)` — skip, continue. Status text messages are built from `RunStatusProjection`, not from local `RunState` labels. WS handler: `tokio::select!` між broadcast receiver і вхідними WS повідомленнями. **Немає ring buffer у SharedState. Немає seek на сервері. WS handlers never mutate Runner/Core state.**
 
 **Tech Stack:** `axum 0.8 features=["ws"]`, `tokio::sync::broadcast`, `tokio-tungstenite 0.26` (dev-dep для WS test-клієнта), `futures-util 0.3` (dev-dep для WS stream).
 
-**Передумови:** Runner-2 завершений: `SharedState`, `AppState`, `spawn_tick_loop`, HTTP endpoint-и (`/run/start` тощо), `create_app`, `src/bin/runner.rs --serve`.
+**Передумови:** Runner-2 завершений і Canon-compatible: HTTP endpoints are adapters over shared `RunnerCommand` dispatcher; lifecycle uses `RunnerProcessState` + `ActiveRunState`; status comes from `RunStatusProjection`; snapshots are internal engine data only; `POST /run/step` remains paused-only and exactly one committed Tick.
 
 ---
 
@@ -42,10 +42,17 @@ Total header: 26 bytes. Per cell: 21 bytes.
 
 ## WS Message Protocol (server → client only)
 
-Server → Client (text JSON):
+Server → Client (text JSON, serialized `RunStatusProjection` envelope):
 ```json
-{ "type": "status", "state": "running", "tick": 42 }
-{ "type": "status", "state": "idle", "tick": 0 }
+{
+  "type": "status",
+  "process_state": "ready",
+  "active_run_state": "running",
+  "run_id": "run-...",
+  "committed_tick": 42,
+  "scenario_hash": "scenario_hash_v1:...",
+  "terminal_reason": null
+}
 ```
 
 Server → Client (binary):
@@ -83,14 +90,16 @@ loop {
     if signal.is_stop_requested() { break; }
     if signal.is_pause_requested() { sleep(10ms); continue; }
 
-    // Крок симуляції — lock тільки на час step()
+    // Крок симуляції — lock тільки на час committed Tick + projection build.
     let maybe_frame: Option<Vec<u8>> = {
         let mut locked = state.lock().unwrap();
-        locked.engine.as_mut()?.step(1)?;
-        locked.current_tick = engine.current_tick();
-        // Lock відпущено після цього блоку — без clone Vec<CellSnapshot>
+        locked.engine.as_mut()?.run_one_tick()?;
+        locked.committed_tick = engine.current_tick();
         let should_broadcast = last_broadcast.elapsed() >= frame_interval;
-        should_broadcast.then(|| encode_snapshot(engine.snapshots().newest()?))
+        should_broadcast.then(|| {
+            let projection = WorldFrameProjection::from_committed_state(engine.snapshots().newest()?);
+            encode_world_frame(&projection)
+        })
     }; // unlock
 
     if let Some(bytes) = maybe_frame {
@@ -101,7 +110,8 @@ loop {
 ```
 
 Ключові гарантії:
-- `Vec<CellSnapshot>` **не клонується** — `encode_snapshot` пише прямо в `Vec<u8>` під час lock
+- Public wire schema is `WorldFrameProjection v1`; `CommittedSnapshot` is internal input only
+- `Vec<CellSnapshot>` **не клонується як server history** — projection builder writes a bounded frame projection for immediate broadcast
 - Mutex відпущено до виклику `broadcast_sender.send()`
 - Slow клієнт ніколи не затримує tick loop
 
@@ -164,88 +174,87 @@ slow clients cannot block Tick execution or projection building
 ```
 src/
   viewer_server/
-    frame_encoder.rs   [NEW] — encode CommittedSnapshot → Vec<u8> (ALIF v1)
+    frame_encoder.rs   [NEW] — encode WorldFrameProjection v1 → Vec<u8> (ALIF v1)
     broadcaster.rs     [NEW] — WsMessage enum, Broadcaster (broadcast::Sender wrapper)
     api/
       stream.rs        [NEW] — GET /stream WS handler + pump loop
       mod.rs           [MODIFY] — register /stream route
       run.rs           [MODIFY] — broadcast status on state changes
-    state.rs           [MODIFY] — add Broadcaster + target_fps; remove RingBuffer<CommittedSnapshot>; update spawn_tick_loop
+    state.rs           [MODIFY] — add Broadcaster + target_fps; remove public frame history; update Runner-owned tick loop integration
     mod.rs             [MODIFY] — pub mod frame_encoder, broadcaster
   bin/
     runner.rs          [MODIFY] — pass target_broadcast_fps to new_app_state
   lib.rs               [no change]
 Cargo.toml             [MODIFY] — axum ws feature; tokio-tungstenite + futures-util dev-dep
 tests/
-  runner_frame_encoder.rs  [NEW] — encode/decode unit tests (sync)
+  runner_projection_world_frame.rs [NEW] — projection schema tests
+  runner_frame_encoder.rs  [NEW] — WorldFrameProjection encode/decode unit tests (sync)
   runner_ws_stream.rs      [NEW] — WS integration tests (real port + tokio-tungstenite)
 ```
 
 ---
 
-## Task 1: Binary Frame Encoder
+## Task 1: WorldFrameProjection and Binary Frame Encoder
 
 **Files:**
+- Modify: `src/runner/projections.rs`
 - Create: `src/viewer_server/frame_encoder.rs`
 - Modify: `src/viewer_server/mod.rs` — pub mod frame_encoder
+- Test: `tests/runner_projection_world_frame.rs`
 - Test: `tests/runner_frame_encoder.rs`
 
 - [ ] **Step 1: Write the failing tests**
 
 ```rust
 // tests/runner_frame_encoder.rs
-use alife::viewer_server::frame_encoder::{decode_frame, encode_snapshot, MAGIC, VERSION};
-use alife::core::snapshot::{CellSnapshot, CommittedSnapshot};
-use alife::core::ids::CellId;
-use alife::core::cell_store::LifecycleState;
-use alife::core::units::{EnergyAmount, Position, Radius, ResourceAmount, Tick};
+use alife::runner::projections::{ProjectedCell, WorldFrameProjection};
+use alife::viewer_server::frame_encoder::{decode_frame, encode_world_frame, MAGIC, VERSION};
 
-fn make_snapshot(tick: u64, cell_count: usize) -> CommittedSnapshot {
-    let cells = (0..cell_count)
-        .map(|i| CellSnapshot {
-            id: CellId::from_raw(i as u32),
-            position: Position::new(i as f32 * 10.0, i as f32 * 5.0),
-            radius: Radius::new(4.0 + i as f32).unwrap(),
-            energy: EnergyAmount::new(50.0 + i as f32).unwrap(),
-            lifecycle_state: LifecycleState::Alive,
-        })
-        .collect();
-
-    CommittedSnapshot {
-        tick: Tick::from_raw(tick),
-        cells,
+fn make_projection(tick: u64, cell_count: usize) -> WorldFrameProjection {
+    WorldFrameProjection {
+        schema_version: 1,
+        committed_tick: tick,
         heat: 1.5,
         waste: 0.25,
-        resource_layer_totals: vec![ResourceAmount::new(100.0).unwrap()],
+        cells: (0..cell_count)
+            .map(|i| ProjectedCell {
+                id: i as u32,
+                x: i as f32 * 10.0,
+                y: i as f32 * 5.0,
+                radius: 4.0 + i as f32,
+                energy: 50.0 + i as f32,
+                lifecycle: 0,
+            })
+            .collect(),
     }
 }
 
 #[test]
 fn encoded_frame_starts_with_magic_bytes() {
-    let snap = make_snapshot(1, 0);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(1, 0);
+    let bytes = encode_world_frame(&frame);
     assert_eq!(&bytes[0..4], MAGIC, "First 4 bytes must be ALIF magic");
 }
 
 #[test]
 fn encoded_frame_has_correct_version() {
-    let snap = make_snapshot(1, 0);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(1, 0);
+    let bytes = encode_world_frame(&frame);
     assert_eq!(bytes[4], VERSION);
 }
 
 #[test]
 fn encoded_frame_encodes_tick_correctly() {
-    let snap = make_snapshot(999, 0);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(999, 0);
+    let bytes = encode_world_frame(&frame);
     let tick = u64::from_le_bytes(bytes[6..14].try_into().unwrap());
     assert_eq!(tick, 999);
 }
 
 #[test]
 fn encoded_frame_encodes_heat_and_waste() {
-    let snap = make_snapshot(1, 0);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(1, 0);
+    let bytes = encode_world_frame(&frame);
     let heat = f32::from_le_bytes(bytes[14..18].try_into().unwrap());
     let waste = f32::from_le_bytes(bytes[18..22].try_into().unwrap());
     assert!((heat - 1.5).abs() < 1e-5);
@@ -254,15 +263,15 @@ fn encoded_frame_encodes_heat_and_waste() {
 
 #[test]
 fn encoded_frame_with_zero_cells_has_26_bytes() {
-    let snap = make_snapshot(1, 0);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(1, 0);
+    let bytes = encode_world_frame(&frame);
     assert_eq!(bytes.len(), 26);
 }
 
 #[test]
 fn encoded_frame_cell_count_and_size_match() {
-    let snap = make_snapshot(1, 3);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(1, 3);
+    let bytes = encode_world_frame(&frame);
     let count = u32::from_le_bytes(bytes[22..26].try_into().unwrap());
     assert_eq!(count, 3);
     assert_eq!(bytes.len(), 26 + 3 * 21);
@@ -270,8 +279,8 @@ fn encoded_frame_cell_count_and_size_match() {
 
 #[test]
 fn encode_decode_roundtrip_preserves_tick_and_cell_count() {
-    let snap = make_snapshot(42, 2);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(42, 2);
+    let bytes = encode_world_frame(&frame);
     let decoded = decode_frame(&bytes).expect("decode must succeed");
     assert_eq!(decoded.tick, 42);
     assert_eq!(decoded.cells.len(), 2);
@@ -279,8 +288,8 @@ fn encode_decode_roundtrip_preserves_tick_and_cell_count() {
 
 #[test]
 fn encode_decode_roundtrip_preserves_cell_fields() {
-    let snap = make_snapshot(10, 1);
-    let bytes = encode_snapshot(&snap);
+    let frame = make_projection(10, 1);
+    let bytes = encode_world_frame(&frame);
     let decoded = decode_frame(&bytes).expect("decode must succeed");
     let cell = &decoded.cells[0];
     assert_eq!(cell.id, 0);
@@ -293,32 +302,21 @@ fn encode_decode_roundtrip_preserves_cell_fields() {
 
 #[test]
 fn lifecycle_states_encode_correctly() {
-    use LifecycleState::*;
-    fn state_byte(s: LifecycleState) -> u8 {
-        let snap = CommittedSnapshot {
-            tick: Tick::from_raw(0),
-            cells: vec![CellSnapshot {
-                id: CellId::from_raw(0),
-                position: Position::new(0.0, 0.0),
-                radius: Radius::new(1.0).unwrap(),
-                energy: EnergyAmount::new(1.0).unwrap(),
-                lifecycle_state: s,
-            }],
-            heat: 0.0, waste: 0.0,
-            resource_layer_totals: vec![],
-        };
-        let bytes = encode_snapshot(&snap);
+    fn state_byte(lifecycle: u8) -> u8 {
+        let mut frame = make_projection(0, 1);
+        frame.cells[0].lifecycle = lifecycle;
+        let bytes = encode_world_frame(&frame);
         bytes[26 + 20] // lifecycle byte in first cell
     }
-    assert_eq!(state_byte(Alive),    0);
-    assert_eq!(state_byte(Stressed), 1);
-    assert_eq!(state_byte(Dormant),  2);
-    assert_eq!(state_byte(Dead),     3);
+    assert_eq!(state_byte(0), 0);
+    assert_eq!(state_byte(1), 1);
+    assert_eq!(state_byte(2), 2);
+    assert_eq!(state_byte(3), 3);
 }
 
 #[test]
 fn decode_returns_error_on_wrong_magic() {
-    let mut bytes = encode_snapshot(&make_snapshot(1, 0));
+    let mut bytes = encode_world_frame(&make_projection(1, 0));
     bytes[0] = 0xFF;
     assert!(decode_frame(&bytes).is_err());
 }
@@ -340,7 +338,7 @@ Expected: compile error — `alife::viewer_server::frame_encoder` does not exist
 - [ ] **Step 3: Create `src/viewer_server/frame_encoder.rs`**
 
 ```rust
-//! Binary frame encoder: CommittedSnapshot → ALIF v1 wire format.
+//! Binary frame encoder: WorldFrameProjection v1 → ALIF v1 wire format.
 //!
 //! Header (26 bytes):
 //!   [0..4]   b"ALIF"
@@ -359,8 +357,7 @@ Expected: compile error — `alife::viewer_server::frame_encoder` does not exist
 //!   [16..20] energy f32 LE
 //!   [20]     lifecycle u8 (0=Alive 1=Stressed 2=Dormant 3=Dead)
 
-use crate::core::cell_store::LifecycleState;
-use crate::core::snapshot::CommittedSnapshot;
+use crate::runner::projections::WorldFrameProjection;
 
 pub const MAGIC: &[u8; 4] = b"ALIF";
 pub const VERSION: u8 = 1;
@@ -368,39 +365,30 @@ pub const VERSION: u8 = 1;
 const HEADER_SIZE: usize = 26;
 const CELL_SIZE: usize = 21;
 
-/// Encode a CommittedSnapshot into ALIF v1 binary format.
+/// Encode a WorldFrameProjection into ALIF v1 binary format.
 /// No heap allocations beyond the output Vec.
-pub fn encode_snapshot(snap: &CommittedSnapshot) -> Vec<u8> {
-    let cell_count = snap.cells.len();
+pub fn encode_world_frame(frame: &WorldFrameProjection) -> Vec<u8> {
+    let cell_count = frame.cells.len();
     let mut buf = Vec::with_capacity(HEADER_SIZE + cell_count * CELL_SIZE);
 
     buf.extend_from_slice(MAGIC);
     buf.push(VERSION);
     buf.push(0x00);
-    buf.extend_from_slice(&snap.tick.raw().to_le_bytes());
-    buf.extend_from_slice(&snap.heat.to_le_bytes());
-    buf.extend_from_slice(&snap.waste.to_le_bytes());
+    buf.extend_from_slice(&frame.committed_tick.to_le_bytes());
+    buf.extend_from_slice(&frame.heat.to_le_bytes());
+    buf.extend_from_slice(&frame.waste.to_le_bytes());
     buf.extend_from_slice(&(cell_count as u32).to_le_bytes());
 
-    for cell in &snap.cells {
-        buf.extend_from_slice(&cell.id.raw().to_le_bytes());
-        buf.extend_from_slice(&cell.position.x().to_le_bytes());
-        buf.extend_from_slice(&cell.position.y().to_le_bytes());
-        buf.extend_from_slice(&cell.radius.raw().to_le_bytes());
-        buf.extend_from_slice(&cell.energy.raw().to_le_bytes());
-        buf.push(lifecycle_to_u8(cell.lifecycle_state));
+    for cell in &frame.cells {
+        buf.extend_from_slice(&cell.id.to_le_bytes());
+        buf.extend_from_slice(&cell.x.to_le_bytes());
+        buf.extend_from_slice(&cell.y.to_le_bytes());
+        buf.extend_from_slice(&cell.radius.to_le_bytes());
+        buf.extend_from_slice(&cell.energy.to_le_bytes());
+        buf.push(cell.lifecycle);
     }
 
     buf
-}
-
-fn lifecycle_to_u8(state: LifecycleState) -> u8 {
-    match state {
-        LifecycleState::Alive    => 0,
-        LifecycleState::Stressed => 1,
-        LifecycleState::Dormant  => 2,
-        LifecycleState::Dead     => 3,
-    }
 }
 
 /// Decoded cell — used in tests and future UI TypeScript adapter generation.
@@ -527,7 +515,7 @@ use tokio::sync::broadcast;
 pub enum WsMessage {
     /// ALIF v1 binary frame.
     Frame(Vec<u8>),
-    /// JSON status, e.g. {"type":"status","state":"running","tick":42}
+    /// JSON status, e.g. {"type":"status","active_run_state":"running","committed_tick":42}
     Status(String),
 }
 
@@ -645,17 +633,19 @@ git commit -m "feat(viewer-server): add Broadcaster over tokio::broadcast with W
 - Modify: `src/bin/runner.rs`
 
 Ключові зміни vs Runner-2:
-- Прибрати `snapshots: RingBuffer<CommittedSnapshot>`
-- Замінити `stream_frame_interval: u32` на `target_broadcast_fps: u32`
+- Не додавати server-side frame history або public scroll-back state
+- Замінити legacy `stream_frame_interval: u32` на `target_broadcast_fps: u32`
 - Додати `broadcaster: Broadcaster`
 - `spawn_tick_loop`: time-based broadcast, жодного `snap.clone()`
 
 - [ ] **Step 1: Rewrite `src/viewer_server/state.rs`**
 
 ```rust
-use crate::runner::engine::{RunEngine, RunState};
+use crate::runner::engine::RunEngine;
+use crate::runner::lifecycle::ActiveRunState;
+use crate::runner::projections::WorldFrameProjection;
 use crate::viewer_server::broadcaster::{Broadcaster, WsMessage};
-use crate::viewer_server::frame_encoder::encode_snapshot;
+use crate::viewer_server::frame_encoder::encode_world_frame;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -682,13 +672,13 @@ impl TickLoopSignal {
 
 pub struct SharedState {
     pub engine:               Option<RunEngine>,
-    pub run_state:            RunState,
+    pub active_run_state:     ActiveRunState,
     pub scenario_id:          Option<String>,
-    pub current_tick:         u32,
-    pub collapse_reason:      Option<String>,
+    pub committed_tick:       u64,
+    pub terminal_reason:      Option<String>,
     pub scenarios_dir:        PathBuf,
     pub tick_signal:          Option<Arc<TickLoopSignal>>,
-    pub snapshot_buffer_size: usize,          // kept for RunEngineConfig
+    pub engine_snapshot_buffer_size: usize,  // internal RunEngine config only; not scroll-back
     /// Max frames per second pushed to WS clients.
     pub target_broadcast_fps: u32,
     /// Broadcast hub — tick loop sends here; WS handlers subscribe.
@@ -703,20 +693,20 @@ impl SharedState {
     ) -> Self {
         Self {
             engine: None,
-            run_state: RunState::Idle,
+            active_run_state: ActiveRunState::Idle,
             scenario_id: None,
-            current_tick: 0,
-            collapse_reason: None,
+            committed_tick: 0,
+            terminal_reason: None,
             scenarios_dir,
             tick_signal: None,
-            snapshot_buffer_size,
+            engine_snapshot_buffer_size: snapshot_buffer_size,
             target_broadcast_fps,
             broadcaster: Broadcaster::new(128), // 128 messages buffered per subscriber
         }
     }
 
     pub fn is_active(&self) -> bool {
-        matches!(self.run_state, RunState::Running | RunState::Paused)
+        matches!(self.active_run_state, ActiveRunState::Running | ActiveRunState::Paused)
     }
 }
 
@@ -735,7 +725,7 @@ pub fn new_app_state(
 }
 
 /// Spawn the background tick loop.
-/// Assumes engine is initialised and state.run_state == Running.
+/// Assumes engine is initialised and active_run_state == Running.
 pub fn spawn_tick_loop(state: AppState) {
     let signal = Arc::new(TickLoopSignal::new());
 
@@ -772,16 +762,19 @@ pub fn spawn_tick_loop(state: AppState) {
                     None => break,
                 };
 
-                if engine.step(1).is_err() {
-                    locked.run_state = RunState::Idle;
-                    locked.collapse_reason = Some("simulation_error".to_string());
+                if engine.run_one_tick().is_err() {
+                    locked.active_run_state = ActiveRunState::Failed;
+                    locked.terminal_reason = Some("core_error".to_string());
                     break;
                 }
 
-                locked.current_tick = engine.current_tick();
+                locked.committed_tick = engine.current_tick();
 
                 if should_broadcast {
-                    engine.snapshots().newest().map(|snap| encode_snapshot(snap))
+                    engine.snapshots().newest().map(|snap| {
+                        let projection = WorldFrameProjection::from_committed_state(snap);
+                        encode_world_frame(&projection)
+                    })
                 } else {
                     None
                 }
@@ -794,8 +787,8 @@ pub fn spawn_tick_loop(state: AppState) {
         }
 
         let mut locked = state.lock().unwrap();
-        if matches!(locked.run_state, RunState::Running) {
-            locked.run_state = RunState::Idle;
+        if matches!(locked.active_run_state, ActiveRunState::Running) {
+            locked.active_run_state = ActiveRunState::Completed;
         }
         locked.tick_signal = None;
     });
@@ -829,7 +822,7 @@ mod tests {
 Замінити всі виклики `new_app_state(dir, size, interval)` на `new_app_state(dir, size, fps)`:
 
 ```rust
-let state = new_app_state(scenarios_dir, cfg.snapshot_buffer_size, cfg.target_broadcast_fps);
+let state = new_app_state(scenarios_dir, 300, cfg.target_broadcast_fps);
 ```
 
 - [ ] **Step 3: Update `src/runner/server_config.rs`**
@@ -946,7 +939,7 @@ async fn ws_connect_receives_initial_status_idle() {
     let text = match msg { Message::Text(t) => t, _ => unreachable!() };
     let json: serde_json::Value = serde_json::from_str(&text).unwrap();
     assert_eq!(json["type"].as_str().unwrap(), "status");
-    assert_eq!(json["state"].as_str().unwrap(), "idle");
+    assert_eq!(json["active_run_state"].as_str().unwrap(), "idle");
 }
 
 #[tokio::test]
@@ -1008,7 +1001,7 @@ async fn slow_ws_client_does_not_block_simulation() {
 
     tokio::time::sleep(std::time::Duration::from_millis(300)).await;
 
-    let tick = state.lock().unwrap().current_tick;
+    let tick = state.lock().unwrap().committed_tick;
     assert!(tick > 0, "Simulation must advance despite slow WS client");
 
     client.post(format!("{}/run/stop", base)).send().await.unwrap();
@@ -1037,12 +1030,12 @@ async fn ws_receives_running_status_after_http_start() {
             let msg = ws.next().await.unwrap().unwrap();
             if let Message::Text(t) = msg {
                 let j: serde_json::Value = serde_json::from_str(&t).unwrap_or_default();
-                if j["type"] == "status" && j["state"] == "running" { return j; }
+                if j["type"] == "status" && j["active_run_state"] == "running" { return j; }
             }
         }
     }).await.expect("timed out waiting for running status");
 
-    assert_eq!(json["state"].as_str().unwrap(), "running");
+    assert_eq!(json["active_run_state"].as_str().unwrap(), "running");
     client.post(format!("{}/run/stop", base)).send().await.unwrap();
 }
 
@@ -1070,12 +1063,12 @@ async fn ws_receives_idle_status_after_http_stop() {
             let msg = ws.next().await.unwrap().unwrap();
             if let Message::Text(t) = msg {
                 let j: serde_json::Value = serde_json::from_str(&t).unwrap_or_default();
-                if j["type"] == "status" && j["state"] == "idle" { return j; }
+                if j["type"] == "status" && j["active_run_state"] == "completed" { return j; }
             }
         }
     }).await.expect("timed out waiting for idle status");
 
-    assert_eq!(json["state"].as_str().unwrap(), "idle");
+    assert_eq!(json["active_run_state"].as_str().unwrap(), "completed");
 }
 ```
 
@@ -1109,7 +1102,8 @@ use axum::{
 };
 use tokio::sync::broadcast::error::RecvError;
 
-use crate::runner::engine::RunState;
+use crate::runner::lifecycle::ActiveRunState;
+use crate::runner::projections::RunStatusProjection;
 use crate::viewer_server::broadcaster::WsMessage;
 use crate::viewer_server::state::AppState;
 
@@ -1130,10 +1124,15 @@ async fn handle_ws_client(mut socket: WebSocket, state: AppState) {
     // Send initial status
     let status = {
         let locked = state.lock().unwrap();
+        // Build the same public status shape used by HTTP /run/status.
         serde_json::json!({
             "type": "status",
-            "state": run_state_label(locked.run_state),
-            "tick": locked.current_tick
+            "process_state": format!("{:?}", locked.process_state).to_lowercase(),
+            "active_run_state": active_state_label(locked.active_run_state),
+            "run_id": locked.run_id,
+            "committed_tick": locked.committed_tick,
+            "scenario_hash": locked.scenario_hash,
+            "terminal_reason": locked.terminal_reason
         }).to_string()
     };
     if socket.send(Message::Text(status.into())).await.is_err() {
@@ -1173,11 +1172,15 @@ async fn handle_ws_client(mut socket: WebSocket, state: AppState) {
     }
 }
 
-fn run_state_label(state: RunState) -> &'static str {
+fn active_state_label(state: ActiveRunState) -> &'static str {
     match state {
-        RunState::Idle    => "idle",
-        RunState::Running => "running",
-        RunState::Paused  => "paused",
+        ActiveRunState::Idle => "idle",
+        ActiveRunState::Preparing => "preparing",
+        ActiveRunState::Running => "running",
+        ActiveRunState::Paused => "paused",
+        ActiveRunState::Stopping => "stopping",
+        ActiveRunState::Completed => "completed",
+        ActiveRunState::Failed => "failed",
     }
 }
 ```
@@ -1248,14 +1251,18 @@ Expected: `FAIL` — status not broadcasted yet.
 Створи helper функцію і виклич після кожного endpoint:
 
 ```rust
-/// Broadcast a status JSON to all WS subscribers.
-/// Call after any RunState change. Lock must NOT be held when calling.
+/// Broadcast a RunStatusProjection JSON to all WS subscribers.
+/// Call after any canonical lifecycle change. Lock must NOT be held when calling.
 fn broadcast_status(state: &AppState) {
     let locked = state.lock().unwrap();
     let msg = serde_json::json!({
         "type": "status",
-        "state": state_label(locked.run_state),
-        "tick": locked.current_tick
+        "process_state": format!("{:?}", locked.process_state).to_lowercase(),
+        "active_run_state": active_state_label(locked.active_run_state),
+        "run_id": locked.run_id,
+        "committed_tick": locked.committed_tick,
+        "scenario_hash": locked.scenario_hash,
+        "terminal_reason": locked.terminal_reason
     }).to_string();
     locked.broadcaster.send_status(msg);
 }
@@ -1263,8 +1270,8 @@ fn broadcast_status(state: &AppState) {
 
 Додати `broadcast_status(&state);` після:
 - `spawn_tick_loop(state.clone())` у `handle_run_start`
-- `locked.run_state = RunState::Paused` у `handle_run_pause`
-- `locked.run_state = RunState::Running` у `handle_run_resume`
+- `PauseRun` command success у `handle_run_pause`
+- `ResumeRun` command success у `handle_run_resume`
 - `locked.engine = None` у `handle_run_stop`
 
 - [ ] **Step 3: Run status tests**
@@ -1309,20 +1316,20 @@ cargo run --bin runner -- --serve
 
 # Terminal 2:
 wscat -c ws://127.0.0.1:8080/stream
-# → {"type":"status","state":"idle","tick":0}
+# → {"type":"status","active_run_state":"idle","committed_tick":0,...}
 
 # Terminal 3:
 curl -s -X POST http://127.0.0.1:8080/run/start \
      -H "Content-Type: application/json" \
      -d '{"scenario_id":"single_cell_survival"}'
-# → Terminal 2 отримує: {"type":"status","state":"running","tick":0}
+# → Terminal 2 отримує: {"type":"status","active_run_state":"running","committed_tick":0,...}
 # → Terminal 2 отримує: binary frames (ALIF, ≤30 per sec)
 
 curl -s -X POST http://127.0.0.1:8080/run/pause
-# → Terminal 2: {"type":"status","state":"paused",...}
+# → Terminal 2: {"type":"status","active_run_state":"paused",...}
 
 curl -s -X POST http://127.0.0.1:8080/run/stop
-# → Terminal 2: {"type":"status","state":"idle",...}
+# → Terminal 2: {"type":"status","active_run_state":"completed",...}
 ```
 
 - [ ] **Step 3: Final workspace check**
@@ -1364,7 +1371,7 @@ git commit -m "test(runner-3): smoke verify --serve WS push-only stream end-to-e
 
 - `WsMessage::Frame(Vec<u8>)` і `WsMessage::Status(String)` — однаково скрізь
 - `Broadcaster::subscribe()` → `broadcast::Receiver<WsMessage>` — однаково у state.rs і stream.rs
-- `encode_snapshot(&CommittedSnapshot) -> Vec<u8>` — однаково у frame_encoder.rs і state.rs
+- `encode_world_frame(&WorldFrameProjection) -> Vec<u8>` — однаково у frame_encoder.rs і state.rs
 - `new_app_state(path, size, fps)` — 3 аргументи скрізь
 - `target_broadcast_fps: u32` — замінює `stream_frame_interval` у всіх файлах
 - `WorldFrameProjection v1` — public WS payload source; `CommittedSnapshot` is internal input only
@@ -1382,20 +1389,20 @@ cargo test --workspace                     → без регресій
 
 cargo run --bin runner -- --serve
 wscat -c ws://127.0.0.1:8080/stream
-  → {"type":"status","state":"idle","tick":0}
+  → {"type":"status","active_run_state":"idle","committed_tick":0,...}
 
 POST /run/start single_cell_survival
-  → WS: {"type":"status","state":"running",...}
+  → WS: {"type":"status","active_run_state":"running",...}
   → WS: <ALIF binary frames at ≤30fps>
 
 POST /run/pause
-  → WS: {"type":"status","state":"paused",...}
+  → WS: {"type":"status","active_run_state":"paused",...}
 
 POST /run/resume
-  → WS: {"type":"status","state":"running",...}
+  → WS: {"type":"status","active_run_state":"running",...}
 
 POST /run/stop
-  → WS: {"type":"status","state":"idle",...}
+  → WS: {"type":"status","active_run_state":"completed",...}
 
 два WS клієнти → незалежні stream-и
 повільний клієнт → Lagged помилка → skip → Core не стоїть

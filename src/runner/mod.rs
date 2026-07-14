@@ -1,2 +1,8 @@
+pub mod commands;
 pub mod config_parser;
+pub mod engine;
+pub mod lifecycle;
+pub mod progress;
+pub mod ring_buffer;
+pub mod scenario;
 pub mod scenario_doc;
