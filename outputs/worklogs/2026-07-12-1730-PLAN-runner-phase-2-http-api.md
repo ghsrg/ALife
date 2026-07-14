@@ -4,11 +4,11 @@
 
 **Goal:** Додати `--serve` прапорець до runner binary, який стартує HTTP сервер (axum + tokio) з повним набором command API ендпоінтів: `/server/info`, `/scenarios`, `/scenarios/{id}`, `/run/status`, `/run/start`, `/run/pause`, `/run/resume`, `/run/step`, `/run/stop`.
 
-**Architecture:** `src/viewer_server/` — новий модуль (crate в межах workspace — пізніше, зараз internal module). `SharedState` в `Arc<Mutex<>>` зберігає поточний `RunEngine` та run state. Tick loop запускається в окремому `std::thread` щоб не блокувати tokio runtime. HTTP handlers отримують стан через `axum::extract::State<Arc<Mutex<SharedState>>>`. Тести використовують `tower::ServiceExt::oneshot()` без реального порту.
+**Architecture:** `src/viewer_server/` — новий adapter module (crate в межах workspace — пізніше, зараз internal module). HTTP handlers не володіють lifecycle, не стартують Core і не викликають Bootstrap напряму. Вони транслюють HTTP request/response у shared Runner command layer (`RunnerCommand` dispatcher) і читають versioned projections (`RunStatusProjection`, Scenario discovery DTOs). Shared server state може тримати `Arc<Mutex<RunnerControlState>>` або еквівалентний handle до Runner command dispatcher, але canonical lifecycle залишається у Runner: `RunnerProcessState` + `ActiveRunState`. Tick advancement виконується тільки через Runner-owned engine methods (`run_one_tick`, `step_one_paused`) з command validation. Тести використовують `tower::ServiceExt::oneshot()` без реального порту.
 
 **Tech Stack:** `axum 0.8`, `tokio 1 (full)`, `tower` (dev-dep для тестування), `serde_json` (вже є). Всі endpoint-тести — `#[tokio::test]` async.
 
-**Передумови:** Runner-1 завершений: `RunEngine`, `RunState`, `RingBuffer<CommittedSnapshot>`, `ScenarioMeta`, `scan_scenarios`, `load_scenario`, `src/bin/runner.rs` — все існує.
+**Передумови:** Runner-1 завершений і Canon-compatible: `RunEngine`, `RunnerProcessState`, `ActiveRunState`, `RunnerCommand`, `ScenarioDocument`, `ScenarioHash`, `RunStatusProjection` або мінімальний projection DTO, `RunEngine::prepare_from_document`, `RunEngine::run_one_tick`, `RunEngine::step_one_paused`, `src/bin/runner.rs` — все існує. Legacy names such as `RunState`, `load_scenario`, direct TOML-to-Core startup, and multi-tick `engine.step(n)` are forbidden in this phase.
 
 ---
 
@@ -84,7 +84,7 @@ HTTP /run/step from Paused commits exactly one Tick and remains Paused
 src/
   viewer_server/
     mod.rs           [NEW] — pub mod state, api; pub fn create_app
-    state.rs         [NEW] — SharedState, TickLoopSignal, RunEngineHandle
+    state.rs         [NEW] — HTTP adapter state, RunnerCommandHandle, TickLoopSignal if still needed
     api/
       mod.rs         [NEW] — route registration
       info.rs        [NEW] — GET /server/info
@@ -98,7 +98,7 @@ src/
   lib.rs             [MODIFY] — pub mod viewer_server
 Cargo.toml           [MODIFY] — axum, tokio deps; tower, http-body-util dev-deps
 config/
-  server.toml        [NEW] — bind_host, port, snapshot_buffer_size, stream_frame_interval
+  server.toml        [NEW] — bind_host, port, allow_remote_viewer, target_broadcast_fps
 tests/
   runner_server_config.rs      [NEW] — ServerConfig parse tests
   runner_http_info.rs          [NEW] — GET /server/info tests
@@ -140,8 +140,7 @@ fn server_config_defaults_are_local() {
     let cfg = ServerConfig::default();
     assert_eq!(cfg.bind_host, "127.0.0.1");
     assert_eq!(cfg.port, 8080);
-    assert_eq!(cfg.snapshot_buffer_size, 300);
-    assert_eq!(cfg.stream_frame_interval, 3);
+    assert_eq!(cfg.target_broadcast_fps, 30);
     assert!(!cfg.allow_remote_viewer);
 }
 
@@ -199,8 +198,7 @@ http-body-util = "0.1"
 bind_host = "127.0.0.1"
 port = 8080
 allow_remote_viewer = false
-snapshot_buffer_size = 300
-stream_frame_interval = 3
+target_broadcast_fps = 30
 ```
 
 - [ ] **Step 5: Create `src/runner/server_config.rs`**
@@ -215,10 +213,9 @@ pub struct ServerConfig {
     pub bind_host: String,
     pub port: u16,
     pub allow_remote_viewer: bool,
-    /// Number of committed snapshots to keep in ring buffer (scroll-back window).
-    pub snapshot_buffer_size: usize,
-    /// Push a frame to WS clients every N ticks (Runner-3, ignored here).
-    pub stream_frame_interval: u32,
+    /// Max WS frame push rate for Runner-3. Parsed here so HTTP and WS phases share one config.
+    /// Runner-2 does not implement WS streaming yet.
+    pub target_broadcast_fps: u32,
 }
 
 impl Default for ServerConfig {
@@ -227,8 +224,7 @@ impl Default for ServerConfig {
             bind_host: "127.0.0.1".to_string(),
             port: 8080,
             allow_remote_viewer: false,
-            snapshot_buffer_size: 300,
-            stream_frame_interval: 3,
+            target_broadcast_fps: 30,
         }
     }
 }
@@ -300,12 +296,12 @@ git commit -m "feat(runner): add ServerConfig with bind_host/port/buffer_size"
 - [ ] **Step 1: Create `src/viewer_server/state.rs`**
 
 ```rust
-use crate::runner::engine::{RunEngine, RunEngineConfig, RunState};
-use crate::runner::scenario::{ScenarioMeta, scan_scenarios, load_scenario};
-use crate::core::snapshot::CommittedSnapshot;
-use crate::runner::ring_buffer::RingBuffer;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use crate::runner::commands::RunnerCommand;
+use crate::runner::engine::{RunEngine, RunEngineConfig, RunEngineError};
+use crate::runner::lifecycle::{ActiveRunState, RunnerProcessState};
+use crate::runner::scenario_doc::{ScenarioDocument, ScenarioSource};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 /// Signals sent to the background tick loop.
@@ -343,46 +339,78 @@ impl TickLoopSignal {
     }
 }
 
-/// Full server state shared between HTTP handlers and the tick loop.
+/// Transport-independent command result used by HTTP adapters.
+/// Runner-2 may replace this with a richer enum, but handlers must keep this boundary:
+/// HTTP -> RunnerCommand -> projection/command result -> HTTP response.
+pub struct RunnerCommandResult {
+    pub process_state: RunnerProcessState,
+    pub active_run_state: ActiveRunState,
+    pub run_id: Option<String>,
+    pub committed_tick: u64,
+    pub scenario_hash: Option<String>,
+    pub effective_seed: Option<u64>,
+    pub terminal_reason: Option<String>,
+}
+
+/// Server adapter state shared between HTTP handlers and the Runner-owned tick loop.
+/// This type is not the canonical lifecycle. It only holds the active Runner engine handle
+/// and delegates every control operation through RunnerCommand validation.
 pub struct SharedState {
-    /// Active run engine. None when Idle.
     pub engine: Option<RunEngine>,
-    /// Current run lifecycle state.
-    pub run_state: RunState,
+    pub process_state: RunnerProcessState,
+    pub active_run_state: ActiveRunState,
+    pub run_id: Option<String>,
+    pub scenario_hash: Option<String>,
+    pub effective_seed: Option<u64>,
     /// Scenario ID of the active run.
     pub scenario_id: Option<String>,
     /// Tick count from the last completed tick.
-    pub current_tick: u32,
-    /// Ring buffer of recent snapshots (scroll-back).
-    pub snapshots: RingBuffer<CommittedSnapshot>,
-    /// Reason for the last collapse/stop.
-    pub collapse_reason: Option<String>,
+    pub committed_tick: u64,
+    pub terminal_reason: Option<String>,
     /// Path to config/scenarios/ directory.
     pub scenarios_dir: PathBuf,
     /// Loop signal — Some when a tick loop thread is running.
     pub tick_signal: Option<Arc<TickLoopSignal>>,
-    /// Snapshot buffer capacity (from ServerConfig).
-    pub snapshot_buffer_size: usize,
+    /// Internal RunEngine snapshot capacity. Not a public HTTP/WS scroll-back contract.
+    pub engine_snapshot_buffer_size: usize,
 }
 
 impl SharedState {
-    pub fn new(scenarios_dir: PathBuf, snapshot_buffer_size: usize) -> Self {
+    pub fn new(scenarios_dir: PathBuf, engine_snapshot_buffer_size: usize) -> Self {
         Self {
             engine: None,
-            run_state: RunState::Idle,
+            process_state: RunnerProcessState::Ready,
+            active_run_state: ActiveRunState::Idle,
+            run_id: None,
+            scenario_hash: None,
+            effective_seed: None,
             scenario_id: None,
-            current_tick: 0,
-            snapshots: RingBuffer::new(snapshot_buffer_size),
-            collapse_reason: None,
+            committed_tick: 0,
+            terminal_reason: None,
             scenarios_dir,
             tick_signal: None,
-            snapshot_buffer_size,
+            engine_snapshot_buffer_size,
         }
     }
 
     /// Check whether a run is already active (Running or Paused).
     pub fn is_active(&self) -> bool {
-        matches!(self.run_state, RunState::Running | RunState::Paused)
+        matches!(
+            self.active_run_state,
+            ActiveRunState::Preparing | ActiveRunState::Running | ActiveRunState::Paused | ActiveRunState::Stopping
+        )
+    }
+
+    pub fn status_projection(&self) -> RunnerCommandResult {
+        RunnerCommandResult {
+            process_state: self.process_state,
+            active_run_state: self.active_run_state,
+            run_id: self.run_id.clone(),
+            committed_tick: self.committed_tick,
+            scenario_hash: self.scenario_hash.clone(),
+            effective_seed: self.effective_seed,
+            terminal_reason: self.terminal_reason.clone(),
+        }
     }
 }
 
@@ -390,12 +418,78 @@ impl SharedState {
 pub type AppState = Arc<Mutex<SharedState>>;
 
 /// Build a new AppState.
-pub fn new_app_state(scenarios_dir: PathBuf, snapshot_buffer_size: usize) -> AppState {
-    Arc::new(Mutex::new(SharedState::new(scenarios_dir, snapshot_buffer_size)))
+pub fn new_app_state(scenarios_dir: PathBuf, engine_snapshot_buffer_size: usize) -> AppState {
+    Arc::new(Mutex::new(SharedState::new(
+        scenarios_dir,
+        engine_snapshot_buffer_size,
+    )))
+}
+
+/// Resolve a scenario id/path into the canonical ScenarioDocument before Bootstrap.
+pub fn resolve_scenario_document(state: &SharedState, scenario_id_or_path: &str) -> Result<ScenarioDocument, String> {
+    let candidate = Path::new(scenario_id_or_path);
+    let source_path = if candidate.exists() {
+        candidate.to_path_buf()
+    } else {
+        state.scenarios_dir.join(format!("{scenario_id_or_path}.toml"))
+    };
+    ScenarioDocument::resolve(ScenarioSource::Path(source_path)).map_err(|err| err.to_string())
+}
+
+/// Dispatch a Runner command. HTTP handlers call this function instead of mutating state directly.
+pub fn dispatch_command(state: &AppState, command: RunnerCommand) -> Result<RunnerCommandResult, String> {
+    let mut locked = state.lock().unwrap();
+    command
+        .validate(locked.active_run_state)
+        .map_err(|_| "state_conflict".to_string())?;
+
+    match command {
+        RunnerCommand::GetRunStatus => Ok(locked.status_projection()),
+        RunnerCommand::PauseRun => {
+            let engine = locked.engine.as_mut().ok_or_else(|| "run_not_found".to_string())?;
+            engine.pause().map_err(|err| err.to_string())?;
+            locked.active_run_state = ActiveRunState::Paused;
+            if let Some(signal) = &locked.tick_signal {
+                signal.request_pause();
+            }
+            Ok(locked.status_projection())
+        }
+        RunnerCommand::ResumeRun => {
+            let engine = locked.engine.as_mut().ok_or_else(|| "run_not_found".to_string())?;
+            engine.resume().map_err(|err| err.to_string())?;
+            locked.active_run_state = ActiveRunState::Running;
+            if let Some(signal) = &locked.tick_signal {
+                signal.request_resume();
+            }
+            Ok(locked.status_projection())
+        }
+        RunnerCommand::StepRun => {
+            let engine = locked.engine.as_mut().ok_or_else(|| "run_not_found".to_string())?;
+            engine.step_one_paused().map_err(|err| err.to_string())?;
+            locked.committed_tick = engine.current_tick();
+            locked.active_run_state = ActiveRunState::Paused;
+            Ok(locked.status_projection())
+        }
+        RunnerCommand::StopRun => {
+            if let Some(signal) = &locked.tick_signal {
+                signal.request_stop();
+            }
+            if let Some(engine) = locked.engine.as_mut() {
+                engine.stop().map_err(|err| err.to_string())?;
+            }
+            locked.active_run_state = ActiveRunState::Completed;
+            locked.engine = None;
+            locked.tick_signal = None;
+            Ok(locked.status_projection())
+        }
+        RunnerCommand::ValidateScenario | RunnerCommand::PrepareScenario | RunnerCommand::StartRun => {
+            Err("use dedicated handlers because these commands require scenario input".to_string())
+        }
+    }
 }
 
 /// Spawn the background tick loop. Stores the signal in `state.tick_signal`.
-/// Assumes engine is already initialised and state.run_state == Running.
+/// Assumes engine is already initialised and active_run_state == Running.
 pub fn spawn_tick_loop(state: AppState) {
     let signal = Arc::new(TickLoopSignal::new());
     {
@@ -416,12 +510,9 @@ pub fn spawn_tick_loop(state: AppState) {
             let result = {
                 let mut locked = state.lock().unwrap();
                 if let Some(engine) = locked.engine.as_mut() {
-                    let r = engine.step(1);
+                    let r = engine.run_one_tick();
                     if r.is_ok() {
-                        locked.current_tick = engine.current_tick();
-                        if let Some(snap) = engine.snapshots().newest() {
-                            locked.snapshots.push(snap.clone());
-                        }
+                        locked.committed_tick = engine.current_tick();
                     }
                     r
                 } else {
@@ -431,16 +522,16 @@ pub fn spawn_tick_loop(state: AppState) {
 
             if result.is_err() {
                 let mut locked = state.lock().unwrap();
-                locked.run_state = RunState::Idle;
-                locked.collapse_reason = Some("simulation_error".to_string());
+                locked.active_run_state = ActiveRunState::Failed;
+                locked.terminal_reason = Some("core_error".to_string());
                 break;
             }
         }
 
         // Ensure state is cleaned up
         let mut locked = state.lock().unwrap();
-        if matches!(locked.run_state, RunState::Running) {
-            locked.run_state = RunState::Idle;
+        if matches!(locked.active_run_state, ActiveRunState::Running) {
+            locked.active_run_state = ActiveRunState::Completed;
         }
         locked.tick_signal = None;
     });
@@ -914,8 +1005,8 @@ async fn get_run_status_initially_idle() {
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(json["state"].as_str().unwrap(), "idle");
-    assert_eq!(json["tick"].as_u64().unwrap(), 0);
+    assert_eq!(json["active_run_state"].as_str().unwrap(), "idle");
+    assert_eq!(json["committed_tick"].as_u64().unwrap(), 0);
 }
 
 #[tokio::test]
@@ -938,7 +1029,7 @@ async fn post_run_start_with_valid_scenario_returns_ok() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(json["ok"].as_bool().unwrap(), true);
-    assert!(json.get("config_hash").is_some());
+    assert!(json.get("scenario_hash").is_some());
 }
 
 #[tokio::test]
@@ -966,7 +1057,7 @@ async fn post_run_start_sets_state_to_running() {
         .unwrap();
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(json["state"].as_str().unwrap(), "running");
+    assert_eq!(json["active_run_state"].as_str().unwrap(), "running");
     assert_eq!(json["scenario_id"].as_str().unwrap(), "single_cell_survival");
 }
 
@@ -1020,7 +1111,7 @@ async fn post_run_start_when_already_running_returns_409() {
 }
 
 #[tokio::test]
-async fn post_run_step_executes_n_ticks() {
+async fn post_run_step_executes_exactly_one_tick_from_paused() {
     let state = make_state();
 
     // Start first
@@ -1036,23 +1127,36 @@ async fn post_run_step_executes_n_ticks() {
         .await
         .unwrap();
 
-    // Stop the background loop so step is deterministic in test
-    {
-        let locked = state.lock().unwrap();
-        if let Some(signal) = &locked.tick_signal {
-            signal.request_stop();
-        }
-    }
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    // Pause first; StepRun is valid only while ActiveRunState is Paused.
+    create_app(state.clone())
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/run/pause")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
 
-    // Step 5 ticks
+    let tick_before = {
+        let response = create_app(state.clone())
+            .oneshot(Request::builder().uri("/run/status").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        json["committed_tick"].as_u64().unwrap()
+    };
+
+    // StepRun executes exactly one committed Tick and returns Paused.
     let response = create_app(state.clone())
         .oneshot(
             Request::builder()
                 .method(Method::POST)
                 .uri("/run/step")
                 .header("content-type", "application/json")
-                .body(json_body(json!({ "ticks": 5 })))
+                .body(json_body(json!({})))
                 .unwrap(),
         )
         .await
@@ -1061,7 +1165,8 @@ async fn post_run_step_executes_n_ticks() {
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert!(json["tick_after"].as_u64().unwrap() >= 5);
+    assert_eq!(json["active_run_state"].as_str().unwrap(), "paused");
+    assert_eq!(json["committed_tick"].as_u64().unwrap(), tick_before + 1);
 }
 
 #[tokio::test]
@@ -1184,37 +1289,47 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::runner::engine::{RunEngine, RunEngineConfig, RunState};
-use crate::runner::scenario::scan_scenarios;
-use crate::viewer_server::state::{AppState, spawn_tick_loop};
+use crate::runner::commands::RunnerCommand;
+use crate::runner::engine::{RunEngine, RunEngineConfig};
+use crate::runner::lifecycle::ActiveRunState;
+use crate::runner::scenario_doc::{ScenarioDocument, ScenarioSource};
+use crate::viewer_server::state::{AppState, dispatch_command, spawn_tick_loop};
 
 // ── Status ────────────────────────────────────────────────────────────────────
 
 #[derive(Serialize)]
 struct RunStatus {
-    state: String,
-    tick: u64,
+    process_state: String,
+    active_run_state: String,
+    committed_tick: u64,
     scenario_id: Option<String>,
-    config_hash: Option<String>,
-    collapse_reason: Option<String>,
+    scenario_hash: Option<String>,
+    effective_seed: Option<u64>,
+    terminal_reason: Option<String>,
 }
 
-fn state_label(s: RunState) -> &'static str {
+fn active_state_label(s: ActiveRunState) -> &'static str {
     match s {
-        RunState::Idle => "idle",
-        RunState::Running => "running",
-        RunState::Paused => "paused",
+        ActiveRunState::Idle => "idle",
+        ActiveRunState::Preparing => "preparing",
+        ActiveRunState::Running => "running",
+        ActiveRunState::Paused => "paused",
+        ActiveRunState::Stopping => "stopping",
+        ActiveRunState::Completed => "completed",
+        ActiveRunState::Failed => "failed",
     }
 }
 
 async fn handle_run_status(State(state): State<AppState>) -> Json<RunStatus> {
     let locked = state.lock().unwrap();
     Json(RunStatus {
-        state: state_label(locked.run_state).to_string(),
-        tick: locked.current_tick as u64,
+        process_state: format!("{:?}", locked.process_state).to_lowercase(),
+        active_run_state: active_state_label(locked.active_run_state).to_string(),
+        committed_tick: locked.committed_tick,
         scenario_id: locked.scenario_id.clone(),
-        config_hash: None, // TODO: derive from config in Runner-4
-        collapse_reason: locked.collapse_reason.clone(),
+        scenario_hash: locked.scenario_hash.clone(),
+        effective_seed: locked.effective_seed,
+        terminal_reason: locked.terminal_reason.clone(),
     })
 }
 
@@ -1223,20 +1338,26 @@ async fn handle_run_status(State(state): State<AppState>) -> Json<RunStatus> {
 #[derive(Deserialize)]
 struct StartRequest {
     scenario_id: String,
-    seed: Option<u64>,
+    seed_override: Option<u64>,
+    request_id: Option<String>,
 }
 
 #[derive(Serialize)]
 struct StartResponse {
     ok: bool,
-    config_hash: String,
-    seed: u64,
+    run_id: String,
+    scenario_hash: String,
+    effective_seed: u64,
+    active_run_state: String,
+    bootstrap_manifest: serde_json::Value,
 }
 
 #[derive(Serialize)]
 struct ErrorResponse {
     ok: bool,
-    error: String,
+    category: String,
+    message: String,
+    current_state: String,
 }
 
 async fn handle_run_start(
@@ -1251,37 +1372,42 @@ async fn handle_run_start(
                 StatusCode::CONFLICT,
                 Json(ErrorResponse {
                     ok: false,
-                    error: format!("Run already active in state: {:?}", locked.run_state),
+                    category: "state_conflict".to_string(),
+                    message: format!("Run already active in state: {:?}", locked.active_run_state),
+                    current_state: active_state_label(locked.active_run_state).to_string(),
                 }),
             ));
         }
     }
 
-    // Find scenario
+    // Resolve ScenarioDocument before Bootstrap. HTTP must not call Core/Bootstrap directly
+    // and must not keep path/request metadata in the canonical document.
     let scenarios_dir = state.lock().unwrap().scenarios_dir.clone();
-    let metas = scan_scenarios(&scenarios_dir).unwrap_or_default();
-    let meta = metas
-        .into_iter()
-        .find(|m| m.id == req.scenario_id)
-        .ok_or_else(|| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    ok: false,
-                    error: format!("Scenario not found: {}", req.scenario_id),
-                }),
-            )
-        })?;
+    let scenario_path = scenarios_dir.join(format!("{}.toml", req.scenario_id));
+    let document = ScenarioDocument::resolve(ScenarioSource::Path(scenario_path)).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                ok: false,
+                category: "scenario_error".to_string(),
+                message: format!("Failed to resolve scenario: {}", e),
+                current_state: "idle".to_string(),
+            }),
+        )
+    })?;
 
-    let snapshot_buffer_size = state.lock().unwrap().snapshot_buffer_size;
-    let engine_cfg = RunEngineConfig { snapshot_buffer_size };
+    let scenario_hash = document.scenario_hash.to_string();
+    let effective_seed = req.seed_override.unwrap_or(document.runtime_config.seed.raw());
+    let engine_cfg = RunEngineConfig { snapshot_buffer_size: 300 };
 
-    let mut engine = RunEngine::from_scenario(&meta, engine_cfg).map_err(|e| {
+    let mut engine = RunEngine::prepare_from_document(&document, engine_cfg).map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse {
                 ok: false,
-                error: format!("Failed to load scenario: {}", e),
+                category: "bootstrap_error".to_string(),
+                message: format!("Failed to prepare scenario: {}", e),
+                current_state: "preparing".to_string(),
             }),
         )
     })?;
@@ -1291,20 +1417,23 @@ async fn handle_run_start(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse {
                 ok: false,
-                error: format!("Failed to start engine: {}", e),
+                category: "core_error".to_string(),
+                message: format!("Failed to start engine: {}", e),
+                current_state: "preparing".to_string(),
             }),
         )
     })?;
 
-    let seed = req.seed.unwrap_or(42); // default seed if not specified
-
     {
         let mut locked = state.lock().unwrap();
         locked.engine = Some(engine);
-        locked.run_state = RunState::Running;
+        locked.active_run_state = ActiveRunState::Running;
+        locked.run_id = Some(req.request_id.unwrap_or_else(|| format!("run-{}", scenario_hash)));
+        locked.scenario_hash = Some(scenario_hash.clone());
+        locked.effective_seed = Some(effective_seed);
         locked.scenario_id = Some(req.scenario_id);
-        locked.current_tick = 0;
-        locked.collapse_reason = None;
+        locked.committed_tick = 0;
+        locked.terminal_reason = None;
     }
 
     // Spawn background tick loop
@@ -1312,8 +1441,14 @@ async fn handle_run_start(
 
     Ok(Json(StartResponse {
         ok: true,
-        config_hash: "tbd".to_string(), // derive from TOML hash in Runner-4
-        seed,
+        run_id: state.lock().unwrap().run_id.clone().unwrap(),
+        scenario_hash,
+        effective_seed,
+        active_run_state: "running".to_string(),
+        bootstrap_manifest: serde_json::json!({
+            "available": true,
+            "source": "PreparedWorld created before Core start"
+        }),
     }))
 }
 
@@ -1322,31 +1457,29 @@ async fn handle_run_start(
 #[derive(Serialize)]
 struct PauseResponse {
     ok: bool,
-    tick: u64,
+    active_run_state: String,
+    committed_tick: u64,
 }
 
 async fn handle_run_pause(
     State(state): State<AppState>,
 ) -> Result<Json<PauseResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let mut locked = state.lock().unwrap();
-
-    if !matches!(locked.run_state, RunState::Running) {
-        return Err((
+    let projection = dispatch_command(&state, RunnerCommand::PauseRun).map_err(|category| {
+        (
             StatusCode::CONFLICT,
             Json(ErrorResponse {
                 ok: false,
-                error: format!("Cannot pause from state: {:?}", locked.run_state),
+                category,
+                message: "Cannot pause from the current active_run_state".to_string(),
+                current_state: "see /run/status".to_string(),
             }),
-        ));
-    }
-
-    locked.run_state = RunState::Paused;
-    if let Some(signal) = &locked.tick_signal {
-        signal.request_pause();
-    }
-
-    let tick = locked.current_tick as u64;
-    Ok(Json(PauseResponse { ok: true, tick }))
+        )
+    })?;
+    Ok(Json(PauseResponse {
+        ok: true,
+        active_run_state: active_state_label(projection.active_run_state).to_string(),
+        committed_tick: projection.committed_tick,
+    }))
 }
 
 // ── Resume ────────────────────────────────────────────────────────────────────
@@ -1354,85 +1487,68 @@ async fn handle_run_pause(
 async fn handle_run_resume(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    let mut locked = state.lock().unwrap();
-
-    if !matches!(locked.run_state, RunState::Paused) {
-        return Err((
+    let projection = dispatch_command(&state, RunnerCommand::ResumeRun).map_err(|category| {
+        (
             StatusCode::CONFLICT,
             Json(ErrorResponse {
                 ok: false,
-                error: format!("Cannot resume from state: {:?}", locked.run_state),
+                category,
+                message: "Cannot resume from the current active_run_state".to_string(),
+                current_state: "see /run/status".to_string(),
             }),
-        ));
-    }
-
-    locked.run_state = RunState::Running;
-    if let Some(signal) = &locked.tick_signal {
-        signal.request_resume();
-    }
-
-    Ok(Json(serde_json::json!({ "ok": true })))
+        )
+    })?;
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "active_run_state": active_state_label(projection.active_run_state),
+        "committed_tick": projection.committed_tick
+    })))
 }
 
 // ── Step ──────────────────────────────────────────────────────────────────────
 
-#[derive(Deserialize)]
-struct StepRequest {
-    ticks: u32,
-}
-
 #[derive(Serialize)]
 struct StepResponse {
     ok: bool,
-    tick_after: u64,
+    active_run_state: String,
+    committed_tick: u64,
 }
 
 async fn handle_run_step(
     State(state): State<AppState>,
-    ExtractJson(req): ExtractJson<StepRequest>,
 ) -> Result<Json<StepResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let ticks_to_run = req.ticks.min(10_000); // guard against runaway
-
-    let tick_after = {
-        let mut locked = state.lock().unwrap();
-        if locked.engine.is_none() {
-            return Err((
-                StatusCode::CONFLICT,
-                Json(ErrorResponse {
-                    ok: false,
-                    error: "No active engine. Call /run/start first.".to_string(),
-                }),
-            ));
-        }
-        let engine = locked.engine.as_mut().unwrap();
-        engine.step(ticks_to_run).map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
-                    ok: false,
-                    error: format!("Step failed: {}", e),
-                }),
-            )
-        })?;
-        locked.current_tick = engine.current_tick();
-        locked.current_tick as u64
-    };
-
-    Ok(Json(StepResponse { ok: true, tick_after }))
+    let projection = dispatch_command(&state, RunnerCommand::StepRun).map_err(|category| {
+        (
+            StatusCode::CONFLICT,
+            Json(ErrorResponse {
+                ok: false,
+                category,
+                message: "StepRun is valid only when active_run_state is paused".to_string(),
+                current_state: "see /run/status".to_string(),
+            }),
+        )
+    })?;
+    Ok(Json(StepResponse {
+        ok: true,
+        active_run_state: active_state_label(projection.active_run_state).to_string(),
+        committed_tick: projection.committed_tick,
+    }))
 }
 
 // ── Stop ──────────────────────────────────────────────────────────────────────
 
 async fn handle_run_stop(State(state): State<AppState>) -> Json<serde_json::Value> {
-    let mut locked = state.lock().unwrap();
-    if let Some(signal) = &locked.tick_signal {
-        signal.request_stop();
+    match dispatch_command(&state, RunnerCommand::StopRun) {
+        Ok(projection) => Json(serde_json::json!({
+            "ok": true,
+            "active_run_state": active_state_label(projection.active_run_state),
+            "committed_tick": projection.committed_tick
+        })),
+        Err(category) => Json(serde_json::json!({
+            "ok": false,
+            "category": category
+        })),
     }
-    locked.run_state = RunState::Idle;
-    locked.engine = None;
-    locked.tick_signal = None;
-    locked.scenario_id = None;
-    Json(serde_json::json!({ "ok": true }))
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -1494,6 +1610,7 @@ git commit -m "feat(viewer-server): implement all /run/* HTTP endpoints"
 
 use alife::runner::engine::{RunEngine, RunEngineConfig};
 use alife::runner::scenario::{scan_scenarios, ScenarioMeta};
+use alife::runner::scenario_doc::{ScenarioDocument, ScenarioSource};
 use alife::runner::server_config::{load_server_config, ServerConfig};
 use alife::viewer_server::{create_app, state::new_app_state};
 use std::path::{Path, PathBuf};
@@ -1530,7 +1647,7 @@ async fn main() {
 
 async fn serve(cfg: ServerConfig, scenarios_dir: PathBuf) {
     let bind_addr = cfg.bind_addr();
-    let state = new_app_state(scenarios_dir, cfg.snapshot_buffer_size);
+    let state = new_app_state(scenarios_dir, 300);
     let app = create_app(state);
 
     let listener = tokio::net::TcpListener::bind(&bind_addr)
@@ -1562,25 +1679,34 @@ async fn run_headless(scenario_path: &Path, scenarios_dir: &Path) {
         snapshot_buffer_size: 300,
     };
 
-    let mut engine = match RunEngine::from_scenario(&meta, engine_cfg) {
+    let document = match ScenarioDocument::resolve(ScenarioSource::Path(meta.path.clone())) {
+        Ok(document) => document,
+        Err(e) => {
+            eprintln!("[runner] Failed to resolve scenario: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let mut engine = match RunEngine::prepare_from_document(&document, engine_cfg) {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("[runner] Failed to load scenario: {}", e);
+            eprintln!("[runner] Failed to prepare scenario: {}", e);
             std::process::exit(1);
         }
     };
 
     engine.start().expect("RunEngine::start failed");
 
-    let rt_config = alife::runner::scenario::load_scenario(&meta).expect("load ok");
-    let total_ticks = rt_config.world.tick_count.raw() as u32;
+    let total_ticks = engine.max_ticks();
 
     let start = std::time::Instant::now();
     println!("[runner] Running {} ticks...", total_ticks);
 
-    engine.step(total_ticks).unwrap_or_else(|e| {
-        eprintln!("[runner] Simulation error at tick {}: {}", engine.current_tick(), e);
-    });
+    while engine.current_tick() < total_ticks {
+        engine.run_one_tick().unwrap_or_else(|e| {
+            eprintln!("[runner] Simulation error at tick {}: {}", engine.current_tick(), e);
+        });
+    }
 
     let elapsed = start.elapsed();
     let tps = if elapsed.as_secs_f32() > 0.0 {
@@ -1859,18 +1985,18 @@ git commit -m "test(viewer-server): add real-port integration smoke test"
 | scenario_hash і seed у /run/status | ✅ from Runner-1 ScenarioDocument + Runner-2 GetRunStatusProjection |
 | `ticks_per_second` у /run/status | ⚠️ Runner-4 |
 
-**Gaps:** config_hash та ticks_per_second позначені як Runner-4 hardening. Не блокують прийнятність Runner-2.
+**Gaps:** `ticks_per_second` позначений як Runner-4 hardening. Не блокує прийнятність Runner-2.
 
 ### Placeholder scan
 
-Немає "TBD" без пояснення. config_hash відкрито позначений як Runner-4.
+Немає `"tbd"` hashes. Усі response fields використовують `scenario_hash` з canonical `ScenarioDocument`.
 
 ### Type consistency
 
-- `RunState` — `Idle`/`Running`/`Paused` однакові у engine.rs і run.rs
+- `RunnerProcessState` / `ActiveRunState` — Canon lifecycle model from `docs/runner/run-lifecycle.md`
 - `AppState = Arc<Mutex<SharedState>>` — однакове у state.rs і всіх handlers
 - `RunEngine::from_scenario(&meta, engine_cfg)` — відповідає Runner-1 API
-- `engine.step(n)` — та сама сигнатура
+- `RunEngine::run_one_tick()` for Running loop; `RunEngine::step_one_paused()` for `StepRun`
 - `TickLoopSignal::request_pause/resume/stop` — однакові у state.rs і run.rs
 
 ---
