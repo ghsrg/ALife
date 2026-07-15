@@ -49,6 +49,7 @@ describe('decodeAlifFrame', () => {
     expect(frame.schemaVersion).toBe('ALIF/v2');
     expect(frame.committedTick).toBe(42);
     expect(frame.projectionSequence).toBe(7);
+    expect(frame.wallClockGeneratedAtMs).toBe(123456);
     expect(frame.previousCommittedTick).toBe(41);
     expect(frame.heat).toBeCloseTo(12.5);
     expect(frame.waste).toBeCloseTo(3.25);
