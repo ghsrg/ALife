@@ -124,7 +124,10 @@ fn broadcast_status(state: &AppState) {
 fn broadcast_forced_frame(state: &AppState) {
     let (sender, frame) = {
         let mut locked = state.lock().unwrap();
-        (locked.broadcaster.sender(), encode_latest_frame(&mut locked))
+        (
+            locked.broadcaster.sender(),
+            encode_latest_frame(&mut locked),
+        )
     };
     if let Some(bytes) = frame {
         let _ = sender.send(WsMessage::Frame(bytes));

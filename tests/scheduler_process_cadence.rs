@@ -94,17 +94,21 @@ fn material_synthesis_attempt_cadence_gates_atomic_attempts() {
 
     for _ in 0..4 {
         let summary = executor.step().unwrap();
-        assert!(!summary
-            .diagnostics
-            .attempt_order_by_process
-            .contains(&ProcessId::MaterialSynthesis));
+        assert!(
+            !summary
+                .diagnostics
+                .attempt_order_by_process
+                .contains(&ProcessId::MaterialSynthesis)
+        );
     }
 
     let tick_5 = executor.step().unwrap();
-    assert!(tick_5
-        .diagnostics
-        .attempt_order_by_process
-        .contains(&ProcessId::MaterialSynthesis));
+    assert!(
+        tick_5
+            .diagnostics
+            .attempt_order_by_process
+            .contains(&ProcessId::MaterialSynthesis)
+    );
 }
 
 #[test]
@@ -121,15 +125,19 @@ fn repair_attempt_cadence_gates_atomic_attempts() {
 
     for _ in 0..9 {
         let summary = executor.step().unwrap();
-        assert!(!summary
-            .diagnostics
-            .attempt_order_by_process
-            .contains(&ProcessId::RepairBoundary));
+        assert!(
+            !summary
+                .diagnostics
+                .attempt_order_by_process
+                .contains(&ProcessId::RepairBoundary)
+        );
     }
 
     let tick_10 = executor.step().unwrap();
-    assert!(tick_10
-        .diagnostics
-        .attempt_order_by_process
-        .contains(&ProcessId::RepairBoundary));
+    assert!(
+        tick_10
+            .diagnostics
+            .attempt_order_by_process
+            .contains(&ProcessId::RepairBoundary)
+    );
 }

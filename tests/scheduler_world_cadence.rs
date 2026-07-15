@@ -60,7 +60,10 @@ fn resource_decay_runs_only_when_due_and_reports_elapsed_ticks() {
 
     for tick in 1..5 {
         let summary = executor.step().unwrap();
-        assert_eq!(summary.metrics.resource_decay_scheduler_elapsed_ticks, 0, "tick {tick}");
+        assert_eq!(
+            summary.metrics.resource_decay_scheduler_elapsed_ticks, 0,
+            "tick {tick}"
+        );
         assert_eq!(summary.metrics.resource_decay_amount, 0.0, "tick {tick}");
     }
 

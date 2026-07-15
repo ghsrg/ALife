@@ -21,10 +21,7 @@ fn sampler_allows_target_fps_but_drops_intermediate_frames() {
     let mut sampler = ViewerProjectionSampler::new(config);
     let now = Instant::now();
 
-    assert_eq!(
-        sampler.on_committed_tick(1, now),
-        ProjectionDecision::Emit
-    );
+    assert_eq!(sampler.on_committed_tick(1, now), ProjectionDecision::Emit);
     assert_eq!(
         sampler.on_committed_tick(2, now + Duration::from_millis(50)),
         ProjectionDecision::Skip
@@ -50,10 +47,7 @@ fn sampler_emits_heartbeat_when_no_new_committed_tick_arrives() {
     let mut sampler = ViewerProjectionSampler::new(ViewerProjectionConfig::default());
     let now = Instant::now();
 
-    assert_eq!(
-        sampler.on_committed_tick(1, now),
-        ProjectionDecision::Emit
-    );
+    assert_eq!(sampler.on_committed_tick(1, now), ProjectionDecision::Emit);
     assert_eq!(
         sampler.on_wall_clock_idle(now + Duration::from_millis(999)),
         ProjectionDecision::Skip

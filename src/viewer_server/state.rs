@@ -320,7 +320,9 @@ pub fn spawn_tick_loop(state: AppState) {
                     Some(engine) => match engine.run_one_tick() {
                         Ok(()) => {
                             let committed_tick = engine.current_tick();
-                            let frame = match sampler.on_committed_tick(committed_tick, Instant::now()) {
+                            let frame = match sampler
+                                .on_committed_tick(committed_tick, Instant::now())
+                            {
                                 ProjectionDecision::Emit
                                 | ProjectionDecision::EmitForced
                                 | ProjectionDecision::EmitHeartbeat => {

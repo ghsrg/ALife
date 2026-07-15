@@ -425,7 +425,9 @@ impl RawSchedulerWorldConfig {
             environment_heat_diffusion_ticks: self
                 .environment_heat_diffusion_ticks
                 .unwrap_or(defaults.environment_heat_diffusion_ticks),
-            field_update_ticks: self.field_update_ticks.unwrap_or(defaults.field_update_ticks),
+            field_update_ticks: self
+                .field_update_ticks
+                .unwrap_or(defaults.field_update_ticks),
         }
     }
 }
@@ -1119,7 +1121,9 @@ fn parse_genome_templates(
                 })?,
                 outputs,
             )
-            .and_then(|template| template.with_regulatory_depth(value.regulatory_depth.unwrap_or(1)))
+            .and_then(|template| {
+                template.with_regulatory_depth(value.regulatory_depth.unwrap_or(1))
+            })
             .map_err(|error| {
                 ParseError::ValidationError(format!("Invalid Genome template: {error:?}"))
             })

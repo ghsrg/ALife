@@ -1,14 +1,14 @@
+use crate::core::action_plan::ActionPlan;
 use crate::core::cell_store::{
     CellIndex, CellStore, EnergyBuffer, InitialCellState, LifecycleState,
 };
-use crate::core::config::{deterministic_genome_decision_offset, RuntimeConfig};
+use crate::core::config::{RuntimeConfig, deterministic_genome_decision_offset};
 use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
 use crate::core::fragments::FragmentStore;
 use crate::core::genome::{GenomeId, GenomeState};
 use crate::core::genome_bootstrap::instantiate_initial_genome;
-use crate::core::action_plan::ActionPlan;
 use crate::core::ids::ResourceTypeId;
 use crate::core::joints::JointStore;
 use crate::core::resources::ResourceGrid;

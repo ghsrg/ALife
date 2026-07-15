@@ -1303,9 +1303,7 @@ impl TickExecutor {
                 resource_decay_scheduler_elapsed_ticks,
             ),
             tick_accounting: TickAccountingSummary {
-                conservation_delta_abs: accounting_delta
-                    .unclassified_loss
-                    .abs()
+                conservation_delta_abs: accounting_delta.unclassified_loss.abs()
                     + accounting_delta.unclassified_gain.abs(),
                 matter_created_amount: accounting_delta.unclassified_gain.max(0.0),
                 matter_destroyed_amount: accounting_delta.unclassified_loss.max(0.0),

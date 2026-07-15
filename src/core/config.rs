@@ -529,7 +529,11 @@ pub struct SchedulerConfig {
     pub observer: SchedulerObserverConfig,
 }
 
-pub fn deterministic_genome_decision_offset(world_seed: u64, cell_id_raw: u32, cadence: u64) -> u64 {
+pub fn deterministic_genome_decision_offset(
+    world_seed: u64,
+    cell_id_raw: u32,
+    cadence: u64,
+) -> u64 {
     let cadence = cadence.max(1);
     let mut hash = 0xcbf29ce484222325_u64;
     for byte in b"genome-runtime-stagger" {
@@ -766,6 +770,24 @@ impl RuntimeConfig {
             self.world.seed.raw(),
             self.world.size.width().to_bits() as u64,
             self.world.size.height().to_bits() as u64,
+            self.simulation_time.tick_duration_ms as u64,
+            self.scheduler.cell.genome_runtime_base_ticks,
+            self.scheduler.cell.genome_runtime_ticks_per_layer,
+            self.scheduler.cell.signal_emit_ticks,
+            self.scheduler.cell.controlled_reaction_ticks,
+            self.scheduler.cell.simple_synthesis_ticks,
+            self.scheduler.cell.basic_repair_ticks,
+            self.scheduler.cell.internal_rebalance_ticks,
+            self.scheduler.world.resource_diffusion_ticks,
+            self.scheduler.world.resource_decay_ticks,
+            self.scheduler.world.passive_reactions_ticks,
+            self.scheduler.world.background_material_degradation_ticks,
+            self.scheduler.world.environment_heat_diffusion_ticks,
+            self.scheduler.world.field_update_ticks,
+            self.scheduler.observer.observer_metrics_ticks,
+            self.scheduler.observer.resource_totals_ticks,
+            self.scheduler.observer.graph_analysis_ticks,
+            self.scheduler.observer.debug_trace_ticks,
             self.space.spatial_grid_size.to_bits() as u64,
             self.space.physics_solver_iterations as u64,
             self.cell.position.x().to_bits() as u64,
@@ -997,6 +1019,7 @@ impl RuntimeConfig {
             add_text(&mut hash, template.id().as_str());
             add(&mut hash, template.variation_amplitude().to_bits() as u64);
             add(&mut hash, template.runtime_interval_ticks());
+            add(&mut hash, template.regulatory_depth());
             add_text(&mut hash, &template.carrier().material_id);
             add(&mut hash, template.carrier().amount.to_bits() as u64);
             add(&mut hash, template.carrier().integrity.to_bits() as u64);

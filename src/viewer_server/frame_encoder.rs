@@ -16,7 +16,12 @@ pub fn encode_world_frame(frame: &WorldFrameProjection) -> Vec<u8> {
     bytes.extend_from_slice(&frame.committed_tick.to_le_bytes());
     bytes.extend_from_slice(&frame.projection_sequence.to_le_bytes());
     bytes.extend_from_slice(&frame.wall_clock_generated_at_ms.to_le_bytes());
-    bytes.extend_from_slice(&frame.previous_committed_tick.unwrap_or(u64::MAX).to_le_bytes());
+    bytes.extend_from_slice(
+        &frame
+            .previous_committed_tick
+            .unwrap_or(u64::MAX)
+            .to_le_bytes(),
+    );
     bytes.extend_from_slice(&frame.heat.to_le_bytes());
     bytes.extend_from_slice(&frame.waste.to_le_bytes());
     bytes.extend_from_slice(&(cell_count as u32).to_le_bytes());

@@ -95,10 +95,12 @@ fn cached_action_plan_runs_between_genome_runtime_refreshes() {
     for _ in 1..first_due_tick {
         let summary = executor.step().unwrap();
         assert_eq!(summary.metrics.genome_decision_refresh_count, 0);
-        assert!(summary
-            .diagnostics
-            .attempt_order_by_process
-            .contains(&ProcessId::LocalResourceUptake));
+        assert!(
+            summary
+                .diagnostics
+                .attempt_order_by_process
+                .contains(&ProcessId::LocalResourceUptake)
+        );
     }
 
     let due = executor.step().unwrap();
