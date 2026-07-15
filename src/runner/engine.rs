@@ -9,12 +9,14 @@ use std::fmt;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RunEngineConfig {
     pub snapshot_buffer_size: usize,
+    pub snapshot_every_ticks: u64,
 }
 
 impl Default for RunEngineConfig {
     fn default() -> Self {
         Self {
             snapshot_buffer_size: 300,
+            snapshot_every_ticks: 1,
         }
     }
 }
@@ -60,6 +62,8 @@ pub struct RunEngine {
     snapshots: RingBuffer<CommittedSnapshot>,
     scenario_hash: Option<ScenarioHash>,
     max_ticks: u64,
+    config: RunEngineConfig,
+    snapshot_build_count: u64,
 }
 
 impl RunEngine {
@@ -78,6 +82,8 @@ impl RunEngine {
             snapshots,
             scenario_hash: Some(document.scenario_hash),
             max_ticks: prepared.runtime_config.world.tick_count.raw(),
+            config,
+            snapshot_build_count: 1,
         })
     }
 
@@ -149,11 +155,24 @@ impl RunEngine {
         &self.snapshots
     }
 
+    pub fn latest_committed_snapshot(&mut self) -> CommittedSnapshot {
+        let executor = self.executor.as_ref().expect("run engine is prepared");
+        self.snapshot_build_count += 1;
+        CommittedSnapshot::from_world(executor.world())
+    }
+
+    pub const fn snapshot_build_count_for_test(&self) -> u64 {
+        self.snapshot_build_count
+    }
+
     fn commit_one_tick(&mut self) -> Result<(), RunEngineError> {
         let executor = self.executor.as_mut().ok_or(RunEngineError::NotPrepared)?;
         executor.step()?;
-        self.snapshots
-            .push(CommittedSnapshot::from_world(executor.world()));
+        if executor.world().tick().raw() % self.config.snapshot_every_ticks.max(1) == 0 {
+            self.snapshots
+                .push(CommittedSnapshot::from_world(executor.world()));
+            self.snapshot_build_count += 1;
+        }
         Ok(())
     }
 }

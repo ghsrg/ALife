@@ -191,6 +191,7 @@ async fn handle_run_start(
         &document,
         RunEngineConfig {
             snapshot_buffer_size: state.lock().unwrap().engine_snapshot_buffer_size,
+            snapshot_every_ticks: 1,
         },
     )
     .map_err(|err| {
