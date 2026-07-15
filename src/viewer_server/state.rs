@@ -5,6 +5,9 @@ use crate::runner::projections::WorldFrameProjection;
 use crate::runner::scenario_doc::{ScenarioDocument, ScenarioSource};
 use crate::viewer_server::broadcaster::{Broadcaster, WsMessage};
 use crate::viewer_server::frame_encoder::encode_world_frame;
+use crate::viewer_server::projection_sampler::{
+    ProjectionDecision, ViewerProjectionConfig, ViewerProjectionSampler,
+};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -74,6 +77,7 @@ pub struct SharedState {
     pub tick_signal: Option<Arc<TickLoopSignal>>,
     pub engine_snapshot_buffer_size: usize,
     pub target_broadcast_fps: u32,
+    pub viewer_projection: ViewerProjectionConfig,
     pub broadcaster: Broadcaster,
 }
 
@@ -82,6 +86,7 @@ impl SharedState {
         scenarios_dir: PathBuf,
         engine_snapshot_buffer_size: usize,
         target_broadcast_fps: u32,
+        viewer_projection: ViewerProjectionConfig,
     ) -> Self {
         Self {
             engine: None,
@@ -97,6 +102,7 @@ impl SharedState {
             tick_signal: None,
             engine_snapshot_buffer_size,
             target_broadcast_fps,
+            viewer_projection,
             broadcaster: Broadcaster::new(128),
         }
     }
@@ -167,10 +173,28 @@ pub fn new_app_state(
     engine_snapshot_buffer_size: usize,
     target_broadcast_fps: u32,
 ) -> AppState {
+    new_app_state_with_projection(
+        scenarios_dir,
+        engine_snapshot_buffer_size,
+        target_broadcast_fps,
+        ViewerProjectionConfig {
+            target_frames_per_second: target_broadcast_fps,
+            ..ViewerProjectionConfig::default()
+        },
+    )
+}
+
+pub fn new_app_state_with_projection(
+    scenarios_dir: PathBuf,
+    engine_snapshot_buffer_size: usize,
+    target_broadcast_fps: u32,
+    viewer_projection: ViewerProjectionConfig,
+) -> AppState {
     Arc::new(Mutex::new(SharedState::new(
         scenarios_dir,
         engine_snapshot_buffer_size,
         target_broadcast_fps,
+        viewer_projection,
     )))
 }
 
@@ -263,9 +287,9 @@ pub fn dispatch_command(
 
 pub fn spawn_tick_loop(state: AppState) {
     let signal = Arc::new(TickLoopSignal::new());
-    let (broadcast_sender, target_broadcast_fps) = {
+    let (broadcast_sender, viewer_projection) = {
         let locked = state.lock().unwrap();
-        (locked.broadcaster.sender(), locked.target_broadcast_fps)
+        (locked.broadcaster.sender(), locked.viewer_projection)
     };
     {
         let mut locked = state.lock().unwrap();
@@ -273,9 +297,7 @@ pub fn spawn_tick_loop(state: AppState) {
     }
 
     std::thread::spawn(move || {
-        let frame_interval =
-            Duration::from_millis(1000_u64.saturating_div(target_broadcast_fps.max(1) as u64));
-        let mut last_broadcast = Instant::now() - frame_interval;
+        let mut sampler = ViewerProjectionSampler::new(viewer_projection);
         loop {
             if signal.is_stop_requested() {
                 break;
@@ -287,19 +309,20 @@ pub fn spawn_tick_loop(state: AppState) {
 
             let result = {
                 let mut locked = state.lock().unwrap();
-                let should_broadcast = last_broadcast.elapsed() >= frame_interval;
                 let tick_result = match locked.engine.as_mut() {
                     Some(engine) => match engine.run_one_tick() {
                         Ok(()) => {
                             let committed_tick = engine.current_tick();
-                            let frame = if should_broadcast {
-                                engine.snapshots().newest().map(|snapshot| {
+                            let frame = match sampler.on_committed_tick(committed_tick, Instant::now()) {
+                                ProjectionDecision::Emit
+                                | ProjectionDecision::EmitForced
+                                | ProjectionDecision::EmitHeartbeat => {
+                                    let snapshot = engine.latest_committed_snapshot();
                                     let projection =
-                                        WorldFrameProjection::from_committed_snapshot(snapshot);
-                                    encode_world_frame(&projection)
-                                })
-                            } else {
-                                None
+                                        WorldFrameProjection::from_committed_snapshot(&snapshot);
+                                    Some(encode_world_frame(&projection))
+                                }
+                                ProjectionDecision::Skip => None,
                             };
                             Ok((committed_tick, frame))
                         }
@@ -320,7 +343,6 @@ pub fn spawn_tick_loop(state: AppState) {
             match result {
                 Ok(Some(bytes)) => {
                     let _ = broadcast_sender.send(WsMessage::Frame(bytes));
-                    last_broadcast = Instant::now();
                 }
                 Ok(None) => {}
                 Err(_) => {
