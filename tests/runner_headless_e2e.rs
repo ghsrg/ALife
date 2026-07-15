@@ -2,13 +2,14 @@ use alife::runner::engine::{RunEngine, RunEngineConfig};
 use alife::runner::lifecycle::ActiveRunState;
 use alife::runner::scenario::{load_scenario_document, scan_scenarios};
 
-fn engine() -> RunEngine {
+fn document(id: &str) -> alife::runner::scenario_doc::ScenarioDocument {
     let scenarios = scan_scenarios("config/scenarios").unwrap();
-    let meta = scenarios
-        .iter()
-        .find(|scenario| scenario.id == "bootstrap_minimal_viable_world")
-        .unwrap();
-    let document = load_scenario_document(meta).unwrap();
+    let meta = scenarios.iter().find(|scenario| scenario.id == id).unwrap();
+    load_scenario_document(meta).unwrap()
+}
+
+fn engine() -> RunEngine {
+    let document = document("bootstrap_minimal_viable_world");
     let mut engine =
         RunEngine::prepare_from_document(&document, RunEngineConfig::default()).unwrap();
     engine.start().unwrap();
@@ -45,12 +46,7 @@ fn same_seed_produces_same_final_snapshot_summary() {
 
 #[test]
 fn step_run_executes_one_tick_only_while_paused() {
-    let scenarios = scan_scenarios("config/scenarios").unwrap();
-    let meta = scenarios
-        .iter()
-        .find(|scenario| scenario.id == "bootstrap_minimal_viable_world")
-        .unwrap();
-    let document = load_scenario_document(meta).unwrap();
+    let document = document("bootstrap_minimal_viable_world");
     let mut engine =
         RunEngine::prepare_from_document(&document, RunEngineConfig::default()).unwrap();
 
@@ -58,4 +54,23 @@ fn step_run_executes_one_tick_only_while_paused() {
 
     assert_eq!(engine.state(), ActiveRunState::Paused);
     assert_eq!(engine.current_tick(), 1);
+}
+
+#[test]
+fn headless_debug_can_run_ticks_without_building_cached_snapshots() {
+    let document = document("bootstrap_minimal_viable_world");
+    let mut engine =
+        RunEngine::prepare_from_document(&document, RunEngineConfig::headless_debug()).unwrap();
+
+    engine.start().unwrap();
+    for _ in 0..20 {
+        engine.run_one_tick().unwrap();
+    }
+
+    assert_eq!(engine.current_tick(), 20);
+    assert_eq!(engine.snapshot_build_count_for_test(), 1);
+
+    let progress_snapshot = engine.latest_committed_snapshot();
+    assert_eq!(progress_snapshot.tick.raw(), 20);
+    assert_eq!(engine.snapshot_build_count_for_test(), 2);
 }
