@@ -8,7 +8,8 @@ use crate::core::materials::MaterialSlot;
 use crate::core::process::{ActionCandidate, FeasibilityResult, ProcessId};
 use crate::core::resources::ResourceLayerIndex;
 use crate::core::summary::{
-    CollapseReason, MetricsSummary, ProcessDiagnostics, RunSummary, SurvivalResult,
+    AnalyticsSummary, CollapseReason, MetricsSummary, ObserverProjectionSummary,
+    ProcessDiagnostics, RunSummary, SurvivalResult, TickAccountingSummary,
 };
 use crate::core::units::{
     EnergyAmount, HeatAmount, MaterialAmount, Position, ResourceAmount, WasteAmount, WorldSize,
@@ -1301,6 +1302,40 @@ impl TickExecutor {
                 genome_decision_refresh_count,
                 resource_decay_scheduler_elapsed_ticks,
             ),
+            tick_accounting: TickAccountingSummary {
+                conservation_delta_abs: accounting_delta
+                    .unclassified_loss
+                    .abs()
+                    + accounting_delta.unclassified_gain.abs(),
+                matter_created_amount: accounting_delta.unclassified_gain.max(0.0),
+                matter_destroyed_amount: accounting_delta.unclassified_loss.max(0.0),
+            },
+            observer_projection: ObserverProjectionSummary {
+                resource_totals_recomputed: is_due_on_executing_tick(
+                    executing_tick,
+                    config.scheduler.observer.resource_totals_ticks,
+                ),
+                observer_metrics_recomputed: is_due_on_executing_tick(
+                    executing_tick,
+                    config.scheduler.observer.observer_metrics_ticks,
+                ),
+                graph_analysis_recomputed: false,
+                resource_totals: if is_due_on_executing_tick(
+                    executing_tick,
+                    config.scheduler.observer.resource_totals_ticks,
+                ) {
+                    Some(vec![self.aggregate_external_resources()])
+                } else {
+                    None
+                },
+            },
+            analytics: AnalyticsSummary {
+                graph_analysis_recomputed: is_due_on_executing_tick(
+                    executing_tick,
+                    config.scheduler.observer.graph_analysis_ticks,
+                ),
+                organism_candidate_count: None,
+            },
             diagnostics,
         })
     }

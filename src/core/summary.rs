@@ -95,6 +95,27 @@ pub struct MetricsSummary {
 use crate::core::process::{ProcessId, RejectionReason};
 use std::collections::HashMap;
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TickAccountingSummary {
+    pub conservation_delta_abs: f32,
+    pub matter_created_amount: f32,
+    pub matter_destroyed_amount: f32,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ObserverProjectionSummary {
+    pub resource_totals_recomputed: bool,
+    pub observer_metrics_recomputed: bool,
+    pub graph_analysis_recomputed: bool,
+    pub resource_totals: Option<Vec<f32>>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct AnalyticsSummary {
+    pub graph_analysis_recomputed: bool,
+    pub organism_candidate_count: Option<u32>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ProcessDiagnostics {
     pub attempts_by_process: HashMap<ProcessId, u32>,
@@ -111,5 +132,8 @@ pub struct RunSummary {
     pub survival_result: SurvivalResult,
     pub collapse_reason: CollapseReason,
     pub metrics: MetricsSummary,
+    pub tick_accounting: TickAccountingSummary,
+    pub observer_projection: ObserverProjectionSummary,
+    pub analytics: AnalyticsSummary,
     pub diagnostics: ProcessDiagnostics,
 }
