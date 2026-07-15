@@ -472,9 +472,10 @@ Current implementation status:
 
 - Runner already has WS frame throttling through `target_broadcast_fps`.
 - `TickExecutor::step()` currently computes many systems every Tick.
-- `GenomeTemplate.runtime_interval_ticks` exists in config parsing and hashing, but the Core still needs explicit ActionPlan refresh cadence.
-- `RunEngine` currently stores a committed snapshot after every Tick.
-- A future implementation should move viewer frame selection into an explicit `ViewerProjectionSampler` and keep Core commit boundaries deterministic.
+- Core supports explicit cached ActionPlan refresh cadence through scheduler defaults, Genome template overrides, regulatory depth, and deterministic staggering.
+- `RunEngine` supports explicit snapshot cache cadence. Headless debug uses
+  on-demand snapshots for terminal progress. Viewer projection remains governed
+  by `ViewerProjectionSampler`, not by the snapshot cache cadence.
 
 ---
 
