@@ -529,6 +529,24 @@ pub struct SchedulerConfig {
     pub observer: SchedulerObserverConfig,
 }
 
+pub fn deterministic_genome_decision_offset(world_seed: u64, cell_id_raw: u32, cadence: u64) -> u64 {
+    let cadence = cadence.max(1);
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in b"genome-runtime-stagger" {
+        hash ^= *byte as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for byte in world_seed.to_le_bytes() {
+        hash ^= byte as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for byte in cell_id_raw.to_le_bytes() {
+        hash ^= byte as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    hash % cadence
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ConfigError {
     InitialEnergyExceedsCapacity,
@@ -625,6 +643,46 @@ impl RuntimeConfig {
             return Err(ConfigError::InvalidSchedulerCadence);
         }
         Ok(())
+    }
+
+    pub fn effective_genome_runtime_cadence_ticks(&self, template_id: &str) -> Option<u64> {
+        let template = self
+            .genome_templates
+            .iter()
+            .find(|candidate| candidate.id().as_str() == template_id)?;
+        Some(self.effective_genome_runtime_cadence_ticks_for_template(template))
+    }
+
+    pub fn effective_genome_runtime_cadence_ticks_for_template(
+        &self,
+        template: &GenomeTemplate,
+    ) -> u64 {
+        let base = template.runtime_interval_ticks().max(1);
+        let depth = template.regulatory_depth().max(1);
+        base + (depth - 1) * self.scheduler.cell.genome_runtime_ticks_per_layer.max(1)
+    }
+
+    pub fn effective_genome_runtime_cadence_ticks_for_genome(
+        &self,
+        genome: Option<&crate::core::genome::GenomeState>,
+    ) -> u64 {
+        let Some(genome) = genome else {
+            return self.scheduler.cell.genome_runtime_base_ticks.max(1);
+        };
+        self.effective_genome_runtime_cadence_ticks(genome.template_id.as_str())
+            .unwrap_or(self.scheduler.cell.genome_runtime_base_ticks.max(1))
+    }
+
+    pub fn initial_genome_runtime_offsets(&self, count: usize, cadence: u64) -> Vec<u64> {
+        (0..count)
+            .map(|index| {
+                deterministic_genome_decision_offset(
+                    self.world.seed.raw(),
+                    (index as u32).saturating_add(1),
+                    cadence,
+                )
+            })
+            .collect()
     }
 
     pub fn validate_phase2d_options(&self) -> Result<(), ConfigError> {

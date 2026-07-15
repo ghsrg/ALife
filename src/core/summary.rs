@@ -88,6 +88,7 @@ pub struct MetricsSummary {
     pub integrated_matter_after: f32,
     pub integrated_matter_unclassified_loss: f32,
     pub integrated_matter_unclassified_gain: f32,
+    pub genome_decision_refresh_count: u32,
 }
 
 use crate::core::process::{ProcessId, RejectionReason};

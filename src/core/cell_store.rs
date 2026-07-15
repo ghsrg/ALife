@@ -1,3 +1,4 @@
+use crate::core::action_plan::ActionPlan;
 use crate::core::genome::GenomeId;
 use crate::core::ids::{CellId, ResourceTypeId};
 use crate::core::materials::{MaterialComposition, MaterialSlot};
@@ -115,6 +116,9 @@ pub struct CellStore {
     contact_stimulus_next: Vec<f32>,
     genome_ids: Vec<Option<GenomeId>>,
     genome_carrier_amounts: Vec<f32>,
+    action_plans: Vec<ActionPlan>,
+    next_genome_decision_due_ticks: Vec<u64>,
+    genome_decision_offsets: Vec<u64>,
     next_cell_id: u32,
 }
 
@@ -147,6 +151,9 @@ impl CellStore {
             contact_stimulus_next: Vec::with_capacity(capacity),
             genome_ids: Vec::with_capacity(capacity),
             genome_carrier_amounts: Vec::with_capacity(capacity),
+            action_plans: Vec::with_capacity(capacity),
+            next_genome_decision_due_ticks: Vec::with_capacity(capacity),
+            genome_decision_offsets: Vec::with_capacity(capacity),
             next_cell_id: 1,
         }
     }
@@ -182,6 +189,9 @@ impl CellStore {
         self.contact_stimulus_next.push(0.0);
         self.genome_ids.push(None);
         self.genome_carrier_amounts.push(0.0);
+        self.action_plans.push(ActionPlan::empty());
+        self.next_genome_decision_due_ticks.push(1);
+        self.genome_decision_offsets.push(0);
         id
     }
 
@@ -246,6 +256,30 @@ impl CellStore {
 
     pub fn set_genome_carrier_amount(&mut self, index: CellIndex, amount: f32) {
         self.genome_carrier_amounts[index.raw()] = amount.max(0.0);
+    }
+
+    pub fn action_plan(&self, index: CellIndex) -> &ActionPlan {
+        &self.action_plans[index.raw()]
+    }
+
+    pub fn set_action_plan(&mut self, index: CellIndex, plan: ActionPlan) {
+        self.action_plans[index.raw()] = plan;
+    }
+
+    pub fn next_genome_decision_due_tick(&self, index: CellIndex) -> u64 {
+        self.next_genome_decision_due_ticks[index.raw()]
+    }
+
+    pub fn set_next_genome_decision_due_tick(&mut self, index: CellIndex, tick: u64) {
+        self.next_genome_decision_due_ticks[index.raw()] = tick;
+    }
+
+    pub fn genome_decision_offset(&self, index: CellIndex) -> u64 {
+        self.genome_decision_offsets[index.raw()]
+    }
+
+    pub fn set_genome_decision_offset(&mut self, index: CellIndex, offset: u64) {
+        self.genome_decision_offsets[index.raw()] = offset;
     }
 
     pub fn used_capacity(&self, index: CellIndex) -> CapacityAmount {

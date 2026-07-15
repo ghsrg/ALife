@@ -107,6 +107,7 @@ impl TickExecutor {
     pub fn step(&mut self) -> Result<RunSummary, TickError> {
         let config = self.world.config().clone();
         let len = self.world.cells().len();
+        let executing_tick = self.world.tick().raw() + 1;
         let accounting_before = IntegratedAccountingSnapshot::from_world(&self.world);
 
         // Rebuild Spatial Index at the start of tick
@@ -478,6 +479,7 @@ impl TickExecutor {
         let mut process_rejections = 0_u32;
         let mut repair_success_count = 0_u32;
         let mut repair_rejection_count = 0_u32;
+        let mut genome_decision_refresh_count = 0_u32;
         let mut diagnostics = ProcessDiagnostics::default();
 
         // Phase A: Uptake, Metabolism, Synthesis, Growth, and Displacement Reflex Loop
@@ -492,7 +494,17 @@ impl TickExecutor {
                 .cells()
                 .genome_id(index)
                 .and_then(|id| self.world.genome(id));
-            let action_plan = ActionPlan::from_genome(genome);
+            let genome_cadence = config
+                .effective_genome_runtime_cadence_ticks_for_genome(genome)
+                .max(1);
+            if self.world.cells().next_genome_decision_due_tick(index) <= executing_tick {
+                let plan = ActionPlan::from_genome(genome);
+                let cells = self.world.cells_mut_for_commit();
+                cells.set_action_plan(index, plan);
+                cells.set_next_genome_decision_due_tick(index, executing_tick + genome_cadence);
+                genome_decision_refresh_count += 1;
+            }
+            let action_plan = self.world.cells().action_plan(index).clone();
 
             for process_id in action_plan.ordered_processes() {
                 match *process_id {
@@ -1275,6 +1287,7 @@ impl TickExecutor {
                 accounting_before,
                 accounting_after,
                 accounting_delta,
+                genome_decision_refresh_count,
             ),
             diagnostics,
         })
@@ -1654,6 +1667,7 @@ impl TickExecutor {
         accounting_before: IntegratedAccountingSnapshot,
         accounting_after: IntegratedAccountingSnapshot,
         accounting_delta: MatterAccountingDelta,
+        genome_decision_refresh_count: u32,
     ) -> MetricsSummary {
         let cells = self.world.cells();
         let mut final_internal_resources = 0.0_f32;
@@ -1766,6 +1780,7 @@ impl TickExecutor {
             integrated_matter_after: accounting_after.total_matter(),
             integrated_matter_unclassified_loss: accounting_delta.unclassified_loss,
             integrated_matter_unclassified_gain: accounting_delta.unclassified_gain,
+            genome_decision_refresh_count,
         }
     }
 }

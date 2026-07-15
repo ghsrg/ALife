@@ -67,6 +67,7 @@ pub struct RawCellGenome {
 pub struct RawGenomeTemplate {
     pub variation_amplitude: f32,
     pub runtime_interval_ticks: Option<u64>,
+    pub regulatory_depth: Option<u64>,
     pub carrier: RawGenomeCarrier,
     #[serde(default)]
     pub outputs: HashMap<String, f32>,
@@ -1026,7 +1027,10 @@ impl RawScenarioConfig {
             runtime_config = runtime_config.with_cells(initial_cells);
         }
 
-        let genome_templates = parse_genome_templates(&self.genome_templates)?;
+        let genome_templates = parse_genome_templates(
+            &self.genome_templates,
+            runtime_config.scheduler.cell.genome_runtime_base_ticks,
+        )?;
         let known_templates: std::collections::HashSet<_> = genome_templates
             .iter()
             .map(|template| template.id().as_str())
@@ -1079,6 +1083,7 @@ impl RawScenarioConfig {
 
 fn parse_genome_templates(
     raw: &HashMap<String, RawGenomeTemplate>,
+    default_runtime_interval_ticks: u64,
 ) -> Result<Vec<GenomeTemplate>, ParseError> {
     let mut names: Vec<_> = raw.keys().cloned().collect();
     names.sort();
@@ -1101,7 +1106,9 @@ fn parse_genome_templates(
                     ParseError::ValidationError(format!("Invalid Genome template id: {error:?}"))
                 })?,
                 value.variation_amplitude,
-                value.runtime_interval_ticks.unwrap_or(1),
+                value
+                    .runtime_interval_ticks
+                    .unwrap_or(default_runtime_interval_ticks),
                 GenomeCarrierState::new(
                     value.carrier.material_id.clone(),
                     value.carrier.amount,
@@ -1112,6 +1119,7 @@ fn parse_genome_templates(
                 })?,
                 outputs,
             )
+            .and_then(|template| template.with_regulatory_depth(value.regulatory_depth.unwrap_or(1)))
             .map_err(|error| {
                 ParseError::ValidationError(format!("Invalid Genome template: {error:?}"))
             })
