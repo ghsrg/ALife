@@ -305,6 +305,48 @@ game-like interface
 
 Архітектура може дозволяти майбутні skins, але вони не входять у цей plan.
 
+## Interface Design Alignment Gates
+
+`docs/ui/control-center-monitor-v3.png` is sufficient as the visual direction
+for `UI-1A`, but it is not a complete design specification.
+
+The first separate interface design session is required after `UI-1A` produces
+a working Chromium shell with deterministic fixture rendering, and before
+`UI-1C` starts WOW rendering, semantic zoom, high-detail Inspector work, and
+finalized design-system choices.
+
+Recommended sequence:
+
+```text
+UI-1A Application Shell And Deterministic Fixture Viewer
+  -> Interface Design Alignment Session
+  -> UI-1B Live Projection Transport And Run Controls
+  -> UI-1C WOW World Rendering, Semantic Zoom And Cell Inspector
+```
+
+`UI-1B` may proceed before or in parallel with the design session only if it
+stays within existing shell/control placeholders and does not lock in visual
+language, layout density, or renderer style decisions. `UI-1C` must not start
+without the alignment result.
+
+The first design session must decide:
+
+- Monitor layout acceptance against `control-center-monitor-v3.png`;
+- Light/Dark visual direction;
+- base design tokens;
+- panel density, spacing, and typography scale;
+- toolbar and run-control states;
+- Viewer layer style and color semantics;
+- Inspector hierarchy;
+- what remains in `Start` scope versus what is deferred to `Debug` or `Research`.
+
+Later mandatory design gates:
+
+- before `UI-2 Debug`: dense debug information architecture, exact layers,
+  expanded Inspectors, tables, warnings, and raw-data affordances;
+- before `UI-3 Research`: experiment design, evolution views, library,
+  reporting, saved assets, and long-running research workflows.
+
 # UI-1 Start — WOW, Demo And End-To-End Proof
 
 ## Мета
@@ -404,6 +446,12 @@ Ticks per second
 Frames per second
 Stop
 ```
+
+`Step N` is a UI placeholder for now. Current Runner Canon exposes only
+`StepRun`, which executes exactly one committed Tick and is valid only while
+Paused. Until a bounded multi-step Runner command is accepted, UI may display
+`Step N` as disabled or implement it later as an explicit, bounded sequence of
+single-step commands with visible progress and cancellation.
 
 Simulation rate і visualization frame rate показуються окремо.
 
@@ -1717,6 +1765,13 @@ Inspector shows fixture data
 Light/Dark work
 screenshot can be exported
 ```
+
+Visual target for this slice is `docs/ui/control-center-monitor-v3.png`.
+It is a product direction reference, not a full implementation contract.
+`UI-1A` should take the shell density, Monitor layout, layer panel, world view,
+Inspector position, and bottom data-panel structure from this image, but defer
+OrganismView detail, rich analytics, warning depth, classification labels, and
+live-only metrics until later slices.
 
 Після цього створюється:
 

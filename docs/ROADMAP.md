@@ -65,6 +65,39 @@ UI Canon додано в `docs/ui/`. High-level план реалізації UI
 
 ---
 
+# UI Design Checkpoints
+
+Поточний visual target `docs/ui/control-center-monitor-v3.png` достатній для старту `UI-1A`.
+
+Окрема дизайн-сесія інтерфейсу не блокує перший fixture slice. Її потрібно провести після `UI-1A`, коли вже є working Chromium shell, fixture Viewer, базові panels і screenshot для обговорення, але до `UI-1C`, де фіксуються дорогі візуальні рішення:
+
+```text
+UI-1A Application Shell And Deterministic Fixture Viewer
+  -> Interface Design Alignment Session
+  -> UI-1B Live Projection Transport And Run Controls
+  -> UI-1C WOW World Rendering, Semantic Zoom And Cell Inspector
+```
+
+`UI-1B` може йти до або паралельно з design alignment, якщо не змінює layout/design-system decisions. `UI-1C` не повинен стартувати без зафіксованих design decisions.
+
+Мінімальний результат дизайн-сесії:
+
+- підтверджений Monitor layout;
+- Light/Dark direction;
+- design tokens baseline;
+- panel density і spacing;
+- control states;
+- viewer layer style;
+- Inspector visual hierarchy;
+- rules for what from `control-center-monitor-v3.png` is in `Start` scope and what deferred to `Debug` або `Research`.
+
+Наступні дизайн-gates:
+
+- перед `UI-2 Debug`: інформаційна архітектура debug/workspace, exact layers, inspectors, dense tables;
+- перед `UI-3 Research`: experiments, evolution, library, reports, long-running research workflows.
+
+---
+
 # Майбутня рамка реалізації
 
 Реалізаційні фази не є частиною Canon-документації.

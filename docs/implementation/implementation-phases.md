@@ -130,7 +130,7 @@ Runner side-track during Phase 2:
 docs/implementation/implementation-plan-runner.md
 ```
 
-Runner enables live UI connection and is required before UI-1B can begin. It runs in parallel with Phase 2 mechanics work and must be complete before Phase 3 starts. The side-track covers: HTTP command API, WebSocket frame stream, scenario discovery, run state machine, ring buffer, and remote viewer mode.
+Runner enables live UI connection and is required before UI-1B can begin. It runs in parallel with Phase 2 mechanics work and must be complete before Phase 3 starts. The side-track covers: HTTP command API, WebSocket frame stream, scenario discovery, run state machine, internal committed-snapshot cache policy, and remote viewer mode. Server-side frame history and seek remain out of scope; UI scroll-back is client-side.
 
 Gate:
 

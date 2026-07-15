@@ -305,8 +305,13 @@ Frame format: бінарний, версіонований. Точна схем�
 Wire frames encode `WorldFrameProjection`, not internal `WorldState`. The allowed pipeline is:
 
 ```text
-Committed Core State -> Projection Builder -> WorldFrameProjection v1 -> ALIF frame bytes
+Committed Core State -> Projection Builder -> WorldFrameProjection v2 -> ALIF v2 frame bytes
 ```
+
+Current implemented wire format is `ALIF v2`. It includes interpolation metadata
+for UI rendering: `projection_sequence`, `wall_clock_generated_at_ms`, and
+`previous_committed_tick`. Scenario hash versioning remains separate
+(`scenario_hash_v1`).
 
 ### Кілька клієнтів
 
@@ -556,8 +561,8 @@ Build:
 
 ```text
 WS /stream endpoint (axum WebSocket)
-CommittedSnapshot -> WorldFrameProjection v1 -> binary frame encoder
-CommittedSnapshot → binary frame encoder (версіонований формат ALIF v1)
+CommittedSnapshot -> WorldFrameProjection v2 -> binary frame encoder
+CommittedSnapshot → binary frame encoder (версіонований формат ALIF v2)
 time-based broadcast: push не частіше target_broadcast_fps (default 30fps)
 незалежний підписник per connection (tokio::sync::broadcast)
 slow client → RecvError::Lagged → skip, continue (не блокує Core)
