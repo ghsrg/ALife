@@ -1,5 +1,7 @@
 export type CellId = string;
 
+export type FrameSource = 'fixture' | 'live';
+
 export interface ResourceConcentration {
   organic: number;
   mineral: number;
@@ -15,11 +17,14 @@ export interface CellProjection {
   integrity: number;
   generation: number;
   roleHint: string;
+  lifecycle?: number;
 }
 
 export interface WorldFrame {
   schemaVersion: 'WorldFrameProjection/v1';
+  source?: FrameSource;
   runId: string;
+  scenarioName?: string;
   tick: number;
   world: {
     width: number;
@@ -27,6 +32,13 @@ export interface WorldFrame {
   };
   resources: ResourceConcentration[][];
   cells: CellProjection[];
+  summary?: {
+    heat: number;
+    waste: number;
+    projectionSequence?: number;
+    previousTick?: number | null;
+    generatedAtMs?: number;
+  };
 }
 
 export interface UiFixture {
