@@ -417,6 +417,7 @@ impl Default for MaterialEffectConfig {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
+    pub simulation_time: SimulationTimeConfig,
     pub world: WorldConfig,
     pub space: SpaceConfig,
     pub resources: ResourceConfig,
@@ -438,6 +439,94 @@ pub struct RuntimeConfig {
     pub local_interaction: LocalInteractionConfig,
     pub joints: JointConfig,
     pub chemistry: ChemistryConfig,
+    pub scheduler: SchedulerConfig,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SimulationTimeConfig {
+    pub tick_duration_ms: u32,
+}
+
+impl Default for SimulationTimeConfig {
+    fn default() -> Self {
+        Self {
+            tick_duration_ms: 100,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SchedulerCellConfig {
+    pub genome_runtime_base_ticks: u64,
+    pub genome_runtime_ticks_per_layer: u64,
+    pub signal_emit_ticks: u64,
+    pub controlled_reaction_ticks: u64,
+    pub simple_synthesis_ticks: u64,
+    pub basic_repair_ticks: u64,
+    pub internal_rebalance_ticks: u64,
+}
+
+impl Default for SchedulerCellConfig {
+    fn default() -> Self {
+        Self {
+            genome_runtime_base_ticks: 1,
+            genome_runtime_ticks_per_layer: 1,
+            signal_emit_ticks: 1,
+            controlled_reaction_ticks: 1,
+            simple_synthesis_ticks: 1,
+            basic_repair_ticks: 1,
+            internal_rebalance_ticks: 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SchedulerWorldConfig {
+    pub resource_diffusion_ticks: u64,
+    pub resource_decay_ticks: u64,
+    pub passive_reactions_ticks: u64,
+    pub background_material_degradation_ticks: u64,
+    pub environment_heat_diffusion_ticks: u64,
+    pub field_update_ticks: u64,
+}
+
+impl Default for SchedulerWorldConfig {
+    fn default() -> Self {
+        Self {
+            resource_diffusion_ticks: 1,
+            resource_decay_ticks: 1,
+            passive_reactions_ticks: 1,
+            background_material_degradation_ticks: 1,
+            environment_heat_diffusion_ticks: 1,
+            field_update_ticks: 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SchedulerObserverConfig {
+    pub observer_metrics_ticks: u64,
+    pub resource_totals_ticks: u64,
+    pub graph_analysis_ticks: u64,
+    pub debug_trace_ticks: u64,
+}
+
+impl Default for SchedulerObserverConfig {
+    fn default() -> Self {
+        Self {
+            observer_metrics_ticks: 1,
+            resource_totals_ticks: 1,
+            graph_analysis_ticks: 1,
+            debug_trace_ticks: 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SchedulerConfig {
+    pub cell: SchedulerCellConfig,
+    pub world: SchedulerWorldConfig,
+    pub observer: SchedulerObserverConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -455,6 +544,7 @@ pub enum ConfigError {
     InvalidDecompositionLayer,
     InvalidLocalInteractionRate,
     InvalidJointRate,
+    InvalidSchedulerCadence,
 }
 
 impl RuntimeConfig {
@@ -485,6 +575,7 @@ impl RuntimeConfig {
         let initial_cells = vec![cell];
 
         Ok(Self {
+            simulation_time: SimulationTimeConfig::default(),
             world,
             space,
             resources,
@@ -506,7 +597,34 @@ impl RuntimeConfig {
             local_interaction: LocalInteractionConfig::default(),
             joints: JointConfig::default(),
             chemistry: ChemistryConfig::default(),
+            scheduler: SchedulerConfig::default(),
         })
+    }
+
+    pub fn validate_scheduler_options(&self) -> Result<(), ConfigError> {
+        let values = [
+            self.scheduler.cell.genome_runtime_base_ticks,
+            self.scheduler.cell.genome_runtime_ticks_per_layer,
+            self.scheduler.cell.signal_emit_ticks,
+            self.scheduler.cell.controlled_reaction_ticks,
+            self.scheduler.cell.simple_synthesis_ticks,
+            self.scheduler.cell.basic_repair_ticks,
+            self.scheduler.cell.internal_rebalance_ticks,
+            self.scheduler.world.resource_diffusion_ticks,
+            self.scheduler.world.resource_decay_ticks,
+            self.scheduler.world.passive_reactions_ticks,
+            self.scheduler.world.background_material_degradation_ticks,
+            self.scheduler.world.environment_heat_diffusion_ticks,
+            self.scheduler.world.field_update_ticks,
+            self.scheduler.observer.observer_metrics_ticks,
+            self.scheduler.observer.resource_totals_ticks,
+            self.scheduler.observer.graph_analysis_ticks,
+            self.scheduler.observer.debug_trace_ticks,
+        ];
+        if values.iter().any(|value| *value == 0) {
+            return Err(ConfigError::InvalidSchedulerCadence);
+        }
+        Ok(())
     }
 
     pub fn validate_phase2d_options(&self) -> Result<(), ConfigError> {
