@@ -40,7 +40,7 @@ export function decodeAlifFrame(input: ArrayBuffer | Uint8Array): LiveWorldFrame
   const projectionSequence = readU64AsNumber(view, 14);
   const wallClockGeneratedAtMs = readU64AsNumber(view, 22);
   const previousRaw = view.getBigUint64(30, true);
-  const previousCommittedTick = previousRaw === U64_MAX ? null : Number(previousRaw);
+  const previousCommittedTick = previousRaw === U64_MAX ? null : readU64AsNumber(view, 30);
   const heat = view.getFloat32(38, true);
   const waste = view.getFloat32(42, true);
   const cellCount = view.getUint32(46, true);

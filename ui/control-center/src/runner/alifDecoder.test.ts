@@ -66,6 +66,13 @@ describe('decodeAlifFrame', () => {
     expect(decodeAlifFrame(bytes).previousCommittedTick).toBeNull();
   });
 
+  it('rejects previous tick values outside JavaScript safe integer range', () => {
+    const bytes = makeFrame(0);
+    new DataView(bytes).setBigUint64(30, 9007199254740993n, true);
+
+    expect(() => decodeAlifFrame(bytes)).toThrow('safe integer range');
+  });
+
   it('rejects invalid magic, unsupported version, and truncated frames', () => {
     const invalidMagic = new Uint8Array(makeFrame());
     invalidMagic[0] = 0x00;
