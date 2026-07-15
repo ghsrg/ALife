@@ -60,4 +60,20 @@ describe('ConnectionPanel', () => {
     expect(screen.getByRole('combobox', { name: 'Scenario' })).toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent('Runner unavailable');
   });
+
+  it('shows connecting state', () => {
+    render(
+      <ConnectionPanel
+        endpoint="http://127.0.0.1:8080"
+        connectionState="connecting"
+        serverInfo={null}
+        scenarios={[]}
+        selectedScenarioId={null}
+        lastError={null}
+        onScenarioChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Connecting')).toBeInTheDocument();
+  });
 });
