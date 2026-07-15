@@ -507,6 +507,12 @@ impl TickExecutor {
             let action_plan = self.world.cells().action_plan(index).clone();
 
             for process_id in action_plan.ordered_processes() {
+                if !is_due_on_executing_tick(
+                    executing_tick,
+                    process_attempt_cadence(&config, *process_id),
+                ) {
+                    continue;
+                }
                 match *process_id {
                     ProcessId::LocalResourceUptake => {
                         if !config.resource_interaction.enabled {
@@ -1791,6 +1797,19 @@ fn baseline_process_level(raw_level: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+fn process_attempt_cadence(config: &RuntimeConfig, process: ProcessId) -> u64 {
+    match process {
+        ProcessId::MaterialSynthesis => config.scheduler.cell.simple_synthesis_ticks,
+        ProcessId::RepairBoundary => config.scheduler.cell.basic_repair_ticks,
+        _ => 1,
+    }
+    .max(1)
+}
+
+fn is_due_on_executing_tick(executing_tick: u64, cadence: u64) -> bool {
+    executing_tick % cadence.max(1) == 0
 }
 
 fn clamp_position_to_world(position: Position, radius: f32, world_size: WorldSize) -> Position {
