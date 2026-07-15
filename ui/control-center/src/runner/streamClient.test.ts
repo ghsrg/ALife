@@ -36,6 +36,7 @@ class FakeWebSocket {
   binaryType: BinaryType = 'blob';
   onopen: (() => void) | null = null;
   onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: (() => void) | null = null;
   onclose: (() => void) | null = null;
   close = vi.fn(() => {
     this.onclose?.();
@@ -51,6 +52,10 @@ class FakeWebSocket {
 
   emitMessage(data: string | ArrayBuffer) {
     this.onmessage?.({ data } as MessageEvent);
+  }
+
+  emitError() {
+    this.onerror?.();
   }
 }
 
@@ -155,5 +160,45 @@ describe('RunnerStreamClient', () => {
 
     expect(socket.close).toHaveBeenCalledTimes(1);
     expect(states).toEqual(['connecting', 'connected', 'disconnected']);
+  });
+
+  it('ignores stale socket events after disconnect and reconnect', () => {
+    const states: string[] = [];
+    const onStatus = vi.fn();
+    const onFrame = vi.fn();
+    const onError = vi.fn();
+    const client = new RunnerStreamClient('http://127.0.0.1:8080', {
+      onConnectionState: (state) => states.push(state),
+      onStatus,
+      onFrame,
+      onError
+    });
+
+    client.connect();
+    const firstSocket = FakeWebSocket.instances[0];
+    firstSocket.emitOpen();
+
+    client.disconnect();
+    client.connect();
+    const secondSocket = FakeWebSocket.instances[1];
+
+    firstSocket.emitOpen();
+    firstSocket.emitMessage(JSON.stringify(statusWire));
+    firstSocket.emitMessage(makeFrame());
+    firstSocket.emitError();
+
+    expect(states).toEqual(['connecting', 'connected', 'disconnected', 'connecting']);
+    expect(onStatus).not.toHaveBeenCalled();
+    expect(onFrame).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+
+    secondSocket.emitOpen();
+    secondSocket.emitMessage(JSON.stringify(statusWire));
+    secondSocket.emitMessage(makeFrame());
+
+    expect(states).toEqual(['connecting', 'connected', 'disconnected', 'connecting', 'connected']);
+    expect(onStatus).toHaveBeenCalledTimes(1);
+    expect(onFrame).toHaveBeenCalledTimes(1);
+    expect(onError).not.toHaveBeenCalled();
   });
 });

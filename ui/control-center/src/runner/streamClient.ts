@@ -38,12 +38,21 @@ export class RunnerStreamClient {
     const socket = new WebSocket(toStreamUrl(this.baseUrl));
     socket.binaryType = 'arraybuffer';
     socket.onopen = () => {
+      if (this.socket !== socket) {
+        return;
+      }
       this.handlers.onConnectionState('connected');
     };
     socket.onmessage = (event) => {
+      if (this.socket !== socket) {
+        return;
+      }
       this.handleMessage(event.data);
     };
     socket.onerror = () => {
+      if (this.socket !== socket) {
+        return;
+      }
       this.handlers.onError(new Error('Runner stream socket error'));
     };
     socket.onclose = () => {
