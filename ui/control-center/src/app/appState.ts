@@ -6,7 +6,7 @@ import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClien
 import type { RunnerStreamConnectionState as ConnectionState } from '../runner/streamClient';
 
 export type ThemeMode = 'dark' | 'light';
-export type PendingCommand = 'start' | 'pause' | 'resume' | 'step' | 'stop';
+export type PendingCommand = 'connect' | 'start' | 'pause' | 'resume' | 'step' | 'stop';
 
 export interface AppState {
   frame: WorldFrame;
@@ -92,23 +92,17 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     setConnected: (serverInfo) =>
       set({
         connectionState: 'connected',
-        serverInfo
+        serverInfo,
+        lastError: null
       }),
-    setScenarios: (scenarios) => {
-      const currentScenarioId = get().selectedScenarioId;
-      const selectedScenarioId =
-        scenarios.find((scenario) => scenario.id === currentScenarioId)?.id ??
-        scenarios[0]?.id ??
-        null;
-
+    setScenarios: (scenarios) =>
       set({
         scenarios,
-        selectedScenarioId
-      });
-    },
+        selectedScenarioId: get().selectedScenarioId ?? scenarios[0]?.id ?? null
+      }),
     setSelectedScenarioId: (selectedScenarioId) => set({ selectedScenarioId }),
     setRunStatus: (runStatus) => set({ runStatus }),
-    setPendingCommand: (pendingCommand) => set({ pendingCommand }),
+    setPendingCommand: (pendingCommand) => set({ pendingCommand, lastError: null }),
     clearPendingCommand: () => set({ pendingCommand: null }),
     setError: (lastError) => set({ lastError })
   }));

@@ -144,7 +144,7 @@ describe('createAppStore', () => {
     expect(store.getState().selectedCell).toBeNull();
   });
 
-  it('keeps current selected scenario when it remains available and falls back to the first scenario', () => {
+  it('keeps current selected scenario when it is set and otherwise falls back to the first scenario', () => {
     const store = createAppStore();
 
     store.getState().setScenarios([
@@ -161,28 +161,38 @@ describe('createAppStore', () => {
     expect(store.getState().selectedScenarioId).toBe('second');
 
     store.getState().setScenarios([{ id: 'third', path: 'third.toml' }]);
-    expect(store.getState().selectedScenarioId).toBe('third');
+    expect(store.getState().selectedScenarioId).toBe('second');
 
+    store.getState().setSelectedScenarioId(null);
     store.getState().setScenarios([]);
     expect(store.getState().selectedScenarioId).toBeNull();
   });
 
-  it('tracks pending command and last error', () => {
+  it('tracks pending command and clears last error when a new command starts', () => {
     const store = createAppStore();
 
     expect(store.getState().pendingCommand).toBeNull();
     expect(store.getState().lastError).toBeNull();
 
-    store.getState().setPendingCommand('start');
     store.getState().setError('failed to start');
+    store.getState().setPendingCommand('connect');
 
-    expect(store.getState().pendingCommand).toBe('start');
-    expect(store.getState().lastError).toBe('failed to start');
+    expect(store.getState().pendingCommand).toBe('connect');
+    expect(store.getState().lastError).toBeNull();
 
     store.getState().clearPendingCommand();
-    store.getState().setError(null);
 
     expect(store.getState().pendingCommand).toBeNull();
+  });
+
+  it('clears last error when connected server info is stored', () => {
+    const store = createAppStore();
+
+    store.getState().setError('connection failed');
+    store.getState().setConnected(connectedInfo);
+
+    expect(store.getState().connectionState).toBe('connected');
+    expect(store.getState().serverInfo).toEqual(connectedInfo);
     expect(store.getState().lastError).toBeNull();
   });
 });
