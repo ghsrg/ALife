@@ -67,10 +67,10 @@ describe('RunnerApiClient', () => {
         active_run_state: 'running',
         run_id: 'run-123',
         committed_tick: 42,
+        scenario_id: 'single_cell_survival',
         scenario_hash: 'scenario-hash',
-        seed: 1234,
-        ticks_per_second: 30,
-        collapse_reason: null
+        effective_seed: 1234,
+        terminal_reason: null
       })
     );
 
@@ -79,10 +79,10 @@ describe('RunnerApiClient', () => {
       activeRunState: 'running',
       runId: 'run-123',
       committedTick: 42,
+      scenarioId: 'single_cell_survival',
       scenarioHash: 'scenario-hash',
-      seed: 1234,
-      ticksPerSecond: 30,
-      collapseReason: null
+      effectiveSeed: 1234,
+      terminalReason: null
     });
   });
 
@@ -93,20 +93,20 @@ describe('RunnerApiClient', () => {
         active_run_state: 'paused',
         run_id: null,
         committed_tick: 7,
+        scenario_id: null,
         scenario_hash: null,
-        seed: null,
-        ticks_per_second: 0,
-        collapse_reason: 'completed'
+        effective_seed: null,
+        terminal_reason: 'completed'
       })
     ).toEqual({
       processState: 'ready',
       activeRunState: 'paused',
       runId: null,
       committedTick: 7,
+      scenarioId: null,
       scenarioHash: null,
-      seed: null,
-      ticksPerSecond: 0,
-      collapseReason: 'completed'
+      effectiveSeed: null,
+      terminalReason: 'completed'
     });
   });
 
@@ -118,7 +118,7 @@ describe('RunnerApiClient', () => {
         run_id: 'run-1',
         scenario_hash: 'hash-1',
         bootstrap_manifest: { prepared_tick: 0 },
-        seed: 99,
+        effective_seed: 99,
         active_run_state: 'running'
       })
     );
@@ -134,7 +134,7 @@ describe('RunnerApiClient', () => {
       runId: 'run-1',
       scenarioHash: 'hash-1',
       bootstrapManifest: { prepared_tick: 0 },
-      seed: 99,
+      effectiveSeed: 99,
       activeRunState: 'running'
     });
 

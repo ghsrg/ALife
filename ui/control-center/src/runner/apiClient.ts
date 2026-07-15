@@ -25,10 +25,10 @@ export interface RunStatus {
   activeRunState: ActiveRunState;
   runId: string | null;
   committedTick: number;
+  scenarioId: string | null;
   scenarioHash: string | null;
-  seed: number | null;
-  ticksPerSecond: number;
-  collapseReason: string | null;
+  effectiveSeed: number | null;
+  terminalReason: string | null;
 }
 
 export interface StartRunInput {
@@ -42,7 +42,7 @@ export interface StartRunResponse {
   runId: string;
   scenarioHash: string;
   bootstrapManifest: unknown;
-  seed: number;
+  effectiveSeed: number;
   activeRunState: ActiveRunState;
 }
 
@@ -68,10 +68,10 @@ interface RunStatusWire {
   active_run_state: ActiveRunState;
   run_id: string | null;
   committed_tick: number;
+  scenario_id: string | null;
   scenario_hash: string | null;
-  seed: number | null;
-  ticks_per_second: number;
-  collapse_reason: string | null;
+  effective_seed: number | null;
+  terminal_reason: string | null;
 }
 
 interface StartRunResponseWire {
@@ -79,7 +79,7 @@ interface StartRunResponseWire {
   run_id: string;
   scenario_hash: string;
   bootstrap_manifest: unknown;
-  seed: number;
+  effective_seed: number;
   active_run_state: ActiveRunState;
 }
 
@@ -101,10 +101,10 @@ export function mapStatus(status: RunStatusWire): RunStatus {
     activeRunState: status.active_run_state,
     runId: status.run_id,
     committedTick: status.committed_tick,
+    scenarioId: status.scenario_id,
     scenarioHash: status.scenario_hash,
-    seed: status.seed,
-    ticksPerSecond: status.ticks_per_second,
-    collapseReason: status.collapse_reason
+    effectiveSeed: status.effective_seed,
+    terminalReason: status.terminal_reason
   };
 }
 
@@ -129,7 +129,7 @@ function mapStartRunResponse(response: StartRunResponseWire): StartRunResponse {
     runId: response.run_id,
     scenarioHash: response.scenario_hash,
     bootstrapManifest: response.bootstrap_manifest,
-    seed: response.seed,
+    effectiveSeed: response.effective_seed,
     activeRunState: response.active_run_state
   };
 }
