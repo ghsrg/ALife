@@ -4,10 +4,10 @@ tick_count = 50000
 legacy_material_distribution = false
 
 [world]
-size = [256.0, 256.0]
+size = [1024.0, 768.0]
 
 [space]
-spatial_grid_size = 8.0
+spatial_grid_size = 16.0
 physics_solver_iterations = 2
 
 [resources]
