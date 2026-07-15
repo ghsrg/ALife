@@ -225,9 +225,15 @@ export class RunnerApiClient {
 
   private async request<T>(path: string, init: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, init);
-    const body: unknown = await response.json();
 
     if (!response.ok) {
+      let body: unknown;
+      try {
+        body = await response.json();
+      } catch {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       if (isErrorResponse(body)) {
         throw new Error(`${body.category}: ${body.message}`);
       }
@@ -235,6 +241,7 @@ export class RunnerApiClient {
       throw new Error(`HTTP ${response.status}`);
     }
 
+    const body: unknown = await response.json();
     return body as T;
   }
 }

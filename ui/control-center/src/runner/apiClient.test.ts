@@ -193,4 +193,15 @@ describe('RunnerApiClient', () => {
       'state_conflict: Run already active'
     );
   });
+
+  it('throws HTTP status for non-ok responses with non-JSON bodies', async () => {
+    const client = new RunnerApiClient('http://127.0.0.1:8080');
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      json: vi.fn().mockRejectedValue(new SyntaxError('Unexpected token <'))
+    } as unknown as Response);
+
+    await expect(client.getRunStatus()).rejects.toThrow('HTTP 502');
+  });
 });
