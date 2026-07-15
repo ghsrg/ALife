@@ -264,3 +264,81 @@ button:disabled {
     overflow-x: auto;
   }
 }
+
+.live-run-controls {
+  flex-wrap: wrap;
+}
+
+.run-controls .danger {
+  border-color: rgba(224, 82, 82, 0.62);
+  color: #ffb3b3;
+}
+
+:root[data-theme='light'] .run-controls .danger {
+  border-color: #d65b5b;
+  color: #9d2525;
+}
+
+.connection-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #8a96a3;
+}
+
+.status-dot-connected {
+  background: #4cc38a;
+}
+
+.status-dot-connecting {
+  background: #f0b84f;
+}
+
+.status-dot-disconnected {
+  background: #8a96a3;
+}
+
+.connection-meta,
+.scenario-select {
+  display: grid;
+  gap: 5px;
+  color: #9fadb9;
+  font-size: 13px;
+}
+
+.scenario-select select {
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+}
+
+:root[data-theme='light'] .scenario-select select {
+  border-color: #cfd8e2;
+  background: #ffffff;
+  color: #1c232b;
+}
+
+.connection-error {
+  margin: 0;
+  color: #ffb3b3;
+  font-size: 13px;
+}
+
+:root[data-theme='light'] .connection-error {
+  color: #9d2525;
+}
