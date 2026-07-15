@@ -7,16 +7,45 @@ use crate::runner::scenario_doc::{ScenarioDocument, ScenarioHash};
 use std::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SnapshotCadence {
+    EveryTick,
+    EveryNTicks(u64),
+    OnDemandOnly,
+}
+
+impl SnapshotCadence {
+    fn should_cache_after_tick(self, committed_tick: u64) -> bool {
+        match self {
+            Self::EveryTick => true,
+            Self::EveryNTicks(ticks) => {
+                let ticks = ticks.max(1);
+                committed_tick % ticks == 0
+            }
+            Self::OnDemandOnly => false,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RunEngineConfig {
     pub snapshot_buffer_size: usize,
-    pub snapshot_every_ticks: u64,
+    pub snapshot_cadence: SnapshotCadence,
 }
 
 impl Default for RunEngineConfig {
     fn default() -> Self {
         Self {
             snapshot_buffer_size: 300,
-            snapshot_every_ticks: 1,
+            snapshot_cadence: SnapshotCadence::EveryTick,
+        }
+    }
+}
+
+impl RunEngineConfig {
+    pub const fn headless_debug() -> Self {
+        Self {
+            snapshot_buffer_size: 4,
+            snapshot_cadence: SnapshotCadence::OnDemandOnly,
         }
     }
 }
@@ -56,6 +85,12 @@ impl From<TickError> for RunEngineError {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RunEngineDiagnostics {
+    pub last_genome_decision_refresh_count: u32,
+    pub last_resource_decay_scheduler_elapsed_ticks: u64,
+}
+
 pub struct RunEngine {
     state: ActiveRunState,
     executor: Option<TickExecutor>,
@@ -64,6 +99,7 @@ pub struct RunEngine {
     max_ticks: u64,
     config: RunEngineConfig,
     snapshot_build_count: u64,
+    diagnostics: RunEngineDiagnostics,
 }
 
 impl RunEngine {
@@ -84,6 +120,7 @@ impl RunEngine {
             max_ticks: prepared.runtime_config.world.tick_count.raw(),
             config,
             snapshot_build_count: 1,
+            diagnostics: RunEngineDiagnostics::default(),
         })
     }
 
@@ -161,14 +198,33 @@ impl RunEngine {
         CommittedSnapshot::from_world(executor.world())
     }
 
-    pub const fn snapshot_build_count_for_test(&self) -> u64 {
+    pub const fn snapshot_build_count(&self) -> u64 {
         self.snapshot_build_count
+    }
+
+    pub const fn snapshot_build_count_for_test(&self) -> u64 {
+        self.snapshot_build_count()
+    }
+
+    pub const fn diagnostics(&self) -> RunEngineDiagnostics {
+        self.diagnostics
     }
 
     fn commit_one_tick(&mut self) -> Result<(), RunEngineError> {
         let executor = self.executor.as_mut().ok_or(RunEngineError::NotPrepared)?;
-        executor.step()?;
-        if executor.world().tick().raw() % self.config.snapshot_every_ticks.max(1) == 0 {
+        let summary = executor.step()?;
+        self.diagnostics = RunEngineDiagnostics {
+            last_genome_decision_refresh_count: summary.metrics.genome_decision_refresh_count,
+            last_resource_decay_scheduler_elapsed_ticks: summary
+                .metrics
+                .resource_decay_scheduler_elapsed_ticks,
+        };
+        let committed_tick = executor.world().tick().raw();
+        if self
+            .config
+            .snapshot_cadence
+            .should_cache_after_tick(committed_tick)
+        {
             self.snapshots
                 .push(CommittedSnapshot::from_world(executor.world()));
             self.snapshot_build_count += 1;

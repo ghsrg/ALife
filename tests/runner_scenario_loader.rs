@@ -67,3 +67,24 @@ fn demo_living_world_is_available_for_manual_runner_usage() {
     assert_eq!(config.scheduler.observer.resource_totals_ticks, 10);
     assert!(config.cell.initial_energy.raw() <= config.cell.energy_capacity.raw());
 }
+
+#[test]
+fn demo_living_world_uses_non_every_tick_genome_cadence() {
+    let scenarios = scan_scenarios("config/scenarios").unwrap();
+    let meta = scenarios
+        .iter()
+        .find(|scenario| scenario.id == "demo_living_world")
+        .unwrap();
+    let document = load_scenario_document(meta).unwrap();
+    let config = document.runtime_config;
+    let template = config
+        .genome_templates
+        .iter()
+        .find(|template| template.id().as_str() == "balanced")
+        .unwrap();
+
+    assert!(
+        config.effective_genome_runtime_cadence_ticks_for_template(template) > 1,
+        "demo_living_world must not override Genome Runtime back to every Tick"
+    );
+}

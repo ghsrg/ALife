@@ -431,7 +431,7 @@ max_joints_per_cell = 4
 
 [genome_templates.balanced]
 variation_amplitude = 0.08
-runtime_interval_ticks = 1
+runtime_interval_ticks = 10
 
 [genome_templates.balanced.carrier]
 material_id = "genome_carrier_A"

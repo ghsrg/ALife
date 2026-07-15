@@ -15,10 +15,24 @@ Use this first after pulling new changes. Scenario ids are safer than hardcoded 
 Best current demo scenario:
 
 ```bash
-cargo run --bin runner -- --debug --progress-interval-ms 200 demo_living_world
+cargo run --release --bin runner -- --debug --progress-interval-ms 2000 demo_living_world
 ```
 
-Use this when you want a human-observable terminal demo with a larger 256x256 world, 24 starting cells, abundant `nutrient_A`, low upkeep, division, decomposition, local interaction, joints, Genome bootstrap, and heat/waste handling enabled.
+Use this when you want a human-observable terminal demo with a larger world, 24 starting cells, abundant `nutrient_A`, low upkeep, division, decomposition, local interaction, joints, Genome bootstrap, and heat/waste handling enabled.
+
+Use release builds for performance checks. Debug builds are useful for correctness, but TPS numbers from debug builds are not representative.
+
+## Debug progress and snapshots
+
+`--debug` prints a terminal progress table at `--progress-interval-ms`.
+The table samples the latest committed state on demand. It does not build a full
+`CommittedSnapshot` after every simulation Tick.
+
+The debug table includes scheduler diagnostics:
+
+- `snapshots`: number of full snapshots built;
+- `genome`: Genome Runtime refreshes during the last committed Tick;
+- `decay_dt`: elapsed Tick integration used by scheduled resource decay.
 
 ## 3. Short mechanics showcase
 

@@ -21,6 +21,9 @@ fn progress_table_contains_required_status_fields() {
         waste: 2.5,
         state: "Running".to_string(),
         collapse_reason: None,
+        snapshot_builds: 1,
+        genome_refreshes: 0,
+        resource_decay_elapsed_ticks: 0,
     });
 
     assert!(rendered.contains("elapsed_s"));
@@ -30,4 +33,30 @@ fn progress_table_contains_required_status_fields() {
     assert!(rendered.contains("2.50"));
     assert!(rendered.contains("10/20"));
     assert!(rendered.contains("Running"));
+}
+
+#[test]
+fn progress_table_contains_scheduler_diagnostics() {
+    let rendered = format_progress_table(&ProgressSnapshot {
+        elapsed_ms: 2500,
+        tick: 10,
+        max_ticks: 20,
+        ticks_per_second: 40.0,
+        cells: 3,
+        alive_cells: Some(2),
+        dead_cells: Some(1),
+        heat: 1.5,
+        waste: 2.5,
+        state: "Running".to_string(),
+        collapse_reason: None,
+        snapshot_builds: 2,
+        genome_refreshes: 0,
+        resource_decay_elapsed_ticks: 5,
+    });
+
+    assert!(rendered.contains("snapshots"));
+    assert!(rendered.contains("genome"));
+    assert!(rendered.contains("decay_dt"));
+    assert!(rendered.contains("2"));
+    assert!(rendered.contains("5"));
 }

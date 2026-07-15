@@ -148,7 +148,12 @@ fn run_headless(
         meta.path.display()
     );
     let document = load_scenario_document(&meta).map_err(|err| err.to_string())?;
-    let mut engine = RunEngine::prepare_from_document(&document, RunEngineConfig::default())
+    let engine_config = if debug {
+        RunEngineConfig::headless_debug()
+    } else {
+        RunEngineConfig::default()
+    };
+    let mut engine = RunEngine::prepare_from_document(&document, engine_config)
         .map_err(|err| err.to_string())?;
     println!("[runner] Prepared scenario_hash={}", document.scenario_hash);
     engine.start().map_err(|err| err.to_string())?;
@@ -161,7 +166,7 @@ fn run_headless(
             engine.run_one_tick().map_err(|err| err.to_string())?;
             let now = Instant::now();
             if engine.current_tick() == 1 || now >= next_progress_at {
-                print_progress(&engine, start);
+                print_progress(&mut engine, start);
                 next_progress_at = now + progress_interval.as_duration();
             }
         }
@@ -183,15 +188,14 @@ fn run_headless(
         elapsed,
         tps
     );
-    if let Some(snapshot) = engine.snapshots().newest() {
-        println!(
-            "[runner] Final tick: {}, cells: {}, heat: {:.2}, waste: {:.2}",
-            snapshot.tick.raw(),
-            snapshot.cells.len(),
-            snapshot.heat,
-            snapshot.waste
-        );
-    }
+    let snapshot = engine.latest_committed_snapshot();
+    println!(
+        "[runner] Final tick: {}, cells: {}, heat: {:.2}, waste: {:.2}",
+        snapshot.tick.raw(),
+        snapshot.cells.len(),
+        snapshot.heat,
+        snapshot.waste
+    );
     Ok(())
 }
 
@@ -214,10 +218,9 @@ fn resolve_scenario(scenario: &str, scenarios_dir: &Path) -> Result<ScenarioMeta
         .ok_or_else(|| format!("scenario not found: {scenario}"))
 }
 
-fn print_progress(engine: &RunEngine, start: Instant) {
-    let Some(snapshot) = engine.snapshots().newest() else {
-        return;
-    };
+fn print_progress(engine: &mut RunEngine, start: Instant) {
+    let snapshot = engine.latest_committed_snapshot();
+    let diagnostics = engine.diagnostics();
     let elapsed = start.elapsed();
     let elapsed_s = elapsed.as_secs_f32();
     let alive = snapshot
@@ -246,6 +249,9 @@ fn print_progress(engine: &RunEngine, start: Instant) {
         } else {
             None
         },
+        snapshot_builds: engine.snapshot_build_count(),
+        genome_refreshes: diagnostics.last_genome_decision_refresh_count,
+        resource_decay_elapsed_ticks: diagnostics.last_resource_decay_scheduler_elapsed_ticks,
     };
     println!("{}", format_progress_table(&progress));
 }
