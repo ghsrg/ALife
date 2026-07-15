@@ -7,16 +7,45 @@ use crate::runner::scenario_doc::{ScenarioDocument, ScenarioHash};
 use std::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SnapshotCadence {
+    EveryTick,
+    EveryNTicks(u64),
+    OnDemandOnly,
+}
+
+impl SnapshotCadence {
+    fn should_cache_after_tick(self, committed_tick: u64) -> bool {
+        match self {
+            Self::EveryTick => true,
+            Self::EveryNTicks(ticks) => {
+                let ticks = ticks.max(1);
+                committed_tick % ticks == 0
+            }
+            Self::OnDemandOnly => false,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RunEngineConfig {
     pub snapshot_buffer_size: usize,
-    pub snapshot_every_ticks: u64,
+    pub snapshot_cadence: SnapshotCadence,
 }
 
 impl Default for RunEngineConfig {
     fn default() -> Self {
         Self {
             snapshot_buffer_size: 300,
-            snapshot_every_ticks: 1,
+            snapshot_cadence: SnapshotCadence::EveryTick,
+        }
+    }
+}
+
+impl RunEngineConfig {
+    pub const fn headless_debug() -> Self {
+        Self {
+            snapshot_buffer_size: 4,
+            snapshot_cadence: SnapshotCadence::OnDemandOnly,
         }
     }
 }
@@ -168,7 +197,12 @@ impl RunEngine {
     fn commit_one_tick(&mut self) -> Result<(), RunEngineError> {
         let executor = self.executor.as_mut().ok_or(RunEngineError::NotPrepared)?;
         executor.step()?;
-        if executor.world().tick().raw() % self.config.snapshot_every_ticks.max(1) == 0 {
+        let committed_tick = executor.world().tick().raw();
+        if self
+            .config
+            .snapshot_cadence
+            .should_cache_after_tick(committed_tick)
+        {
             self.snapshots
                 .push(CommittedSnapshot::from_world(executor.world()));
             self.snapshot_build_count += 1;

@@ -1,6 +1,6 @@
 use crate::core::units::Seed;
 use crate::runner::commands::RunnerCommand;
-use crate::runner::engine::{RunEngine, RunEngineConfig};
+use crate::runner::engine::{RunEngine, RunEngineConfig, SnapshotCadence};
 use crate::runner::lifecycle::{ActiveRunState, RunnerProcessState};
 use crate::runner::scenario::{load_scenario_document, scan_scenarios};
 use crate::runner::scenario_doc::ScenarioDocument;
@@ -205,7 +205,7 @@ async fn handle_run_start(
         &document,
         RunEngineConfig {
             snapshot_buffer_size: state.lock().unwrap().engine_snapshot_buffer_size,
-            snapshot_every_ticks: 1,
+            snapshot_cadence: SnapshotCadence::EveryTick,
         },
     )
     .map_err(|err| {
