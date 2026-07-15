@@ -168,6 +168,13 @@ pub fn status_ws_text_from_state(state: &SharedState) -> String {
     .to_string()
 }
 
+pub fn encode_latest_frame(state: &mut SharedState) -> Option<Vec<u8>> {
+    let engine = state.engine.as_mut()?;
+    let snapshot = engine.latest_committed_snapshot();
+    let projection = WorldFrameProjection::from_committed_snapshot(&snapshot);
+    Some(encode_world_frame(&projection))
+}
+
 pub fn new_app_state(
     scenarios_dir: PathBuf,
     engine_snapshot_buffer_size: usize,
