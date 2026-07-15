@@ -98,7 +98,10 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     setScenarios: (scenarios) =>
       set({
         scenarios,
-        selectedScenarioId: get().selectedScenarioId ?? scenarios[0]?.id ?? null
+        selectedScenarioId:
+          scenarios.find((scenario) => scenario.id === get().selectedScenarioId)?.id ??
+          scenarios[0]?.id ??
+          null
       }),
     setSelectedScenarioId: (selectedScenarioId) => set({ selectedScenarioId }),
     setRunStatus: (runStatus) => set({ runStatus }),
@@ -113,11 +116,15 @@ function hasNoPendingCommand(state: Pick<AppState, 'pendingCommand'>) {
 }
 
 export function canStartRun(
-  state: Pick<AppState, 'connectionState' | 'selectedScenarioId' | 'pendingCommand' | 'runStatus'>
+  state: Pick<
+    AppState,
+    'connectionState' | 'scenarios' | 'selectedScenarioId' | 'pendingCommand' | 'runStatus'
+  >
 ) {
   if (
     state.connectionState !== 'connected' ||
     state.selectedScenarioId === null ||
+    !state.scenarios.some((scenario) => scenario.id === state.selectedScenarioId) ||
     !hasNoPendingCommand(state)
   ) {
     return false;

@@ -144,7 +144,7 @@ describe('createAppStore', () => {
     expect(store.getState().selectedCell).toBeNull();
   });
 
-  it('keeps current selected scenario when it is set and otherwise falls back to the first scenario', () => {
+  it('keeps current selected scenario only when refreshed scenarios still contain it', () => {
     const store = createAppStore();
 
     store.getState().setScenarios([
@@ -161,9 +161,8 @@ describe('createAppStore', () => {
     expect(store.getState().selectedScenarioId).toBe('second');
 
     store.getState().setScenarios([{ id: 'third', path: 'third.toml' }]);
-    expect(store.getState().selectedScenarioId).toBe('second');
+    expect(store.getState().selectedScenarioId).toBe('third');
 
-    store.getState().setSelectedScenarioId(null);
     store.getState().setScenarios([]);
     expect(store.getState().selectedScenarioId).toBeNull();
   });
@@ -208,6 +207,7 @@ describe('run control helpers', () => {
       ...state,
       connectionState: 'connected' as const,
       selectedScenarioId: 'demo_living_world',
+      scenarios,
       pendingCommand: null
     };
 
@@ -218,6 +218,8 @@ describe('run control helpers', () => {
     expect(canStartRun({ ...base, runStatus: status('running') })).toBe(false);
     expect(canStartRun({ ...base, pendingCommand: 'start' })).toBe(false);
     expect(canStartRun({ ...base, selectedScenarioId: null })).toBe(false);
+    expect(canStartRun({ ...base, selectedScenarioId: 'missing_scenario' })).toBe(false);
+    expect(canStartRun({ ...base, scenarios: [] })).toBe(false);
     expect(canStartRun({ ...base, connectionState: 'disconnected' })).toBe(false);
   });
 
