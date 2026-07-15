@@ -66,6 +66,7 @@ tags:
 - [[outputs/worklogs/2026-07-15-1011-PLAN-scheduler-cadence|2026-07-15-1011-PLAN-scheduler-cadence]]
 - [[outputs/worklogs/2026-07-15-1625-PLAN-runner-debug-snapshot-cadence|2026-07-15-1625-PLAN-runner-debug-snapshot-cadence]]
 - [[outputs/worklogs/2026-07-15-2025-PLAN-ui-1a-application-shell-fixture-viewer|2026-07-15-2025-PLAN-ui-1a-application-shell-fixture-viewer]]
+- [[outputs/worklogs/2026-07-15-2215-PLAN-ui-1b-live-runner-transport|2026-07-15-2215-PLAN-ui-1b-live-runner-transport]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
