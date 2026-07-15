@@ -4,7 +4,7 @@
 
 **Goal:** Add explicit scheduler cadence so expensive decision, propagation, observer, snapshot, and viewer projection work no longer runs every Tick by default while committed simulation semantics stay deterministic.
 
-**Architecture:** Add scheduler/time/viewer cadence config, then introduce small runtime gates around existing systems. Genome Runtime becomes an explicit decision refresh that updates cached ActionPlans at configured cadence; process execution/progress remains Tick-based. Viewer projection becomes a wall-clock sampler over latest committed state, independent from simulation Tick cadence.
+**Architecture:** Add scheduler cadence config and separate simulation-time config from Runner pacing config, then introduce small runtime gates around existing systems. Genome Runtime becomes an explicit staggered decision refresh that updates cached ActionPlans at configured effective cadence; process execution/progress remains Tick-based unless a specific process has an explicit execution-attempt cadence. Viewer projection becomes a wall-clock sampler over latest committed state, independent from simulation Tick cadence.
 
 **Tech Stack:** Rust, Cargo integration tests, existing `RuntimeConfig`, `TickExecutor`, `RunEngine`, Runner HTTP/WS server.
 
@@ -32,14 +32,34 @@ Read before implementation:
 - WS frame sending is throttled by `target_broadcast_fps`, but projection sampling is not yet an explicit reusable layer.
 - Observer/resource totals are mixed into per-Tick `MetricsSummary`; expensive observer-only projections need separate cadence.
 
+## Review disposition
+
+The review feedback attached to this plan is mostly valid and changes the implementation requirements:
+
+- P0: `genome_runtime_ticks_per_layer` must affect effective cadence, not be parsed-only.
+- P0: entity-based Genome Runtime must use deterministic staggering; all cells must not refresh on the same cadence tick.
+- P0: process cadence fields must either be implemented by a dedicated task or removed. This plan implements explicit per-process execution-attempt cadence.
+- P0: world propagation cadence must preserve physical semantics through elapsed-tick integration or deterministic substeps. Calling a one-tick function once every `N` ticks is forbidden unless the function takes elapsed ticks.
+- P0: snapshot cadence must avoid building expensive full snapshots every Tick; only authoritative `WorldState` and committed tick are updated every Tick.
+- P0: viewer `minimum_frames_per_second` and `maximum_frame_age_ms` require explicit heartbeat behavior distinct from new projection generation.
+- P0: Genome cadence tests must define whether due checks use committed tick or executing tick. This plan uses `executing_tick = committed_tick + 1`.
+- P0: Genome cadence authority must be single and deterministic: scheduler config is global default, `GenomeTemplate.runtime_interval_ticks` is template override, regulatory depth adds delay.
+- P1: `tick_duration_ms` belongs to simulation/core scenario time; `realtime_target_tps`, `headless_target_tps`, and unthrottled policy belong to Runner pacing, not Core `RuntimeConfig`.
+- P1: repair cadence only controls execution-attempt cadence. Repair amount/cost/efficiency balancing is a separate mechanics task unless an existing repair process already exposes those controls.
+- P1: observer cadence must not hide mechanics-critical accounting. Split Tick accounting, observer projection, and analytics freshness.
+- P1: performance acceptance must use benchmark/reporting, not a fragile hard TPS assertion in normal `cargo test`.
+- P1: determinism acceptance must compare a stable state hash, not only tick/cell-count/heat/waste.
+
 ## Files and responsibilities
 
 - `src/core/config.rs`
-  - Add `SchedulerConfig`, `SchedulerFastConfig`, `SchedulerCellConfig`, `SchedulerWorldConfig`, `SchedulerObserverConfig`, `TimeConfig`.
+  - Add `SchedulerConfig`, `SchedulerFastConfig`, `SchedulerCellConfig`, `SchedulerWorldConfig`, `SchedulerObserverConfig`, `SimulationTimeConfig`.
   - Validate cadence values as positive non-zero integers.
 - `src/runner/config_parser.rs`
-  - Parse optional `[time]` and `[scheduler.*]` blocks from scenario TOML.
+  - Parse optional `[time]` with simulation-time fields and `[scheduler.*]` blocks from scenario TOML.
   - Keep backward compatibility: missing scheduler block uses current behavior where required, except new canonical scenario defaults may set Genome cadence to `10`.
+- `src/runner/server_config.rs`
+  - Parse Runner pacing and viewer projection policy from server config, not Core `RuntimeConfig`.
 - `src/core/action_plan.rs`
   - Keep `ActionPlan` value type reusable as cached per-cell decision state.
 - `src/core/cell_store.rs`
@@ -48,13 +68,14 @@ Read before implementation:
   - Initialize per-cell action plan cache during world creation and division.
 - `src/core/tick.rs`
   - Add scheduler due checks.
-  - Refresh Genome decision only when due.
-  - Gate scheduled world propagation systems.
+  - Refresh Genome decision only when due using effective cadence and deterministic staggering.
+  - Gate scheduled process attempts.
+  - Gate scheduled world propagation systems only when elapsed-tick integration or deterministic substeps preserve semantics.
   - Keep mandatory upkeep/lifecycle/process progress every Tick.
 - `src/runner/engine.rs`
-  - Add snapshot cadence support while preserving latest committed state access.
+  - Add snapshot cadence support without building a full snapshot every Tick.
 - `src/viewer_server/state.rs`
-  - Replace ad-hoc broadcast interval with explicit projection sampler.
+  - Replace ad-hoc broadcast interval with explicit projection sampler and heartbeat policy.
 - `src/runner/projections.rs`
   - Add metadata fields for viewer projection sequence/time in a later task if frame format is extended.
 - `src/viewer_server/frame_encoder.rs`
@@ -66,9 +87,11 @@ Read before implementation:
 - `tests/scheduler_config.rs`
   - Config defaults and parsing tests.
 - `tests/scheduler_genome_cadence.rs`
-  - Genome decision cadence behavior.
+  - Effective Genome decision cadence, template override, deterministic staggering, and executing-tick due behavior.
+- `tests/scheduler_process_cadence.rs`
+  - Per-process execution-attempt cadence behavior for signal emission, controlled reaction, synthesis, and repair attempts.
 - `tests/scheduler_world_cadence.rs`
-  - World propagation cadence behavior.
+  - World propagation cadence behavior with elapsed-tick semantic equivalence.
 - `tests/runner_projection_sampler.rs`
   - Viewer projection sampler and forced projection behavior.
 - `tests/runner_snapshot_cadence.rs`
@@ -211,8 +234,6 @@ fn scheduler_config_parses_explicit_cadence_blocks() {
         r#"
 [time]
 tick_duration_ms = 100
-realtime_target_tps = 10
-headless_target_tps = 50
 
 [scheduler.cell]
 genome_runtime_base_ticks = 10
@@ -231,9 +252,7 @@ graph_analysis_ticks = 50
     ))
     .unwrap();
 
-    assert_eq!(config.time.tick_duration_ms, 100);
-    assert_eq!(config.time.realtime_target_tps, 10);
-    assert_eq!(config.time.headless_target_tps, 50);
+    assert_eq!(config.simulation_time.tick_duration_ms, 100);
     assert_eq!(config.scheduler.cell.genome_runtime_base_ticks, 10);
     assert_eq!(config.scheduler.world.resource_diffusion_ticks, 2);
     assert_eq!(config.scheduler.world.resource_decay_ticks, 5);
@@ -263,7 +282,7 @@ $env:CARGO_PROFILE_TEST_DEBUG='0'
 cargo test --test scheduler_config
 ```
 
-Expected: FAIL because `RuntimeConfig.scheduler` and `RuntimeConfig.time` do not exist.
+Expected: FAIL because `RuntimeConfig.scheduler` and `RuntimeConfig.simulation_time` do not exist.
 
 - [ ] **Step 3: Add config types**
 
@@ -271,18 +290,14 @@ In `src/core/config.rs`, add focused structs:
 
 ```rust
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct TimeConfig {
+pub struct SimulationTimeConfig {
     pub tick_duration_ms: u32,
-    pub realtime_target_tps: u32,
-    pub headless_target_tps: u32,
 }
 
-impl Default for TimeConfig {
+impl Default for SimulationTimeConfig {
     fn default() -> Self {
         Self {
             tick_duration_ms: 100,
-            realtime_target_tps: 10,
-            headless_target_tps: 50,
         }
     }
 }
@@ -362,7 +377,7 @@ pub struct SchedulerConfig {
 }
 ```
 
-Add `time: TimeConfig` and `scheduler: SchedulerConfig` to `RuntimeConfig`.
+Add `simulation_time: SimulationTimeConfig` and `scheduler: SchedulerConfig` to `RuntimeConfig`.
 
 Add validation method:
 
@@ -404,8 +419,6 @@ In `src/runner/config_parser.rs`, add raw structs:
 #[derive(Deserialize, Debug, Default)]
 pub struct RawTimeConfig {
     pub tick_duration_ms: Option<u32>,
-    pub realtime_target_tps: Option<u32>,
-    pub headless_target_tps: Option<u32>,
 }
 
 #[derive(Deserialize, Debug, Default)]
@@ -418,6 +431,28 @@ pub struct RawSchedulerConfig {
 
 Add raw child structs with `Option<u64>` fields matching `SchedulerConfig`.
 
+Extend raw Genome template parsing with:
+
+```rust
+pub struct RawGenomeTemplate {
+    pub variation_amplitude: Option<f32>,
+    pub runtime_interval_ticks: Option<u64>,
+    pub regulatory_depth: Option<u64>,
+    ...
+}
+```
+
+Resolve Genome Runtime authority in this order while constructing `GenomeTemplate`:
+
+```rust
+let resolved_runtime_interval_ticks = raw_template
+    .runtime_interval_ticks
+    .unwrap_or(runtime_config.scheduler.cell.genome_runtime_base_ticks);
+let regulatory_depth = raw_template.regulatory_depth.unwrap_or(1).max(1);
+```
+
+This means `[scheduler.cell].genome_runtime_base_ticks` is the global default, `[genome_templates.<id>].runtime_interval_ticks` is a template override, and `regulatory_depth` adds deterministic extra delay through `genome_runtime_ticks_per_layer`.
+
 Add to `RawScenarioConfig`:
 
 ```rust
@@ -427,7 +462,7 @@ pub time: RawTimeConfig,
 pub scheduler: RawSchedulerConfig,
 ```
 
-After `RuntimeConfig::new(...)`, assign parsed `runtime_config.time` and `runtime_config.scheduler`, then call:
+After `RuntimeConfig::new(...)`, assign parsed `runtime_config.simulation_time` and `runtime_config.scheduler`, then call:
 
 ```rust
 runtime_config
@@ -551,6 +586,7 @@ genome_runtime_ticks_per_layer = {cadence}
 [genome_templates.balanced]
 variation_amplitude = 0.0
 runtime_interval_ticks = {cadence}
+regulatory_depth = 1
 
 [genome_templates.balanced.carrier]
 material_id = "genome_carrier_A"
@@ -579,15 +615,70 @@ fn genome_action_plan_refreshes_only_on_configured_cadence() {
         .attempted_processes
         .contains(&ProcessId::LocalResourceUptake));
 
-    for _ in 0..8 {
+    for _ in 0..9 {
         let summary = executor.step().unwrap();
         assert_eq!(summary.metrics.genome_decision_refresh_count, 0);
     }
 
-    let tenth = executor.step().unwrap();
-    assert_eq!(tenth.metrics.genome_decision_refresh_count, 1);
+    let eleventh = executor.step().unwrap();
+    assert_eq!(eleventh.metrics.genome_decision_refresh_count, 1);
+}
+
+#[test]
+fn genome_effective_cadence_uses_template_override_and_regulatory_depth() {
+    let mut config = config_with_genome_cadence(10);
+    config.scheduler.cell.genome_runtime_base_ticks = 5;
+    config.scheduler.cell.genome_runtime_ticks_per_layer = 3;
+    config
+        .genome_templates
+        .iter_mut()
+        .find(|template| template.id().as_str() == "balanced")
+        .unwrap()
+        .set_runtime_interval_ticks_for_test(7);
+    config
+        .genome_templates
+        .iter_mut()
+        .find(|template| template.id().as_str() == "balanced")
+        .unwrap()
+        .set_regulatory_depth_for_test(3);
+
+    assert_eq!(
+        config.effective_genome_runtime_cadence_ticks("balanced").unwrap(),
+        13
+    );
+}
+
+#[test]
+fn genome_runtime_refresh_is_deterministically_staggered() {
+    let config = config_with_genome_cadence(10);
+    let offsets = config.initial_genome_runtime_offsets_for_test(20);
+
+    assert_eq!(offsets, config.initial_genome_runtime_offsets_for_test(20));
+    assert!(offsets.iter().any(|offset| *offset != offsets[0]));
+    assert!(offsets.iter().all(|offset| *offset < 10));
 }
 ```
+
+The test model is:
+
+```text
+committed_tick = world.tick().raw()
+executing_tick = committed_tick + 1
+cadence = 10
+refresh ticks = 1, 11, 21, ...
+```
+
+The effective cadence model is:
+
+```text
+global_default = scheduler.cell.genome_runtime_base_ticks
+template_override = GenomeTemplate.runtime_interval_ticks, if present
+regulatory_depth = GenomeTemplate.regulatory_depth, default 1
+effective_cadence =
+  selected_base + (regulatory_depth - 1) * scheduler.cell.genome_runtime_ticks_per_layer
+```
+
+`selected_base` is `template_override` when present; otherwise it is `global_default`.
 
 - [ ] **Step 2: Verify RED**
 
@@ -630,13 +721,16 @@ In `src/core/cell_store.rs`, add vectors:
 ```rust
 action_plans: Vec<ActionPlan>,
 next_genome_decision_due_ticks: Vec<u64>,
+genome_decision_offsets: Vec<u64>,
 ```
 
 Initialize on insert:
 
 ```rust
 self.action_plans.push(ActionPlan::empty());
-self.next_genome_decision_due_ticks.push(0);
+let offset = deterministic_genome_decision_offset(cell_id, world_seed, effective_cadence);
+self.genome_decision_offsets.push(offset);
+self.next_genome_decision_due_ticks.push(1 + offset);
 ```
 
 Expose:
@@ -646,6 +740,7 @@ pub fn action_plan(&self, index: CellIndex) -> &ActionPlan { ... }
 pub fn set_action_plan(&mut self, index: CellIndex, plan: ActionPlan) { ... }
 pub fn next_genome_decision_due_tick(&self, index: CellIndex) -> u64 { ... }
 pub fn set_next_genome_decision_due_tick(&mut self, index: CellIndex, tick: u64) { ... }
+pub fn genome_decision_offset(&self, index: CellIndex) -> u64 { ... }
 ```
 
 - [ ] **Step 5: Refresh only when due**
@@ -653,31 +748,32 @@ pub fn set_next_genome_decision_due_tick(&mut self, index: CellIndex, tick: u64)
 In `src/core/tick.rs`, before per-cell process execution:
 
 ```rust
-let current_tick = self.world.tick().raw();
-let genome_cadence = config.scheduler.cell.genome_runtime_base_ticks.max(1);
+let committed_tick = self.world.tick().raw();
+let executing_tick = committed_tick + 1;
 let mut genome_decision_refresh_count = 0_u32;
 ```
 
 For each living cell:
 
 ```rust
+let genome = self
+    .world
+    .cells()
+    .genome_id(index)
+    .and_then(|id| self.world.genome(id));
+let genome_cadence = config.effective_genome_runtime_cadence_ticks_for_genome(genome).max(1);
 let should_refresh = self
     .world
     .cells()
     .next_genome_decision_due_tick(index)
-    <= current_tick;
+    <= executing_tick;
 
 if should_refresh {
-    let genome = self
-        .world
-        .cells()
-        .genome_id(index)
-        .and_then(|id| self.world.genome(id));
     let plan = ActionPlan::from_genome(genome);
     {
         let cells = self.world.cells_mut_for_commit();
         cells.set_action_plan(index, plan);
-        cells.set_next_genome_decision_due_tick(index, current_tick + genome_cadence);
+        cells.set_next_genome_decision_due_tick(index, executing_tick + genome_cadence);
     }
     genome_decision_refresh_count += 1;
 }
@@ -687,9 +783,37 @@ let action_plan = self.world.cells().action_plan(index).clone();
 
 Add `genome_decision_refresh_count` to `MetricsSummary`.
 
+Add deterministic offset helper:
+
+```rust
+fn deterministic_genome_decision_offset(cell_id: CellId, world_seed: u64, cadence: u64) -> u64 {
+    stable_hash_u64("genome-runtime-stagger", world_seed, cell_id.raw()) % cadence.max(1)
+}
+```
+
+The hash function must be existing deterministic project hashing or a new fixed algorithm with explicit byte order. Do not use `DefaultHasher`.
+
+Add narrow public helpers used by this task and future diagnostics:
+
+```rust
+impl RuntimeConfig {
+    pub fn effective_genome_runtime_cadence_ticks(&self, template_id: &str) -> Option<u64> { ... }
+
+    pub fn initial_genome_runtime_offsets_for_test(&self, count: usize) -> Vec<u64> { ... }
+}
+
+impl GenomeTemplate {
+    pub fn set_runtime_interval_ticks_for_test(&mut self, value: u64) { ... }
+
+    pub fn set_regulatory_depth_for_test(&mut self, value: u64) { ... }
+}
+```
+
+If exposing mutation helpers on `GenomeTemplate` is rejected during implementation, replace the test with two parsed TOML configs instead of using setters. Do not leave an unimplemented test helper in the plan.
+
 - [ ] **Step 6: Preserve division behavior**
 
-In `src/core/world.rs::execute_division`, when creating daughters, initialize their `ActionPlan` as empty and next due tick as current tick so daughters make their first Genome decision on their first executable Tick.
+In `src/core/world.rs::execute_division`, when creating daughters, initialize their `ActionPlan` as empty and next due tick as `executing_tick` so daughters make their first Genome decision on their first executable Tick. Do not inherit the parent offset for the first decision; compute and store the deterministic offset for subsequent refreshes.
 
 - [ ] **Step 7: Verify GREEN**
 
@@ -769,8 +893,6 @@ Add to `config/scenarios/demo/demo_living_world.toml`:
 ```toml
 [time]
 tick_duration_ms = 100
-realtime_target_tps = 10
-headless_target_tps = 50
 
 [scheduler.cell]
 genome_runtime_base_ticks = 10
@@ -820,6 +942,246 @@ Expected: PASS.
 ```powershell
 git add config/scenarios/demo/demo_living_world.toml config/scenarios/genome/phase3a_genome_bootstrap.toml tests/scheduler_config.rs
 git commit -m "config(scheduler): declare canonical cadence for demo scenarios"
+```
+
+---
+
+## Task 3A: Per-process execution-attempt cadence
+
+**Files:**
+
+- Modify: `src/core/tick.rs`
+- Modify: `src/core/summary.rs`
+- Test: `tests/scheduler_process_cadence.rs`
+
+This task prevents parsed process cadence config from becoming dead configuration. It controls when a process attempt may start or execute an atomic operation. It does not slow ongoing long-running `ProcessProgress`; active process progress remains Tick-based unless the process contract explicitly says otherwise.
+
+- [ ] **Step 1: Write failing process cadence tests**
+
+Create `tests/scheduler_process_cadence.rs`:
+
+```rust
+use alife::core::process::ProcessId;
+use alife::core::tick::TickExecutor;
+use alife::runner::config_parser::RawScenarioConfig;
+
+fn process_cadence_config() -> alife::core::config::RuntimeConfig {
+    RawScenarioConfig::parse(
+        r#"
+scenario_id = "scheduler_process_cadence"
+seed = 17
+tick_count = 30
+legacy_material_distribution = false
+
+[world]
+size = [32.0, 32.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = ["nutrient_A"]
+initial_distribution = [100.0]
+optional_decay_rate = 0.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 1.0
+metabolism_resource_per_tick = 0.2
+energy_per_resource = 1.0
+heat_per_resource = 0.0
+waste_per_resource = 0.0
+
+[cell]
+initial_position = [16.0, 16.0]
+radius = 1.0
+initial_resources = { nutrient_A = 10.0 }
+initial_materials = { boundary = 1.0, transport = 1.0, metabolic = 1.0, storage = 1.0, synthesis = 1.0, structural = 1.0, repair = 1.0, contractile = 0.0, sensory = 1.0 }
+initial_energy = 20.0
+energy_capacity = 40.0
+mandatory_cost_per_tick = 0.01
+capacity_limit = 60.0
+
+[cell.genome]
+template = "balanced"
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.1
+heat_warning_threshold = 50.0
+heat_death_threshold = 100.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.1
+waste_warning_threshold = 50.0
+waste_death_threshold = 100.0
+
+[lifecycle]
+stress_energy_threshold = 1.0
+dormancy_allowed = false
+critical_capacity_overrun = 60.0
+
+[scheduler.cell]
+genome_runtime_base_ticks = 1
+genome_runtime_ticks_per_layer = 1
+signal_emit_ticks = 2
+controlled_reaction_ticks = 2
+simple_synthesis_ticks = 5
+basic_repair_ticks = 10
+internal_rebalance_ticks = 5
+
+[genome_templates.balanced]
+variation_amplitude = 0.0
+runtime_interval_ticks = 1
+regulatory_depth = 1
+
+[genome_templates.balanced.carrier]
+material_id = "genome_carrier_A"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.balanced.outputs]
+resource_uptake_priority = 0.0
+energy_conversion_priority = 0.0
+material_synthesis_priority = 1.0
+repair_priority = 1.0
+signal_emit_priority = 1.0
+"#,
+    )
+    .unwrap()
+}
+
+#[test]
+fn process_attempt_cadence_gates_atomic_process_attempts() {
+    let mut executor = TickExecutor::new(process_cadence_config()).unwrap();
+
+    let tick_1 = executor.step().unwrap();
+    assert!(!tick_1
+        .diagnostics
+        .attempted_processes
+        .contains(&ProcessId::SimpleMaterialSynthesis));
+
+    for _ in 0..3 {
+        let summary = executor.step().unwrap();
+        assert!(!summary
+            .diagnostics
+            .attempted_processes
+            .contains(&ProcessId::SimpleMaterialSynthesis));
+    }
+
+    let tick_5 = executor.step().unwrap();
+    assert!(tick_5
+        .diagnostics
+        .attempted_processes
+        .contains(&ProcessId::SimpleMaterialSynthesis));
+}
+
+#[test]
+fn repair_cadence_controls_attempts_not_repair_amount_balance() {
+    let mut executor = TickExecutor::new(process_cadence_config()).unwrap();
+
+    for _ in 0..9 {
+        let summary = executor.step().unwrap();
+        assert!(!summary
+            .diagnostics
+            .attempted_processes
+            .contains(&ProcessId::BasicRepair));
+    }
+
+    let tick_10 = executor.step().unwrap();
+    assert!(tick_10
+        .diagnostics
+        .attempted_processes
+        .contains(&ProcessId::BasicRepair));
+}
+```
+
+- [ ] **Step 2: Verify RED**
+
+Run:
+
+```powershell
+$env:CARGO_PROFILE_TEST_DEBUG='0'
+cargo test --test scheduler_process_cadence
+```
+
+Expected: FAIL because process-specific cadence gating does not exist.
+
+- [ ] **Step 3: Add process cadence mapping**
+
+In `src/core/tick.rs`, add:
+
+```rust
+fn process_attempt_cadence(config: &RuntimeConfig, process: ProcessId) -> u64 {
+    match process {
+        ProcessId::SignalEmission => config.scheduler.cell.signal_emit_ticks,
+        ProcessId::ControlledReaction => config.scheduler.cell.controlled_reaction_ticks,
+        ProcessId::SimpleMaterialSynthesis => config.scheduler.cell.simple_synthesis_ticks,
+        ProcessId::BasicRepair => config.scheduler.cell.basic_repair_ticks,
+        ProcessId::InternalRebalance => config.scheduler.cell.internal_rebalance_ticks,
+        _ => 1,
+    }
+    .max(1)
+}
+
+fn is_due_on_executing_tick(executing_tick: u64, cadence: u64) -> bool {
+    executing_tick % cadence.max(1) == 0
+}
+```
+
+- [ ] **Step 4: Gate atomic process attempts**
+
+Before calling Feasibility for a process:
+
+```rust
+let cadence = process_attempt_cadence(config, process_id);
+if !is_due_on_executing_tick(executing_tick, cadence) {
+    diagnostics.record_skipped_by_scheduler(process_id);
+    continue;
+}
+```
+
+Do not gate:
+
+```text
+mandatory upkeep
+lifecycle
+already-active long-running process progress
+physics/contact
+joint transfer
+resource uptake/export execution unless mapped explicitly
+```
+
+- [ ] **Step 5: Verify GREEN**
+
+Run:
+
+```powershell
+$env:CARGO_PROFILE_TEST_DEBUG='0'
+cargo test --test scheduler_process_cadence
+```
+
+Expected: PASS.
+
+- [ ] **Step 6: Regression**
+
+Run:
+
+```powershell
+$env:CARGO_PROFILE_TEST_DEBUG='0'
+cargo test --test phase3a_action_plan --test phase2g_reactions --test phase2g_repair
+```
+
+Expected: PASS.
+
+- [ ] **Step 7: Commit**
+
+```powershell
+git add src/core/tick.rs src/core/summary.rs tests/scheduler_process_cadence.rs
+git commit -m "feat(scheduler): gate process attempts by cadence"
 ```
 
 ---
@@ -909,6 +1271,24 @@ fn resource_decay_runs_only_when_due_and_reports_elapsed_ticks() {
     assert_eq!(fifth.metrics.resource_decay_scheduler_elapsed_ticks, 5);
     assert!(fifth.metrics.resource_decay_amount > 0.0);
 }
+
+#[test]
+fn scheduled_decay_preserves_elapsed_tick_semantics() {
+    let mut every_tick = TickExecutor::new(config_with_world_cadence(1, 1)).unwrap();
+    let mut scheduled = TickExecutor::new(config_with_world_cadence(1, 5)).unwrap();
+
+    for _ in 0..5 {
+        every_tick.step().unwrap();
+        scheduled.step().unwrap();
+    }
+
+    let every_tick_total = every_tick.world().resources().total_amount_for_test();
+    let scheduled_total = scheduled.world().resources().total_amount_for_test();
+    assert!(
+        (every_tick_total - scheduled_total).abs() < 0.001,
+        "scheduled decay must integrate elapsed ticks instead of slowing decay"
+    );
+}
 ```
 
 - [ ] **Step 2: Verify RED**
@@ -945,7 +1325,28 @@ Move resource decay so it only runs if:
 let decay_due = is_due(self.world.tick().raw(), config.scheduler.world.resource_decay_ticks);
 ```
 
-If due, apply elapsed integration. If the current resource grid decay function cannot accept elapsed ticks yet, call the existing one once and record elapsed; then add a follow-up test before changing physical integration.
+If due, apply elapsed integration. Do not call a one-tick decay function once every `N` ticks unless that function accepts `elapsed_ticks` and applies the equivalent effect.
+
+Required decay formula for a per-tick decay rate:
+
+```rust
+fn decay_factor(rate_per_tick: f32, elapsed_ticks: u64) -> f32 {
+    (1.0 - rate_per_tick).powi(elapsed_ticks as i32)
+}
+
+let remaining = amount * decay_factor(rate_per_tick, elapsed_ticks);
+let decayed = amount - remaining;
+```
+
+If a world propagation system cannot safely integrate elapsed ticks yet, keep its cadence at `1` and document the blocker in the implementation report. Do not implement a semantic slowdown as a performance optimization.
+
+Add the test-only resource total helper used by the semantic equivalence test:
+
+```rust
+impl ResourceGrid {
+    pub fn total_amount_for_test(&self) -> f32 { ... }
+}
+```
 
 Add metrics:
 
@@ -1044,11 +1445,14 @@ fn run_engine_keeps_latest_committed_state_without_snapshotting_every_tick() {
 
     assert_eq!(engine.current_tick(), 4);
     assert_eq!(engine.snapshots().len(), 1);
+    assert_eq!(engine.snapshot_build_count_for_test(), 1);
     assert_eq!(engine.latest_committed_snapshot().tick.raw(), 4);
+    assert_eq!(engine.snapshot_build_count_for_test(), 2);
 
     engine.run_one_tick().unwrap();
     assert_eq!(engine.current_tick(), 5);
     assert_eq!(engine.snapshots().len(), 2);
+    assert_eq!(engine.snapshot_build_count_for_test(), 3);
 }
 ```
 
@@ -1061,7 +1465,7 @@ $env:CARGO_PROFILE_TEST_DEBUG='0'
 cargo test --test runner_snapshot_cadence
 ```
 
-Expected: FAIL because `snapshot_every_ticks` and `latest_committed_snapshot()` do not exist.
+Expected: FAIL because `snapshot_every_ticks`, on-demand latest snapshot building, and snapshot build counters do not exist.
 
 - [ ] **Step 3: Extend RunEngineConfig**
 
@@ -1083,21 +1487,32 @@ impl Default for RunEngineConfig {
 }
 ```
 
-Add `latest_committed_snapshot: CommittedSnapshot` to `RunEngine`.
+Do not add a full `latest_committed_snapshot: CommittedSnapshot` that is rebuilt every Tick. `WorldState` is the authoritative latest committed state; snapshots are materialized only when due or explicitly requested.
 
 - [ ] **Step 4: Update commit_one_tick**
 
 After `executor.step()?`:
 
 ```rust
-let snapshot = CommittedSnapshot::from_world(executor.world());
-self.latest_committed_snapshot = snapshot.clone();
 if self.current_tick() % self.config.snapshot_every_ticks.max(1) == 0 {
+    let snapshot = CommittedSnapshot::from_world(executor.world());
+    self.snapshot_build_count += 1;
     self.snapshots.push(snapshot);
 }
 ```
 
 Keep tick 0 snapshot in the ring buffer.
+
+Add on-demand snapshot access:
+
+```rust
+pub fn latest_committed_snapshot(&mut self) -> CommittedSnapshot {
+    self.snapshot_build_count += 1;
+    CommittedSnapshot::from_world(self.executor.world())
+}
+```
+
+If an API requires an immutable getter, provide a separate `latest_committed_tick()` and build the full snapshot in the caller that needs projection. Do not hide an expensive full-world clone behind a cheap-looking immutable status call.
 
 - [ ] **Step 5: Verify GREEN**
 
@@ -1181,6 +1596,22 @@ fn sampler_forces_pause_step_and_terminal_frames() {
     assert_eq!(sampler.on_step(now), ProjectionDecision::EmitForced);
     assert_eq!(sampler.on_terminal(now), ProjectionDecision::EmitForced);
 }
+
+#[test]
+fn sampler_emits_heartbeat_when_no_new_committed_tick_arrives() {
+    let mut sampler = ViewerProjectionSampler::new(ViewerProjectionConfig::default());
+    let now = Instant::now();
+
+    assert_eq!(sampler.on_committed_tick(1, now), ProjectionDecision::Emit);
+    assert_eq!(
+        sampler.on_wall_clock_idle(now + Duration::from_millis(999)),
+        ProjectionDecision::Skip
+    );
+    assert_eq!(
+        sampler.on_wall_clock_idle(now + Duration::from_millis(1000)),
+        ProjectionDecision::EmitHeartbeat
+    );
+}
 ```
 
 - [ ] **Step 2: Verify RED**
@@ -1205,6 +1636,7 @@ use std::time::{Duration, Instant};
 pub enum ProjectionDecision {
     Emit,
     EmitForced,
+    EmitHeartbeat,
     Skip,
 }
 
@@ -1270,6 +1702,23 @@ impl ViewerProjectionSampler {
         }
     }
 
+    pub fn on_wall_clock_idle(&mut self, now: Instant) -> ProjectionDecision {
+        let max_age = Duration::from_millis(self.config.maximum_frame_age_ms);
+        let minimum_interval = Duration::from_millis(
+            1000 / self.config.minimum_frames_per_second.max(1) as u64,
+        );
+        let heartbeat_due = self
+            .last_emit_at
+            .map(|last| now.duration_since(last) >= max_age.max(minimum_interval))
+            .unwrap_or(false);
+        if heartbeat_due {
+            self.record_emit(now);
+            ProjectionDecision::EmitHeartbeat
+        } else {
+            ProjectionDecision::Skip
+        }
+    }
+
     pub fn on_pause(&mut self, now: Instant) -> ProjectionDecision {
         self.force(now, self.config.force_frame_on_pause)
     }
@@ -1300,9 +1749,14 @@ impl ViewerProjectionSampler {
 
 - [ ] **Step 4: Wire config**
 
-Add `[viewer_projection]` to `config/server.toml`:
+Add `[runner_pacing]` and `[viewer_projection]` to `config/server.toml`:
 
 ```toml
+[runner_pacing]
+realtime_target_tps = 10
+headless_target_tps = 50
+run_unthrottled = false
+
 [viewer_projection]
 target_frames_per_second = 10
 minimum_frames_per_second = 1
@@ -1317,7 +1771,17 @@ force_frame_on_resume_if_stale = true
 force_frame_on_terminal_state = true
 ```
 
-Parse this in `src/runner/server_config.rs` and store `ViewerProjectionConfig`.
+Parse this in `src/runner/server_config.rs` and store:
+
+```rust
+pub struct RunnerPacingConfig {
+    pub realtime_target_tps: u32,
+    pub headless_target_tps: u32,
+    pub run_unthrottled: bool,
+}
+```
+
+Do not add `realtime_target_tps`, `headless_target_tps`, or `run_unthrottled` to Core `RuntimeConfig`.
 
 - [ ] **Step 5: Use sampler in tick loop**
 
@@ -1326,10 +1790,12 @@ In `src/viewer_server/state.rs`, replace interval math with sampler:
 ```rust
 let decision = sampler.on_committed_tick(committed_tick, Instant::now());
 let frame = match decision {
-    ProjectionDecision::Emit | ProjectionDecision::EmitForced => engine.latest_committed_snapshot(),
+    ProjectionDecision::Emit | ProjectionDecision::EmitForced | ProjectionDecision::EmitHeartbeat => engine.latest_committed_snapshot(),
     ProjectionDecision::Skip => None,
 };
 ```
+
+Also run a wall-clock interval task that calls `on_wall_clock_idle(...)` while the Run is active. If there is no newer committed tick but the last frame is older than `maximum_frame_age_ms`, resend the latest committed frame as heartbeat or emit a lightweight status heartbeat. Mark heartbeat frames separately from new projections so UI can distinguish repeated state from newly committed state.
 
 Do not hold the app mutex while sending WS messages.
 
@@ -1534,15 +2000,17 @@ resource_totals_ticks = 10
 
     let mut executor = TickExecutor::new(config).unwrap();
     let first = executor.step().unwrap();
-    assert!(!first.metrics.resource_totals_recomputed);
+    assert!(first.tick_accounting.conservation_delta_abs < 0.001);
+    assert!(!first.observer_projection.resource_totals_recomputed);
 
     for _ in 0..8 {
         let summary = executor.step().unwrap();
-        assert!(!summary.metrics.resource_totals_recomputed);
+        assert!(summary.tick_accounting.conservation_delta_abs < 0.001);
+        assert!(!summary.observer_projection.resource_totals_recomputed);
     }
 
     let tenth = executor.step().unwrap();
-    assert!(tenth.metrics.resource_totals_recomputed);
+    assert!(tenth.observer_projection.resource_totals_recomputed);
 }
 ```
 
@@ -1557,27 +2025,55 @@ cargo test --test scheduler_observer_cadence
 
 Expected: FAIL because observer cadence flags do not exist.
 
-- [ ] **Step 3: Add explicit freshness fields**
+- [ ] **Step 3: Split summary responsibilities**
 
-In `MetricsSummary` add:
+In `src/core/summary.rs`, split summary responsibilities:
 
 ```rust
-pub resource_totals_recomputed: bool,
-pub observer_metrics_recomputed: bool,
-pub graph_analysis_recomputed: bool,
+pub struct TickAccountingSummary {
+    pub conservation_delta_abs: f32,
+    pub matter_created_amount: f32,
+    pub matter_destroyed_amount: f32,
+}
+
+pub struct ObserverProjectionSummary {
+    pub resource_totals_recomputed: bool,
+    pub observer_metrics_recomputed: bool,
+    pub graph_analysis_recomputed: bool,
+    pub resource_totals: Option<Vec<f32>>,
+}
+
+pub struct AnalyticsSummary {
+    pub graph_analysis_recomputed: bool,
+    pub organism_candidate_count: Option<u32>,
+}
 ```
 
-These fields describe observer work, not mechanics.
+Keep existing `MetricsSummary` fields that are mechanics-critical or per-Tick diagnostics. Add new fields to `RunSummary`:
+
+```rust
+pub tick_accounting: TickAccountingSummary,
+pub observer_projection: ObserverProjectionSummary,
+pub analytics: AnalyticsSummary,
+```
+
+These fields describe separate authority boundaries:
+
+```text
+TickAccountingSummary  -> every Tick, mechanics/conservation safe
+ObserverProjection     -> cadence-sampled, read-only
+AnalyticsSummary       -> rare/expensive observer analytics
+```
 
 - [ ] **Step 4: Gate expensive observer-only work**
 
 In `TickExecutor::step()`, keep mechanics-critical accounting intact. For expensive observer-only totals, compute only when:
 
 ```rust
-is_due(self.world.tick().raw(), config.scheduler.observer.resource_totals_ticks)
+is_due_on_executing_tick(executing_tick, config.scheduler.observer.resource_totals_ticks)
 ```
 
-If a field is still required every Tick for conservation tests, keep it incremental and mark it as not observer recompute.
+If a field is required for conservation, lifecycle, or Feasibility, it belongs in `TickAccountingSummary` or existing mechanics state and must remain available every Tick. Do not make mechanics-critical fields stale to improve observer performance.
 
 - [ ] **Step 5: Verify GREEN**
 
@@ -1724,7 +2220,8 @@ git commit -m "feat(runner): add viewer frame interpolation metadata"
 **Files:**
 
 - Create: `tests/scheduler_determinism.rs`
-- Create: `tests/scheduler_performance_smoke.rs`
+- Create: `src/core/stable_state_hash.rs`
+- Create: `src/bin/scheduler_benchmark.rs`
 - Modify: `outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-scheduler-cadence.md`
 
 - [ ] **Step 1: Write determinism test**
@@ -1732,11 +2229,11 @@ git commit -m "feat(runner): add viewer frame interpolation metadata"
 Create `tests/scheduler_determinism.rs`:
 
 ```rust
-use alife::core::snapshot::ViewerFrame;
+use alife::core::stable_state_hash::StableStateHasher;
 use alife::core::tick::TickExecutor;
 use alife::runner::scenario::{load_scenario_document, scan_scenarios};
 
-fn run_summary(id: &str, ticks: usize) -> String {
+fn run_state_hash(id: &str, ticks: usize) -> u64 {
     let scenarios = scan_scenarios("config/scenarios").unwrap();
     let meta = scenarios.iter().find(|scenario| scenario.id == id).unwrap();
     let document = load_scenario_document(meta).unwrap();
@@ -1744,83 +2241,141 @@ fn run_summary(id: &str, ticks: usize) -> String {
     for _ in 0..ticks {
         executor.step().unwrap();
     }
-    let frame = ViewerFrame::from_world(executor.world());
-    format!(
-        "{}:{}:{}:{}",
-        frame.tick.raw(),
-        frame.cells.len(),
-        frame.heat,
-        frame.waste
-    )
+    StableStateHasher::hash_world(executor.world())
 }
 
 #[test]
 fn scheduler_cadence_is_deterministic_for_same_seed_and_config() {
     assert_eq!(
-        run_summary("demo_living_world", 200),
-        run_summary("demo_living_world", 200)
+        run_state_hash("demo_living_world", 200),
+        run_state_hash("demo_living_world", 200)
     );
 }
 ```
 
-- [ ] **Step 2: Write performance smoke**
+- [ ] **Step 2: Add stable state hasher**
 
-Create `tests/scheduler_performance_smoke.rs`:
+Create `src/core/stable_state_hash.rs`:
+
+```rust
+pub struct StableStateHasher;
+
+impl StableStateHasher {
+    pub fn hash_world(world: &WorldState) -> u64 {
+        let mut hasher = StableHasher::new("scheduler-determinism-v1");
+        hasher.add_u64(world.tick().raw());
+        hasher.add_cells(world.cells());
+        hasher.add_resources(world.resources());
+        hasher.add_environment(world.environment());
+        hasher.add_fragments(world.fragments());
+        hasher.add_joints(world.joints());
+        hasher.add_genomes(world.genomes());
+        hasher.finish()
+    }
+}
+```
+
+Hash content must include at least:
+
+```text
+tick
+cells and lifecycle states
+positions/velocities if present
+energy
+internal resources
+materials
+active process progress
+external resource layers
+environment fields
+fragments
+joints
+genomes and carriers
+```
+
+Use explicit ordering and fixed byte encoding. Do not use `DefaultHasher`.
+
+- [ ] **Step 3: Add benchmark command**
+
+Create `src/bin/scheduler_benchmark.rs`:
 
 ```rust
 use alife::core::tick::TickExecutor;
 use alife::runner::scenario::{load_scenario_document, scan_scenarios};
 use std::time::Instant;
 
-#[test]
-fn demo_living_world_reaches_minimum_headless_throughput() {
+fn main() {
+    let scenario_id = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "demo_living_world".to_string());
+    let ticks: usize = std::env::args()
+        .nth(2)
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(1000);
+    let repeats: usize = std::env::args()
+        .nth(3)
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(5);
+
     let scenarios = scan_scenarios("config/scenarios").unwrap();
     let meta = scenarios
         .iter()
-        .find(|scenario| scenario.id == "demo_living_world")
+        .find(|scenario| scenario.id == scenario_id)
         .unwrap();
     let document = load_scenario_document(meta).unwrap();
-    let mut executor = TickExecutor::new(document.runtime_config).unwrap();
 
-    let start = Instant::now();
-    for _ in 0..250 {
-        executor.step().unwrap();
+    let mut results = Vec::new();
+    for _ in 0..repeats {
+        let mut executor = TickExecutor::new(document.runtime_config.clone()).unwrap();
+        for _ in 0..100 {
+            executor.step().unwrap();
+        }
+        let start = Instant::now();
+        for _ in 0..ticks {
+            executor.step().unwrap();
+        }
+        let elapsed = start.elapsed().as_secs_f64();
+        results.push(ticks as f64 / elapsed);
     }
-    let elapsed = start.elapsed().as_secs_f64();
-    let tps = 250.0 / elapsed;
-
-    assert!(tps >= 30.0, "expected at least 30 TPS, got {tps:.2}");
+    results.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let median = results[results.len() / 2];
+    println!("scenario={scenario_id} ticks={ticks} repeats={repeats} median_tps={median:.2}");
 }
 ```
 
-- [ ] **Step 3: Verify RED or baseline**
+- [ ] **Step 4: Verify determinism and benchmark build**
 
 Run:
 
 ```powershell
 $env:CARGO_PROFILE_TEST_DEBUG='0'
-cargo test --test scheduler_determinism --test scheduler_performance_smoke
+cargo test --test scheduler_determinism
+cargo build --release --bin scheduler_benchmark
 ```
 
-Expected:
+Expected: PASS/build succeeds.
 
-- determinism PASS;
-- performance may FAIL before enough cadence tasks are implemented.
+- [ ] **Step 5: Run performance benchmark and record result**
 
-If performance passes before optimization, keep the test as a regression guard.
+Run:
 
-- [ ] **Step 4: Full focused regression**
+```powershell
+cargo run --release --bin scheduler_benchmark -- demo_living_world 1000 5
+```
+
+Expected: command prints median TPS. Do not hard-fail normal `cargo test` on a fixed TPS threshold; CPU and CI variability make that unstable. If a CI smoke is needed, use a very low threshold and mark the release benchmark as the authoritative performance signal.
+
+- [ ] **Step 6: Full focused regression**
 
 Run:
 
 ```powershell
 $env:CARGO_PROFILE_TEST_DEBUG='0'
-cargo test --test scheduler_config --test scheduler_genome_cadence --test scheduler_world_cadence --test scheduler_observer_cadence --test scheduler_determinism --test scheduler_performance_smoke --test runner_ws_stream --test runner_headless_e2e
+cargo test --test scheduler_config --test scheduler_genome_cadence --test scheduler_process_cadence --test scheduler_world_cadence --test scheduler_observer_cadence --test scheduler_determinism --test runner_ws_stream --test runner_headless_e2e
 ```
 
 Expected: PASS.
 
-- [ ] **Step 5: Full workspace verification**
+- [ ] **Step 7: Full workspace verification**
 
 Run:
 
@@ -1831,7 +2386,7 @@ cargo test --workspace
 
 Expected: PASS.
 
-- [ ] **Step 6: Write report**
+- [ ] **Step 8: Write report**
 
 Create `outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-scheduler-cadence.md` with:
 
@@ -1854,13 +2409,14 @@ Create `outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-scheduler-cadence.md` with:
 ## Performance
 
 - demo_living_world TPS before:
-- demo_living_world TPS after:
+- demo_living_world median TPS after:
+- benchmark command:
 ```
 
-- [ ] **Step 7: Commit report**
+- [ ] **Step 9: Commit report**
 
 ```powershell
-git add outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-scheduler-cadence.md
+git add src/core/stable_state_hash.rs src/bin/scheduler_benchmark.rs tests/scheduler_determinism.rs outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-scheduler-cadence.md
 git commit -m "docs(scheduler): report cadence implementation"
 ```
 
@@ -1873,19 +2429,24 @@ Implementation is complete only when:
 - `docs/engine/scheduler.md` remains consistent with implementation.
 - Missing scheduler config keeps old behavior where tests depend on it.
 - `demo_living_world` explicitly uses canonical scheduler cadence.
+- `GenomeTemplate.runtime_interval_ticks` and scheduler Genome defaults have one documented precedence model.
+- Genome Runtime refresh uses effective cadence with deterministic staggering.
 - Genome decision refresh is not every Tick by default in canonical scheduler config.
+- Process execution-attempt cadence fields are either implemented or removed; no parsed-only process cadence fields remain.
 - Process progress and mandatory upkeep still run every Tick.
-- World propagation systems integrate elapsed ticks or explicitly report scheduled execution.
+- World propagation systems integrate elapsed ticks or remain at cadence `1`; no scheduled system may silently slow physical effects.
 - Viewer projection is wall-clock limited and latest-state only.
+- Viewer heartbeat uses `minimum_frames_per_second` / `maximum_frame_age_ms` and distinguishes repeated latest-frame heartbeat from new projection.
 - Pause, StepRun, Completed, Failed force projection.
 - Slow viewer cannot block simulation.
-- Same seed + same config + same scheduler config remains deterministic.
+- Same seed + same config + same scheduler config remains deterministic by stable state hash.
 - `cargo fmt --check` passes.
 - `CARGO_PROFILE_TEST_DEBUG=0 cargo test --workspace` passes.
+- `cargo run --release --bin scheduler_benchmark -- demo_living_world 1000 5` result is recorded in the report.
 
 ## Self-review
 
-- Spec coverage: four scheduler levels, Genome cadence, process progress separation, world propagation, viewer projection, forced projections, and deterministic commit boundaries are covered by Tasks 1-10.
+- Spec coverage: four scheduler levels, Genome cadence, process cadence, process progress separation, world propagation, viewer projection, forced projections, and deterministic commit boundaries are covered by Tasks 1-10.
 - Placeholder scan: no task uses unresolved `TBD` or open-ended implementation language.
-- Type consistency: planned public names are `SchedulerConfig`, `TimeConfig`, `ViewerProjectionSampler`, `ViewerProjectionConfig`, and `ProjectionDecision`.
+- Type consistency: planned public names are `SchedulerConfig`, `SimulationTimeConfig`, `RunnerPacingConfig`, `ViewerProjectionSampler`, `ViewerProjectionConfig`, and `ProjectionDecision`.
 - Scope: implementation is intentionally incremental and avoids a full `TickExecutor` rewrite in one task.

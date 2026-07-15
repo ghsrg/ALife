@@ -190,6 +190,11 @@ Mandatory costs are paid before planned action Feasibility. Feasibility uses pos
 
 These normally run every Tick:
 
+Current implementation treats these as Tick Core invariants, not as scenario-tunable
+config. The block below documents the conceptual category only; `[scheduler.fast]`
+is reserved and must not be parsed as a supported scenario contract until an ADR
+allows changing these invariants.
+
 ```toml
 [scheduler.fast]
 mandatory_upkeep_ticks = 1

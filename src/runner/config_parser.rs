@@ -3,7 +3,9 @@ use crate::core::config::{
     ChemistryMaterialConfig, ChemistryReactionConfig, ChemistryRepairConfig,
     ChemistryResourceConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
     EnvironmentConfig, GrowthConfig, LifecycleConfig, MaterialEffectConfig, ResourceConfig,
-    ResourceInteractionConfig, RuntimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
+    ResourceInteractionConfig, RuntimeConfig, SchedulerCellConfig, SchedulerConfig,
+    SchedulerObserverConfig, SchedulerWorldConfig, SimulationTimeConfig, SpaceConfig,
+    SynthesisConfig, WorldConfig,
 };
 use crate::core::genome::{
     GenomeCarrierState, GenomeOutputId, GenomeOutputValue, GenomeTemplate, GenomeTemplateId,
@@ -65,6 +67,7 @@ pub struct RawCellGenome {
 pub struct RawGenomeTemplate {
     pub variation_amplitude: f32,
     pub runtime_interval_ticks: Option<u64>,
+    pub regulatory_depth: Option<u64>,
     pub carrier: RawGenomeCarrier,
     #[serde(default)]
     pub outputs: HashMap<String, f32>,
@@ -266,12 +269,57 @@ pub struct RawChemistryRepair {
     pub max_amount_per_tick: f32,
 }
 
+#[derive(Deserialize, Debug, Default)]
+pub struct RawTimeConfig {
+    pub tick_duration_ms: Option<u32>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct RawSchedulerConfig {
+    pub cell: Option<RawSchedulerCellConfig>,
+    pub world: Option<RawSchedulerWorldConfig>,
+    pub observer: Option<RawSchedulerObserverConfig>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct RawSchedulerCellConfig {
+    pub genome_runtime_base_ticks: Option<u64>,
+    pub genome_runtime_ticks_per_layer: Option<u64>,
+    pub signal_emit_ticks: Option<u64>,
+    pub controlled_reaction_ticks: Option<u64>,
+    pub simple_synthesis_ticks: Option<u64>,
+    pub basic_repair_ticks: Option<u64>,
+    pub internal_rebalance_ticks: Option<u64>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct RawSchedulerWorldConfig {
+    pub resource_diffusion_ticks: Option<u64>,
+    pub resource_decay_ticks: Option<u64>,
+    pub passive_reactions_ticks: Option<u64>,
+    pub background_material_degradation_ticks: Option<u64>,
+    pub environment_heat_diffusion_ticks: Option<u64>,
+    pub field_update_ticks: Option<u64>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct RawSchedulerObserverConfig {
+    pub observer_metrics_ticks: Option<u64>,
+    pub resource_totals_ticks: Option<u64>,
+    pub graph_analysis_ticks: Option<u64>,
+    pub debug_trace_ticks: Option<u64>,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct RawScenarioConfig {
     pub scenario_id: String,
     pub seed: u64,
     pub tick_count: u64,
     pub legacy_material_distribution: Option<bool>,
+    #[serde(default)]
+    pub time: RawTimeConfig,
+    #[serde(default)]
+    pub scheduler: RawSchedulerConfig,
     pub world: RawWorld,
     pub space: RawSpace,
     pub resources: RawResources,
@@ -299,6 +347,107 @@ pub enum ParseError {
     ConfigValidationError(ConfigError),
     ValidationError(String),
     UnknownMaterialName(String),
+}
+
+impl RawTimeConfig {
+    fn to_simulation_time_config(&self) -> SimulationTimeConfig {
+        SimulationTimeConfig {
+            tick_duration_ms: self.tick_duration_ms.unwrap_or(100),
+        }
+    }
+}
+
+impl RawSchedulerConfig {
+    fn to_scheduler_config(&self) -> SchedulerConfig {
+        SchedulerConfig {
+            cell: self
+                .cell
+                .as_ref()
+                .map(RawSchedulerCellConfig::to_scheduler_cell_config)
+                .unwrap_or_default(),
+            world: self
+                .world
+                .as_ref()
+                .map(RawSchedulerWorldConfig::to_scheduler_world_config)
+                .unwrap_or_default(),
+            observer: self
+                .observer
+                .as_ref()
+                .map(RawSchedulerObserverConfig::to_scheduler_observer_config)
+                .unwrap_or_default(),
+        }
+    }
+}
+
+impl RawSchedulerCellConfig {
+    fn to_scheduler_cell_config(&self) -> SchedulerCellConfig {
+        let defaults = SchedulerCellConfig::default();
+        SchedulerCellConfig {
+            genome_runtime_base_ticks: self
+                .genome_runtime_base_ticks
+                .unwrap_or(defaults.genome_runtime_base_ticks),
+            genome_runtime_ticks_per_layer: self
+                .genome_runtime_ticks_per_layer
+                .unwrap_or(defaults.genome_runtime_ticks_per_layer),
+            signal_emit_ticks: self.signal_emit_ticks.unwrap_or(defaults.signal_emit_ticks),
+            controlled_reaction_ticks: self
+                .controlled_reaction_ticks
+                .unwrap_or(defaults.controlled_reaction_ticks),
+            simple_synthesis_ticks: self
+                .simple_synthesis_ticks
+                .unwrap_or(defaults.simple_synthesis_ticks),
+            basic_repair_ticks: self
+                .basic_repair_ticks
+                .unwrap_or(defaults.basic_repair_ticks),
+            internal_rebalance_ticks: self
+                .internal_rebalance_ticks
+                .unwrap_or(defaults.internal_rebalance_ticks),
+        }
+    }
+}
+
+impl RawSchedulerWorldConfig {
+    fn to_scheduler_world_config(&self) -> SchedulerWorldConfig {
+        let defaults = SchedulerWorldConfig::default();
+        SchedulerWorldConfig {
+            resource_diffusion_ticks: self
+                .resource_diffusion_ticks
+                .unwrap_or(defaults.resource_diffusion_ticks),
+            resource_decay_ticks: self
+                .resource_decay_ticks
+                .unwrap_or(defaults.resource_decay_ticks),
+            passive_reactions_ticks: self
+                .passive_reactions_ticks
+                .unwrap_or(defaults.passive_reactions_ticks),
+            background_material_degradation_ticks: self
+                .background_material_degradation_ticks
+                .unwrap_or(defaults.background_material_degradation_ticks),
+            environment_heat_diffusion_ticks: self
+                .environment_heat_diffusion_ticks
+                .unwrap_or(defaults.environment_heat_diffusion_ticks),
+            field_update_ticks: self
+                .field_update_ticks
+                .unwrap_or(defaults.field_update_ticks),
+        }
+    }
+}
+
+impl RawSchedulerObserverConfig {
+    fn to_scheduler_observer_config(&self) -> SchedulerObserverConfig {
+        let defaults = SchedulerObserverConfig::default();
+        SchedulerObserverConfig {
+            observer_metrics_ticks: self
+                .observer_metrics_ticks
+                .unwrap_or(defaults.observer_metrics_ticks),
+            resource_totals_ticks: self
+                .resource_totals_ticks
+                .unwrap_or(defaults.resource_totals_ticks),
+            graph_analysis_ticks: self
+                .graph_analysis_ticks
+                .unwrap_or(defaults.graph_analysis_ticks),
+            debug_trace_ticks: self.debug_trace_ticks.unwrap_or(defaults.debug_trace_ticks),
+        }
+    }
 }
 
 impl RawScenarioConfig {
@@ -566,6 +715,11 @@ impl RawScenarioConfig {
             lifecycle,
         )
         .map_err(ParseError::ConfigValidationError)?;
+        runtime_config.simulation_time = self.time.to_simulation_time_config();
+        runtime_config.scheduler = self.scheduler.to_scheduler_config();
+        runtime_config
+            .validate_scheduler_options()
+            .map_err(ParseError::ConfigValidationError)?;
 
         if let Some(ref raw_growth) = self.growth {
             runtime_config.growth = GrowthConfig {
@@ -875,7 +1029,10 @@ impl RawScenarioConfig {
             runtime_config = runtime_config.with_cells(initial_cells);
         }
 
-        let genome_templates = parse_genome_templates(&self.genome_templates)?;
+        let genome_templates = parse_genome_templates(
+            &self.genome_templates,
+            runtime_config.scheduler.cell.genome_runtime_base_ticks,
+        )?;
         let known_templates: std::collections::HashSet<_> = genome_templates
             .iter()
             .map(|template| template.id().as_str())
@@ -928,6 +1085,7 @@ impl RawScenarioConfig {
 
 fn parse_genome_templates(
     raw: &HashMap<String, RawGenomeTemplate>,
+    default_runtime_interval_ticks: u64,
 ) -> Result<Vec<GenomeTemplate>, ParseError> {
     let mut names: Vec<_> = raw.keys().cloned().collect();
     names.sort();
@@ -950,7 +1108,9 @@ fn parse_genome_templates(
                     ParseError::ValidationError(format!("Invalid Genome template id: {error:?}"))
                 })?,
                 value.variation_amplitude,
-                value.runtime_interval_ticks.unwrap_or(1),
+                value
+                    .runtime_interval_ticks
+                    .unwrap_or(default_runtime_interval_ticks),
                 GenomeCarrierState::new(
                     value.carrier.material_id.clone(),
                     value.carrier.amount,
@@ -961,6 +1121,9 @@ fn parse_genome_templates(
                 })?,
                 outputs,
             )
+            .and_then(|template| {
+                template.with_regulatory_depth(value.regulatory_depth.unwrap_or(1))
+            })
             .map_err(|error| {
                 ParseError::ValidationError(format!("Invalid Genome template: {error:?}"))
             })

@@ -1,7 +1,8 @@
+use crate::core::action_plan::ActionPlan;
 use crate::core::cell_store::{
     CellIndex, CellStore, EnergyBuffer, InitialCellState, LifecycleState,
 };
-use crate::core::config::RuntimeConfig;
+use crate::core::config::{RuntimeConfig, deterministic_genome_decision_offset};
 use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
@@ -158,6 +159,22 @@ impl WorldState {
             cells.set_genome_id(cell, Some(genome_id));
             cells.set_genome_carrier_amount(cell, genome.carrier.amount);
             genomes.push(genome);
+        }
+
+        for cell_raw in 0..cells.len() {
+            let cell = CellIndex::from_raw(cell_raw);
+            let genome = cells
+                .genome_id(cell)
+                .and_then(|genome_id| genomes.iter().find(|genome| genome.id == genome_id));
+            let plan = ActionPlan::from_genome(genome);
+            let cadence = config
+                .effective_genome_runtime_cadence_ticks_for_genome(genome)
+                .max(1);
+            let offset =
+                deterministic_genome_decision_offset(world_seed, cells.id_at(cell).raw(), cadence);
+            cells.set_action_plan(cell, plan);
+            cells.set_genome_decision_offset(cell, offset);
+            cells.set_next_genome_decision_due_tick(cell, cadence + offset);
         }
 
         let mut spatial_index = SpatialIndex::new();
@@ -774,6 +791,27 @@ impl WorldState {
         self.cells
             .partition_typed_resources(cell_idx, daughter_b_index, ratio, loss_keep)
             .map_err(|err| format!("{:?}", err))?;
+
+        for daughter in [cell_idx, daughter_b_index] {
+            let genome = self
+                .cells
+                .genome_id(daughter)
+                .and_then(|genome_id| self.genomes.iter().find(|genome| genome.id == genome_id));
+            let plan = ActionPlan::from_genome(genome);
+            let cadence = self
+                .config
+                .effective_genome_runtime_cadence_ticks_for_genome(genome)
+                .max(1);
+            let offset = deterministic_genome_decision_offset(
+                self.config.world.seed.raw(),
+                self.cells.id_at(daughter).raw(),
+                cadence,
+            );
+            self.cells.set_action_plan(daughter, plan);
+            self.cells.set_genome_decision_offset(daughter, offset);
+            self.cells
+                .set_next_genome_decision_due_tick(daughter, self.tick.raw() + 1);
+        }
 
         Ok(DivisionOutcome {
             parent_id,

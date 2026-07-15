@@ -4,8 +4,9 @@ use crate::runner::engine::{RunEngine, RunEngineConfig};
 use crate::runner::lifecycle::{ActiveRunState, RunnerProcessState};
 use crate::runner::scenario::{load_scenario_document, scan_scenarios};
 use crate::runner::scenario_doc::ScenarioDocument;
+use crate::viewer_server::broadcaster::WsMessage;
 use crate::viewer_server::state::{
-    AppState, dispatch_command, spawn_tick_loop, status_ws_text_from_state,
+    AppState, dispatch_command, encode_latest_frame, spawn_tick_loop, status_ws_text_from_state,
 };
 use axum::{
     Json, Router,
@@ -120,6 +121,19 @@ fn broadcast_status(state: &AppState) {
     let _ = broadcaster.send(crate::viewer_server::broadcaster::WsMessage::Status(text));
 }
 
+fn broadcast_forced_frame(state: &AppState) {
+    let (sender, frame) = {
+        let mut locked = state.lock().unwrap();
+        (
+            locked.broadcaster.sender(),
+            encode_latest_frame(&mut locked),
+        )
+    };
+    if let Some(bytes) = frame {
+        let _ = sender.send(WsMessage::Frame(bytes));
+    }
+}
+
 async fn handle_run_status(State(state): State<AppState>) -> Json<RunStatus> {
     let _ = dispatch_command(&state, RunnerCommand::GetRunStatus);
     let locked = state.lock().unwrap();
@@ -191,6 +205,7 @@ async fn handle_run_start(
         &document,
         RunEngineConfig {
             snapshot_buffer_size: state.lock().unwrap().engine_snapshot_buffer_size,
+            snapshot_every_ticks: 1,
         },
     )
     .map_err(|err| {
@@ -257,6 +272,7 @@ async fn handle_run_pause(
         .map(command_result_response)
         .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot pause run"))?;
     broadcast_status(&state);
+    broadcast_forced_frame(&state);
     Ok(response)
 }
 
@@ -277,6 +293,7 @@ async fn handle_run_step(
         .map(command_result_response)
         .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot step run"))?;
     broadcast_status(&state);
+    broadcast_forced_frame(&state);
     Ok(response)
 }
 
@@ -287,6 +304,7 @@ async fn handle_run_stop(
         .map(command_result_response)
         .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot stop run"))?;
     broadcast_status(&state);
+    broadcast_forced_frame(&state);
     Ok(response)
 }
 

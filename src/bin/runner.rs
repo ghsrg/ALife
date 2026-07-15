@@ -4,7 +4,7 @@ use alife::runner::lifecycle::ActiveRunState;
 use alife::runner::progress::{ProgressInterval, ProgressSnapshot, format_progress_table};
 use alife::runner::scenario::{ScenarioMeta, load_scenario_document, scan_scenarios};
 use alife::runner::server_config::{ServerConfig, load_server_config};
-use alife::viewer_server::{create_app, state::new_app_state};
+use alife::viewer_server::{create_app, state::new_app_state_with_projection};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -101,7 +101,12 @@ async fn serve_http(server_config: ServerConfig, scenarios_dir: PathBuf) -> Resu
     let listener = tokio::net::TcpListener::bind(&bind_addr)
         .await
         .map_err(|err| format!("failed to bind HTTP server on {bind_addr}: {err}"))?;
-    let app_state = new_app_state(scenarios_dir, 300, server_config.target_broadcast_fps);
+    let app_state = new_app_state_with_projection(
+        scenarios_dir,
+        300,
+        server_config.target_broadcast_fps,
+        server_config.viewer_projection,
+    );
     let app = create_app(app_state);
 
     println!("[runner] HTTP server listening on http://{bind_addr}");

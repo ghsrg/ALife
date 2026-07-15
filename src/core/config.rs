@@ -417,6 +417,7 @@ impl Default for MaterialEffectConfig {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimeConfig {
+    pub simulation_time: SimulationTimeConfig,
     pub world: WorldConfig,
     pub space: SpaceConfig,
     pub resources: ResourceConfig,
@@ -438,6 +439,116 @@ pub struct RuntimeConfig {
     pub local_interaction: LocalInteractionConfig,
     pub joints: JointConfig,
     pub chemistry: ChemistryConfig,
+    pub scheduler: SchedulerConfig,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SimulationTimeConfig {
+    pub tick_duration_ms: u32,
+}
+
+impl Default for SimulationTimeConfig {
+    fn default() -> Self {
+        Self {
+            tick_duration_ms: 100,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SchedulerCellConfig {
+    pub genome_runtime_base_ticks: u64,
+    pub genome_runtime_ticks_per_layer: u64,
+    pub signal_emit_ticks: u64,
+    pub controlled_reaction_ticks: u64,
+    pub simple_synthesis_ticks: u64,
+    pub basic_repair_ticks: u64,
+    pub internal_rebalance_ticks: u64,
+}
+
+impl Default for SchedulerCellConfig {
+    fn default() -> Self {
+        Self {
+            genome_runtime_base_ticks: 1,
+            genome_runtime_ticks_per_layer: 1,
+            signal_emit_ticks: 1,
+            controlled_reaction_ticks: 1,
+            simple_synthesis_ticks: 1,
+            basic_repair_ticks: 1,
+            internal_rebalance_ticks: 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SchedulerWorldConfig {
+    pub resource_diffusion_ticks: u64,
+    pub resource_decay_ticks: u64,
+    pub passive_reactions_ticks: u64,
+    pub background_material_degradation_ticks: u64,
+    pub environment_heat_diffusion_ticks: u64,
+    pub field_update_ticks: u64,
+}
+
+impl Default for SchedulerWorldConfig {
+    fn default() -> Self {
+        Self {
+            resource_diffusion_ticks: 1,
+            resource_decay_ticks: 1,
+            passive_reactions_ticks: 1,
+            background_material_degradation_ticks: 1,
+            environment_heat_diffusion_ticks: 1,
+            field_update_ticks: 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SchedulerObserverConfig {
+    pub observer_metrics_ticks: u64,
+    pub resource_totals_ticks: u64,
+    pub graph_analysis_ticks: u64,
+    pub debug_trace_ticks: u64,
+}
+
+impl Default for SchedulerObserverConfig {
+    fn default() -> Self {
+        Self {
+            observer_metrics_ticks: 1,
+            resource_totals_ticks: 1,
+            graph_analysis_ticks: 1,
+            debug_trace_ticks: 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SchedulerConfig {
+    pub cell: SchedulerCellConfig,
+    pub world: SchedulerWorldConfig,
+    pub observer: SchedulerObserverConfig,
+}
+
+pub fn deterministic_genome_decision_offset(
+    world_seed: u64,
+    cell_id_raw: u32,
+    cadence: u64,
+) -> u64 {
+    let cadence = cadence.max(1);
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in b"genome-runtime-stagger" {
+        hash ^= *byte as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for byte in world_seed.to_le_bytes() {
+        hash ^= byte as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for byte in cell_id_raw.to_le_bytes() {
+        hash ^= byte as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    hash % cadence
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -455,6 +566,7 @@ pub enum ConfigError {
     InvalidDecompositionLayer,
     InvalidLocalInteractionRate,
     InvalidJointRate,
+    InvalidSchedulerCadence,
 }
 
 impl RuntimeConfig {
@@ -485,6 +597,7 @@ impl RuntimeConfig {
         let initial_cells = vec![cell];
 
         Ok(Self {
+            simulation_time: SimulationTimeConfig::default(),
             world,
             space,
             resources,
@@ -506,7 +619,74 @@ impl RuntimeConfig {
             local_interaction: LocalInteractionConfig::default(),
             joints: JointConfig::default(),
             chemistry: ChemistryConfig::default(),
+            scheduler: SchedulerConfig::default(),
         })
+    }
+
+    pub fn validate_scheduler_options(&self) -> Result<(), ConfigError> {
+        let values = [
+            self.scheduler.cell.genome_runtime_base_ticks,
+            self.scheduler.cell.genome_runtime_ticks_per_layer,
+            self.scheduler.cell.signal_emit_ticks,
+            self.scheduler.cell.controlled_reaction_ticks,
+            self.scheduler.cell.simple_synthesis_ticks,
+            self.scheduler.cell.basic_repair_ticks,
+            self.scheduler.cell.internal_rebalance_ticks,
+            self.scheduler.world.resource_diffusion_ticks,
+            self.scheduler.world.resource_decay_ticks,
+            self.scheduler.world.passive_reactions_ticks,
+            self.scheduler.world.background_material_degradation_ticks,
+            self.scheduler.world.environment_heat_diffusion_ticks,
+            self.scheduler.world.field_update_ticks,
+            self.scheduler.observer.observer_metrics_ticks,
+            self.scheduler.observer.resource_totals_ticks,
+            self.scheduler.observer.graph_analysis_ticks,
+            self.scheduler.observer.debug_trace_ticks,
+        ];
+        if values.iter().any(|value| *value == 0) {
+            return Err(ConfigError::InvalidSchedulerCadence);
+        }
+        Ok(())
+    }
+
+    pub fn effective_genome_runtime_cadence_ticks(&self, template_id: &str) -> Option<u64> {
+        let template = self
+            .genome_templates
+            .iter()
+            .find(|candidate| candidate.id().as_str() == template_id)?;
+        Some(self.effective_genome_runtime_cadence_ticks_for_template(template))
+    }
+
+    pub fn effective_genome_runtime_cadence_ticks_for_template(
+        &self,
+        template: &GenomeTemplate,
+    ) -> u64 {
+        let base = template.runtime_interval_ticks().max(1);
+        let depth = template.regulatory_depth().max(1);
+        base + (depth - 1) * self.scheduler.cell.genome_runtime_ticks_per_layer.max(1)
+    }
+
+    pub fn effective_genome_runtime_cadence_ticks_for_genome(
+        &self,
+        genome: Option<&crate::core::genome::GenomeState>,
+    ) -> u64 {
+        let Some(genome) = genome else {
+            return self.scheduler.cell.genome_runtime_base_ticks.max(1);
+        };
+        self.effective_genome_runtime_cadence_ticks(genome.template_id.as_str())
+            .unwrap_or(self.scheduler.cell.genome_runtime_base_ticks.max(1))
+    }
+
+    pub fn initial_genome_runtime_offsets(&self, count: usize, cadence: u64) -> Vec<u64> {
+        (0..count)
+            .map(|index| {
+                deterministic_genome_decision_offset(
+                    self.world.seed.raw(),
+                    (index as u32).saturating_add(1),
+                    cadence,
+                )
+            })
+            .collect()
     }
 
     pub fn validate_phase2d_options(&self) -> Result<(), ConfigError> {
@@ -590,6 +770,24 @@ impl RuntimeConfig {
             self.world.seed.raw(),
             self.world.size.width().to_bits() as u64,
             self.world.size.height().to_bits() as u64,
+            self.simulation_time.tick_duration_ms as u64,
+            self.scheduler.cell.genome_runtime_base_ticks,
+            self.scheduler.cell.genome_runtime_ticks_per_layer,
+            self.scheduler.cell.signal_emit_ticks,
+            self.scheduler.cell.controlled_reaction_ticks,
+            self.scheduler.cell.simple_synthesis_ticks,
+            self.scheduler.cell.basic_repair_ticks,
+            self.scheduler.cell.internal_rebalance_ticks,
+            self.scheduler.world.resource_diffusion_ticks,
+            self.scheduler.world.resource_decay_ticks,
+            self.scheduler.world.passive_reactions_ticks,
+            self.scheduler.world.background_material_degradation_ticks,
+            self.scheduler.world.environment_heat_diffusion_ticks,
+            self.scheduler.world.field_update_ticks,
+            self.scheduler.observer.observer_metrics_ticks,
+            self.scheduler.observer.resource_totals_ticks,
+            self.scheduler.observer.graph_analysis_ticks,
+            self.scheduler.observer.debug_trace_ticks,
             self.space.spatial_grid_size.to_bits() as u64,
             self.space.physics_solver_iterations as u64,
             self.cell.position.x().to_bits() as u64,
@@ -821,6 +1019,7 @@ impl RuntimeConfig {
             add_text(&mut hash, template.id().as_str());
             add(&mut hash, template.variation_amplitude().to_bits() as u64);
             add(&mut hash, template.runtime_interval_ticks());
+            add(&mut hash, template.regulatory_depth());
             add_text(&mut hash, &template.carrier().material_id);
             add(&mut hash, template.carrier().amount.to_bits() as u64);
             add(&mut hash, template.carrier().integrity.to_bits() as u64);

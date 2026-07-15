@@ -129,6 +129,24 @@ fn changing_growth_enabled_changes_hash() {
 }
 
 #[test]
+fn changing_scheduler_cadence_changes_hash() {
+    let config1 = base_config();
+    let mut config2 = base_config();
+    config2.scheduler.cell.genome_runtime_base_ticks = 10;
+    config2.scheduler.world.resource_decay_ticks = 5;
+    config2.scheduler.observer.resource_totals_ticks = 10;
+    assert_ne!(config1.config_hash(), config2.config_hash());
+}
+
+#[test]
+fn changing_simulation_time_changes_hash() {
+    let config1 = base_config();
+    let mut config2 = base_config();
+    config2.simulation_time.tick_duration_ms = 250;
+    assert_ne!(config1.config_hash(), config2.config_hash());
+}
+
+#[test]
 fn changing_chemistry_registry_property_changes_hash() {
     let config_a = RawScenarioConfig::parse(&chemistry_fixture()).unwrap();
     let config_b = RawScenarioConfig::parse(
@@ -143,6 +161,13 @@ fn changing_reaction_coefficient_changes_hash() {
     let config_a = RawScenarioConfig::parse(&chemistry_fixture()).unwrap();
     let config_b =
         RawScenarioConfig::parse(&chemistry_fixture().replace("rate = 0.2", "rate = 0.3")).unwrap();
+    assert_ne!(config_a.config_hash(), config_b.config_hash());
+}
+
+#[test]
+fn changing_genome_regulatory_depth_changes_hash() {
+    let config_a = RawScenarioConfig::parse(&genome_fixture("regulatory_depth = 1")).unwrap();
+    let config_b = RawScenarioConfig::parse(&genome_fixture("regulatory_depth = 3")).unwrap();
     assert_ne!(config_a.config_hash(), config_b.config_hash());
 }
 
@@ -242,4 +267,70 @@ energy_cost = 0.5
 max_amount_per_tick = 1.0
 "#
     .to_string()
+}
+
+fn genome_fixture(regulatory_depth_line: &str) -> String {
+    format!(
+        r#"
+scenario_id = "scheduler_hash_genome"
+seed = 7
+tick_count = 10
+legacy_material_distribution = false
+
+[world]
+size = [32.0, 32.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = ["nutrient_A"]
+initial_distribution = [10.0]
+optional_decay_rate = 0.0
+
+[cell]
+initial_position = [16.0, 16.0]
+radius = 1.0
+initial_resources = {{ nutrient_A = 1.0 }}
+initial_materials = {{ boundary = 1.0, transport = 1.0, metabolic = 1.0, storage = 1.0, synthesis = 1.0, structural = 1.0, repair = 0.0, contractile = 0.0, sensory = 0.0 }}
+initial_energy = 5.0
+energy_capacity = 10.0
+mandatory_cost_per_tick = 1.0
+capacity_limit = 20.0
+
+[cell.genome]
+template = "balanced"
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.1
+heat_warning_threshold = 10.0
+heat_death_threshold = 20.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.1
+waste_warning_threshold = 10.0
+waste_death_threshold = 20.0
+
+[lifecycle]
+stress_energy_threshold = 1.0
+dormancy_allowed = false
+critical_capacity_overrun = 20.0
+
+[genome_templates.balanced]
+variation_amplitude = 0.0
+runtime_interval_ticks = 10
+{regulatory_depth_line}
+
+[genome_templates.balanced.carrier]
+material_id = "genome_carrier_A"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.balanced.outputs]
+resource_uptake_priority = 1.0
+"#
+    )
 }

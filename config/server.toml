@@ -3,3 +3,21 @@ bind_host = "127.0.0.1"
 port = 8080
 allow_remote_viewer = false
 target_broadcast_fps = 30
+
+[runner_pacing]
+realtime_target_tps = 10
+headless_target_tps = 50
+run_unthrottled = false
+
+[viewer_projection]
+target_frames_per_second = 10
+minimum_frames_per_second = 1
+render_target_frames_per_second = 30
+maximum_frame_age_ms = 1000
+drop_intermediate_frames = true
+latest_frame_only = true
+force_frame_on_start = true
+force_frame_on_pause = true
+force_frame_on_step = true
+force_frame_on_resume_if_stale = true
+force_frame_on_terminal_state = true

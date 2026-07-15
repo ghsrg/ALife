@@ -23,6 +23,7 @@ pub mod resource_types;
 pub mod resources;
 pub mod snapshot;
 pub mod spatial;
+pub mod stable_state_hash;
 pub mod summary;
 pub mod tick;
 pub mod units;

@@ -123,6 +123,7 @@ pub struct GenomeTemplate {
     id: GenomeTemplateId,
     variation_amplitude: f32,
     runtime_interval_ticks: u64,
+    regulatory_depth: u64,
     carrier: GenomeCarrierState,
     outputs: Vec<(GenomeOutputId, GenomeOutputValue)>,
 }
@@ -147,6 +148,7 @@ impl GenomeTemplate {
             id,
             variation_amplitude,
             runtime_interval_ticks,
+            regulatory_depth: 1,
             carrier,
             outputs,
         })
@@ -162,6 +164,18 @@ impl GenomeTemplate {
 
     pub const fn runtime_interval_ticks(&self) -> u64 {
         self.runtime_interval_ticks
+    }
+
+    pub const fn regulatory_depth(&self) -> u64 {
+        self.regulatory_depth
+    }
+
+    pub fn with_regulatory_depth(mut self, regulatory_depth: u64) -> Result<Self, GenomeError> {
+        if regulatory_depth == 0 {
+            return Err(GenomeError::InvalidRuntimeInterval);
+        }
+        self.regulatory_depth = regulatory_depth;
+        Ok(self)
     }
 
     pub fn carrier(&self) -> &GenomeCarrierState {

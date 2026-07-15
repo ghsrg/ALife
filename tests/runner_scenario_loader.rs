@@ -49,8 +49,8 @@ fn demo_living_world_is_available_for_manual_runner_usage() {
     let config = &document.runtime_config;
 
     assert_eq!(document.id, "demo_living_world");
-    assert_eq!(config.world.size.width(), 256.0);
-    assert_eq!(config.world.size.height(), 256.0);
+    assert_eq!(config.world.size.width(), 1024.0);
+    assert_eq!(config.world.size.height(), 768.0);
     assert_eq!(config.world.tick_count.raw(), 50_000);
     assert_eq!(config.initial_cells.len(), 24);
     assert_eq!(config.initial_cell_genome_templates.len(), 24);
@@ -59,5 +59,11 @@ fn demo_living_world_is_available_for_manual_runner_usage() {
     assert!(config.decomposition.enabled);
     assert!(config.local_interaction.enabled);
     assert!(config.joints.enabled);
+    assert_eq!(config.simulation_time.tick_duration_ms, 100);
+    assert_eq!(config.scheduler.cell.genome_runtime_base_ticks, 10);
+    assert_eq!(config.scheduler.cell.genome_runtime_ticks_per_layer, 10);
+    assert_eq!(config.scheduler.world.resource_diffusion_ticks, 2);
+    assert_eq!(config.scheduler.world.resource_decay_ticks, 5);
+    assert_eq!(config.scheduler.observer.resource_totals_ticks, 10);
     assert!(config.cell.initial_energy.raw() <= config.cell.energy_capacity.raw());
 }

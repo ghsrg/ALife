@@ -16,6 +16,12 @@ pub struct ActionPlan {
 }
 
 impl ActionPlan {
+    pub fn empty() -> Self {
+        Self {
+            ordered_processes: Vec::new(),
+        }
+    }
+
     pub fn from_genome(genome: Option<&GenomeState>) -> Self {
         if genome.is_none() {
             return Self {

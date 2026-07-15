@@ -25,8 +25,29 @@ fn world_frame_projection_declares_schema_version_and_tick() {
 
     let projection = WorldFrameProjection::from_committed_snapshot(snapshot);
 
-    assert_eq!(projection.schema_version, 1);
+    assert_eq!(projection.schema_version, 2);
     assert_eq!(projection.committed_tick, engine.current_tick());
+}
+
+#[test]
+fn world_frame_projection_includes_interpolation_metadata() {
+    let document = bootstrap_document();
+    let mut engine =
+        RunEngine::prepare_from_document(&document, RunEngineConfig::default()).unwrap();
+    engine.start().unwrap();
+    engine.run_one_tick().unwrap();
+    let snapshot = engine.snapshots().newest().expect("snapshot should exist");
+
+    let projection = WorldFrameProjection::from_committed_snapshot_with_metadata(
+        snapshot,
+        7,
+        1_725_000_000_000,
+        Some(0),
+    );
+
+    assert_eq!(projection.projection_sequence, 7);
+    assert_eq!(projection.wall_clock_generated_at_ms, 1_725_000_000_000);
+    assert_eq!(projection.previous_committed_tick, Some(0));
 }
 
 #[test]

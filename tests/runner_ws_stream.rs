@@ -115,8 +115,56 @@ async fn ws_receives_binary_alif_frame_after_start() {
     .expect("timed out waiting for ALIF frame");
 
     assert_eq!(&frame[0..4], b"ALIF");
-    assert_eq!(frame[4], 1);
+    assert_eq!(frame[4], 2);
     assert!(frame.len() >= 26);
+}
+
+#[tokio::test]
+async fn ws_receives_forced_binary_frame_after_step_even_when_fps_cadence_would_skip() {
+    let (base_url, _) = spawn_test_server().await;
+    let ws_url = base_url.replace("http://", "ws://") + "/stream";
+    let (mut ws, _) = connect_async(&ws_url).await.unwrap();
+    let _ = next_text(&mut ws).await;
+
+    let client = reqwest::Client::new();
+    let start = client
+        .post(format!("{base_url}/run/start"))
+        .json(&serde_json::json!({
+            "scenario_id": "world_baseline_stable",
+            "request_id": "ws-step-frame-test"
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(start.status(), 200);
+
+    let pause = client
+        .post(format!("{base_url}/run/pause"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(pause.status(), 200);
+
+    let step = client
+        .post(format!("{base_url}/run/step"))
+        .json(&serde_json::json!({}))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(step.status(), 200);
+
+    let frame = tokio::time::timeout(std::time::Duration::from_secs(1), async {
+        loop {
+            let msg = ws.next().await.unwrap().unwrap();
+            if let Message::Binary(bytes) = msg {
+                return bytes;
+            }
+        }
+    })
+    .await
+    .expect("StepRun must force a viewer frame");
+
+    assert_eq!(&frame[0..4], b"ALIF");
 }
 
 #[tokio::test]

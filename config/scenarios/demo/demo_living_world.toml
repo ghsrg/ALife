@@ -3,12 +3,38 @@ seed = 20260714
 tick_count = 50000
 legacy_material_distribution = false
 
+[time]
+tick_duration_ms = 100
+
 [world]
 size = [1024.0, 768.0]
 
 [space]
 spatial_grid_size = 16.0
 physics_solver_iterations = 2
+
+[scheduler.cell]
+genome_runtime_base_ticks = 10
+genome_runtime_ticks_per_layer = 10
+signal_emit_ticks = 2
+controlled_reaction_ticks = 2
+simple_synthesis_ticks = 5
+basic_repair_ticks = 10
+internal_rebalance_ticks = 5
+
+[scheduler.world]
+resource_diffusion_ticks = 2
+resource_decay_ticks = 5
+passive_reactions_ticks = 2
+background_material_degradation_ticks = 5
+environment_heat_diffusion_ticks = 2
+field_update_ticks = 5
+
+[scheduler.observer]
+observer_metrics_ticks = 10
+resource_totals_ticks = 10
+graph_analysis_ticks = 50
+debug_trace_ticks = 10
 
 [resources]
 resource_type_ids = ["nutrient_A", "waste_A"]

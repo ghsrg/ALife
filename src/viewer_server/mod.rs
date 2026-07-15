@@ -1,6 +1,7 @@
 pub mod api;
 pub mod broadcaster;
 pub mod frame_encoder;
+pub mod projection_sampler;
 pub mod state;
 
 use axum::Router;
