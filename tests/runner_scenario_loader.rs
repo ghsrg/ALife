@@ -59,5 +59,11 @@ fn demo_living_world_is_available_for_manual_runner_usage() {
     assert!(config.decomposition.enabled);
     assert!(config.local_interaction.enabled);
     assert!(config.joints.enabled);
+    assert_eq!(config.simulation_time.tick_duration_ms, 100);
+    assert_eq!(config.scheduler.cell.genome_runtime_base_ticks, 10);
+    assert_eq!(config.scheduler.cell.genome_runtime_ticks_per_layer, 10);
+    assert_eq!(config.scheduler.world.resource_diffusion_ticks, 2);
+    assert_eq!(config.scheduler.world.resource_decay_ticks, 5);
+    assert_eq!(config.scheduler.observer.resource_totals_ticks, 10);
     assert!(config.cell.initial_energy.raw() <= config.cell.energy_capacity.raw());
 }
