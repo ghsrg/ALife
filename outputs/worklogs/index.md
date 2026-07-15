@@ -65,6 +65,7 @@ tags:
 - [[outputs/worklogs/2026-07-14-1635-PLAN-bootstrap-1-foundation|2026-07-14-1635-PLAN-bootstrap-1-foundation]]
 - [[outputs/worklogs/2026-07-15-1011-PLAN-scheduler-cadence|2026-07-15-1011-PLAN-scheduler-cadence]]
 - [[outputs/worklogs/2026-07-15-1625-PLAN-runner-debug-snapshot-cadence|2026-07-15-1625-PLAN-runner-debug-snapshot-cadence]]
+- [[outputs/worklogs/2026-07-15-2025-PLAN-ui-1a-application-shell-fixture-viewer|2026-07-15-2025-PLAN-ui-1a-application-shell-fixture-viewer]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
@@ -180,3 +181,4 @@ tags:
 - [[outputs/worklogs/2026-07-15-1740-REPORT-runner-debug-snapshot-cadence|2026-07-15-1740-REPORT-runner-debug-snapshot-cadence]]
 - [[outputs/worklogs/2026-07-15-1950-REPORT-ui-docs-runner-sync|2026-07-15-1950-REPORT-ui-docs-runner-sync]]
 - [[outputs/worklogs/2026-07-15-2005-REPORT-ui-design-gates-roadmap|2026-07-15-2005-REPORT-ui-design-gates-roadmap]]
+- [[outputs/worklogs/2026-07-15-2130-REPORT-ui-1a-application-shell-fixture-viewer|2026-07-15-2130-REPORT-ui-1a-application-shell-fixture-viewer]]

@@ -1,0 +1,266 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #11151a;
+  color: #eef3f8;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  background: #f4f6f8;
+  color: #1c232b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--app-bg, #11151a);
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #151b22 0%, #101318 100%);
+  color: #eef3f8;
+}
+
+:root[data-theme='light'] .app-shell {
+  background: #f4f6f8;
+  color: #1c232b;
+}
+
+.top-bar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 82px;
+  padding: 14px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 23, 30, 0.96);
+}
+
+:root[data-theme='light'] .top-bar {
+  background: #ffffff;
+  border-bottom-color: #d9e0e7;
+}
+
+.eyebrow {
+  margin: 0 0 2px;
+  color: #95a4b5;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1, h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: 22px;
+}
+
+h2 {
+  font-size: 16px;
+}
+
+.mode-tabs,
+.run-controls,
+.viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-tabs button,
+.run-controls button,
+.viewer-toolbar button {
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+}
+
+:root[data-theme='light'] .mode-tabs button,
+:root[data-theme='light'] .run-controls button,
+:root[data-theme='light'] .viewer-toolbar button {
+  border-color: #cfd8e2;
+  background: #ffffff;
+}
+
+.mode-tabs button[aria-selected='true'],
+.run-controls .primary {
+  background: #2f80ed;
+  border-color: #2f80ed;
+  color: white;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.monitor-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(420px, 1fr) 300px;
+  gap: 16px;
+  padding: 16px;
+  min-height: calc(100vh - 82px);
+}
+
+.side-panel,
+.viewer-panel {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(24, 31, 40, 0.92);
+}
+
+:root[data-theme='light'] .side-panel,
+:root[data-theme='light'] .viewer-panel {
+  background: #ffffff;
+  border-color: #d9e0e7;
+}
+
+.side-panel {
+  padding: 16px;
+}
+
+.layer-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  margin-top: 12px;
+  color: #dce6f1;
+}
+
+:root[data-theme='light'] .layer-option {
+  color: #26323d;
+}
+
+.layer-option.muted {
+  color: #7f8b98;
+}
+
+.metric-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.metric-list div {
+  display: grid;
+  gap: 4px;
+}
+
+.metric-list span,
+.viewer-toolbar span {
+  color: #9fadb9;
+  font-size: 12px;
+}
+
+.metric-list strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.viewer-panel {
+  display: grid;
+  grid-template-rows: auto minmax(360px, 1fr) auto;
+  min-width: 0;
+}
+
+.viewer-toolbar {
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='light'] .viewer-toolbar {
+  border-bottom-color: #d9e0e7;
+}
+
+.viewer-toolbar div {
+  display: grid;
+  gap: 3px;
+}
+
+.world-viewer {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+}
+
+.world-canvas-host {
+  position: absolute;
+  inset: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0b1217;
+}
+
+.world-canvas-host canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.world-hit-targets {
+  position: absolute;
+  inset: 12px;
+}
+
+.cell-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cell-hotspot:focus-visible,
+.cell-hotspot.selected {
+  border-color: #ffd166;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.36);
+}
+
+.empty-state {
+  color: #9fadb9;
+}
+
+.export-status {
+  min-height: 32px;
+  margin: 0;
+  padding: 7px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9fadb9;
+  font-size: 13px;
+}
+
+@media (max-width: 980px) {
+  .top-bar,
+  .monitor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-tabs,
+  .run-controls {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+}

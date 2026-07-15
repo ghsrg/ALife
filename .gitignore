@@ -13,4 +13,9 @@ __pycache__/
 
 /target
 .worktrees/
-
+ui/control-center/node_modules/
+ui/control-center/dist/
+ui/control-center/test-results/
+ui/control-center/playwright-report/
+ui/control-center/.npm-cache/
+ui/control-center/.playwright-browsers/
