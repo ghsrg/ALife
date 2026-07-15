@@ -49,8 +49,8 @@ fn demo_living_world_is_available_for_manual_runner_usage() {
     let config = &document.runtime_config;
 
     assert_eq!(document.id, "demo_living_world");
-    assert_eq!(config.world.size.width(), 256.0);
-    assert_eq!(config.world.size.height(), 256.0);
+    assert_eq!(config.world.size.width(), 1024.0);
+    assert_eq!(config.world.size.height(), 768.0);
     assert_eq!(config.world.tick_count.raw(), 50_000);
     assert_eq!(config.initial_cells.len(), 24);
     assert_eq!(config.initial_cell_genome_templates.len(), 24);
