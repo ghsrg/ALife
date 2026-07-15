@@ -81,4 +81,20 @@ describe('liveProjectionToWorldFrame', () => {
     expect(Number.isFinite(frame.world.width)).toBe(true);
     expect(Number.isFinite(frame.world.height)).toBe(true);
   });
+
+  it('clamps negative live cell coordinates to zero', () => {
+    const frame = liveProjectionToWorldFrame({
+      ...liveFrame,
+      cells: [
+        { id: 4, x: -10, y: -20, radius: 4, energy: 0.5, lifecycle: 1 }
+      ]
+    }, {
+      runId: 'negative-coordinates',
+      scenarioName: 'negative-coordinates'
+    });
+
+    expect(frame.cells).toEqual([
+      expect.objectContaining({ id: '4', x: 0, y: 0 })
+    ]);
+  });
 });

@@ -15,8 +15,8 @@ export function liveProjectionToWorldFrame(
   const cells: WorldFrame['cells'] = [];
 
   for (const cell of projection.cells) {
-    const x = finiteOrZero(cell.x);
-    const y = finiteOrZero(cell.y);
+    const x = nonNegativeFiniteOrZero(cell.x);
+    const y = nonNegativeFiniteOrZero(cell.y);
     const radius = sanitizeRadius(cell.radius);
 
     maxX = Math.max(maxX, x + radius * 2);
@@ -59,6 +59,10 @@ export function liveProjectionToWorldFrame(
 
 function finiteOrZero(value: number) {
   return Number.isFinite(value) ? value : 0;
+}
+
+function nonNegativeFiniteOrZero(value: number) {
+  return Math.max(0, finiteOrZero(value));
 }
 
 function sanitizeRadius(value: number) {
