@@ -29,7 +29,7 @@ export function RunControls({
       <button
         className="icon-button primary"
         type="button"
-        aria-label="Start live run"
+        aria-label="Play live run"
         disabled={!canStartRun(state)}
         onClick={onStart}
       >
@@ -56,7 +56,7 @@ export function RunControls({
       <button
         className="icon-button"
         type="button"
-        aria-label="Step one committed tick"
+        aria-label="Step N: one committed tick"
         disabled={!canStepRun(state)}
         onClick={onStep}
       >

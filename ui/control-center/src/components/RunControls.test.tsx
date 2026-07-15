@@ -45,10 +45,10 @@ describe('RunControls', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Start live run' }));
+    await user.click(screen.getByRole('button', { name: 'Play live run' }));
 
     expect(onStart).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Start live run' })).toHaveTextContent('Play');
+    expect(screen.getByRole('button', { name: 'Play live run' })).toHaveTextContent('Play');
     expect(screen.getByRole('button', { name: 'Pause live run' })).toBeDisabled();
   });
 
@@ -73,9 +73,9 @@ describe('RunControls', () => {
 
     expect(onPause).toHaveBeenCalledTimes(1);
     expect(onStop).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Start live run' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Play live run' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Resume live run' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Step one committed tick' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Step N: one committed tick' })).toBeDisabled();
   });
 
   it('resumes, steps, and stops only while paused', async () => {
@@ -96,14 +96,14 @@ describe('RunControls', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Resume live run' }));
-    await user.click(screen.getByRole('button', { name: 'Step one committed tick' }));
+    await user.click(screen.getByRole('button', { name: 'Step N: one committed tick' }));
     await user.click(screen.getByRole('button', { name: 'Stop live run' }));
 
     expect(onResume).toHaveBeenCalledTimes(1);
     expect(onStep).toHaveBeenCalledTimes(1);
     expect(onStop).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Step one committed tick' })).toHaveTextContent('Step N');
-    expect(screen.getByRole('button', { name: 'Start live run' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Step N: one committed tick' })).toHaveTextContent('Step N');
+    expect(screen.getByRole('button', { name: 'Play live run' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Pause live run' })).toBeDisabled();
   });
 });
