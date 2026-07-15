@@ -1222,13 +1222,18 @@ impl TickExecutor {
                 phase2g_metrics.resource_diffused_amount += diffused.raw();
             }
         }
-        let resource_amount_before_decay = self.aggregate_external_resources();
-        self.world
-            .resources_mut_for_commit()
-            .decay_or_passive_update();
-        let resource_amount_after_decay = self.aggregate_external_resources();
-        phase2g_metrics.resource_decay_amount +=
-            (resource_amount_before_decay - resource_amount_after_decay).max(0.0);
+        let mut resource_decay_scheduler_elapsed_ticks = 0_u64;
+        let resource_decay_cadence = config.scheduler.world.resource_decay_ticks.max(1);
+        if is_due_on_executing_tick(executing_tick, resource_decay_cadence) {
+            resource_decay_scheduler_elapsed_ticks = resource_decay_cadence;
+            let resource_amount_before_decay = self.aggregate_external_resources();
+            self.world
+                .resources_mut_for_commit()
+                .decay_or_passive_update_elapsed(resource_decay_cadence);
+            let resource_amount_after_decay = self.aggregate_external_resources();
+            phase2g_metrics.resource_decay_amount +=
+                (resource_amount_before_decay - resource_amount_after_decay).max(0.0);
+        }
         self.world
             .cells_mut_for_commit()
             .commit_contact_stimulus(config.local_interaction.stimulus_decay_per_tick);
@@ -1294,6 +1299,7 @@ impl TickExecutor {
                 accounting_after,
                 accounting_delta,
                 genome_decision_refresh_count,
+                resource_decay_scheduler_elapsed_ticks,
             ),
             diagnostics,
         })
@@ -1674,6 +1680,7 @@ impl TickExecutor {
         accounting_after: IntegratedAccountingSnapshot,
         accounting_delta: MatterAccountingDelta,
         genome_decision_refresh_count: u32,
+        resource_decay_scheduler_elapsed_ticks: u64,
     ) -> MetricsSummary {
         let cells = self.world.cells();
         let mut final_internal_resources = 0.0_f32;
@@ -1760,6 +1767,7 @@ impl TickExecutor {
             reaction_accounting_error: phase2g_metrics.reaction_accounting_error,
             resource_diffused_amount: phase2g_metrics.resource_diffused_amount,
             resource_decay_amount: phase2g_metrics.resource_decay_amount,
+            resource_decay_scheduler_elapsed_ticks,
             fragment_created_amount: phase2g_metrics.fragment_created_amount,
             fragment_converted_amount: phase2g_metrics.fragment_converted_amount,
             material_degradation_amount: phase2g_metrics.material_degradation_amount,

@@ -63,6 +63,7 @@ pub struct MetricsSummary {
     pub reaction_accounting_error: f32,
     pub resource_diffused_amount: f32,
     pub resource_decay_amount: f32,
+    pub resource_decay_scheduler_elapsed_ticks: u64,
     pub fragment_created_amount: f32,
     pub fragment_converted_amount: f32,
     pub material_degradation_amount: f32,

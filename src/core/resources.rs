@@ -155,10 +155,19 @@ impl ResourceGrid {
     }
 
     pub fn decay_or_passive_update(&mut self) {
+        self.decay_or_passive_update_elapsed(1);
+    }
+
+    pub fn decay_or_passive_update_elapsed(&mut self, elapsed_ticks: u64) {
+        let decay_factor = (1.0 - self.optional_decay_rate).powi(elapsed_ticks.max(1) as i32);
         for amount in &mut self.quantities {
-            let next_value = (amount.raw() * (1.0 - self.optional_decay_rate)).max(0.0);
+            let next_value = (amount.raw() * decay_factor).max(0.0);
             *amount = ResourceAmount::new(next_value).unwrap_or_else(|_| ResourceAmount::zero());
         }
+    }
+
+    pub fn total_amount_for_test(&self) -> f32 {
+        self.quantities.iter().map(|amount| amount.raw()).sum()
     }
 
     pub fn diffuse_layer(
