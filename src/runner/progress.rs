@@ -39,6 +39,9 @@ pub struct ProgressSnapshot {
     pub waste: f32,
     pub state: String,
     pub collapse_reason: Option<String>,
+    pub snapshot_builds: u64,
+    pub genome_refreshes: u32,
+    pub resource_decay_elapsed_ticks: u64,
 }
 
 pub fn format_progress_table(snapshot: &ProgressSnapshot) -> String {
@@ -63,10 +66,15 @@ pub fn format_progress_table(snapshot: &ProgressSnapshot) -> String {
 | elapsed_s | tick        | tps     | cells | alive | dead | heat  | waste | state     |\n\
 +-----------+-------------+---------+-------+-------+------+-------+-------+-----------+\n\
 | {elapsed_s:<9.2} | {tick_progress:<11} | {tps:<7.1} | {cells:<5} | {alive:<5} | {dead:<4} | {heat:<5.2} | {waste:<5.2} | {state:<9} |\n\
-+-----------+-------------+---------+-------+-------+------+-------+-------+-----------+",
++-----------+-------------+---------+-------+-------+------+-------+-------+-----------+\n\
+| snapshots | genome | decay_dt |\n\
+| {snapshot_builds:<9} | {genome_refreshes:<6} | {decay_dt:<8} |",
         tps = snapshot.ticks_per_second,
         cells = snapshot.cells,
         heat = snapshot.heat,
         waste = snapshot.waste,
+        snapshot_builds = snapshot.snapshot_builds,
+        genome_refreshes = snapshot.genome_refreshes,
+        decay_dt = snapshot.resource_decay_elapsed_ticks,
     )
 }

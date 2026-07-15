@@ -74,3 +74,17 @@ fn headless_debug_can_run_ticks_without_building_cached_snapshots() {
     assert_eq!(progress_snapshot.tick.raw(), 20);
     assert_eq!(engine.snapshot_build_count_for_test(), 2);
 }
+
+#[test]
+fn run_engine_records_scheduler_diagnostics_from_last_tick() {
+    let document = document("demo_living_world");
+    let mut engine =
+        RunEngine::prepare_from_document(&document, RunEngineConfig::headless_debug()).unwrap();
+
+    engine.start().unwrap();
+    engine.run_one_tick().unwrap();
+
+    let diagnostics = engine.diagnostics();
+    let cell_count = engine.latest_committed_snapshot().cells.len() as u32;
+    assert!(diagnostics.last_genome_decision_refresh_count <= cell_count);
+}

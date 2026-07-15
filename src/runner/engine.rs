@@ -85,6 +85,12 @@ impl From<TickError> for RunEngineError {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RunEngineDiagnostics {
+    pub last_genome_decision_refresh_count: u32,
+    pub last_resource_decay_scheduler_elapsed_ticks: u64,
+}
+
 pub struct RunEngine {
     state: ActiveRunState,
     executor: Option<TickExecutor>,
@@ -93,6 +99,7 @@ pub struct RunEngine {
     max_ticks: u64,
     config: RunEngineConfig,
     snapshot_build_count: u64,
+    diagnostics: RunEngineDiagnostics,
 }
 
 impl RunEngine {
@@ -113,6 +120,7 @@ impl RunEngine {
             max_ticks: prepared.runtime_config.world.tick_count.raw(),
             config,
             snapshot_build_count: 1,
+            diagnostics: RunEngineDiagnostics::default(),
         })
     }
 
@@ -190,13 +198,27 @@ impl RunEngine {
         CommittedSnapshot::from_world(executor.world())
     }
 
-    pub const fn snapshot_build_count_for_test(&self) -> u64 {
+    pub const fn snapshot_build_count(&self) -> u64 {
         self.snapshot_build_count
+    }
+
+    pub const fn snapshot_build_count_for_test(&self) -> u64 {
+        self.snapshot_build_count()
+    }
+
+    pub const fn diagnostics(&self) -> RunEngineDiagnostics {
+        self.diagnostics
     }
 
     fn commit_one_tick(&mut self) -> Result<(), RunEngineError> {
         let executor = self.executor.as_mut().ok_or(RunEngineError::NotPrepared)?;
-        executor.step()?;
+        let summary = executor.step()?;
+        self.diagnostics = RunEngineDiagnostics {
+            last_genome_decision_refresh_count: summary.metrics.genome_decision_refresh_count,
+            last_resource_decay_scheduler_elapsed_ticks: summary
+                .metrics
+                .resource_decay_scheduler_elapsed_ticks,
+        };
         let committed_tick = executor.world().tick().raw();
         if self
             .config

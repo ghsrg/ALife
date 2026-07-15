@@ -220,6 +220,7 @@ fn resolve_scenario(scenario: &str, scenarios_dir: &Path) -> Result<ScenarioMeta
 
 fn print_progress(engine: &mut RunEngine, start: Instant) {
     let snapshot = engine.latest_committed_snapshot();
+    let diagnostics = engine.diagnostics();
     let elapsed = start.elapsed();
     let elapsed_s = elapsed.as_secs_f32();
     let alive = snapshot
@@ -248,6 +249,9 @@ fn print_progress(engine: &mut RunEngine, start: Instant) {
         } else {
             None
         },
+        snapshot_builds: engine.snapshot_build_count(),
+        genome_refreshes: diagnostics.last_genome_decision_refresh_count,
+        resource_decay_elapsed_ticks: diagnostics.last_resource_decay_scheduler_elapsed_ticks,
     };
     println!("{}", format_progress_table(&progress));
 }
