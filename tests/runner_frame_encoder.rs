@@ -3,8 +3,11 @@ use alife::viewer_server::frame_encoder::{MAGIC, VERSION, decode_frame, encode_w
 
 fn make_projection(tick: u64, cell_count: usize) -> WorldFrameProjection {
     WorldFrameProjection {
-        schema_version: 1,
+        schema_version: 2,
         committed_tick: tick,
+        projection_sequence: 7,
+        wall_clock_generated_at_ms: 1_725_000_000_000,
+        previous_committed_tick: Some(tick.saturating_sub(1)),
         heat: 1.5,
         waste: 0.25,
         cells: (0..cell_count)
@@ -42,24 +45,24 @@ fn encoded_frame_encodes_tick_correctly() {
 #[test]
 fn encoded_frame_encodes_heat_and_waste() {
     let bytes = encode_world_frame(&make_projection(1, 0));
-    let heat = f32::from_le_bytes(bytes[14..18].try_into().unwrap());
-    let waste = f32::from_le_bytes(bytes[18..22].try_into().unwrap());
+    let heat = f32::from_le_bytes(bytes[38..42].try_into().unwrap());
+    let waste = f32::from_le_bytes(bytes[42..46].try_into().unwrap());
     assert!((heat - 1.5).abs() < 1e-5);
     assert!((waste - 0.25).abs() < 1e-5);
 }
 
 #[test]
-fn encoded_frame_with_zero_cells_has_26_bytes() {
+fn encoded_frame_with_zero_cells_has_50_bytes() {
     let bytes = encode_world_frame(&make_projection(1, 0));
-    assert_eq!(bytes.len(), 26);
+    assert_eq!(bytes.len(), 50);
 }
 
 #[test]
 fn encoded_frame_cell_count_and_size_match() {
     let bytes = encode_world_frame(&make_projection(1, 3));
-    let count = u32::from_le_bytes(bytes[22..26].try_into().unwrap());
+    let count = u32::from_le_bytes(bytes[46..50].try_into().unwrap());
     assert_eq!(count, 3);
-    assert_eq!(bytes.len(), 26 + 3 * 21);
+    assert_eq!(bytes.len(), 50 + 3 * 21);
 }
 
 #[test]
@@ -67,6 +70,9 @@ fn encode_decode_roundtrip_preserves_tick_and_cell_count() {
     let bytes = encode_world_frame(&make_projection(42, 2));
     let decoded = decode_frame(&bytes).expect("decode must succeed");
     assert_eq!(decoded.committed_tick, 42);
+    assert_eq!(decoded.projection_sequence, 7);
+    assert_eq!(decoded.wall_clock_generated_at_ms, 1_725_000_000_000);
+    assert_eq!(decoded.previous_committed_tick, Some(41));
     assert_eq!(decoded.cells.len(), 2);
 }
 
@@ -89,7 +95,7 @@ fn lifecycle_states_encode_correctly() {
         let mut frame = make_projection(0, 1);
         frame.cells[0].lifecycle = lifecycle;
         let bytes = encode_world_frame(&frame);
-        bytes[26 + 20]
+        bytes[50 + 20]
     }
 
     assert_eq!(state_byte(0), 0);

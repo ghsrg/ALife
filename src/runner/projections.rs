@@ -15,18 +15,33 @@ pub struct ProjectedCell {
 pub struct WorldFrameProjection {
     pub schema_version: u8,
     pub committed_tick: u64,
+    pub projection_sequence: u64,
+    pub wall_clock_generated_at_ms: u64,
+    pub previous_committed_tick: Option<u64>,
     pub heat: f32,
     pub waste: f32,
     pub cells: Vec<ProjectedCell>,
 }
 
 impl WorldFrameProjection {
-    pub const SCHEMA_VERSION: u8 = 1;
+    pub const SCHEMA_VERSION: u8 = 2;
 
     pub fn from_committed_snapshot(snapshot: &CommittedSnapshot) -> Self {
+        Self::from_committed_snapshot_with_metadata(snapshot, 0, 0, None)
+    }
+
+    pub fn from_committed_snapshot_with_metadata(
+        snapshot: &CommittedSnapshot,
+        projection_sequence: u64,
+        wall_clock_generated_at_ms: u64,
+        previous_committed_tick: Option<u64>,
+    ) -> Self {
         Self {
             schema_version: Self::SCHEMA_VERSION,
             committed_tick: snapshot.tick.raw(),
+            projection_sequence,
+            wall_clock_generated_at_ms,
+            previous_committed_tick,
             heat: snapshot.heat,
             waste: snapshot.waste,
             cells: snapshot

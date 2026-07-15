@@ -115,7 +115,7 @@ async fn ws_receives_binary_alif_frame_after_start() {
     .expect("timed out waiting for ALIF frame");
 
     assert_eq!(&frame[0..4], b"ALIF");
-    assert_eq!(frame[4], 1);
+    assert_eq!(frame[4], 2);
     assert!(frame.len() >= 26);
 }
 

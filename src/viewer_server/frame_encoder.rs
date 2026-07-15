@@ -1,9 +1,9 @@
 use crate::runner::projections::{ProjectedCell, WorldFrameProjection};
 
 pub const MAGIC: &[u8; 4] = b"ALIF";
-pub const VERSION: u8 = 1;
+pub const VERSION: u8 = 2;
 
-const HEADER_SIZE: usize = 26;
+const HEADER_SIZE: usize = 50;
 const CELL_SIZE: usize = 21;
 
 pub fn encode_world_frame(frame: &WorldFrameProjection) -> Vec<u8> {
@@ -14,6 +14,9 @@ pub fn encode_world_frame(frame: &WorldFrameProjection) -> Vec<u8> {
     bytes.push(VERSION);
     bytes.push(0);
     bytes.extend_from_slice(&frame.committed_tick.to_le_bytes());
+    bytes.extend_from_slice(&frame.projection_sequence.to_le_bytes());
+    bytes.extend_from_slice(&frame.wall_clock_generated_at_ms.to_le_bytes());
+    bytes.extend_from_slice(&frame.previous_committed_tick.unwrap_or(u64::MAX).to_le_bytes());
     bytes.extend_from_slice(&frame.heat.to_le_bytes());
     bytes.extend_from_slice(&frame.waste.to_le_bytes());
     bytes.extend_from_slice(&(cell_count as u32).to_le_bytes());
@@ -46,9 +49,17 @@ pub fn decode_frame(bytes: &[u8]) -> Result<WorldFrameProjection, String> {
     }
 
     let committed_tick = u64::from_le_bytes(bytes[6..14].try_into().unwrap());
-    let heat = f32::from_le_bytes(bytes[14..18].try_into().unwrap());
-    let waste = f32::from_le_bytes(bytes[18..22].try_into().unwrap());
-    let cell_count = u32::from_le_bytes(bytes[22..26].try_into().unwrap()) as usize;
+    let projection_sequence = u64::from_le_bytes(bytes[14..22].try_into().unwrap());
+    let wall_clock_generated_at_ms = u64::from_le_bytes(bytes[22..30].try_into().unwrap());
+    let previous_raw = u64::from_le_bytes(bytes[30..38].try_into().unwrap());
+    let previous_committed_tick = if previous_raw == u64::MAX {
+        None
+    } else {
+        Some(previous_raw)
+    };
+    let heat = f32::from_le_bytes(bytes[38..42].try_into().unwrap());
+    let waste = f32::from_le_bytes(bytes[42..46].try_into().unwrap());
+    let cell_count = u32::from_le_bytes(bytes[46..50].try_into().unwrap()) as usize;
     let expected_len = HEADER_SIZE + cell_count * CELL_SIZE;
     if bytes.len() < expected_len {
         return Err(format!(
@@ -76,6 +87,9 @@ pub fn decode_frame(bytes: &[u8]) -> Result<WorldFrameProjection, String> {
     Ok(WorldFrameProjection {
         schema_version: VERSION,
         committed_tick,
+        projection_sequence,
+        wall_clock_generated_at_ms,
+        previous_committed_tick,
         heat,
         waste,
         cells,
