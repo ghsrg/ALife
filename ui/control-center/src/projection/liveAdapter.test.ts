@@ -45,4 +45,40 @@ describe('liveProjectionToWorldFrame', () => {
     expect(frame.world.height).toBeGreaterThanOrEqual(800);
     expect(frame.cells).toEqual([]);
   });
+
+  it('sanitizes non-finite and out-of-bounds live cell values', () => {
+    const frame = liveProjectionToWorldFrame({
+      ...liveFrame,
+      cells: [
+        {
+          id: 1,
+          x: Number.NaN,
+          y: Number.POSITIVE_INFINITY,
+          radius: Number.NEGATIVE_INFINITY,
+          energy: Number.NaN,
+          lifecycle: 1
+        },
+        {
+          id: 2,
+          x: Number.POSITIVE_INFINITY,
+          y: Number.NaN,
+          radius: -5,
+          energy: -0.25,
+          lifecycle: 1
+        },
+        { id: 3, x: 15, y: 25, radius: 1, energy: 1.25, lifecycle: 1 }
+      ]
+    }, {
+      runId: 'sanitized',
+      scenarioName: 'sanitized'
+    });
+
+    expect(frame.cells).toEqual([
+      expect.objectContaining({ id: '1', x: 0, y: 0, radius: 2, energy: 0 }),
+      expect.objectContaining({ id: '2', x: 0, y: 0, radius: 2, energy: 0 }),
+      expect.objectContaining({ id: '3', x: 15, y: 25, radius: 2, energy: 1 })
+    ]);
+    expect(Number.isFinite(frame.world.width)).toBe(true);
+    expect(Number.isFinite(frame.world.height)).toBe(true);
+  });
 });
