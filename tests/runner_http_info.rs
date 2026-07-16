@@ -1,6 +1,6 @@
 use alife::viewer_server::{create_app, state::new_app_state};
 use axum::body::Body;
-use axum::http::Request;
+use axum::http::{Method, Request, header};
 use http_body_util::BodyExt;
 use std::path::PathBuf;
 use tower::ServiceExt;
@@ -65,4 +65,64 @@ async fn get_server_info_api_version_is_string_1() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(json["api_version"].as_str().unwrap(), "1");
+}
+
+#[tokio::test]
+async fn local_viewer_origin_get_receives_cors_header() {
+    let app = create_app(make_state());
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/server/info")
+                .header(header::ORIGIN, "http://127.0.0.1:5173")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+    assert_eq!(
+        response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .unwrap(),
+        "http://127.0.0.1:5173"
+    );
+}
+
+#[tokio::test]
+async fn local_viewer_preflight_receives_cors_headers() {
+    let app = create_app(make_state());
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::OPTIONS)
+                .uri("/run/start")
+                .header(header::ORIGIN, "http://127.0.0.1:5173")
+                .header(header::ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                .header(header::ACCESS_CONTROL_REQUEST_HEADERS, "content-type")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 204);
+    assert_eq!(
+        response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .unwrap(),
+        "http://127.0.0.1:5173"
+    );
+    assert!(
+        response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_METHODS)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .contains("POST")
+    );
 }
