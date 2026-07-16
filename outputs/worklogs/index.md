@@ -71,6 +71,7 @@ tags:
 - [[outputs/worklogs/2026-07-16-2051-PLAN-ui-1c-a-world-first-monitor-layout|2026-07-16-2051-PLAN-ui-1c-a-world-first-monitor-layout]]
 - [[outputs/worklogs/2026-07-16-2159-PLAN-ui-1c-b-projection-truthfulness-render-scale|2026-07-16-2159-PLAN-ui-1c-b-projection-truthfulness-render-scale]]
 - [[outputs/worklogs/2026-07-16-2324-PLAN-ui-1c-c-viewer-zoom-pan-navigation|2026-07-16-2324-PLAN-ui-1c-c-viewer-zoom-pan-navigation]]
+- [[outputs/worklogs/2026-07-17-0050-PLAN-ui-1c-d-atmospheric-renderer-selection-semantic-detail|2026-07-17-0050-PLAN-ui-1c-d-atmospheric-renderer-selection-semantic-detail]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
