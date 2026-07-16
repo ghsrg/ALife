@@ -1,5 +1,5 @@
 import { createRef } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
@@ -36,7 +36,7 @@ describe('WorldViewer', () => {
     );
 
     await waitFor(() => {
-      expect(renderFrame).toHaveBeenCalledWith(ui1aFixture.frame, 'cell-a');
+      expect(renderFrame).toHaveBeenCalledWith(ui1aFixture.frame, 'cell-a', { x: 0, y: 0, scale: 1 });
     });
     expect(screen.getByLabelText('Select cell-a')).toBeInTheDocument();
     expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
@@ -105,11 +105,105 @@ describe('WorldViewer', () => {
     );
 
     await waitFor(() => {
-      expect(renderFrame).toHaveBeenCalledWith(tinyLiveFrame, 'tiny');
+      expect(renderFrame).toHaveBeenCalledWith(tinyLiveFrame, 'tiny', { x: 0, y: 0, scale: 1 });
     });
 
     expect(screen.getByLabelText('Select tiny')).toHaveStyle({ width: '14px', height: '14px' });
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Display minimum applied');
+  });
+
+  it('zooms with visible controls and sends the camera to the renderer', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
+
+    await waitFor(() => {
+      expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
+        x: -120,
+        y: -80,
+        scale: 1.2
+      });
+    });
+    expect(screen.getByText('120%')).toBeInTheDocument();
+  });
+
+  it('resets navigation to the default camera', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
+    await user.click(screen.getByRole('button', { name: 'Reset World Viewer navigation' }));
+
+    await waitFor(() => {
+      expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
+        x: 0,
+        y: 0,
+        scale: 1
+      });
+    });
+  });
+
+  it('keeps hit targets aligned with the navigation camera', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
+
+    expect(screen.getByLabelText('Select cell-a')).toHaveStyle({
+      left: '276px',
+      top: '304px',
+      width: '57.599999999999994px',
+      height: '57.599999999999994px'
+    });
+  });
+
+  it('pans by dragging the World Viewer surface', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    const viewer = screen.getByLabelText('World Viewer');
+    await waitFor(() => {
+      expect(viewer).toHaveAttribute('data-ready', 'true');
+    });
+
+    fireEvent.mouseDown(viewer, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(viewer, { clientX: 130, clientY: 80 });
+    fireEvent.mouseUp(viewer, { clientX: 130, clientY: 80 });
+
+    await waitFor(() => {
+      expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
+        x: 30,
+        y: -20,
+        scale: 1
+      });
+    });
   });
 });
