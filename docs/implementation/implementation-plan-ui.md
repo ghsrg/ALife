@@ -106,6 +106,97 @@ pseudo-3D presentation
 | `UI-2 Debug` | Дати точний інструмент для звірки, пошуку помилок і балансування | «Чи можемо ми довіряти кожному значенню та пояснити результат?» |
 | `UI-3 Research` | Дати повний інструмент експериментів, еволюційного аналізу й порівняння | «Чи можна на цьому проводити відтворювані дослідження?» |
 
+## Consolidated Worklog Inputs
+
+Цей документ є canonical implementation roadmap для UI phases.
+
+Попередні worklogs:
+
+- `outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap.md`;
+- `outputs/worklogs/2026-07-02-1936-PLAN-phase-visual-global-UIUX.md`;
+
+є historical planning inputs. Вони не створюють окремий паралельний roadmap.
+Якщо між worklog і цим документом є розбіжність, agent повинен оновити цей
+implementation plan або створити новий detailed worklog, а не трактувати
+старий worklog як вищий authority.
+
+### Visual A-J To UI-1/2/3 Mapping
+
+| Historical phase | Canonical destination | Notes |
+| --- | --- | --- |
+| Visual A Read-Only Debug Viewer | `UI-1 Start` + `UI-2 Debug` | `Start` бере живий Viewer, базові layers, selection і screenshot. Exact debug parity, recorded scrubbing і exhaustive correctness переходять у `Debug`. |
+| Visual B Scenario Runner UI | `UI-1 Start` + `UI-2 Debug` | `Start` бере scenario list, launch, Play/Pause/Step/Stop, seed/hash display. Run summaries, collapse analysis, comparisons і advanced time controls переходять у `Debug`/`Research`. |
+| Visual C Layered World Inspector | `UI-1 Start` + `UI-2 Debug` | `Start` бере мінімальні live layers і basic Cell Inspector. Exact grid, resources/materials/process/contact inspectors, filters і raw overlays переходять у `Debug`. |
+| Visual D World Initialization Editor | `UI-2 Debug` | Pre-run config editor, resource distribution preview, validation і config hash належать до Debug. Live-world mutation заборонена. |
+| Visual E Experiment Dashboard | `UI-2 Debug` + `UI-3 Research` | Debug бере basic multi-seed/scenario runs і balance tables. Full sweeps, matrix experiments і long-running comparison належать до Research. |
+| Visual F Genome And Evolution Observatory | `UI-3 Research` | Genome, mutation, lineage, similarity, selection і evolution views не входять у Start. |
+| Visual G Organism Inspector And Observatory | `UI-3 Research` | OrganismView є observer-side derived view. У Start/Debug допускаються лише мінімальні placeholders або raw cell/joint projections, якщо вони потрібні для перевірки. |
+| Visual H Library, Save And Placement Center | `UI-3 Research` | Saved Cells/Species/Organisms і placement/intervention workflows вимагають explicit command API та Research-level provenance. |
+| Visual I Advanced Analysis And Reporting | `UI-3 Research` | Narrative reports, discoveries, advanced statistics і publication-style export належать до Research. |
+| Visual J Polishing, Accessibility And Scale | Cross-part | Базові empty/error/loading states, Light/Dark і usable 1024x768 потрібні з Start. Full accessibility, scale hardening і performance envelopes завершуються поступово. |
+
+### UI/UX Specialization Analytics Mapping
+
+`outputs/worklogs/2026-07-02-1936-PLAN-phase-visual-global-UIUX.md` описує
+аналітику:
+
+```text
+Organism size
+×
+Functional Cell Role
+×
+count / percentage
+```
+
+Canonical destination: `UI-3 Research -> Specialization Analytics`.
+
+Цей worklog не є вимогою для `UI-1 Start` або `UI-2 Debug`.
+
+До `UI-3` дозволені лише передумови:
+
+- projection fields, які не hardcode-ять roles;
+- explicit classifier metadata, якщо classifier уже існує;
+- raw Cell/Material/Process data для Debug Inspectors;
+- OrganismView як observer-side graph, без behavior authority.
+
+Заборонено переносити labels на кшталт `neural-like`, `muscle-like`,
+`predator-like`, `sensory` у Core behavior або scenario shortcuts. У Research
+вони можуть бути тільки derived classifications із criteria, confidence,
+version і provenance.
+
+### Current Start Slice Status
+
+Стан на момент sync:
+
+- `UI-1A Application Shell And Deterministic Fixture Viewer` реалізовано.
+- `UI-1B Live Projection Transport And Run Controls` реалізовано локально:
+  HTTP bootstrap, scenario list, run controls, WebSocket `ALIF v2`, live frame
+  adapter, CORS для local Control Center.
+- `UI-1 Start` ще не завершено повністю.
+
+Known gaps before `UI-1 Start` acceptance:
+
+- live resource grid/heatmap не входить у поточний `ALIF v2` payload;
+- live adapter поки повертає `resources: []`;
+- live Cell visual radius має presentation minimum і може перебільшувати
+  фізичний overlap;
+- idle/fixture/live states потребують явного UX розділення;
+- reconnect/retry UX ще не завершений;
+- `Step N`, speed controls, semantic zoom, full-screen, richer Inspector і
+  final Start demo hardening ще попереду.
+
+Отже, наступний canonical detailed worklog після `UI-1B`:
+
+```text
+UI-1C:
+WOW World Rendering, Projection Truthfulness, Semantic Zoom And Cell Inspector
+```
+
+`UI-1C` повинен закрити truthfulness gap перед глибоким поверненням до Genome:
+показувати лише data-bound layers, явно маркувати missing projection fields,
+узгодити live radius/render scale, і підготувати resource projection contract
+або чесний unavailable state.
+
 # Спільна архітектурна основа
 
 Ці компоненти створюються поступово, але не повинні мати окремі несумісні реалізації для кожної частини.
@@ -1744,7 +1835,9 @@ Frontend framework, component primitives, charting library and state-management 
 
 # Recommended Immediate Next Plan
 
-Першим detailed worklog має бути:
+`UI-1A` і `UI-1B` уже виконані як локальні implementation slices.
+
+Historical starting slice:
 
 ```text
 UI-1A:
@@ -1773,14 +1866,41 @@ Inspector position, and bottom data-panel structure from this image, but defer
 OrganismView detail, rich analytics, warning depth, classification labels, and
 live-only metrics until later slices.
 
-Після цього створюється:
+Completed follow-up slice:
 
 ```text
 UI-1B:
 Live Projection Transport And Run Controls
 ```
 
-Такий порядок дозволяє швидко отримати візуальний результат, не створюючи окрему тимчасову архітектуру, і після цього підключити той самий Viewer до live Core.
+Current next slice:
+
+```text
+UI-1C:
+WOW World Rendering, Projection Truthfulness, Semantic Zoom And Cell Inspector
+```
+
+Minimum outcome:
+
+```text
+live/idle/fixture states are visually distinct
+missing live projection fields are explicit, not silently hidden
+Cell visual scale does not misrepresent physical radius or overlap
+Resource layer is either live data-bound or marked unavailable
+semantic zoom starts replacing flat circles with data-bound detail
+Inspector exposes live position, radius, lifecycle, Energy, available Resources/Materials and projection provenance
+Monitor remains usable at 1024x768
+```
+
+Після `UI-1C` створюється:
+
+```text
+UI-1D:
+Start Demo, Export And Acceptance Hardening
+```
+
+Такий порядок дозволяє швидко отримати живий результат, але не закріпити
+неточну візуальну інтерпретацію projection data як canonical behavior.
 
 # Global Completion
 
@@ -1813,6 +1933,7 @@ Research:
 - `docs/implementation/architecture.md`
 - `docs/engine/technology-stack.md`
 - `outputs/worklogs/2026-07-02-1935-PLAN-phase-visual-global-roadmap.md`
+- `outputs/worklogs/2026-07-02-1936-PLAN-phase-visual-global-UIUX.md`
 - `outputs/worklogs/index.md`
 
 # Semantic Links
