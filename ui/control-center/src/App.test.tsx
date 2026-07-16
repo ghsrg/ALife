@@ -205,6 +205,8 @@ describe('App', () => {
     expect(screen.getByLabelText('Cell Inspector')).toBeInTheDocument();
     expect(screen.getByLabelText('World stats')).toBeInTheDocument();
     expect(screen.getByLabelText('Selected entity focus')).toHaveTextContent('Cell cell-a');
+    expect(screen.getByTestId('bottom-stats-strip')).toHaveClass('bottom-stats-strip');
+    expect(screen.getByTestId('selected-focus-card')).toHaveClass('selected-focus-card');
     expect(screen.getByText('Projected Cell Energy')).toBeInTheDocument();
     expect(screen.getByText('Resources')).toBeInTheDocument();
   });
