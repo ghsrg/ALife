@@ -1,4 +1,5 @@
 import type { CellId, CellProjection, WorldFrame } from '../projection/types';
+import type { ViewerCamera } from './viewerNavigation';
 
 export interface ViewportSize {
   width: number;
@@ -31,6 +32,26 @@ export function projectCellForRender(
     id: cell.id,
     x: cell.x * scaleX,
     y: cell.y * scaleY,
+    physicalRadiusPx,
+    displayRadiusPx,
+    presentationMinimumApplied: displayRadiusPx !== physicalRadiusPx
+  };
+}
+
+export function projectCellForNavigatedRender(
+  cell: CellProjection,
+  frame: Pick<WorldFrame, 'world'>,
+  viewport: ViewportSize,
+  camera: ViewerCamera
+): RenderedCellGeometry {
+  const base = projectCellForRender(cell, frame, viewport);
+  const physicalRadiusPx = base.physicalRadiusPx * camera.scale;
+  const displayRadiusPx = Math.max(MIN_CELL_DISPLAY_RADIUS_PX, physicalRadiusPx);
+
+  return {
+    id: base.id,
+    x: base.x * camera.scale + camera.x,
+    y: base.y * camera.scale + camera.y,
     physicalRadiusPx,
     displayRadiusPx,
     presentationMinimumApplied: displayRadiusPx !== physicalRadiusPx

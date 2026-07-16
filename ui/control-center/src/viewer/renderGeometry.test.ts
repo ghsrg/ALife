@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CellProjection, WorldFrame } from '../projection/types';
-import { projectCellForRender } from './renderGeometry';
+import { projectCellForNavigatedRender, projectCellForRender } from './renderGeometry';
 
 const frame: WorldFrame = {
   schemaVersion: 'WorldFrameProjection/v1',
@@ -57,5 +57,20 @@ describe('projectCellForRender', () => {
     expect(projection.physicalRadiusPx).toBe(6);
     expect(projection.displayRadiusPx).toBe(7);
     expect(projection.presentationMinimumApplied).toBe(true);
+  });
+
+  it('applies viewer camera transform to position and radius for navigated rendering', () => {
+    const projection = projectCellForNavigatedRender(
+      cell(12),
+      frame,
+      { width: 1200, height: 800 },
+      { x: -100, y: 40, scale: 2 }
+    );
+
+    expect(projection.x).toBe(140);
+    expect(projection.y).toBe(200);
+    expect(projection.physicalRadiusPx).toBe(24);
+    expect(projection.displayRadiusPx).toBe(24);
+    expect(projection.presentationMinimumApplied).toBe(false);
   });
 });
