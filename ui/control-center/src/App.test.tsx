@@ -263,6 +263,26 @@ describe('App', () => {
     expect(mockRunner.apiInstance.stopRun).not.toHaveBeenCalled();
   });
 
+  it('explains connected idle fixture fallback', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Data: Fixture fallback - idle Runner')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Fixture Tick 128 - Runner idle')).toBeInTheDocument();
+  });
+
+  it('shows waiting for live frame when run is active before first frame', async () => {
+    mockRunner.apiInstance.getRunStatus.mockResolvedValue(runningStatus);
+
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Data: Waiting for first live frame')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Waiting for live frame - Fixture Tick 128')).toBeInTheDocument();
+  });
+
   it('updates the Monitor frame from a stream frame', async () => {
     renderApp(<App />);
 

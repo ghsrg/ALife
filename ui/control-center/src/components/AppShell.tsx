@@ -207,7 +207,7 @@ export function AppShell() {
           <div className="viewer-toolbar">
             <div>
               <strong>{state.frame.scenarioName ?? ui1aFixture.scenarioName}</strong>
-              <span>{state.frame.source === 'live' ? 'Live' : 'Fixture'} Tick {state.frame.tick}</span>
+              <span>{frameSubtitle(state)}</span>
             </div>
             <button type="button" onClick={toggleTheme} aria-label={`Switch to ${state.theme === 'dark' ? 'light' : 'dark'} theme`}>
               {state.theme === 'dark' ? 'Light' : 'Dark'}
@@ -298,6 +298,24 @@ function Inspector({ selectedCell }: { selectedCell: CellProjection | null }) {
 
 function formatRatio(value: number) {
   return `${Math.round(value * 100)}%`;
+}
+
+function frameSubtitle(state: AppStore) {
+  const dataState = getMonitorDataState(state);
+
+  if (dataState === 'fixture-idle') {
+    return `Fixture Tick ${state.frame.tick} - Runner idle`;
+  }
+
+  if (dataState === 'live-waiting') {
+    return `Waiting for live frame - Fixture Tick ${state.frame.tick}`;
+  }
+
+  if (dataState === 'stale-live') {
+    return `Stale Live Tick ${state.frame.tick} - disconnected`;
+  }
+
+  return `${state.frame.source === 'live' ? 'Live' : 'Fixture'} Tick ${state.frame.tick}`;
 }
 
 function toWorldFrame(
