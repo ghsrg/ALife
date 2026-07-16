@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
-import { createAppStore, type AppStore } from '../app/appState';
+import { createAppStore, getMonitorDataState, type AppStore } from '../app/appState';
 import type { CellProjection, WorldFrame } from '../projection/types';
 import { liveProjectionToWorldFrame } from '../projection/liveAdapter';
 import { RunnerApiClient } from '../runner/apiClient';
@@ -21,11 +21,10 @@ export function AppShell() {
 
   useEffect(() => store.subscribe(setState), [store]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const connectRunner = useCallback(() => {
     const endpoint = store.getState().runnerEndpoint;
     const apiClient = new RunnerApiClient(endpoint);
-    const isActive = () => !cancelled && streamClientRef.current === streamClient;
+    const isActive = () => streamClientRef.current === streamClient;
     const streamClient = new RunnerStreamClient(endpoint, {
       onConnectionState: (connectionState) => {
         if (!isActive()) {
@@ -57,6 +56,7 @@ export function AppShell() {
       }
     });
 
+    streamClientRef.current?.disconnect();
     apiClientRef.current = apiClient;
     streamClientRef.current = streamClient;
     store.getState().setPendingCommand('connect');
@@ -67,7 +67,7 @@ export function AppShell() {
       apiClient.getRunStatus()
     ])
       .then(([serverInfo, scenarios, runStatus]) => {
-        if (cancelled || streamClientRef.current !== streamClient) {
+        if (!isActive()) {
           return;
         }
         const actions = store.getState();
@@ -78,7 +78,7 @@ export function AppShell() {
         streamClient.connect();
       })
       .catch((error: unknown) => {
-        if (cancelled || streamClientRef.current !== streamClient) {
+        if (!isActive()) {
           return;
         }
         const actions = store.getState();
@@ -86,18 +86,16 @@ export function AppShell() {
         actions.setConnectionState('disconnected');
         actions.clearPendingCommand();
       });
-
-    return () => {
-      cancelled = true;
-      streamClient.disconnect();
-      if (streamClientRef.current === streamClient) {
-        streamClientRef.current = null;
-      }
-      if (apiClientRef.current === apiClient) {
-        apiClientRef.current = null;
-      }
-    };
   }, [store]);
+
+  useEffect(() => {
+    connectRunner();
+    return () => {
+      streamClientRef.current?.disconnect();
+      streamClientRef.current = null;
+      apiClientRef.current = null;
+    };
+  }, [connectRunner]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
@@ -203,6 +201,7 @@ export function AppShell() {
         <LayerPanel
           state={state}
           onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
+          onReconnect={connectRunner}
         />
         <section className="viewer-panel" aria-label="Monitor workspace">
           <div className="viewer-toolbar">
@@ -233,10 +232,12 @@ export function AppShell() {
 
 function LayerPanel({
   state,
-  onScenarioChange
+  onScenarioChange,
+  onReconnect
 }: {
   state: AppStore;
   onScenarioChange: (scenarioId: string) => void;
+  onReconnect: () => void;
 }) {
   const frame = state.frame;
 
@@ -246,11 +247,13 @@ function LayerPanel({
       <ConnectionPanel
         endpoint={state.runnerEndpoint}
         connectionState={state.connectionState}
+        monitorDataState={getMonitorDataState(state)}
         serverInfo={state.serverInfo}
         scenarios={state.scenarios}
         selectedScenarioId={state.selectedScenarioId}
         lastError={state.lastError}
         onScenarioChange={onScenarioChange}
+        onReconnect={onReconnect}
       />
       <label className="layer-option">
         <input type="checkbox" checked readOnly />

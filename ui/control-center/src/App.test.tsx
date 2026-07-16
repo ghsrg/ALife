@@ -231,6 +231,38 @@ describe('App', () => {
     });
   });
 
+  it('reconnects after failed bootstrap without repeating run commands', async () => {
+    const user = userEvent.setup();
+    mockRunner.apiInstance.getServerInfo
+      .mockRejectedValueOnce(new Error('Failed to fetch'))
+      .mockResolvedValueOnce({
+        engineVersion: 'engine-test',
+        apiVersion: 'runner-test',
+        allowRemoteViewer: false
+      });
+
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to fetch')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Reconnect to Runner' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Runner: Connected')).toBeInTheDocument();
+    });
+    expect(mockRunner.apiInstance.getServerInfo).toHaveBeenCalledTimes(2);
+    expect(mockRunner.apiInstance.listScenarios).toHaveBeenCalledTimes(2);
+    expect(mockRunner.apiInstance.getRunStatus).toHaveBeenCalledTimes(2);
+    expect(mockRunner.streamInstances.at(-1)?.connect).toHaveBeenCalledTimes(1);
+    expect(mockRunner.apiInstance.startRun).not.toHaveBeenCalled();
+    expect(mockRunner.apiInstance.pauseRun).not.toHaveBeenCalled();
+    expect(mockRunner.apiInstance.resumeRun).not.toHaveBeenCalled();
+    expect(mockRunner.apiInstance.stepRun).not.toHaveBeenCalled();
+    expect(mockRunner.apiInstance.stopRun).not.toHaveBeenCalled();
+  });
+
   it('updates the Monitor frame from a stream frame', async () => {
     renderApp(<App />);
 
