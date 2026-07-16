@@ -6,9 +6,12 @@ import { liveProjectionToWorldFrame } from '../projection/liveAdapter';
 import { RunnerApiClient } from '../runner/apiClient';
 import { RunnerStreamClient } from '../runner/streamClient';
 import type { LiveWorldFrameProjection } from '../runner/alifDecoder';
+import { BottomStatsStrip } from './BottomStatsStrip';
 import { ConnectionPanel } from './ConnectionPanel';
 import { RunControls } from './RunControls';
+import { SelectedEntityFocusCard } from './SelectedEntityFocusCard';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
+import { buildMonitorStats } from './monitorStats';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
@@ -105,6 +108,9 @@ export function AppShell() {
     store.getState().setTheme(state.theme === 'dark' ? 'light' : 'dark');
   };
 
+  const monitorDataState = getMonitorDataState(state);
+  const monitorStats = buildMonitorStats(state.frame, monitorDataState);
+
   const exportScreenshot = () => {
     const png = viewerRef.current?.exportPng();
     setExportStatus(png ? `PNG ready (${png.length} bytes)` : 'PNG export unavailable');
@@ -177,7 +183,7 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
-      <header className="top-bar">
+      <header className="top-bar" data-testid="monitor-top-context">
         <div>
           <p className="eyebrow">ALife Control Center</p>
           <h1>ALife Control Center</h1>
@@ -200,6 +206,7 @@ export function AppShell() {
       <main className="monitor-grid">
         <LayerPanel
           state={state}
+          monitorDataState={monitorDataState}
           onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
           onReconnect={connectRunner}
         />
@@ -222,6 +229,8 @@ export function AppShell() {
             selectedCellId={state.selectedCellId}
             onSelectCell={(cellId) => store.getState().selectCell(cellId)}
           />
+          <SelectedEntityFocusCard selectedCell={state.selectedCell} />
+          <BottomStatsStrip stats={monitorStats} />
           {exportStatus ? <p className="export-status" role="status">{exportStatus}</p> : null}
         </section>
         <Inspector selectedCell={state.selectedCell} />
@@ -232,10 +241,12 @@ export function AppShell() {
 
 function LayerPanel({
   state,
+  monitorDataState,
   onScenarioChange,
   onReconnect
 }: {
   state: AppStore;
+  monitorDataState: ReturnType<typeof getMonitorDataState>;
   onScenarioChange: (scenarioId: string) => void;
   onReconnect: () => void;
 }) {
@@ -247,7 +258,7 @@ function LayerPanel({
       <ConnectionPanel
         endpoint={state.runnerEndpoint}
         connectionState={state.connectionState}
-        monitorDataState={getMonitorDataState(state)}
+        monitorDataState={monitorDataState}
         serverInfo={state.serverInfo}
         scenarios={state.scenarios}
         selectedScenarioId={state.selectedScenarioId}
