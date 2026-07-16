@@ -29,12 +29,16 @@ describe('ConnectionPanel', () => {
         selectedScenarioId="demo"
         lastError={null}
         onScenarioChange={onScenarioChange}
+        monitorDataState="fixture-idle"
+        onReconnect={vi.fn()}
       />
     );
 
-    expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(screen.getByText('Runner: Connected')).toBeInTheDocument();
     expect(screen.getByText('http://127.0.0.1:8080')).toBeInTheDocument();
     expect(screen.getByText('API v2')).toBeInTheDocument();
+    expect(screen.getByText('Data: Fixture fallback - idle Runner')).toBeInTheDocument();
+    expect(screen.getByText('Resources: Not streamed in ALIF v2')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Scenario' })).toHaveValue('demo');
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Scenario' }), 'stress');
@@ -52,10 +56,12 @@ describe('ConnectionPanel', () => {
         selectedScenarioId={null}
         lastError="Runner unavailable"
         onScenarioChange={vi.fn()}
+        monitorDataState="fixture-offline"
+        onReconnect={vi.fn()}
       />
     );
 
-    expect(screen.getByText('Disconnected')).toBeInTheDocument();
+    expect(screen.getByText('Runner: Disconnected')).toBeInTheDocument();
     expect(screen.getByText('not connected')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Scenario' })).toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent('Runner unavailable');
@@ -71,9 +77,54 @@ describe('ConnectionPanel', () => {
         selectedScenarioId={null}
         lastError={null}
         onScenarioChange={vi.fn()}
+        monitorDataState="fixture-offline"
+        onReconnect={vi.fn()}
       />
     );
 
-    expect(screen.getByText('Connecting')).toBeInTheDocument();
+    expect(screen.getByText('Runner: Connecting')).toBeInTheDocument();
+  });
+
+  it('separates runner connection state from displayed data state', () => {
+    render(
+      <ConnectionPanel
+        endpoint="http://127.0.0.1:8080"
+        connectionState="connected"
+        serverInfo={serverInfo}
+        scenarios={scenarios}
+        selectedScenarioId="demo"
+        lastError={null}
+        onScenarioChange={vi.fn()}
+        monitorDataState="live-waiting"
+        onReconnect={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Runner: Connected')).toBeInTheDocument();
+    expect(screen.getByText('Data: Waiting for first live frame')).toBeInTheDocument();
+    expect(screen.getByText('Resources: Not streamed in ALIF v2')).toBeInTheDocument();
+  });
+
+  it('calls reconnect from the connection panel', async () => {
+    const user = userEvent.setup();
+    const onReconnect = vi.fn();
+
+    render(
+      <ConnectionPanel
+        endpoint="http://127.0.0.1:8080"
+        connectionState="disconnected"
+        serverInfo={null}
+        scenarios={[]}
+        selectedScenarioId={null}
+        lastError="Failed to fetch"
+        onScenarioChange={vi.fn()}
+        monitorDataState="fixture-offline"
+        onReconnect={onReconnect}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Reconnect to Runner' }));
+
+    expect(onReconnect).toHaveBeenCalledTimes(1);
   });
 });

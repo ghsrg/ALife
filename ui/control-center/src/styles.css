@@ -317,6 +317,12 @@ button:disabled {
   font-size: 13px;
 }
 
+.secondary-action {
+  margin-top: 2px;
+  width: 100%;
+  justify-content: center;
+}
+
 .scenario-select select {
   min-height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.14);
