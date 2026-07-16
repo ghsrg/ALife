@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
+import type { WorldFrame } from '../projection/types';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
 
 const renderFrame = vi.fn();
@@ -73,5 +74,42 @@ describe('WorldViewer', () => {
     await waitFor(() => {
       expect(ref.current?.exportPng()).toBe('data:image/png;base64,fixture');
     });
+  });
+
+  it('uses display radius for hit targets and exposes truth overlay for tiny live cells', async () => {
+    const tinyLiveFrame: WorldFrame = {
+      ...ui1aFixture.frame,
+      source: 'live',
+      resources: [],
+      cells: [
+        {
+          id: 'tiny',
+          x: 100,
+          y: 100,
+          radius: 2,
+          energy: 0.8,
+          integrity: 1,
+          generation: 0,
+          roleHint: 'alive lifecycle state',
+          lifecycle: 1
+        }
+      ]
+    };
+
+    render(
+      <WorldViewer
+        frame={tinyLiveFrame}
+        selectedCellId="tiny"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(renderFrame).toHaveBeenCalledWith(tinyLiveFrame, 'tiny');
+    });
+
+    expect(screen.getByLabelText('Select tiny')).toHaveStyle({ width: '14px', height: '14px' });
+    expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
+    expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Display minimum applied');
   });
 });

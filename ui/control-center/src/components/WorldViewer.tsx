@@ -1,6 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { CellId, WorldFrame } from '../projection/types';
+import { projectCellForRender } from '../viewer/renderGeometry';
 import { mountWorldRenderer, type WorldRenderer } from '../viewer/worldRenderer';
+import { ViewerTruthOverlay } from './ViewerTruthOverlay';
+import { buildViewerTruthState } from './viewerTruth';
 
 interface WorldViewerProps {
   frame: WorldFrame;
@@ -19,6 +22,8 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const hostRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<WorldRenderer | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const viewport = { width: frame.world.width, height: frame.world.height };
+  const truthState = buildViewerTruthState(frame, viewport);
 
   useImperativeHandle(ref, () => ({
     exportPng: () => rendererRef.current?.exportPng() ?? null
@@ -57,17 +62,20 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   return (
     <div className="world-viewer" aria-label="World Viewer" data-ready={isReady ? 'true' : 'false'}>
       <div ref={hostRef} className="world-canvas-host" />
+      <ViewerTruthOverlay truthState={truthState} />
       <div className="world-hit-targets" aria-label="World cell hit targets">
         {frame.cells.map((cell) => {
           const left = `${(cell.x / frame.world.width) * 100}%`;
           const top = `${(cell.y / frame.world.height) * 100}%`;
+          const geometry = projectCellForRender(cell, frame, viewport);
+          const diameter = `${geometry.displayRadiusPx * 2}px`;
 
           return (
             <button
               key={cell.id}
               type="button"
               className={cell.id === selectedCellId ? 'cell-hotspot selected' : 'cell-hotspot'}
-              style={{ left, top, width: `${cell.radius * 2}px`, height: `${cell.radius * 2}px` }}
+              style={{ left, top, width: diameter, height: diameter }}
               onClick={() => onSelectCell(cell.id)}
               aria-label={`Select ${cell.id}`}
             />

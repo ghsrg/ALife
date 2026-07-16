@@ -1,5 +1,6 @@
 import { Application, Container, Graphics } from 'pixi.js';
 import type { CellId, WorldFrame } from '../projection/types';
+import { projectCellForRender } from './renderGeometry';
 
 export interface WorldRenderer {
   renderFrame: (frame: WorldFrame, selectedCellId: CellId | null) => void;
@@ -36,12 +37,10 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
 
     for (const cell of frame.cells) {
       const cellGraphic = new Graphics();
-      const x = (cell.x / frame.world.width) * width;
-      const y = (cell.y / frame.world.height) * height;
-      const radius = Math.max(7, (cell.radius / frame.world.width) * width);
+      const geometry = projectCellForRender(cell, frame, { width, height });
       const isSelected = cell.id === selectedCellId;
 
-      cellGraphic.circle(x, y, radius);
+      cellGraphic.circle(geometry.x, geometry.y, geometry.displayRadiusPx);
       cellGraphic.fill({ color: isSelected ? 0xffd166 : 0x5ee08d, alpha: isSelected ? 0.92 : 0.72 });
       cellGraphic.stroke({ width: isSelected ? 4 : 2, color: isSelected ? 0xffffff : 0xbef7cf, alpha: 0.95 });
       root.addChild(cellGraphic);
