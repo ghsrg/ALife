@@ -8,7 +8,7 @@ test('UI-1A Monitor opens at 1024x768 with fixture viewer and Inspector', async 
   await expect(page.getByRole('tab', { name: 'Monitor' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('UI-1A Deterministic Fixture')).toBeVisible();
   await expect(page.getByText('Tick 128')).toBeVisible();
-  await expect(page.getByLabel('World Viewer')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
   await expect(page.getByLabel('Cell Inspector')).toContainText('cell-a');
 
   await page.getByLabel('Select cell-c').click();

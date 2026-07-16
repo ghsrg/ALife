@@ -198,6 +198,8 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
               type="button"
               className={cell.id === selectedCellId ? 'cell-hotspot selected' : 'cell-hotspot'}
               style={{ left: `${geometry.x}px`, top: `${geometry.y}px`, width: diameter, height: diameter }}
+              onMouseDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
               onClick={() => onSelectCell(cell.id)}
               aria-label={`Select ${cell.id}`}
             />

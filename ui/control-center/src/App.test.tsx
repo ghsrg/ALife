@@ -188,7 +188,7 @@ describe('App', () => {
     expect(within(inspector).getByRole('heading', { name: /cell inspector/i })).toBeInTheDocument();
     expect(within(inspector).getByText('cell-a')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByLabelText(/world viewer/i)).toHaveAttribute('data-ready', 'true');
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
   });
 
@@ -196,7 +196,7 @@ describe('App', () => {
     renderApp(<App />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/world viewer/i)).toHaveAttribute('data-ready', 'true');
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
 
     expect(screen.getByTestId('monitor-top-context')).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('App', () => {
     renderApp(<App />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/world viewer/i)).toHaveAttribute('data-ready', 'true');
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
     await user.click(screen.getByRole('button', { name: /export viewer png/i }));
 
