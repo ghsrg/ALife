@@ -194,3 +194,4 @@ tags:
 - [[outputs/worklogs/2026-07-16-2120-REPORT-ui-1c-a-world-first-monitor-layout|2026-07-16-2120-REPORT-ui-1c-a-world-first-monitor-layout]]
 - [[outputs/worklogs/2026-07-16-2236-REPORT-ui-1c-b-projection-truthfulness-render-scale|2026-07-16-2236-REPORT-ui-1c-b-projection-truthfulness-render-scale]]
 - [[outputs/worklogs/2026-07-17-0022-REPORT-ui-1c-c-viewer-zoom-pan-navigation|2026-07-17-0022-REPORT-ui-1c-c-viewer-zoom-pan-navigation]]
+- [[outputs/worklogs/2026-07-17-0109-REPORT-ui-1c-d-atmospheric-renderer-selection-semantic-detail|2026-07-17-0109-REPORT-ui-1c-d-atmospheric-renderer-selection-semantic-detail]]
