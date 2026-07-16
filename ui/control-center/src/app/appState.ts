@@ -7,6 +7,12 @@ import type { RunnerStreamConnectionState as ConnectionState } from '../runner/s
 
 export type ThemeMode = 'dark' | 'light';
 export type PendingCommand = 'connect' | 'start' | 'pause' | 'resume' | 'step' | 'stop';
+export type MonitorDataState =
+  | 'fixture-offline'
+  | 'fixture-idle'
+  | 'live-waiting'
+  | 'live'
+  | 'stale-live';
 
 export interface AppState {
   frame: WorldFrame;
@@ -109,6 +115,31 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     clearPendingCommand: () => set({ pendingCommand: null }),
     setError: (lastError) => set({ lastError })
   }));
+}
+
+export function getMonitorDataState(
+  state: Pick<AppState, 'connectionState' | 'runStatus' | 'frame'>
+): MonitorDataState {
+  if (state.frame.source === 'live' && state.connectionState === 'disconnected') {
+    return 'stale-live';
+  }
+
+  if (state.frame.source === 'live') {
+    return 'live';
+  }
+
+  if (state.connectionState !== 'connected') {
+    return 'fixture-offline';
+  }
+
+  if (
+    state.runStatus?.activeRunState === 'running' ||
+    state.runStatus?.activeRunState === 'paused'
+  ) {
+    return 'live-waiting';
+  }
+
+  return 'fixture-idle';
 }
 
 function hasNoPendingCommand(state: Pick<AppState, 'pendingCommand'>) {

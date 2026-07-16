@@ -5,7 +5,8 @@ import {
   canStartRun,
   canStepRun,
   canStopRun,
-  createAppStore
+  createAppStore,
+  getMonitorDataState
 } from './appState';
 import type { WorldFrame } from '../projection/types';
 import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClient';
@@ -240,5 +241,41 @@ describe('run control helpers', () => {
     expect(canStopRun({ ...base, runStatus: status('paused') })).toBe(true);
     expect(canStopRun({ ...base, runStatus: status('completed') })).toBe(false);
     expect(canStopRun({ ...base, runStatus: status('running'), pendingCommand: 'stop' })).toBe(false);
+  });
+});
+
+describe('getMonitorDataState', () => {
+  it('describes disconnected fixture data as offline fixture fallback', () => {
+    const store = createAppStore();
+
+    expect(getMonitorDataState(store.getState())).toBe('fixture-offline');
+  });
+
+  it('describes connected idle fixture data as idle fixture fallback', () => {
+    const store = createAppStore();
+    store.getState().setConnected(connectedInfo);
+    store.getState().setRunStatus(status('idle'));
+
+    expect(getMonitorDataState(store.getState())).toBe('fixture-idle');
+  });
+
+  it('describes running status without a live frame as waiting for live data', () => {
+    const store = createAppStore();
+    store.getState().setConnected(connectedInfo);
+    store.getState().setRunStatus(runningStatus);
+
+    expect(getMonitorDataState(store.getState())).toBe('live-waiting');
+  });
+
+  it('describes live frame data as live and disconnected live data as stale', () => {
+    const store = createAppStore();
+    store.getState().setConnected(connectedInfo);
+    store.getState().setFrame(liveFrame);
+
+    expect(getMonitorDataState(store.getState())).toBe('live');
+
+    store.getState().setConnectionState('disconnected');
+
+    expect(getMonitorDataState(store.getState())).toBe('stale-live');
   });
 });
