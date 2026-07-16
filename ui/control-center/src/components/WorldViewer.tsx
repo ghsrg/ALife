@@ -174,7 +174,13 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     >
       <div ref={hostRef} className="world-canvas-host" />
       <ViewerTruthOverlay truthState={truthState} />
-      <div className="viewer-navigation-controls" aria-label="World Viewer navigation">
+      <div
+        className="viewer-navigation-controls"
+        aria-label="World Viewer navigation"
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onWheel={(event) => event.stopPropagation()}
+      >
         <button type="button" onClick={() => zoomAtCenter(1.2)} aria-label="Zoom in World Viewer">+</button>
         <button type="button" onClick={() => zoomAtCenter(1 / 1.2)} aria-label="Zoom out World Viewer">-</button>
         <button type="button" onClick={fitView} aria-label="Fit World Viewer">Fit</button>

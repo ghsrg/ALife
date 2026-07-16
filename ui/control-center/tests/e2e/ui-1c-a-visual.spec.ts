@@ -39,20 +39,35 @@ test.describe('UI-1C-A visual acceptance', () => {
     await expect(page.getByLabel('Cell Inspector')).toBeVisible();
     await page.screenshot({ path: join(screenshotDir, '1920x1080-light.png'), fullPage: true });
   });
+
+  test('1366x768 viewer navigation zooms, resets and keeps cell targets usable', async ({ page }) => {
+    await openMonitor(page, { width: 1366, height: 768 });
+
+    await page.getByRole('button', { name: 'Zoom in World Viewer' }).click();
+    await expect(page.getByLabel('World Viewer zoom')).toHaveText('120%');
+    await expect(page.getByLabel('Select cell-a')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Reset World Viewer navigation' }).click();
+    await expect(page.getByLabel('World Viewer zoom')).toHaveText('100%');
+    await expect(page.getByLabel('Select cell-a')).toBeVisible();
+
+    await page.screenshot({ path: join(screenshotDir, '1366x768-navigation.png'), fullPage: true });
+  });
 });
 
 async function openMonitor(page: Page, viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'ALife Control Center' })).toBeVisible();
-  await expect(page.getByLabel('World Viewer')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
   await expect(page.getByLabel('Viewer projection truth')).toBeVisible();
+  await expect(page.getByLabel('World Viewer navigation', { exact: true })).toBeVisible();
 }
 
 async function assertWorldFirstLayout(page: Page) {
   const layers = await page.getByLabel('Layer controls').boundingBox();
   const viewer = await page.getByLabel('Monitor workspace').boundingBox();
-  const world = await page.getByLabel('World Viewer').boundingBox();
+  const world = await page.getByLabel('World Viewer', { exact: true }).boundingBox();
   const inspector = await page.getByLabel('Cell Inspector').boundingBox();
   const stats = await page.getByLabel('World stats').boundingBox();
   const focus = await page.getByLabel('Selected entity focus').boundingBox();
