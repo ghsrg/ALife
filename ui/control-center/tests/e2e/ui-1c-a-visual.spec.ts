@@ -14,6 +14,9 @@ test.describe('UI-1C-A visual acceptance', () => {
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await assertWorldFirstLayout(page);
+    await expect(page.getByLabel('Viewer projection truth')).toContainText('Resources');
+    await expect(page.getByLabel('Viewer projection truth')).toContainText('Fixture grid');
+    await expect(page.getByLabel('Viewer projection truth')).toContainText('Cell size');
     await page.screenshot({ path: join(screenshotDir, '1920x1080-dark.png'), fullPage: true });
   });
 
@@ -43,6 +46,7 @@ async function openMonitor(page: Page, viewport: { width: number; height: number
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'ALife Control Center' })).toBeVisible();
   await expect(page.getByLabel('World Viewer')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByLabel('Viewer projection truth')).toBeVisible();
 }
 
 async function assertWorldFirstLayout(page: Page) {
@@ -51,18 +55,21 @@ async function assertWorldFirstLayout(page: Page) {
   const world = await page.getByLabel('World Viewer').boundingBox();
   const inspector = await page.getByLabel('Cell Inspector').boundingBox();
   const stats = await page.getByLabel('World stats').boundingBox();
+  const focus = await page.getByLabel('Selected entity focus').boundingBox();
 
   expect(layers).not.toBeNull();
   expect(viewer).not.toBeNull();
   expect(world).not.toBeNull();
   expect(inspector).not.toBeNull();
   expect(stats).not.toBeNull();
+  expect(focus).not.toBeNull();
 
   const l = layers!;
   const v = viewer!;
   const w = world!;
   const i = inspector!;
   const s = stats!;
+  const f = focus!;
 
   expect(w.width).toBeGreaterThan(l.width);
   expect(w.width).toBeGreaterThan(i.width);
@@ -70,4 +77,5 @@ async function assertWorldFirstLayout(page: Page) {
   expect(v.x).toBeGreaterThan(l.x + l.width - 1);
   expect(i.x).toBeGreaterThan(v.x + v.width - 1);
   expect(s.y).toBeGreaterThan(w.y + w.height - 8);
+  expect(f.y + f.height).toBeLessThanOrEqual(s.y + 1);
 }
