@@ -208,7 +208,7 @@ describe('App', () => {
     expect(screen.getByTestId('bottom-stats-strip')).toHaveClass('bottom-stats-strip');
     expect(screen.getByTestId('selected-focus-card')).toHaveClass('selected-focus-card');
     expect(screen.getByText('Projected Cell Energy')).toBeInTheDocument();
-    expect(screen.getByText('Resources')).toBeInTheDocument();
+    expect(screen.getAllByText('Resources').length).toBeGreaterThan(0);
   });
 
   it('exports a viewer PNG from the toolbar', async () => {
@@ -319,6 +319,10 @@ describe('App', () => {
     expect(within(workspace).getByText('Live Tick 9')).toBeInTheDocument();
     const inspector = screen.getByLabelText(/cell inspector/i);
     expect(within(inspector).getByText('77')).toBeInTheDocument();
+    expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Resources');
+    expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
+    expect(screen.getByText('Composite Resource Concentration')).toBeInTheDocument();
+    expect(screen.getByText('Missing live projection')).toBeInTheDocument();
   });
 
   it('ignores late stream callbacks after unmount', async () => {

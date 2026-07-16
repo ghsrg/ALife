@@ -251,6 +251,8 @@ function LayerPanel({
   onReconnect: () => void;
 }) {
   const frame = state.frame;
+  const hasResourceLayer = frame.resources.length > 0;
+  const resourceLayerState = hasResourceLayer ? 'Available projection' : 'Missing live projection';
 
   return (
     <aside className="side-panel" aria-label="Layer controls">
@@ -270,9 +272,12 @@ function LayerPanel({
         <input type="checkbox" checked readOnly />
         <span>Cells</span>
       </label>
-      <label className="layer-option">
-        <input type="checkbox" checked readOnly />
-        <span>Composite Resource Concentration</span>
+      <label className={hasResourceLayer ? 'layer-option' : 'layer-option layer-option-missing'}>
+        <input type="checkbox" checked={hasResourceLayer} readOnly disabled={!hasResourceLayer} />
+        <span>
+          Composite Resource Concentration
+          <small>{resourceLayerState}</small>
+        </span>
       </label>
       <label className="layer-option muted">
         <input type="checkbox" disabled />
