@@ -26,7 +26,6 @@ describe('SelectedEntityFocusCard', () => {
     expect(within(card).getByText('100, 200')).toBeInTheDocument();
     expect(within(card).getByText('Radius')).toBeInTheDocument();
     expect(within(card).getByText('6')).toBeInTheDocument();
-    expect(within(card).getByText('Energy')).toBeInTheDocument();
     expect(within(card).getByText('75%')).toBeInTheDocument();
     expect(within(card).getByText('Lifecycle')).toBeInTheDocument();
     expect(within(card).getByText('alive')).toBeInTheDocument();
@@ -39,6 +38,13 @@ describe('SelectedEntityFocusCard', () => {
 
     expect(screen.getByText('Lifecycle')).toBeInTheDocument();
     expect(screen.getByText('Unavailable')).toBeInTheDocument();
+  });
+
+  it('renders data-bound energy and integrity bars for selected Cell', () => {
+    renderApp(<SelectedEntityFocusCard selectedCell={selectedCell} />);
+
+    expect(screen.getByLabelText('Selected cell energy')).toHaveAttribute('aria-valuenow', '75');
+    expect(screen.getByLabelText('Selected cell integrity')).toHaveAttribute('aria-valuenow', '100');
   });
 
   it('stays out of the layout when no cell is selected', () => {

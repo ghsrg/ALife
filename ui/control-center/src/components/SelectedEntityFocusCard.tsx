@@ -33,8 +33,35 @@ export function SelectedEntityFocusCard({ selectedCell }: SelectedEntityFocusCar
           <dd>{formatLifecycle(selectedCell.lifecycle)}</dd>
         </div>
       </dl>
+      <div className="selected-focus-bars" aria-label="Selected cell projection bars">
+        <MetricBar label="Energy" value={selectedCell.energy} ariaLabel="Selected cell energy" />
+        <MetricBar label="Integrity" value={selectedCell.integrity} ariaLabel="Selected cell integrity" />
+      </div>
     </aside>
   );
+}
+
+function MetricBar({ label, value, ariaLabel }: { label: string; value: number; ariaLabel: string }) {
+  const percent = Math.round(clampRatio(value) * 100);
+
+  return (
+    <div className="selected-focus-bar">
+      <span>{label}</span>
+      <div
+        role="meter"
+        aria-label={ariaLabel}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+      >
+        <i style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function clampRatio(value: number) {
+  return Math.max(0, Math.min(1, value));
 }
 
 function formatRatio(value: number) {

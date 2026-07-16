@@ -40,6 +40,16 @@ test.describe('UI-1C-A visual acceptance', () => {
     await page.screenshot({ path: join(screenshotDir, '1920x1080-light.png'), fullPage: true });
   });
 
+  test('1920x1080 dark shows selected semantic detail and focus meters', async ({ page }) => {
+    await openMonitor(page, { width: 1920, height: 1080 });
+
+    await expect(page.getByLabel('Selected cell detail label')).toContainText('cell-a');
+    await expect(page.getByLabel('Selected cell energy')).toHaveAttribute('aria-valuenow', '82');
+    await expect(page.getByLabel('Selected cell integrity')).toHaveAttribute('aria-valuenow', '91');
+
+    await page.screenshot({ path: join(screenshotDir, '1920x1080-semantic-detail.png'), fullPage: true });
+  });
+
   test('1366x768 viewer navigation zooms, resets and keeps cell targets usable', async ({ page }) => {
     await openMonitor(page, { width: 1366, height: 768 });
 
