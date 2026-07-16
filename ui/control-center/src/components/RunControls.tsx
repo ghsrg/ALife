@@ -56,11 +56,11 @@ export function RunControls({
       <button
         className="icon-button"
         type="button"
-        aria-label="Step N: one committed tick"
+        aria-label="Step one committed tick"
         disabled={!canStepRun(state)}
         onClick={onStep}
       >
-        Step N
+        Step 1
       </button>
       <button
         className="icon-button danger"
