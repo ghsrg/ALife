@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { liveProjectionToWorldFrame } from './projection/liveAdapter';
 import { renderApp } from './test/render';
 
 const mockRunner = vi.hoisted(() => {
@@ -83,6 +84,14 @@ vi.mock('./runner/streamClient', async (importOriginal) => ({
   RunnerStreamClient: mockRunner.RunnerStreamClient
 }));
 
+vi.mock('./projection/liveAdapter', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./projection/liveAdapter')>();
+  return {
+    ...actual,
+    liveProjectionToWorldFrame: vi.fn(actual.liveProjectionToWorldFrame)
+  };
+});
+
 vi.mock('./viewer/worldRenderer', () => ({
   mountWorldRenderer: vi.fn(() => Promise.resolve({
     renderFrame: vi.fn(),
@@ -136,6 +145,29 @@ function setupRunnerMocks() {
   mockRunner.apiInstance.resumeRun.mockResolvedValue({ ok: true, activeRunState: 'running', committedTick: 7 });
   mockRunner.apiInstance.stepRun.mockResolvedValue({ ok: true, activeRunState: 'paused', committedTick: 8 });
   mockRunner.apiInstance.stopRun.mockResolvedValue({ ok: true, activeRunState: 'completed', committedTick: 8 });
+}
+
+function liveFrame({
+  tick,
+  sequence,
+  cellId
+}: {
+  tick: number;
+  sequence: number;
+  cellId: number;
+}): LiveFrameFixture {
+  return {
+    schemaVersion: 'ALIF/v2',
+    committedTick: tick,
+    projectionSequence: sequence,
+    wallClockGeneratedAtMs: 1000 + sequence,
+    previousCommittedTick: tick > 0 ? tick - 1 : null,
+    heat: 0.25,
+    waste: 0.5,
+    cells: [
+      { id: cellId, x: 12, y: 34, radius: 6, energy: 0.8, lifecycle: 1 }
+    ]
+  };
 }
 
 describe('App', () => {
@@ -208,18 +240,7 @@ describe('App', () => {
 
     act(() => {
       mockRunner.streamInstances[0].handlers.onStatus(runningStatus);
-      mockRunner.streamInstances[0].handlers.onFrame({
-        schemaVersion: 'ALIF/v2',
-        committedTick: 9,
-        projectionSequence: 3,
-        wallClockGeneratedAtMs: 1000,
-        previousCommittedTick: 8,
-        heat: 0.25,
-        waste: 0.5,
-        cells: [
-          { id: 77, x: 12, y: 34, radius: 6, energy: 0.8, lifecycle: 1 }
-        ]
-      });
+      mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 9, sequence: 3, cellId: 77 }));
     });
 
     const workspace = screen.getByLabelText(/monitor workspace/i);
@@ -227,5 +248,99 @@ describe('App', () => {
     expect(within(workspace).getByText('Live Tick 9')).toBeInTheDocument();
     const inspector = screen.getByLabelText(/cell inspector/i);
     expect(within(inspector).getByText('77')).toBeInTheDocument();
+  });
+
+  it('ignores late stream callbacks after unmount', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { unmount } = renderApp(<App />);
+
+    await waitFor(() => {
+      expect(mockRunner.streamInstances).toHaveLength(1);
+    });
+    const stream = mockRunner.streamInstances[0];
+    vi.mocked(liveProjectionToWorldFrame).mockClear();
+
+    unmount();
+    act(() => {
+      stream.handlers.onConnectionState('connected');
+      stream.handlers.onStatus(runningStatus);
+      stream.handlers.onFrame(liveFrame({ tick: 10, sequence: 1, cellId: 88 }));
+      stream.handlers.onError(new Error('late stream error'));
+    });
+
+    expect(liveProjectionToWorldFrame).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('ignores stale live frames after a newer live frame', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(mockRunner.streamInstances).toHaveLength(1);
+    });
+
+    act(() => {
+      mockRunner.streamInstances[0].handlers.onStatus(runningStatus);
+      mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 12, sequence: 4, cellId: 1204 }));
+      mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 11, sequence: 9, cellId: 1199 }));
+      mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 12, sequence: 4, cellId: 1203 }));
+      mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 12, sequence: 3, cellId: 1202 }));
+    });
+
+    const workspace = screen.getByLabelText(/monitor workspace/i);
+    expect(within(workspace).getByText('Live Tick 12')).toBeInTheDocument();
+    const inspector = screen.getByLabelText(/cell inspector/i);
+    expect(within(inspector).getByText('1204')).toBeInTheDocument();
+    expect(within(inspector).queryByText('1199')).not.toBeInTheDocument();
+    expect(within(inspector).queryByText('1203')).not.toBeInTheDocument();
+    expect(within(inspector).queryByText('1202')).not.toBeInTheDocument();
+  });
+
+  it('does not start an overlapping command while another command is pending', async () => {
+    const user = userEvent.setup();
+    let releaseStart: (() => void) | null = null;
+    mockRunner.apiInstance.startRun.mockImplementation(
+      () => new Promise((resolve) => {
+        releaseStart = () => resolve({
+          ok: true,
+          runId: 'run-live-1',
+          scenarioHash: 'sha256:demo',
+          bootstrapManifest: {},
+          effectiveSeed: 42,
+          activeRunState: 'running'
+        });
+      })
+    );
+
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Play live run' })).toBeEnabled();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Play live run' }));
+    expect(screen.getByRole('button', { name: 'Play live run' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Play live run' }));
+
+    expect(mockRunner.apiInstance.startRun).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      releaseStart?.();
+    });
+  });
+
+  it('does not start when no selected scenario is available', async () => {
+    const user = userEvent.setup();
+    mockRunner.apiInstance.listScenarios.mockResolvedValue([]);
+
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Play live run' })).toBeDisabled();
+    });
+    await user.click(screen.getByRole('button', { name: 'Play live run' }));
+
+    expect(mockRunner.apiInstance.startRun).not.toHaveBeenCalled();
   });
 });

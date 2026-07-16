@@ -15,6 +15,7 @@ export function AppShell() {
   const viewerRef = useRef<WorldViewerHandle | null>(null);
   const apiClientRef = useRef<RunnerApiClient | null>(null);
   const streamClientRef = useRef<RunnerStreamClient | null>(null);
+  const commandSequenceRef = useRef(0);
   const [state, setState] = useState(store.getState());
   const [exportStatus, setExportStatus] = useState<string | null>(null);
 
@@ -24,17 +25,34 @@ export function AppShell() {
     let cancelled = false;
     const endpoint = store.getState().runnerEndpoint;
     const apiClient = new RunnerApiClient(endpoint);
+    const isActive = () => !cancelled && streamClientRef.current === streamClient;
     const streamClient = new RunnerStreamClient(endpoint, {
       onConnectionState: (connectionState) => {
+        if (!isActive()) {
+          return;
+        }
         store.getState().setConnectionState(connectionState);
       },
       onStatus: (runStatus) => {
+        if (!isActive() || shouldIgnoreRunStatus(runStatus, store.getState())) {
+          return;
+        }
         store.getState().setRunStatus(runStatus);
       },
       onFrame: (frame) => {
-        store.getState().setFrame(toWorldFrame(frame, store.getState()));
+        if (!isActive()) {
+          return;
+        }
+        const currentState = store.getState();
+        if (shouldIgnoreLiveFrame(frame, currentState)) {
+          return;
+        }
+        currentState.setFrame(toWorldFrame(frame, currentState));
       },
       onError: (error) => {
+        if (!isActive()) {
+          return;
+        }
         store.getState().setError(error.message);
       }
     });
@@ -49,7 +67,7 @@ export function AppShell() {
       apiClient.getRunStatus()
     ])
       .then(([serverInfo, scenarios, runStatus]) => {
-        if (cancelled) {
+        if (cancelled || streamClientRef.current !== streamClient) {
           return;
         }
         const actions = store.getState();
@@ -60,7 +78,7 @@ export function AppShell() {
         streamClient.connect();
       })
       .catch((error: unknown) => {
-        if (cancelled) {
+        if (cancelled || streamClientRef.current !== streamClient) {
           return;
         }
         const actions = store.getState();
@@ -104,15 +122,27 @@ export function AppShell() {
       return;
     }
 
-    const actions = store.getState();
-    actions.setPendingCommand(pendingCommand);
+    if (store.getState().pendingCommand !== null) {
+      return;
+    }
+
+    const commandSequence = commandSequenceRef.current + 1;
+    commandSequenceRef.current = commandSequence;
+    store.getState().setPendingCommand(pendingCommand);
     try {
       await command(apiClient);
-      actions.setRunStatus(await apiClient.getRunStatus());
+      const runStatus = await apiClient.getRunStatus();
+      if (commandSequenceRef.current === commandSequence) {
+        store.getState().setRunStatus(runStatus);
+      }
     } catch (error) {
-      store.getState().setError(toErrorMessage(error));
+      if (commandSequenceRef.current === commandSequence) {
+        store.getState().setError(toErrorMessage(error));
+      }
     } finally {
-      store.getState().clearPendingCommand();
+      if (commandSequenceRef.current === commandSequence) {
+        store.getState().clearPendingCommand();
+      }
     }
   };
 
@@ -283,4 +313,44 @@ function toWorldFrame(
 
 function toErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+function shouldIgnoreRunStatus(
+  runStatus: AppStore['runStatus'],
+  state: Pick<AppStore, 'runStatus'>
+) {
+  if (runStatus === null || state.runStatus === null) {
+    return false;
+  }
+
+  return (
+    runStatus.runId !== null &&
+    runStatus.runId === state.runStatus.runId &&
+    runStatus.committedTick < state.runStatus.committedTick
+  );
+}
+
+function shouldIgnoreLiveFrame(
+  frame: LiveWorldFrameProjection,
+  state: Pick<AppStore, 'frame' | 'runStatus'>
+) {
+  if (state.frame.source !== 'live') {
+    return false;
+  }
+
+  const activeRunId = state.runStatus?.runId ?? state.frame.runId;
+  if (state.frame.runId !== activeRunId) {
+    return false;
+  }
+
+  if (frame.committedTick < state.frame.tick) {
+    return true;
+  }
+
+  const currentSequence = state.frame.summary?.projectionSequence;
+  return (
+    frame.committedTick === state.frame.tick &&
+    currentSequence !== undefined &&
+    frame.projectionSequence <= currentSequence
+  );
 }
