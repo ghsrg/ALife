@@ -37,8 +37,26 @@ describe('createWorldRenderPlan', () => {
         x: 140,
         y: 200,
         radius: 24,
-        selected: true
+        selected: true,
+        lifecycleState: 'alive',
+        energyRatio: 0.5,
+        integrityRatio: 1,
+        semanticLevel: 'structure',
+        showMetricRings: true,
+        label: 'cell-a · E50 · I100'
       }
     ]);
+    expect(plan.hasResourceField).toBe(true);
+  });
+
+  it('keeps live missing resources explicit in the render plan', () => {
+    const plan = createWorldRenderPlan({ ...frame, source: 'live', resources: [] }, null, {
+      width: 1200,
+      height: 800
+    });
+
+    expect(plan.hasResourceField).toBe(false);
+    expect(plan.cells[0].semanticLevel).toBe('entity');
+    expect(plan.cells[0].showMetricRings).toBe(false);
   });
 });
