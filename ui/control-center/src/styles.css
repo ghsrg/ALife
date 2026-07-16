@@ -321,11 +321,45 @@ button:disabled {
   cursor: pointer;
 }
 
+.cell-hotspot[data-semantic-level='structure'],
+.cell-hotspot[data-semantic-level='internal-detail'] {
+  border-color: rgba(116, 222, 210, 0.36);
+}
+
+.cell-hotspot[data-lifecycle-state='dead'] {
+  border-style: dashed;
+}
+
 .cell-hotspot:focus-visible,
 .cell-hotspot.selected {
   border-color: #ffd166;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.36);
+  box-shadow:
+    0 0 0 3px rgba(255, 209, 102, 0.36),
+    0 0 28px rgba(255, 209, 102, 0.28);
+}
+
+.cell-detail-label {
+  position: absolute;
+  z-index: 3;
+  max-width: 190px;
+  transform: translate(-50%, 0);
+  border: 1px solid rgba(116, 222, 210, 0.24);
+  border-radius: 5px;
+  padding: 4px 7px;
+  background: rgba(6, 13, 17, 0.78);
+  color: #dce6f1;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.cell-detail-label.selected {
+  border-color: rgba(255, 209, 102, 0.58);
+  color: #fff4cf;
 }
 
 .selected-focus-card {
@@ -435,6 +469,17 @@ button:disabled {
 
 :root[data-theme='light'] .viewer-navigation-controls span {
   color: #26323d;
+}
+
+:root[data-theme='light'] .cell-detail-label {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: #cfd8e2;
+  color: #26323d;
+}
+
+:root[data-theme='light'] .cell-detail-label.selected {
+  border-color: rgba(151, 110, 22, 0.42);
+  color: #4c3912;
 }
 
 :root[data-theme='light'] .bottom-stats-strip {

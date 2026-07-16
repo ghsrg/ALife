@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Fragment, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
@@ -6,6 +6,7 @@ import type {
 } from 'react';
 import type { CellId, WorldFrame } from '../projection/types';
 import { projectCellForNavigatedRender } from '../viewer/renderGeometry';
+import { buildCellSemanticDetail } from '../viewer/semanticDetail';
 import {
   DEFAULT_VIEWER_CAMERA,
   fitCameraToWorld,
@@ -190,19 +191,36 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       <div className="world-hit-targets" aria-label="World cell hit targets">
         {frame.cells.map((cell) => {
           const geometry = projectCellForNavigatedRender(cell, frame, viewport, camera);
+          const selected = cell.id === selectedCellId;
+          const detail = buildCellSemanticDetail(cell, {
+            displayRadiusPx: geometry.displayRadiusPx,
+            selected
+          });
           const diameter = `${geometry.displayRadiusPx * 2}px`;
 
           return (
-            <button
-              key={cell.id}
-              type="button"
-              className={cell.id === selectedCellId ? 'cell-hotspot selected' : 'cell-hotspot'}
-              style={{ left: `${geometry.x}px`, top: `${geometry.y}px`, width: diameter, height: diameter }}
-              onMouseDown={(event) => event.stopPropagation()}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={() => onSelectCell(cell.id)}
-              aria-label={`Select ${cell.id}`}
-            />
+            <Fragment key={cell.id}>
+              <button
+                type="button"
+                className={selected ? 'cell-hotspot selected' : 'cell-hotspot'}
+                data-semantic-level={detail.level}
+                data-lifecycle-state={detail.lifecycleState}
+                style={{ left: `${geometry.x}px`, top: `${geometry.y}px`, width: diameter, height: diameter }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={() => onSelectCell(cell.id)}
+                aria-label={`Select ${cell.id}`}
+              />
+              {detail.showLabel ? (
+                <span
+                  className={selected ? 'cell-detail-label selected' : 'cell-detail-label'}
+                  style={{ left: `${geometry.x}px`, top: `${geometry.y + geometry.displayRadiusPx + 10}px` }}
+                  aria-label={selected ? 'Selected cell detail label' : `Cell detail label ${cell.id}`}
+                >
+                  {detail.label}
+                </span>
+              ) : null}
+            </Fragment>
           );
         })}
       </div>

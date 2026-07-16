@@ -206,4 +206,38 @@ describe('WorldViewer', () => {
       });
     });
   });
+
+  it('shows data-bound selected Cell detail label without changing selection behavior', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByLabelText('Selected cell detail label')).toHaveTextContent('cell-a · E82 · I91');
+    expect(screen.getByLabelText('Select cell-a')).toHaveAttribute('data-semantic-level', 'structure');
+  });
+
+  it('shows zoomed semantic labels for sufficiently large visible Cells', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
+    await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
+
+    expect(screen.getByLabelText('Selected cell detail label')).toHaveTextContent('cell-a · E82 · I91');
+  });
 });
