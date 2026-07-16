@@ -172,7 +172,15 @@ version і provenance.
 - `UI-1B Live Projection Transport And Run Controls` реалізовано локально:
   HTTP bootstrap, scenario list, run controls, WebSocket `ALIF v2`, live frame
   adapter, CORS для local Control Center.
+- `UI-1B-Cleanup Live State Clarity` реалізовано як bridge worklog після
+  `UI-1B`: state clarity для fixture/live/stale, reconnect retry, explicit
+  unavailable resource projection і `Step 1` label.
 - `UI-1 Start` ще не завершено повністю.
+
+`UI-1B-Cleanup` дозволений як bridge worklog перед `UI-1C`. Він може виправляти
+state clarity, reconnect behavior і misleading labels із завершеного `UI-1B`
+slice, але не повинен розширювати `ALIF`, resource projection, semantic zoom або
+Inspector scope. Це належить до `UI-1C` або пізніших фаз.
 
 Known gaps before `UI-1 Start` acceptance:
 
@@ -180,10 +188,8 @@ Known gaps before `UI-1 Start` acceptance:
 - live adapter поки повертає `resources: []`;
 - live Cell visual radius має presentation minimum і може перебільшувати
   фізичний overlap;
-- idle/fixture/live states потребують явного UX розділення;
-- reconnect/retry UX ще не завершений;
-- `Step N`, speed controls, semantic zoom, full-screen, richer Inspector і
-  final Start demo hardening ще попереду.
+- speed controls, semantic zoom, full-screen, richer Inspector і final Start
+  demo hardening ще попереду.
 
 Отже, наступний canonical detailed worklog після `UI-1B`:
 
