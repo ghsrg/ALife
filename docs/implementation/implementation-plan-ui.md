@@ -437,6 +437,15 @@ The first design session must decide:
 - Inspector hierarchy;
 - what remains in `Start` scope versus what is deferred to `Debug` or `Research`.
 
+Alignment result:
+
+- phase-specific `UI-1C` design decisions are canonical in
+  [[docs/ui/presentation#UI-1C Design Alignment|UI Presentation: UI-1C Design Alignment]];
+- shared Control Center shell/layout foundation remains in
+  [[docs/ui/control-center-design-spec|Control Center Design Specification]];
+- `UI-1C` implementation plans must treat these design decisions as the gate
+  between the visual reference and executable scope.
+
 Later mandatory design gates:
 
 - before `UI-2 Debug`: dense debug information architecture, exact layers,

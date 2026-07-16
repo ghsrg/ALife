@@ -51,6 +51,170 @@ UI повинен бути:
 
 Game-like presentation не може спотворювати data або підміняти scientific meaning.
 
+## UI-1C Design Alignment
+
+Ця секція фіксує phase-specific design decisions для `UI-1C`.
+
+Вона не замінює [[docs/ui/control-center-design-spec|Control Center Design Specification]].
+`control-center-design-spec.md` залишається foundation для shared shell, layout,
+panel behavior і visual hierarchy. Ця секція визначає лише те, що потрібно
+зафіксувати перед `UI-1C`, щоб не переносити зайвий scope із visual reference у
+implementation plan.
+
+Ця секція також не дублює:
+
+- simulation truth та observer boundary;
+- projection protocol;
+- command semantics;
+- детальні visualization, analytics або accessibility rules.
+
+Для цих тем діють відповідні canonical docs.
+
+### UI-1C Visual Goal
+
+`UI-1C` має створити `World-first WOW` для `Monitor`.
+
+Обов'язковий фокус:
+
+- dominant World View;
+- atmospheric, data-bound 2D field map;
+- visible Cells, selection, zoom/pan і focus feedback;
+- minimal selected-entity showcase;
+- compact control-room context тільки для запуску, зупинки та базового стану
+  світу.
+
+Control-room density із visual reference використовується тільки настільки, щоб:
+
+- керувати run;
+- бачити scenario/data context;
+- бачити Tick/run state;
+- бачити мінімальні world stats, наприклад alive/dead counts, total Energy або
+  інші доступні aggregate values.
+
+### Visual Reference Treatment
+
+`docs/ui/control-center-monitor-v3.png` є structural target для `UI-1C`, але не
+pixel-perfect target.
+
+`UI-1C` повинен зберегти основну композицію:
+
+```text
+top context / control strip
+left layer controls
+dominant central World View
+right contextual Inspector
+compact bottom stats strip
+```
+
+Якщо просте атмосферне рішення наближає UI до reference без великої ціни, його
+можна брати. Якщо схожість вимагає fake analytics, complex subsystem або
+непідтверджені дані, рішення відкладається або виноситься на окреме обговорення.
+
+### Visual Direction
+
+Shell direction:
+
+```text
+dark cyan control center
+restrained neon
+professional scientific dashboard
+```
+
+World View direction:
+
+```text
+rich bioluminescent world
+atmospheric fields
+clear selected entity focus
+```
+
+Dark theme є primary для `UI-1C` WOW acceptance.
+
+Light theme повинна залишатися usable:
+
+- без layout breakage;
+- без unreadable controls;
+- без прихованих critical states;
+- без requirement на full WOW parity у `UI-1C`.
+
+### Selected Entity Showcase
+
+`UI-1C` використовує small floating focus card над або біля World View selection.
+
+Focus card показує лише доступні data-bound values:
+
+- selected entity identity;
+- position/radius або інший доступний spatial summary;
+- Energy/lifecycle/integrity, якщо доступно;
+- compact bars або schematic encoding для доступних values;
+- explicit unavailable/missing state для відсутніх fields.
+
+Right Inspector залишається detail surface для selected entity. Large cinematic
+internal organism/cell panel відкладається до фази, де Observer projection має
+достатньо composition/process data.
+
+### Bottom Stats Strip
+
+`UI-1C` має compact bottom strip, а не повну analytics dashboard.
+
+Допускаються 3-5 базових world stats, якщо вони доступні з поточного projection
+або summary:
+
+- alive/dead counts;
+- total Energy;
+- current Tick/run state;
+- population count;
+- projection health або missing-data state.
+
+Charts, cycles і distributions не входять у `UI-1C`, якщо вони не backed by
+accepted Observer/Runner data.
+
+### Missing Data Stop Rule
+
+У live `UI-1C` не можна імітувати missing data.
+
+Якщо потрібного projection field немає:
+
+```text
+show panel/card/field as Unavailable or Missing projection
+-> record dependency
+-> create Runner or Observer plan before implementing that visualization
+```
+
+Placeholder panel дозволений тільки як explicitly unavailable state. Він не
+повинен виглядати як working chart, real metric або observed process.
+
+### Screenshot Acceptance
+
+`UI-1C` design acceptance має включати screenshot set:
+
+```text
+1920x1080 dark
+  primary WOW target
+
+1366x768 dark
+  usability minimum, no incoherent overlap, controls usable, World View dominant
+
+1920x1080 light
+  basic usable state, not full WOW parity
+```
+
+Screenshot acceptance не замінює tests, але блокує завершення `UI-1C`, якщо
+composition або hierarchy очевидно суперечать цій секції.
+
+### Explicitly Deferred From Reference
+
+Не входить у `UI-1C`, навіть якщо присутнє або натякається у visual reference:
+
+- full analytics charts;
+- resource cycle diagram;
+- behavior або cell-class distribution charts;
+- cinematic organism/cell internals;
+- full warning center;
+- library, evolution або research tabs as working surfaces;
+- advanced accessibility/polish pass;
+- full design-system token pass beyond what `UI-1C` needs.
+
 ## Themes
 
 Обов'язкові themes:
