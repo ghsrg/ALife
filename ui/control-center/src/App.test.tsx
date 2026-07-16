@@ -192,6 +192,25 @@ describe('App', () => {
     });
   });
 
+  it('renders UI-1C-A world-first Monitor landmarks with bottom stats and focus card', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/world viewer/i)).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByTestId('monitor-top-context')).toBeInTheDocument();
+    expect(screen.getByLabelText('Layer controls')).toBeInTheDocument();
+    expect(screen.getByLabelText('Monitor workspace')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cell Inspector')).toBeInTheDocument();
+    expect(screen.getByLabelText('World stats')).toBeInTheDocument();
+    expect(screen.getByLabelText('Selected entity focus')).toHaveTextContent('Cell cell-a');
+    expect(screen.getByTestId('bottom-stats-strip')).toHaveClass('bottom-stats-strip');
+    expect(screen.getByTestId('selected-focus-card')).toHaveClass('selected-focus-card');
+    expect(screen.getByText('Projected Cell Energy')).toBeInTheDocument();
+    expect(screen.getByText('Resources')).toBeInTheDocument();
+  });
+
   it('exports a viewer PNG from the toolbar', async () => {
     const user = userEvent.setup();
     renderApp(<App />);
