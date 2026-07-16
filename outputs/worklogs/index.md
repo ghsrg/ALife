@@ -183,3 +183,4 @@ tags:
 - [[outputs/worklogs/2026-07-15-1950-REPORT-ui-docs-runner-sync|2026-07-15-1950-REPORT-ui-docs-runner-sync]]
 - [[outputs/worklogs/2026-07-15-2005-REPORT-ui-design-gates-roadmap|2026-07-15-2005-REPORT-ui-design-gates-roadmap]]
 - [[outputs/worklogs/2026-07-15-2130-REPORT-ui-1a-application-shell-fixture-viewer|2026-07-15-2130-REPORT-ui-1a-application-shell-fixture-viewer]]
+- [[outputs/worklogs/2026-07-15-2330-REPORT-ui-1b-live-runner-transport|2026-07-15-2330-REPORT-ui-1b-live-runner-transport]]
