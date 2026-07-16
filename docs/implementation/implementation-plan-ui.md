@@ -747,6 +747,16 @@ UI-1B:
 UI-1C:
   WOW World Rendering, Semantic Zoom And Cell Inspector
 
+  Suggested decomposition:
+    UI-1C-A:
+      World-First Monitor Layout And Visual Acceptance
+    UI-1C-B:
+      Projection Truthfulness, Resource Missing State And Cell Render Scale
+    UI-1C-C:
+      Google Maps-Like Viewer Zoom, Pan And Selection Navigation
+    UI-1C-D:
+      Atmospheric Renderer And Selection Feedback
+
 UI-1D:
   Start Demo, Export And Acceptance Hardening
 ```
@@ -1902,10 +1912,40 @@ live/idle/fixture states are visually distinct
 missing live projection fields are explicit, not silently hidden
 Cell visual scale does not misrepresent physical radius or overlap
 Resource layer is either live data-bound or marked unavailable
-semantic zoom starts replacing flat circles with data-bound detail
+Google Maps-like Viewer navigation works: wheel zooms around cursor, drag pans the map,
+Fit/Reset returns to the current World bounds, and hit targets stay aligned with Cells
+semantic zoom starts replacing flat circles with data-bound detail after basic navigation is stable
 Inspector exposes live position, radius, lifecycle, Energy, available Resources/Materials and projection provenance
 Monitor remains usable at 1024x768
 ```
+
+Recommended `UI-1C` slice order:
+
+```text
+UI-1C-A:
+  World-first Monitor layout and visual acceptance
+
+UI-1C-B:
+  Projection truthfulness, missing resources and render scale
+
+UI-1C-C:
+  Google Maps-like Viewer zoom/pan/navigation
+
+UI-1C-D:
+  Atmospheric renderer, selection feedback and semantic detail
+```
+
+`UI-1C-C` owns basic navigation. It should implement:
+
+- mouse wheel zoom around cursor;
+- drag-to-pan map movement;
+- `Fit` / `Reset view`;
+- optional zoom controls if keyboard/mouse use needs visible affordances;
+- hit target, selection ring and canvas alignment under zoom/pan;
+- bounds handling so the World cannot be lost off-screen without a reset path.
+
+Semantic zoom is separate: it can start only after this navigation model is stable
+and must remain data-bound.
 
 Після `UI-1C` створюється:
 

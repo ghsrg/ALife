@@ -69,6 +69,7 @@ tags:
 - [[outputs/worklogs/2026-07-15-2215-PLAN-ui-1b-live-runner-transport|2026-07-15-2215-PLAN-ui-1b-live-runner-transport]]
 - [[outputs/worklogs/2026-07-16-1233-PLAN-ui-1b-cleanup-live-state-clarity|2026-07-16-1233-PLAN-ui-1b-cleanup-live-state-clarity]]
 - [[outputs/worklogs/2026-07-16-2051-PLAN-ui-1c-a-world-first-monitor-layout|2026-07-16-2051-PLAN-ui-1c-a-world-first-monitor-layout]]
+- [[outputs/worklogs/2026-07-16-2159-PLAN-ui-1c-b-projection-truthfulness-render-scale|2026-07-16-2159-PLAN-ui-1c-b-projection-truthfulness-render-scale]]
 
 ## Reports
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
@@ -189,3 +190,4 @@ tags:
 - [[outputs/worklogs/2026-07-16-1233-REPORT-ui-implementation-roadmap-sync|2026-07-16-1233-REPORT-ui-implementation-roadmap-sync]]
 - [[outputs/worklogs/2026-07-16-1329-REPORT-ui-1b-cleanup-live-state-clarity|2026-07-16-1329-REPORT-ui-1b-cleanup-live-state-clarity]]
 - [[outputs/worklogs/2026-07-16-2120-REPORT-ui-1c-a-world-first-monitor-layout|2026-07-16-2120-REPORT-ui-1c-a-world-first-monitor-layout]]
+- [[outputs/worklogs/2026-07-16-2236-REPORT-ui-1c-b-projection-truthfulness-render-scale|2026-07-16-2236-REPORT-ui-1c-b-projection-truthfulness-render-scale]]
