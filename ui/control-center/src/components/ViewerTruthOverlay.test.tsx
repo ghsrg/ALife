@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import type { ViewerTruthState } from './viewerTruth';
 import { ViewerTruthOverlay } from './ViewerTruthOverlay';
 
@@ -27,5 +28,16 @@ describe('ViewerTruthOverlay', () => {
     expect(overlay).toHaveTextContent('Missing projection');
     expect(overlay).toHaveTextContent('Cell size');
     expect(overlay).toHaveTextContent('Display minimum applied');
+  });
+
+  it('can be dismissed through an explicit close button', async () => {
+    const onDismiss = vi.fn();
+    const user = userEvent.setup();
+
+    render(<ViewerTruthOverlay truthState={truthState} onDismiss={onDismiss} />);
+
+    await user.click(screen.getByRole('button', { name: 'Dismiss projection notices' }));
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });

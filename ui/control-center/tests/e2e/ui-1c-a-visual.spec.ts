@@ -63,6 +63,22 @@ test.describe('UI-1C-A visual acceptance', () => {
 
     await page.screenshot({ path: join(screenshotDir, '1366x768-navigation.png'), fullPage: true });
   });
+
+  test('viewer wheel and projection notices stay isolated from page gestures', async ({ page }) => {
+    await openMonitor(page, { width: 1366, height: 768 });
+
+    await page.evaluate(() => window.scrollTo(0, 160));
+    const viewer = page.getByLabel('World Viewer', { exact: true });
+    await viewer.hover();
+    const beforeScroll = await page.evaluate(() => window.scrollY);
+    await page.mouse.wheel(0, -600);
+
+    await expect(page.getByLabel('World Viewer zoom')).not.toHaveText('100%');
+    expect(await page.evaluate(() => window.scrollY)).toBe(beforeScroll);
+
+    await page.getByRole('button', { name: 'Dismiss projection notices' }).click();
+    await expect(page.getByLabel('Viewer projection truth')).toBeHidden();
+  });
 });
 
 async function openMonitor(page: Page, viewport: { width: number; height: number }) {

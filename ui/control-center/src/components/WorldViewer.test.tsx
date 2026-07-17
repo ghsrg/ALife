@@ -207,6 +207,42 @@ describe('WorldViewer', () => {
     });
   });
 
+  it('cancels browser text selection while panning the World Viewer surface', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    const viewer = screen.getByLabelText('World Viewer');
+    await waitFor(() => {
+      expect(viewer).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(fireEvent.mouseDown(viewer, { button: 0, clientX: 100, clientY: 100 })).toBe(false);
+  });
+
+  it('dismisses projection notices when the empty viewer surface is clicked', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+    expect(screen.getByLabelText('Viewer projection truth')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('World cell hit targets'));
+
+    expect(screen.queryByLabelText('Viewer projection truth')).not.toBeInTheDocument();
+  });
+
   it('shows data-bound selected Cell detail label without changing selection behavior', async () => {
     render(
       <WorldViewer
