@@ -37,6 +37,7 @@ describe('projectCellForRender', () => {
       y: 80,
       physicalRadiusPx: 24,
       displayRadiusPx: 24,
+      interactionRadiusPx: 24,
       presentationMinimumApplied: false
     });
   });
@@ -46,6 +47,7 @@ describe('projectCellForRender', () => {
 
     expect(projection.physicalRadiusPx).toBe(2);
     expect(projection.displayRadiusPx).toBe(7);
+    expect(projection.interactionRadiusPx).toBe(18);
     expect(projection.presentationMinimumApplied).toBe(true);
   });
 

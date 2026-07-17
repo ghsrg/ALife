@@ -1,7 +1,8 @@
 import { Fragment, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type {
   MouseEvent as ReactMouseEvent,
-  PointerEvent as ReactPointerEvent
+  PointerEvent as ReactPointerEvent,
+  WheelEvent as ReactWheelEvent
 } from 'react';
 import type { CellId, WorldFrame } from '../projection/types';
 import { projectCellForNavigatedRender } from '../viewer/renderGeometry';
@@ -166,6 +167,17 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     moveDrag(event.pointerId ?? MOUSE_DRAG_POINTER_ID, event.clientX, event.clientY);
   };
 
+  const handleWheelCapture = (event: ReactWheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const point = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+    setCamera((current) => zoomCameraAtPoint(current, point, event.deltaY < 0 ? 1.12 : 1 / 1.12));
+  };
+
   const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -224,6 +236,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       className="world-viewer"
       aria-label="World Viewer"
       data-ready={isReady ? 'true' : 'false'}
+      onWheelCapture={handleWheelCapture}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -258,7 +271,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
             displayRadiusPx: geometry.displayRadiusPx,
             selected
           });
-          const diameter = `${geometry.displayRadiusPx * 2}px`;
+          const diameter = `${geometry.interactionRadiusPx * 2}px`;
 
           return (
             <Fragment key={cell.id}>

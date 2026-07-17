@@ -108,7 +108,7 @@ describe('WorldViewer', () => {
       expect(renderFrame).toHaveBeenCalledWith(tinyLiveFrame, 'tiny', { x: 0, y: 0, scale: 1 });
     });
 
-    expect(screen.getByLabelText('Select tiny')).toHaveStyle({ width: '14px', height: '14px' });
+    expect(screen.getByLabelText('Select tiny')).toHaveStyle({ width: '36px', height: '36px' });
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Display minimum applied');
   });
@@ -241,6 +241,30 @@ describe('WorldViewer', () => {
     fireEvent.click(screen.getByLabelText('World cell hit targets'));
 
     expect(screen.queryByLabelText('Viewer projection truth')).not.toBeInTheDocument();
+  });
+
+  it('keeps cell selection available after panning the World Viewer surface', async () => {
+    const onSelectCell = vi.fn();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={onSelectCell}
+      />
+    );
+
+    const viewer = screen.getByLabelText('World Viewer');
+    await waitFor(() => {
+      expect(viewer).toHaveAttribute('data-ready', 'true');
+    });
+
+    fireEvent.pointerDown(viewer, { button: 0, pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(viewer, { pointerId: 1, clientX: 130, clientY: 80 });
+    fireEvent.pointerUp(viewer, { pointerId: 1, clientX: 130, clientY: 80 });
+    fireEvent.click(screen.getByLabelText('Select cell-c'));
+
+    expect(onSelectCell).toHaveBeenCalledWith('cell-c');
   });
 
   it('shows data-bound selected Cell detail label without changing selection behavior', async () => {

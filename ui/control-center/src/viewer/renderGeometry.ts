@@ -12,10 +12,12 @@ export interface RenderedCellGeometry {
   y: number;
   physicalRadiusPx: number;
   displayRadiusPx: number;
+  interactionRadiusPx: number;
   presentationMinimumApplied: boolean;
 }
 
 export const MIN_CELL_DISPLAY_RADIUS_PX = 7;
+export const MIN_CELL_INTERACTION_RADIUS_PX = 18;
 
 export function projectCellForRender(
   cell: CellProjection,
@@ -27,6 +29,7 @@ export function projectCellForRender(
   const radiusScale = Math.min(scaleX, scaleY);
   const physicalRadiusPx = cell.radius * radiusScale;
   const displayRadiusPx = Math.max(MIN_CELL_DISPLAY_RADIUS_PX, physicalRadiusPx);
+  const interactionRadiusPx = Math.max(MIN_CELL_INTERACTION_RADIUS_PX, displayRadiusPx);
 
   return {
     id: cell.id,
@@ -34,6 +37,7 @@ export function projectCellForRender(
     y: cell.y * scaleY,
     physicalRadiusPx,
     displayRadiusPx,
+    interactionRadiusPx,
     presentationMinimumApplied: displayRadiusPx !== physicalRadiusPx
   };
 }
@@ -47,6 +51,7 @@ export function projectCellForNavigatedRender(
   const base = projectCellForRender(cell, frame, viewport);
   const physicalRadiusPx = base.physicalRadiusPx * camera.scale;
   const displayRadiusPx = Math.max(MIN_CELL_DISPLAY_RADIUS_PX, physicalRadiusPx);
+  const interactionRadiusPx = Math.max(MIN_CELL_INTERACTION_RADIUS_PX, displayRadiusPx);
 
   return {
     id: base.id,
@@ -54,6 +59,7 @@ export function projectCellForNavigatedRender(
     y: base.y * camera.scale + camera.y,
     physicalRadiusPx,
     displayRadiusPx,
+    interactionRadiusPx,
     presentationMinimumApplied: displayRadiusPx !== physicalRadiusPx
   };
 }

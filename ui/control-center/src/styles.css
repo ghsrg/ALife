@@ -236,6 +236,7 @@ button:disabled {
 .world-hit-targets {
   position: absolute;
   inset: 10px;
+  cursor: default;
 }
 
 .viewer-navigation-controls {

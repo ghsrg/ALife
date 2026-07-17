@@ -79,6 +79,23 @@ test.describe('UI-1C-A visual acceptance', () => {
     await page.getByRole('button', { name: 'Dismiss projection notices' }).click();
     await expect(page.getByLabel('Viewer projection truth')).toBeHidden();
   });
+
+  test('cell selection remains available after dragging the viewer map', async ({ page }) => {
+    await openMonitor(page, { width: 1366, height: 768 });
+
+    const viewerBox = await page.getByLabel('World Viewer', { exact: true }).boundingBox();
+    expect(viewerBox).not.toBeNull();
+    const box = viewerBox!;
+
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5 + 42, box.y + box.height * 0.5 - 24);
+    await page.mouse.up();
+
+    await page.getByLabel('Select cell-c').click();
+
+    await expect(page.getByLabel('Cell Inspector')).toContainText('cell-c');
+  });
 });
 
 async function openMonitor(page: Page, viewport: { width: number; height: number }) {

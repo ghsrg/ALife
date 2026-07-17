@@ -19,6 +19,7 @@ Fixed a Control Center interaction bug where World Viewer navigation could also 
 - Added dismissible projection notice overlay with an explicit close button.
 - Added empty World Viewer surface click dismissal for projection notices.
 - Kept navigation controls and Cell selection from accidentally dismissing notices.
+- Added a separate Cell interaction radius so small visually emphasized Cells remain easy to select after map movement.
 - Reduced the 1366px World Viewer minimum height from 430px to 390px to keep bottom stats from overlapping the viewer.
 
 ## User-Visible Checks
@@ -28,6 +29,7 @@ Fixed a Control Center interaction bug where World Viewer navigation could also 
 - Projection warning cards can be closed with the `x` button.
 - Clicking empty map space closes projection warning cards.
 - Cell clicks still select Cells instead of dismissing overlay by accident.
+- After dragging the map, Cells still expose pointer hit targets instead of behaving like empty map surface.
 
 ## Verification
 
