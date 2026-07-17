@@ -20,7 +20,7 @@ export interface Size {
 }
 
 export const MIN_VIEWER_ZOOM = 0.5;
-export const MAX_VIEWER_ZOOM = 6;
+export const MAX_VIEWER_ZOOM = 12;
 export const DEFAULT_VIEWER_CAMERA: ViewerCamera = { x: 0, y: 0, scale: 1 };
 export const VIEWER_FIT_MARGIN_PX = 24;
 

@@ -207,6 +207,39 @@ describe('WorldViewer', () => {
     });
   });
 
+  it('aligns hit targets to the measured canvas viewport instead of the world size', async () => {
+    const clientWidth = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function getClientWidth(this: HTMLElement) {
+      return this.classList.contains('world-canvas-host') ? 900 : 0;
+    });
+    const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function getClientHeight(this: HTMLElement) {
+      return this.classList.contains('world-canvas-host') ? 560 : 0;
+    });
+
+    try {
+      render(
+        <WorldViewer
+          frame={ui1aFixture.frame}
+          selectedCellId="cell-a"
+          onSelectCell={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+      });
+
+      expect(screen.getByLabelText('Select cell-a')).toHaveStyle({
+        left: '247.5px',
+        top: '224px',
+        width: '36px',
+        height: '36px'
+      });
+    } finally {
+      clientWidth.mockRestore();
+      clientHeight.mockRestore();
+    }
+  });
+
   it('cancels browser text selection while panning the World Viewer surface', async () => {
     render(
       <WorldViewer
