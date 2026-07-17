@@ -1,12 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ui1aFixture } from '../fixtures/ui1aFixture';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createAppStore, getMonitorDataState, type AppStore } from '../app/appState';
 import { buildMonitorViewModel, type MonitorViewModel } from '../app/monitorViewModel';
-import type { CellProjection, WorldFrame } from '../projection/types';
-import { liveProjectionToWorldFrame } from '../projection/liveAdapter';
-import { RunnerApiClient } from '../runner/apiClient';
-import { RunnerStreamClient } from '../runner/streamClient';
-import type { LiveWorldFrameProjection } from '../runner/alifDecoder';
+import { createRunnerController } from '../app/runnerController';
+import type { CellProjection } from '../projection/types';
 import { BottomStatsStrip } from './BottomStatsStrip';
 import { ConnectionPanel } from './ConnectionPanel';
 import { RunControls } from './RunControls';
@@ -16,90 +12,19 @@ import { buildMonitorStats } from './monitorStats';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
+  const controller = useMemo(() => createRunnerController({ store }), [store]);
   const viewerRef = useRef<WorldViewerHandle | null>(null);
-  const apiClientRef = useRef<RunnerApiClient | null>(null);
-  const streamClientRef = useRef<RunnerStreamClient | null>(null);
-  const commandSequenceRef = useRef(0);
   const [state, setState] = useState(store.getState());
   const [exportStatus, setExportStatus] = useState<string | null>(null);
 
   useEffect(() => store.subscribe(setState), [store]);
 
-  const connectRunner = useCallback(() => {
-    const endpoint = store.getState().runnerEndpoint;
-    const apiClient = new RunnerApiClient(endpoint);
-    const isActive = () => streamClientRef.current === streamClient;
-    const streamClient = new RunnerStreamClient(endpoint, {
-      onConnectionState: (connectionState) => {
-        if (!isActive()) {
-          return;
-        }
-        store.getState().setConnectionState(connectionState);
-      },
-      onStatus: (runStatus) => {
-        if (!isActive() || shouldIgnoreRunStatus(runStatus, store.getState())) {
-          return;
-        }
-        store.getState().setRunStatus(runStatus);
-      },
-      onFrame: (frame) => {
-        if (!isActive()) {
-          return;
-        }
-        const currentState = store.getState();
-        if (shouldIgnoreLiveFrame(frame, currentState)) {
-          return;
-        }
-        currentState.setFrame(toWorldFrame(frame, currentState));
-      },
-      onError: (error) => {
-        if (!isActive()) {
-          return;
-        }
-        store.getState().setError(error.message);
-      }
-    });
-
-    streamClientRef.current?.disconnect();
-    apiClientRef.current = apiClient;
-    streamClientRef.current = streamClient;
-    store.getState().setPendingCommand('connect');
-
-    Promise.all([
-      apiClient.getServerInfo(),
-      apiClient.listScenarios(),
-      apiClient.getRunStatus()
-    ])
-      .then(([serverInfo, scenarios, runStatus]) => {
-        if (!isActive()) {
-          return;
-        }
-        const actions = store.getState();
-        actions.setConnected(serverInfo);
-        actions.setScenarios(scenarios);
-        actions.setRunStatus(runStatus);
-        actions.clearPendingCommand();
-        streamClient.connect();
-      })
-      .catch((error: unknown) => {
-        if (!isActive()) {
-          return;
-        }
-        const actions = store.getState();
-        actions.setError(toErrorMessage(error));
-        actions.setConnectionState('disconnected');
-        actions.clearPendingCommand();
-      });
-  }, [store]);
-
   useEffect(() => {
-    connectRunner();
+    controller.connectRunner();
     return () => {
-      streamClientRef.current?.disconnect();
-      streamClientRef.current = null;
-      apiClientRef.current = null;
+      controller.disconnect();
     };
-  }, [connectRunner]);
+  }, [controller]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
@@ -118,71 +43,6 @@ export function AppShell() {
     setExportStatus(png ? `PNG ready (${png.length} bytes)` : 'PNG export unavailable');
   };
 
-  const runCommand = async (
-    pendingCommand: 'start' | 'pause' | 'resume' | 'step' | 'stop',
-    command: (client: RunnerApiClient) => Promise<unknown>
-  ) => {
-    const apiClient = apiClientRef.current;
-    if (apiClient === null) {
-      store.getState().setError('Runner API client is not connected');
-      return;
-    }
-
-    if (store.getState().pendingCommand !== null) {
-      return;
-    }
-
-    const commandSequence = commandSequenceRef.current + 1;
-    commandSequenceRef.current = commandSequence;
-    store.getState().setPendingCommand(pendingCommand);
-    try {
-      await command(apiClient);
-      const runStatus = await apiClient.getRunStatus();
-      if (commandSequenceRef.current === commandSequence) {
-        store.getState().setRunStatus(runStatus);
-      }
-    } catch (error) {
-      if (commandSequenceRef.current === commandSequence) {
-        store.getState().setError(toErrorMessage(error));
-      }
-    } finally {
-      if (commandSequenceRef.current === commandSequence) {
-        store.getState().clearPendingCommand();
-      }
-    }
-  };
-
-  const startRun = () => {
-    const selectedScenarioId = store.getState().selectedScenarioId;
-    if (selectedScenarioId === null) {
-      store.getState().setError('No scenario selected');
-      return;
-    }
-
-    void runCommand('start', (apiClient) =>
-      apiClient.startRun({
-        scenarioId: selectedScenarioId,
-        requestId: `ui-${Date.now()}`
-      })
-    );
-  };
-
-  const pauseRun = () => {
-    void runCommand('pause', (apiClient) => apiClient.pauseRun());
-  };
-
-  const resumeRun = () => {
-    void runCommand('resume', (apiClient) => apiClient.resumeRun());
-  };
-
-  const stepRun = () => {
-    void runCommand('step', (apiClient) => apiClient.stepRun());
-  };
-
-  const stopRun = () => {
-    void runCommand('stop', (apiClient) => apiClient.stopRun());
-  };
-
   return (
     <div className="app-shell">
       <header className="top-bar" data-testid="monitor-top-context">
@@ -197,11 +57,11 @@ export function AppShell() {
         </nav>
         <RunControls
           state={state}
-          onStart={startRun}
-          onPause={pauseRun}
-          onResume={resumeRun}
-          onStep={stepRun}
-          onStop={stopRun}
+          onStart={controller.startRun}
+          onPause={controller.pauseRun}
+          onResume={controller.resumeRun}
+          onStep={controller.stepRun}
+          onStop={controller.stopRun}
         />
       </header>
 
@@ -211,7 +71,7 @@ export function AppShell() {
           monitorDataState={monitorDataState}
           monitorViewModel={monitorViewModel}
           onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
-          onReconnect={connectRunner}
+          onReconnect={controller.connectRunner}
         />
         <section className="viewer-panel" aria-label="Monitor workspace">
           <div className="viewer-toolbar">
@@ -319,60 +179,3 @@ function formatRatio(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-function toWorldFrame(
-  frame: LiveWorldFrameProjection,
-  state: Pick<AppStore, 'runStatus' | 'selectedScenarioId' | 'frame'>
-) {
-  return liveProjectionToWorldFrame(frame, {
-    runId: state.runStatus?.runId ?? state.frame.runId,
-    scenarioName:
-      state.runStatus?.scenarioId ??
-      state.selectedScenarioId ??
-      state.frame.scenarioName ??
-      ui1aFixture.scenarioName
-  });
-}
-
-function toErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function shouldIgnoreRunStatus(
-  runStatus: AppStore['runStatus'],
-  state: Pick<AppStore, 'runStatus'>
-) {
-  if (runStatus === null || state.runStatus === null) {
-    return false;
-  }
-
-  return (
-    runStatus.runId !== null &&
-    runStatus.runId === state.runStatus.runId &&
-    runStatus.committedTick < state.runStatus.committedTick
-  );
-}
-
-function shouldIgnoreLiveFrame(
-  frame: LiveWorldFrameProjection,
-  state: Pick<AppStore, 'frame' | 'runStatus'>
-) {
-  if (state.frame.source !== 'live') {
-    return false;
-  }
-
-  const activeRunId = state.runStatus?.runId ?? state.frame.runId;
-  if (state.frame.runId !== activeRunId) {
-    return false;
-  }
-
-  if (frame.committedTick < state.frame.tick) {
-    return true;
-  }
-
-  const currentSequence = state.frame.summary?.projectionSequence;
-  return (
-    frame.committedTick === state.frame.tick &&
-    currentSequence !== undefined &&
-    frame.projectionSequence <= currentSequence
-  );
-}
