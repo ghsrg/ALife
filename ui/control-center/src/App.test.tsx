@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -209,6 +209,20 @@ describe('App', () => {
     expect(screen.getByTestId('selected-focus-card')).toHaveClass('selected-focus-card');
     expect(screen.getByText('Projected Cell Energy')).toBeInTheDocument();
     expect(screen.getAllByText('Resources').length).toBeGreaterThan(0);
+  });
+
+  it('clears selected Cell panels after clicking empty World Viewer space', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+    expect(screen.getByLabelText('Selected entity focus')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('World cell hit targets'));
+
+    expect(screen.queryByLabelText('Selected entity focus')).not.toBeInTheDocument();
+    expect(screen.getByText('No cell selected.')).toBeInTheDocument();
   });
 
   it('exports a viewer PNG from the toolbar', async () => {

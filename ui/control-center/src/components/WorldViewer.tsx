@@ -24,7 +24,7 @@ const MOUSE_DRAG_POINTER_ID = -1;
 interface WorldViewerProps {
   frame: WorldFrame;
   selectedCellId: CellId | null;
-  onSelectCell: (cellId: CellId) => void;
+  onSelectCell: (cellId: CellId | null) => void;
 }
 
 export interface WorldViewerHandle {
@@ -218,6 +218,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     }
 
     setTruthOverlayVisible(false);
+    onSelectCell(null);
   };
 
   return (
@@ -267,7 +268,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
             <Fragment key={cell.id}>
               <button
                 type="button"
-                className={selected ? 'cell-hotspot selected' : 'cell-hotspot'}
+                className="cell-hotspot"
                 data-semantic-level={detail.level}
                 data-lifecycle-state={detail.lifecycleState}
                 style={{ left: `${geometry.x}px`, top: `${geometry.y}px`, width: diameter, height: diameter }}

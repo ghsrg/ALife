@@ -59,6 +59,22 @@ describe('WorldViewer', () => {
     expect(onSelectCell).toHaveBeenCalledWith('cell-c');
   });
 
+  it('does not draw a second selected ring from the DOM hit target', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByLabelText('Select cell-a')).not.toHaveClass('selected');
+  });
+
   it('exposes PNG export through its imperative handle', async () => {
     const ref = createRef<WorldViewerHandle>();
 
@@ -274,6 +290,26 @@ describe('WorldViewer', () => {
     fireEvent.click(screen.getByLabelText('World cell hit targets'));
 
     expect(screen.queryByLabelText('Viewer projection truth')).not.toBeInTheDocument();
+  });
+
+  it('clears selected Cell state when the empty viewer surface is clicked', async () => {
+    const onSelectCell = vi.fn();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={onSelectCell}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    fireEvent.click(screen.getByLabelText('World cell hit targets'));
+
+    expect(onSelectCell).toHaveBeenCalledWith(null);
   });
 
   it('keeps cell selection available after panning the World Viewer surface', async () => {

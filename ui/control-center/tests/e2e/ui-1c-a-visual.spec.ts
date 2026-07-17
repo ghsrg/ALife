@@ -101,6 +101,21 @@ test.describe('UI-1C-A visual acceptance', () => {
 
     await expect(page.getByLabel('Cell Inspector')).toContainText('cell-c');
   });
+
+  test('empty viewer click clears selected Cell panels without breaking reselection', async ({ page }) => {
+    await openMonitor(page, { width: 1366, height: 768 });
+
+    await expect(page.getByLabel('Selected entity focus')).toBeVisible();
+    await page.getByLabel('World cell hit targets').click({ position: { x: 760, y: 360 } });
+
+    await expect(page.getByLabel('Selected entity focus')).toBeHidden();
+    await expect(page.getByLabel('Cell Inspector')).toContainText('No cell selected.');
+
+    await page.getByLabel('Select cell-c').click();
+
+    await expect(page.getByLabel('Selected entity focus')).toContainText('Cell cell-c');
+    await expect(page.getByLabel('Cell Inspector')).toContainText('cell-c');
+  });
 });
 
 async function openMonitor(page: Page, viewport: { width: number; height: number }) {

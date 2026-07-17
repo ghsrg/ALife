@@ -352,17 +352,7 @@ button:disabled {
   cursor: pointer;
 }
 
-.cell-hotspot[data-semantic-level='structure'],
-.cell-hotspot[data-semantic-level='internal-detail'] {
-  border-color: rgba(116, 222, 210, 0.36);
-}
-
-.cell-hotspot[data-lifecycle-state='dead'] {
-  border-style: dashed;
-}
-
-.cell-hotspot:focus-visible,
-.cell-hotspot.selected {
+.cell-hotspot:focus-visible {
   border-color: #ffd166;
   outline: none;
   box-shadow:
