@@ -33,7 +33,7 @@ Fixed a Control Center interaction bug where World Viewer navigation could also 
 
 ## Verification
 
-- `npm.cmd test` passed: 20 files, 98 tests.
+- `npm.cmd test` passed: 20 files, 99 tests.
 - `npm.cmd run build` passed.
-- `npm.cmd run e2e -- tests/e2e/monitor.spec.ts tests/e2e/ui-1c-a-visual.spec.ts` passed: 7 tests.
+- `npm.cmd run e2e -- tests/e2e/monitor.spec.ts tests/e2e/ui-1c-a-visual.spec.ts` passed: 8 tests.
 - `git diff --check` passed.
