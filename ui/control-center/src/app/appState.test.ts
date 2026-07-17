@@ -145,6 +145,42 @@ describe('createAppStore', () => {
     expect(store.getState().selectedCell).toBeNull();
   });
 
+  it('preserves explicit empty selection across frame updates', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().selectCell(null);
+    store.getState().setFrame({
+      ...liveFrame,
+      tick: 7,
+      cells: [
+        {
+          ...liveFrame.cells[0],
+          energy: 60
+        }
+      ]
+    });
+
+    expect(store.getState().selectedCellId).toBeNull();
+    expect(store.getState().selectedCell).toBeNull();
+  });
+
+  it('selects the first available cell when the selected cell disappears', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().setFrame({
+      ...liveFrame,
+      tick: 8,
+      cells: [
+        {
+          ...liveFrame.cells[0],
+          id: 'live-cell-c'
+        }
+      ]
+    });
+
+    expect(store.getState().selectedCellId).toBe('live-cell-c');
+  });
+
   it('keeps current selected scenario only when refreshed scenarios still contain it', () => {
     const store = createAppStore();
 

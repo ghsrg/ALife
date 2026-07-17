@@ -22,7 +22,7 @@ describe('viewerNavigation', () => {
 
   it('clamps zoom to the supported range', () => {
     expect(zoomCameraAtPoint(DEFAULT_VIEWER_CAMERA, { x: 0, y: 0 }, 0.01).scale).toBe(0.5);
-    expect(zoomCameraAtPoint(DEFAULT_VIEWER_CAMERA, { x: 0, y: 0 }, 20).scale).toBe(12);
+    expect(zoomCameraAtPoint(DEFAULT_VIEWER_CAMERA, { x: 0, y: 0 }, 40).scale).toBe(24);
   });
 
   it('pans by screen-space delta without changing zoom', () => {

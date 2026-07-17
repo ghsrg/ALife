@@ -59,4 +59,14 @@ describe('semanticDetail', () => {
     expect(detail.lifecycleState).toBe('unavailable');
     expect(detail.showLabel).toBe(false);
   });
+
+  it('keeps unselected high-zoom cells free of external metric rings', () => {
+    const detail = buildCellSemanticDetail(baseCell, {
+      displayRadiusPx: 52,
+      selected: false
+    });
+
+    expect(detail.level).toBe('internal-detail');
+    expect(detail.showMetricRings).toBe(false);
+  });
 });

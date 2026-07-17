@@ -27,6 +27,7 @@ export interface AppState {
   runStatus: RunStatus | null;
   pendingCommand: PendingCommand | null;
   lastError: string | null;
+  selectionCleared: boolean;
 }
 
 export interface AppActions {
@@ -50,7 +51,11 @@ function selectInitialCell(frame: WorldFrame) {
   return frame.cells[0] ?? null;
 }
 
-function selectCellForFrame(frame: WorldFrame, currentCellId: CellId | null) {
+function selectCellForFrame(frame: WorldFrame, currentCellId: CellId | null, selectionCleared: boolean) {
+  if (selectionCleared) {
+    return null;
+  }
+
   if (currentCellId !== null) {
     const selectedCell = selectCell(frame, currentCellId);
     if (selectedCell !== null) {
@@ -77,8 +82,9 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     runStatus: null,
     pendingCommand: null,
     lastError: null,
+    selectionCleared: false,
     setFrame: (frame) => {
-      const selectedCell = selectCellForFrame(frame, get().selectedCellId);
+      const selectedCell = selectCellForFrame(frame, get().selectedCellId, get().selectionCleared);
       set({
         frame,
         selectedCellId: selectedCell?.id ?? null,
@@ -89,7 +95,8 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
       const selectedCell = selectCell(get().frame, cellId);
       set({
         selectedCellId: selectedCell?.id ?? null,
-        selectedCell
+        selectedCell,
+        selectionCleared: cellId === null
       });
     },
     setTheme: (theme) => set({ theme }),

@@ -75,4 +75,17 @@ describe('projectCellForRender', () => {
     expect(projection.displayRadiusPx).toBe(24);
     expect(projection.presentationMinimumApplied).toBe(false);
   });
+
+  it('returns tiny cells to physical proportions at high zoom', () => {
+    const projection = projectCellForNavigatedRender(
+      cell(0.5),
+      frame,
+      { width: 1200, height: 800 },
+      { x: 0, y: 0, scale: 24 }
+    );
+
+    expect(projection.physicalRadiusPx).toBe(12);
+    expect(projection.displayRadiusPx).toBe(12);
+    expect(projection.presentationMinimumApplied).toBe(false);
+  });
 });

@@ -61,10 +61,10 @@ test.describe('UI-1C-A visual acceptance', () => {
     await expect(page.getByLabel('World Viewer zoom')).toHaveText('100%');
     await expect(page.getByLabel('Select cell-a')).toBeVisible();
 
-    for (let i = 0; i < 14; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
       await page.getByRole('button', { name: 'Zoom in World Viewer' }).click();
     }
-    await expect(page.getByLabel('World Viewer zoom')).toHaveText('1200%');
+    await expect(page.getByLabel('World Viewer zoom')).toHaveText('2400%');
 
     await page.screenshot({ path: join(screenshotDir, '1366x768-navigation.png'), fullPage: true });
   });

@@ -41,7 +41,7 @@ export function buildCellSemanticDetail(
   const energyRatio = normalizeRatio(cell.energy);
   const integrityRatio = normalizeRatio(cell.integrity);
   const showLabel = input.selected || level === 'structure' || level === 'internal-detail';
-  const showMetricRings = input.selected || level === 'structure' || level === 'internal-detail';
+  const showMetricRings = input.selected;
 
   return {
     level,

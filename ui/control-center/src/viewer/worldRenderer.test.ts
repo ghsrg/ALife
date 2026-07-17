@@ -59,4 +59,30 @@ describe('createWorldRenderPlan', () => {
     expect(plan.cells[0].semanticLevel).toBe('entity');
     expect(plan.cells[0].showMetricRings).toBe(false);
   });
+
+  it('does not expand unselected high-zoom cells with external metric rings', () => {
+    const plan = createWorldRenderPlan(
+      {
+        ...frame,
+        cells: [
+          {
+            ...frame.cells[0],
+            id: 'cell-a'
+          },
+          {
+            ...frame.cells[0],
+            id: 'cell-b',
+            x: 124
+          }
+        ]
+      },
+      'cell-a',
+      { width: 1200, height: 800 },
+      { x: 0, y: 0, scale: 12 }
+    );
+
+    expect(plan.cells[0].showMetricRings).toBe(true);
+    expect(plan.cells[1].semanticLevel).toBe('internal-detail');
+    expect(plan.cells[1].showMetricRings).toBe(false);
+  });
 });
