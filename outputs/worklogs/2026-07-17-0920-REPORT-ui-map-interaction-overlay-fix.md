@@ -26,6 +26,7 @@ Fixed a Control Center interaction bug where World Viewer navigation could also 
 - Added empty-map selection clearing so the selected focus card and Inspector state can be dismissed.
 - Preserved explicit empty selection across live frame updates so clearing selection does not immediately reselect the first Cell.
 - Limited external metric rings to the selected Cell so high-zoom unselected Cells do not visually expand beyond their projected body radius.
+- Started selected Cell integrity arcs from their own path point so Pixi does not draw a stray connector line from a previous path.
 - Reduced the 1366px World Viewer minimum height from 430px to 390px to keep bottom stats from overlapping the viewer.
 
 ## User-Visible Checks
@@ -41,11 +42,12 @@ Fixed a Control Center interaction bug where World Viewer navigation could also 
 - Empty map clicks clear the selected Cell and hide the lower selected focus card.
 - Empty selection stays empty while the live stream continues updating frames.
 - At high zoom, unselected Cells show their physical body radius without extra external rings.
+- Selected Cell no longer draws a diagonal connector line from the upper-left area into the Cell.
 - Reselecting a Cell after clearing selection restores the focus card and Inspector state.
 
 ## Verification
 
-- `npm.cmd test` passed: 20 files, 108 tests.
+- `npm.cmd test` passed: 20 files, 109 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run e2e -- tests/e2e/monitor.spec.ts tests/e2e/ui-1c-a-visual.spec.ts` passed: 9 tests.
 - `git diff --check` passed.

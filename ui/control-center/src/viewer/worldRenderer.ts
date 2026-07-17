@@ -124,8 +124,7 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
         cellGraphic.circle(cell.x, cell.y, energyRadius);
         cellGraphic.fill({ color: 0xffd166, alpha: 0.18 + cell.energyRatio * 0.18 });
 
-        cellGraphic.arc(cell.x, cell.y, cell.radius + 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * cell.integrityRatio);
-        cellGraphic.stroke({ width: 2, color: 0x74ded2, alpha: 0.72 });
+        drawIntegrityArc(cellGraphic, cell.x, cell.y, cell.radius, cell.integrityRatio);
       }
 
       root.addChild(cellGraphic);
@@ -142,6 +141,28 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
       app.destroy(true, { children: true });
     }
   };
+}
+
+interface IntegrityArcGraphic {
+  moveTo: (x: number, y: number) => unknown;
+  arc: (x: number, y: number, radius: number, startAngle: number, endAngle: number) => unknown;
+  stroke: (options: { width: number; color: number; alpha: number }) => unknown;
+}
+
+export function drawIntegrityArc(
+  graphic: IntegrityArcGraphic,
+  x: number,
+  y: number,
+  radius: number,
+  integrityRatio: number
+) {
+  const arcRadius = radius + 2;
+  const startAngle = -Math.PI / 2;
+  const endAngle = startAngle + Math.PI * 2 * integrityRatio;
+
+  graphic.moveTo(x + Math.cos(startAngle) * arcRadius, y + Math.sin(startAngle) * arcRadius);
+  graphic.arc(x, y, arcRadius, startAngle, endAngle);
+  graphic.stroke({ width: 2, color: 0x74ded2, alpha: 0.72 });
 }
 
 function drawBounds(width: number, height: number) {
