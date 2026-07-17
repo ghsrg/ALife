@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
 import { createAppStore, getMonitorDataState, type AppStore } from '../app/appState';
+import { buildMonitorViewModel, type MonitorViewModel } from '../app/monitorViewModel';
 import type { CellProjection, WorldFrame } from '../projection/types';
 import { liveProjectionToWorldFrame } from '../projection/liveAdapter';
 import { RunnerApiClient } from '../runner/apiClient';
@@ -110,6 +111,7 @@ export function AppShell() {
 
   const monitorDataState = getMonitorDataState(state);
   const monitorStats = buildMonitorStats(state.frame, monitorDataState);
+  const monitorViewModel = buildMonitorViewModel(state);
 
   const exportScreenshot = () => {
     const png = viewerRef.current?.exportPng();
@@ -207,14 +209,15 @@ export function AppShell() {
         <LayerPanel
           state={state}
           monitorDataState={monitorDataState}
+          monitorViewModel={monitorViewModel}
           onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
           onReconnect={connectRunner}
         />
         <section className="viewer-panel" aria-label="Monitor workspace">
           <div className="viewer-toolbar">
             <div>
-              <strong>{state.frame.scenarioName ?? ui1aFixture.scenarioName}</strong>
-              <span>{frameSubtitle(state)}</span>
+              <strong>{monitorViewModel.scenarioTitle}</strong>
+              <span>{monitorViewModel.subtitle}</span>
             </div>
             <button type="button" onClick={toggleTheme} aria-label={`Switch to ${state.theme === 'dark' ? 'light' : 'dark'} theme`}>
               {state.theme === 'dark' ? 'Light' : 'Dark'}
@@ -242,17 +245,17 @@ export function AppShell() {
 function LayerPanel({
   state,
   monitorDataState,
+  monitorViewModel,
   onScenarioChange,
   onReconnect
 }: {
   state: AppStore;
   monitorDataState: ReturnType<typeof getMonitorDataState>;
+  monitorViewModel: MonitorViewModel;
   onScenarioChange: (scenarioId: string) => void;
   onReconnect: () => void;
 }) {
   const frame = state.frame;
-  const hasResourceLayer = frame.resources.length > 0;
-  const resourceLayerState = hasResourceLayer ? 'Available projection' : 'Missing live projection';
 
   return (
     <aside className="side-panel" aria-label="Layer controls">
@@ -272,11 +275,11 @@ function LayerPanel({
         <input type="checkbox" checked readOnly />
         <span>Cells</span>
       </label>
-      <label className={hasResourceLayer ? 'layer-option' : 'layer-option layer-option-missing'}>
-        <input type="checkbox" checked={hasResourceLayer} readOnly disabled={!hasResourceLayer} />
+      <label className={monitorViewModel.hasResourceLayer ? 'layer-option' : 'layer-option layer-option-missing'}>
+        <input type="checkbox" checked={monitorViewModel.hasResourceLayer} readOnly disabled={!monitorViewModel.hasResourceLayer} />
         <span>
           Composite Resource Concentration
-          <small>{resourceLayerState}</small>
+          <small>{monitorViewModel.resourceLayerState}</small>
         </span>
       </label>
       <label className="layer-option muted">
@@ -287,7 +290,7 @@ function LayerPanel({
         <div><span>Run</span><strong>{frame.runId}</strong></div>
         <div><span>Cells</span><strong>{frame.cells.length}</strong></div>
         <div><span>World</span><strong>{frame.world.width} x {frame.world.height}</strong></div>
-        <div><span>Projection</span><strong>{frame.source === 'live' ? 'live/v1' : 'fixture/v1'}</strong></div>
+        <div><span>Projection</span><strong>{monitorViewModel.projectionLabel}</strong></div>
       </div>
     </aside>
   );
@@ -314,24 +317,6 @@ function Inspector({ selectedCell }: { selectedCell: CellProjection | null }) {
 
 function formatRatio(value: number) {
   return `${Math.round(value * 100)}%`;
-}
-
-function frameSubtitle(state: AppStore) {
-  const dataState = getMonitorDataState(state);
-
-  if (dataState === 'fixture-idle') {
-    return `Fixture Tick ${state.frame.tick} - Runner idle`;
-  }
-
-  if (dataState === 'live-waiting') {
-    return `Waiting for live frame - Fixture Tick ${state.frame.tick}`;
-  }
-
-  if (dataState === 'stale-live') {
-    return `Stale Live Tick ${state.frame.tick} - disconnected`;
-  }
-
-  return `${state.frame.source === 'live' ? 'Live' : 'Fixture'} Tick ${state.frame.tick}`;
 }
 
 function toWorldFrame(
