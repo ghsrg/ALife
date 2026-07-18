@@ -1,66 +1,14 @@
 import { Application, Container, Graphics } from 'pixi.js';
 import type { CellId, WorldFrame } from '../projection/types';
-import { projectCellForNavigatedRender } from './renderGeometry';
-import { buildCellSemanticDetail, type LifecycleVisualState, type SemanticZoomLevel } from './semanticDetail';
+import type { LifecycleVisualState } from './semanticDetail';
 import { DEFAULT_VIEWER_CAMERA, type ViewerCamera } from './viewerNavigation';
+import { createWorldRenderPlan } from './worldRenderPlan';
 
 export interface WorldRenderer {
   renderFrame: (frame: WorldFrame, selectedCellId: CellId | null, camera?: ViewerCamera) => void;
   resize: (width: number, height: number) => void;
   exportPng: () => string;
   destroy: () => void;
-}
-
-interface RenderPlanCell {
-  id: CellId;
-  x: number;
-  y: number;
-  radius: number;
-  selected: boolean;
-  lifecycleState: LifecycleVisualState;
-  energyRatio: number;
-  integrityRatio: number;
-  semanticLevel: SemanticZoomLevel;
-  showMetricRings: boolean;
-  label: string;
-}
-
-export interface WorldRenderPlan {
-  cells: RenderPlanCell[];
-  hasResourceField: boolean;
-}
-
-export function createWorldRenderPlan(
-  frame: WorldFrame,
-  selectedCellId: CellId | null,
-  viewport: { width: number; height: number },
-  camera: ViewerCamera = DEFAULT_VIEWER_CAMERA
-): WorldRenderPlan {
-  return {
-    hasResourceField: frame.resources.length > 0 && (frame.resources[0]?.length ?? 0) > 0,
-    cells: frame.cells.map((cell) => {
-      const geometry = projectCellForNavigatedRender(cell, frame, viewport, camera);
-      const selected = cell.id === selectedCellId;
-      const detail = buildCellSemanticDetail(cell, {
-        displayRadiusPx: geometry.displayRadiusPx,
-        selected
-      });
-
-      return {
-        id: cell.id,
-        x: geometry.x,
-        y: geometry.y,
-        radius: geometry.displayRadiusPx,
-        selected,
-        lifecycleState: detail.lifecycleState,
-        energyRatio: detail.energyRatio,
-        integrityRatio: detail.integrityRatio,
-        semanticLevel: detail.level,
-        showMetricRings: detail.showMetricRings,
-        label: detail.label
-      };
-    })
-  };
 }
 
 export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRenderer> {
@@ -199,7 +147,7 @@ function drawResourceLayer(frame: WorldFrame, width: number, height: number, cam
   return layer;
 }
 
-function cellFillColor(lifecycleState: RenderPlanCell['lifecycleState'], energyRatio: number) {
+function cellFillColor(lifecycleState: LifecycleVisualState, energyRatio: number) {
   if (lifecycleState === 'dead') {
     return 0x7b8794;
   }
