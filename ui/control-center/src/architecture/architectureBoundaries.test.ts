@@ -42,4 +42,12 @@ describe('architecture boundaries', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps styles.css as an import hub', () => {
+    const styles = source(join(srcRoot, 'styles.css'));
+
+    expect(styles).toContain("@import './styles/tokens.css';");
+    expect(styles).toContain("@import './styles/layout.css';");
+    expect(styles).toContain("@import './styles/components.css';");
+  });
 });
