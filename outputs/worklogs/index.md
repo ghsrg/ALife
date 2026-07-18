@@ -197,3 +197,4 @@ tags:
 - [[outputs/worklogs/2026-07-17-0022-REPORT-ui-1c-c-viewer-zoom-pan-navigation|2026-07-17-0022-REPORT-ui-1c-c-viewer-zoom-pan-navigation]]
 - [[outputs/worklogs/2026-07-17-0109-REPORT-ui-1c-d-atmospheric-renderer-selection-semantic-detail|2026-07-17-0109-REPORT-ui-1c-d-atmospheric-renderer-selection-semantic-detail]]
 - [[outputs/worklogs/2026-07-17-0920-REPORT-ui-map-interaction-overlay-fix|2026-07-17-0920-REPORT-ui-map-interaction-overlay-fix]]
+- [[outputs/worklogs/2026-07-18-1036-REPORT-ui-architecture-stabilization|2026-07-18-1036-REPORT-ui-architecture-stabilization]]

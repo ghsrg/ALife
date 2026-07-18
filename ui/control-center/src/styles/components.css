@@ -298,7 +298,7 @@ button:disabled {
 .selected-focus-card {
   position: absolute;
   left: 28px;
-  bottom: 124px;
+  top: 240px;
   z-index: 4;
   width: min(260px, calc(100% - 56px));
   border: 1px solid rgba(116, 222, 210, 0.32);
