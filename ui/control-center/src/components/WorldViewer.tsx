@@ -5,16 +5,8 @@ import type {
   WheelEvent as ReactWheelEvent
 } from 'react';
 import type { CellId, WorldFrame } from '../projection/types';
-import { projectCellForNavigatedRender } from '../viewer/renderGeometry';
-import { buildCellSemanticDetail } from '../viewer/semanticDetail';
-import {
-  DEFAULT_VIEWER_CAMERA,
-  fitCameraToWorld,
-  panCamera,
-  resetCamera,
-  zoomCameraAtPoint,
-  type ViewerCamera
-} from '../viewer/viewerNavigation';
+import { buildViewerHitTargets } from '../viewer/viewerHitTargets';
+import { useViewerCamera } from '../viewer/useViewerCamera';
 import { mountWorldRenderer, type WorldRenderer } from '../viewer/worldRenderer';
 import { ViewerTruthOverlay } from './ViewerTruthOverlay';
 import { buildViewerTruthState } from './viewerTruth';
@@ -39,11 +31,10 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const hostRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<WorldRenderer | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const [camera, setCamera] = useState<ViewerCamera>(DEFAULT_VIEWER_CAMERA);
+  const [cameraState, dispatchCamera] = useViewerCamera();
+  const { camera } = cameraState;
   const [truthOverlayVisible, setTruthOverlayVisible] = useState(true);
   const [viewport, setViewport] = useState(() => ({ width: frame.world.width, height: frame.world.height }));
-  const dragStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
-  const dragMovedRef = useRef(false);
   const truthState = buildViewerTruthState(frame, viewport);
 
   const measureViewport = () => {
@@ -96,40 +87,27 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
 
   const zoomAtCenter = (scaleFactor: number) => {
     const point = { x: frame.world.width / 2, y: frame.world.height / 2 };
-    setCamera((current) => zoomCameraAtPoint(current, point, scaleFactor));
+    dispatchCamera({ type: 'zoom-at', point, scaleFactor });
   };
 
   const fitView = () => {
-    setCamera(fitCameraToWorld(frame.world, viewport));
+    dispatchCamera({ type: 'fit', world: frame.world, viewport });
   };
 
   const resetView = () => {
-    setCamera(resetCamera());
+    dispatchCamera({ type: 'reset' });
   };
 
   const startDrag = (pointerId: number, x: number, y: number) => {
-    dragStartRef.current = { pointerId, x, y };
-    dragMovedRef.current = false;
+    dispatchCamera({ type: 'drag-start', pointerId, point: { x, y } });
   };
 
   const moveDrag = (pointerId: number, x: number, y: number) => {
-    const dragStart = dragStartRef.current;
-    if (dragStart === null || dragStart.pointerId !== pointerId) {
-      return;
-    }
-    const dx = x - dragStart.x;
-    const dy = y - dragStart.y;
-    if (dx !== 0 || dy !== 0) {
-      dragMovedRef.current = true;
-    }
-    dragStartRef.current = { pointerId, x, y };
-    setCamera((current) => panCamera(current, { dx, dy }));
+    dispatchCamera({ type: 'drag-move', pointerId, point: { x, y } });
   };
 
   const endDrag = (pointerId: number) => {
-    if (dragStartRef.current?.pointerId === pointerId) {
-      dragStartRef.current = null;
-    }
+    dispatchCamera({ type: 'drag-end', pointerId });
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -146,7 +124,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (dragStartRef.current !== null) {
+    if (cameraState.dragStart !== null) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -165,7 +143,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       x: event.clientX - rect.left,
       y: event.clientY - rect.top
     };
-    setCamera((current) => zoomCameraAtPoint(current, point, event.deltaY < 0 ? 1.12 : 1 / 1.12));
+    dispatchCamera({ type: 'zoom-at', point, scaleFactor: event.deltaY < 0 ? 1.12 : 1 / 1.12 });
   };
 
   const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -178,7 +156,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const handleMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || dragStartRef.current !== null) {
+    if (event.button !== 0 || cameraState.dragStart !== null) {
       return;
     }
     event.preventDefault();
@@ -187,7 +165,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const handleMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (dragStartRef.current !== null) {
+    if (cameraState.dragStart !== null) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -195,7 +173,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const handleMouseUp = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (dragStartRef.current !== null) {
+    if (cameraState.dragStart !== null) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -203,8 +181,8 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const handleViewerClick = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (dragMovedRef.current) {
-      dragMovedRef.current = false;
+    if (cameraState.dragMoved) {
+      dispatchCamera({ type: 'clear-drag-moved' });
       return;
     }
 
@@ -255,38 +233,30 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         <span aria-label="World Viewer zoom">{Math.round(camera.scale * 100)}%</span>
       </div>
       <div className="world-hit-targets" aria-label="World cell hit targets">
-        {frame.cells.map((cell) => {
-          const geometry = projectCellForNavigatedRender(cell, frame, viewport, camera);
-          const selected = cell.id === selectedCellId;
-          const detail = buildCellSemanticDetail(cell, {
-            displayRadiusPx: geometry.displayRadiusPx,
-            selected
-          });
-          const diameter = `${geometry.interactionRadiusPx * 2}px`;
-
+        {buildViewerHitTargets(frame, selectedCellId, viewport, camera).map((target) => {
           return (
-            <Fragment key={cell.id}>
+            <Fragment key={target.id}>
               <button
                 type="button"
                 className="cell-hotspot"
-                data-semantic-level={detail.level}
-                data-lifecycle-state={detail.lifecycleState}
-                style={{ left: `${geometry.x}px`, top: `${geometry.y}px`, width: diameter, height: diameter }}
+                data-semantic-level={target.detail.level}
+                data-lifecycle-state={target.detail.lifecycleState}
+                style={target.style}
                 onMouseDown={(event) => event.stopPropagation()}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onSelectCell(cell.id);
+                  onSelectCell(target.id);
                 }}
-                aria-label={`Select ${cell.id}`}
+                aria-label={target.ariaLabel}
               />
-              {detail.showLabel ? (
+              {target.detail.showLabel ? (
                 <span
-                  className={selected ? 'cell-detail-label selected' : 'cell-detail-label'}
-                  style={{ left: `${geometry.x}px`, top: `${geometry.y + geometry.displayRadiusPx + 10}px` }}
-                  aria-label={selected ? 'Selected cell detail label' : `Cell detail label ${cell.id}`}
+                  className={target.selected ? 'cell-detail-label selected' : 'cell-detail-label'}
+                  style={target.labelStyle}
+                  aria-label={target.selected ? 'Selected cell detail label' : `Cell detail label ${target.id}`}
                 >
-                  {detail.label}
+                  {target.detail.label}
                 </span>
               ) : null}
             </Fragment>
