@@ -4,20 +4,14 @@ import { createRequestId, shouldApplyLiveFrame, shouldApplyRunStatus } from './r
 import type { LiveWorldFrameProjection } from '../runner/alifDecoder';
 
 const liveFrame: LiveWorldFrameProjection = {
-  schemaVersion: 'ALIFWorldFrame/v2',
-  runId: 'run-a',
-  scenarioId: 'demo',
+  schemaVersion: 'ALIF/v2',
   committedTick: 10,
   projectionSequence: 2,
-  world: { width: 1200, height: 800 },
-  cells: [],
-  summary: {
-    aliveCells: 0,
-    deadCells: 0,
-    totalCellEnergy: 0,
-    totalCellIntegrity: 0,
-    projectionSequence: 2
-  }
+  wallClockGeneratedAtMs: 1000,
+  previousCommittedTick: 9,
+  heat: 0,
+  waste: 0,
+  cells: []
 };
 
 describe('runnerController guards', () => {
@@ -28,7 +22,7 @@ describe('runnerController guards', () => {
       source: 'live',
       runId: 'run-a',
       tick: 11,
-      summary: { projectionSequence: 4 }
+      summary: { heat: 0, waste: 0, projectionSequence: 4 }
     });
     store.getState().setRunStatus({
       processState: 'ready',
@@ -51,7 +45,7 @@ describe('runnerController guards', () => {
       source: 'live',
       runId: 'run-a',
       tick: 9,
-      summary: { projectionSequence: 1 }
+      summary: { heat: 0, waste: 0, projectionSequence: 1 }
     });
 
     expect(shouldApplyLiveFrame(liveFrame, store.getState())).toBe(true);
