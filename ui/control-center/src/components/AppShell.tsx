@@ -4,6 +4,7 @@ import { createRunnerController } from '../app/runnerController';
 import { MonitorWorkspace } from './MonitorWorkspace';
 import { RunControls } from './RunControls';
 import { buildMonitorStats } from './monitorStats';
+import { uiText } from '../uiText';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
@@ -39,13 +40,13 @@ export function AppShell() {
     <div className="app-shell">
       <header className="top-bar" data-testid="monitor-top-context">
         <div>
-          <p className="eyebrow">ALife Control Center</p>
-          <h1>ALife Control Center</h1>
+          <p className="eyebrow">{uiText.app.eyebrow}</p>
+          <h1>{uiText.app.title}</h1>
         </div>
-        <nav className="mode-tabs" aria-label="Primary views">
-          <button type="button" role="tab" aria-selected="true">Monitor</button>
-          <button type="button" role="tab" aria-selected="false" disabled>OrganismView</button>
-          <button type="button" role="tab" aria-selected="false" disabled>World Editor</button>
+        <nav className="mode-tabs" aria-label={uiText.app.primaryViews}>
+          <button type="button" role="tab" aria-selected="true">{uiText.workspace.monitor}</button>
+          <button type="button" role="tab" aria-selected="false" disabled>{uiText.workspace.organismView}</button>
+          <button type="button" role="tab" aria-selected="false" disabled>{uiText.workspace.worldEditor}</button>
         </nav>
         <RunControls
           state={state}

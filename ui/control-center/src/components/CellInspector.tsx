@@ -1,4 +1,5 @@
 import type { CellProjection } from '../projection/types';
+import { uiText } from '../uiText';
 
 interface CellInspectorProps {
   selectedCell: CellProjection | null;
@@ -6,18 +7,18 @@ interface CellInspectorProps {
 
 export function CellInspector({ selectedCell }: CellInspectorProps) {
   return (
-    <aside className="side-panel inspector" aria-label="Cell Inspector">
-      <h2>Cell Inspector</h2>
+    <aside className="side-panel inspector" aria-label={uiText.inspector.title}>
+      <h2>{uiText.inspector.title}</h2>
       {selectedCell ? (
         <div className="metric-list">
-          <div><span>ID</span><strong>{selectedCell.id}</strong></div>
-          <div><span>Energy</span><strong>{formatRatio(selectedCell.energy)}</strong></div>
-          <div><span>Integrity</span><strong>{formatRatio(selectedCell.integrity)}</strong></div>
-          <div><span>Generation</span><strong>{selectedCell.generation}</strong></div>
-          <div><span>Role hint</span><strong>{selectedCell.roleHint}</strong></div>
+          <div><span>{uiText.inspector.id}</span><strong>{selectedCell.id}</strong></div>
+          <div><span>{uiText.inspector.energy}</span><strong>{formatRatio(selectedCell.energy)}</strong></div>
+          <div><span>{uiText.inspector.integrity}</span><strong>{formatRatio(selectedCell.integrity)}</strong></div>
+          <div><span>{uiText.inspector.generation}</span><strong>{selectedCell.generation}</strong></div>
+          <div><span>{uiText.inspector.roleHint}</span><strong>{selectedCell.roleHint}</strong></div>
         </div>
       ) : (
-        <p className="empty-state">No cell selected.</p>
+        <p className="empty-state">{uiText.inspector.emptyCell}</p>
       )}
     </aside>
   );

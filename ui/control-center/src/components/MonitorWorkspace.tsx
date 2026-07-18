@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { getMonitorDataState, type AppStore } from '../app/appState';
 import { buildMonitorViewModel } from '../app/monitorViewModel';
 import type { CellId } from '../projection/types';
+import { uiText } from '../uiText';
 import { BottomStatsStrip } from './BottomStatsStrip';
 import { CellInspector } from './CellInspector';
 import { LayerPanel } from './LayerPanel';
@@ -47,17 +48,21 @@ export function MonitorWorkspace({
         onScenarioChange={onScenarioChange}
         onReconnect={onReconnect}
       />
-      <section className="viewer-panel" aria-label="Monitor workspace">
+      <section className="viewer-panel" aria-label={uiText.workspace.monitorWorkspace}>
         <div className="viewer-toolbar">
           <div>
             <strong>{monitorViewModel.scenarioTitle}</strong>
             <span>{monitorViewModel.subtitle}</span>
           </div>
-          <button type="button" onClick={onToggleTheme} aria-label={`Switch to ${state.theme === 'dark' ? 'light' : 'dark'} theme`}>
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={state.theme === 'dark' ? uiText.controls.switchToLightTheme : uiText.controls.switchToDarkTheme}
+          >
             {state.theme === 'dark' ? 'Light' : 'Dark'}
           </button>
-          <button type="button" onClick={exportScreenshot} aria-label="Export viewer PNG">
-            Export PNG
+          <button type="button" onClick={exportScreenshot} aria-label={uiText.controls.exportViewerPng}>
+            {uiText.controls.exportPng}
           </button>
         </div>
         <WorldViewer

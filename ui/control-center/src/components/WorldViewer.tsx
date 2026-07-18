@@ -5,6 +5,7 @@ import type {
   WheelEvent as ReactWheelEvent
 } from 'react';
 import type { CellId, WorldFrame } from '../projection/types';
+import { uiText } from '../uiText';
 import { buildViewerHitTargets } from '../viewer/viewerHitTargets';
 import { useViewerCamera } from '../viewer/useViewerCamera';
 import { mountWorldRenderer, type WorldRenderer } from '../viewer/worldRenderer';
@@ -203,7 +204,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     <div
       ref={viewerRef}
       className="world-viewer"
-      aria-label="World Viewer"
+      aria-label={uiText.viewer.ariaLabel}
       data-ready={isReady ? 'true' : 'false'}
       onWheelCapture={handleWheelCapture}
       onPointerDown={handlePointerDown}
@@ -220,19 +221,19 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       {truthOverlayVisible ? <ViewerTruthOverlay truthState={truthState} onDismiss={() => setTruthOverlayVisible(false)} /> : null}
       <div
         className="viewer-navigation-controls"
-        aria-label="World Viewer navigation"
+        aria-label={uiText.viewer.navigationAriaLabel}
         onMouseDown={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
         onWheel={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
-        <button type="button" onClick={() => zoomAtCenter(1.2)} aria-label="Zoom in World Viewer">+</button>
-        <button type="button" onClick={() => zoomAtCenter(1 / 1.2)} aria-label="Zoom out World Viewer">-</button>
-        <button type="button" onClick={fitView} aria-label="Fit World Viewer">Fit</button>
-        <button type="button" onClick={resetView} aria-label="Reset World Viewer navigation">Reset</button>
-        <span aria-label="World Viewer zoom">{Math.round(camera.scale * 100)}%</span>
+        <button type="button" onClick={() => zoomAtCenter(1.2)} aria-label={uiText.viewer.zoomIn}>+</button>
+        <button type="button" onClick={() => zoomAtCenter(1 / 1.2)} aria-label={uiText.viewer.zoomOut}>-</button>
+        <button type="button" onClick={fitView} aria-label={uiText.viewer.fit}>{uiText.viewer.fitButton}</button>
+        <button type="button" onClick={resetView} aria-label={uiText.viewer.reset}>{uiText.viewer.resetButton}</button>
+        <span aria-label={uiText.viewer.zoomLabel}>{Math.round(camera.scale * 100)}%</span>
       </div>
-      <div className="world-hit-targets" aria-label="World cell hit targets">
+      <div className="world-hit-targets" aria-label={uiText.viewer.hitTargetsAriaLabel}>
         {buildViewerHitTargets(frame, selectedCellId, viewport, camera).map((target) => {
           return (
             <Fragment key={target.id}>
