@@ -37,8 +37,10 @@ Mechanics cards are routing checklists, not sources of truth.
 - [[docs/runner/INDEX|Runner Index]] `#runner` `#orchestration` `#bootstrap`
 - [[docs/ui/INDEX|UI Index]] `#viewer` `#control-center`
 - [[docs/implementation/INDEX|Implementation Index]] `#phases` `#api` `#data-model`
+- [[docs/delivery/INDEX|Delivery Index]] `#delivery` `#roadmap` `#status`
 - [[docs/decisions/INDEX|Decisions Index]] `#adr`
 - [[docs/examples/INDEX|Examples Index]] `#examples`
+- [[docs/research/INDEX|Research Index]] `#research`
 - [[docs/mechanics/INDEX|Mechanics Index]] `#interaction-map` `#tdd-preflight`
 
 ## Common Agent Routes

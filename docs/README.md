@@ -247,6 +247,8 @@ Agent index: [[docs/implementation/INDEX|Implementation Index]].
 
 ## `research/`
 
+Agent index: [[docs/research/INDEX|Research Index]].
+
 Гіпотези, альтернативи та відкладені ідеї.
 
 ## `decisions/`
