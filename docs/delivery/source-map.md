@@ -26,10 +26,15 @@ tags:
   the delivery roadmap.
 - `docs/delivery/roadmap.md` is the delivery roadmap initialized from Canon,
   implementation plans, code/test evidence, and historical worklogs.
+- `AL-###` IDs are large delivery stages. Executable TDD Plan IDs use
+  `AL-###-S##` child slices.
+- `docs/delivery/status.md` is an operational dashboard over current, active,
+  blocked, ready-next, and recently closed work. It is not the canonical
+  roadmap.
 - `outputs/worklogs/index.md` remains the old worklog index for backward
   compatibility.
 - `docs/delivery/worklog-ledger.md` is the delivery-control ledger over
-  historical worklogs.
+  historical worklogs and worklog-derived historical rows.
 
 ## Drift Notes
 
@@ -37,7 +42,7 @@ tags:
 | --- | --- |
 | `G01` documentation roadmap drift | Delivery status is separated into `docs/delivery/status.md`. |
 | `G02` missing delivery-control layer | Initialized under `docs/delivery/` and `.agent/active-context.md`. |
-| `G03` missing stable IDs | Stable IDs use `AL-###`; legacy labels are aliases. |
+| `G03` missing stable IDs | Stage IDs use `AL-###`; executable TDD Plan IDs use `AL-###-S##`; legacy labels are aliases. |
 | `G04` UI next-slice ambiguity | `UI-1D` may be the next UI slice, but global next work must be selected from the delivery roadmap. |
 | `G05` ALIF protocol drift | Current protocol baseline is `ALIF v2`; older worklogs are historical evidence. |
 | `G06` closure gap | Historical completion claims require acceptance/evidence mapping before `done-evidenced`. |

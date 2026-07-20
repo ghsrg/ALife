@@ -54,6 +54,16 @@ export function MonitorWorkspace({
             <strong>{monitorViewModel.scenarioTitle}</strong>
             <span>{monitorViewModel.subtitle}</span>
           </div>
+          <div className="start-demo-provenance" aria-label="Start demo provenance">
+            <strong>{uiText.demo.startDemo}</strong>
+            <span>
+              {monitorViewModel.startDemo.projectionSource === 'live'
+                ? uiText.demo.liveProjectionSource
+                : uiText.demo.fixtureProjectionSource}
+            </span>
+            <span>{`${uiText.demo.runnerDataPrefix}: ${monitorViewModel.startDemo.runnerDataLabel}`}</span>
+            <span>{monitorViewModel.startDemo.unavailableFieldsLabel}</span>
+          </div>
           <button
             type="button"
             onClick={onToggleTheme}

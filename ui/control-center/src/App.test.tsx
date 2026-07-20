@@ -237,6 +237,49 @@ describe('App', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/png ready/i);
   });
 
+  it('uses Start-scope screenshot export status copy', async () => {
+    const user = userEvent.setup();
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+    await user.click(screen.getByRole('button', { name: /export viewer png/i }));
+
+    expect(screen.getByRole('status')).toHaveTextContent(/start screenshot png ready/i);
+  });
+
+  it('shows Start demo provenance without claiming fixture data is live', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByText('Start demo')).toBeInTheDocument();
+    expect(screen.getByText('Projection source: fixture')).toBeInTheDocument();
+    expect(screen.getByText('Runner data: Fixture fallback - idle Runner')).toBeInTheDocument();
+    expect(screen.getByText('Unavailable live fields stay unavailable')).toBeInTheDocument();
+  });
+
+  it('shows Start demo live provenance after the first live frame', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(mockRunner.streamInstances).toHaveLength(1);
+    });
+
+    act(() => {
+      mockRunner.streamInstances[0].handlers.onStatus(runningStatus);
+      mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 15, sequence: 5, cellId: 1505 }));
+    });
+
+    expect(screen.getByText('Start demo')).toBeInTheDocument();
+    expect(screen.getByText('Projection source: live')).toBeInTheDocument();
+    expect(screen.getByText('Runner data: Live Tick 15')).toBeInTheDocument();
+    expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
+  });
+
   it('connects to the Runner, lists scenarios, and starts a live run', async () => {
     const user = userEvent.setup();
     mockRunner.apiInstance.getRunStatus

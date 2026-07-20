@@ -6,28 +6,50 @@ tags:
 
 # Delivery Status
 
-## Current State
+Operational dashboard for active delivery-control work. This file is not the
+canonical roadmap and must not introduce new requirements. Canonical status,
+confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
-Delivery-control initialization is active. Historical worklogs and legacy labels
-remain intact for backward compatibility.
+## Current Focus
 
-## Stream Status
-
-| Stream | Current status | Confidence | Primary Plan IDs | Notes |
+| Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| Delivery Control | `in-progress` | `high` | `AL-001` | New planning layer initialized. |
-| Runner | `done-weak-evidence` | `medium` | `AL-002` | Runner-1/2/3 appear implemented; Runner-4 and hardening need review. |
-| Core Phase 2 | `done-weak-evidence` | `medium` | `AL-003` | Extensive tests/worklogs exist; closure matrix missing. |
-| Genome | `in-progress` | `medium` | `AL-004` | Phase 3A evidence exists; full Phase 3 remains planned/incomplete. |
-| Observer | `in-progress` | `medium` | `AL-005` | Contracts and implementation exist; cross-stream status needs reconciliation. |
-| Bootstrap | `done-weak-evidence` | `medium` | `AL-006` | Foundation evidence exists; Runner dependency mapping needed. |
-| UI | `in-progress` | `medium` | `AL-007` | `UI-1D` selected for roadmap-control planning with Runner and Observer pre-check. |
-| Stability Tools | `done-weak-evidence` | `medium` | `AL-008` | Tooling supports evidence and calibration. |
+| `None selected` | `blocked` | `high` | `docs/delivery/roadmap.md` | Select one Candidate Next Work item before starting the next execution slice. |
 
-## Active Context
+## In Progress
 
-Recommended active Plan ID: `AL-007`.
+| Plan ID | Status | Confidence | Source | Notes |
+| --- | --- | --- | --- | --- |
+| `AL-003-S02` | `planned` | `medium` | `docs/delivery/roadmap.md` | Candidate next: Genome Runtime contract before scheduler/cadence work. |
+| `AL-004-S01` | `planned` | `medium` | `docs/delivery/roadmap.md` | Candidate next: Observer vocabulary/source/ownership matrix. |
+| `AL-004-S02` | `planned` | `medium` | `docs/delivery/roadmap.md` | Candidate next after `AL-004-S01`; blocks richer projection-dependent UI. |
 
-Use `docs/delivery/execution-handoff-al-007.md` before implementation. Do not
-expand `AL-007` into Runner, Observer, Debug export, Research export, Genome, or
-lineage scope.
+## Blocked
+
+| Plan ID | Blocker | Source | Notes |
+| --- | --- | --- | --- |
+| `AL-007-S09` | Requires projection/keyframe contract decisions from `AL-004-S02` and Runner hardening context from `AL-002-S16`. | `docs/delivery/roadmap.md` | Do not start UI-2A until dependencies are planned or explicitly accepted as staged. |
+
+## Ready Next
+
+| Order | Plan ID | Dependency note | Source |
+| --- | --- | --- | --- |
+| 1 | `AL-003-S02` | Follows `AL-003-S01`; should absorb Genome runtime debt before scheduler/cadence. | `docs/delivery/roadmap.md` |
+| 2 | `AL-004-S01` | Needed before versioned projection envelope. | `docs/delivery/roadmap.md` |
+| 3 | `AL-004-S02` | Depends on `AL-004-S01`; blocks `AL-007-S09`. | `docs/delivery/roadmap.md` |
+| 4 | `AL-002-S16` | Runner hardening remains a dependency for reconnect/remote UI behavior. | `docs/delivery/roadmap.md` |
+
+## Recently Closed
+
+| Plan ID | Status | Evidence | Notes |
+| --- | --- | --- | --- |
+| `AL-001-S04` | `done` | `outputs/worklogs/2026-07-20-1154-REPORT-al-001-s04-delivery-control-baseline-refactor.md` | Delivery-control artifact responsibilities separated; current/next acceptance normalized to slice IDs. |
+| `AL-007-S08` | `done` | `outputs/worklogs/2026-07-19-1937-REPORT-al-007-ui-1d-start-demo-export-acceptance-hardening.md` | Start demo, screenshot export, and acceptance hardening are closed for the current UI-1D scope. |
+
+## Control Drift Notes
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Historical evidence | `done` | Historical worklog-derived roadmap rows live in `docs/delivery/worklog-ledger.md`; `docs/delivery/roadmap.md` keeps only a pointer. |
+| Acceptance matrix | `done` | Current/next acceptance uses slice-level `AL-###-S##-AC##` IDs. Non-next legacy rows remain untouched until their Plan ID is selected. |
+| Source map/control vocabulary | `done` | Delivery-control vocabulary distinguishes stage IDs (`AL-###`) from executable slice Plan IDs (`AL-###-S##`). |

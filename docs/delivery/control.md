@@ -28,12 +28,17 @@ Authority order for delivery planning:
 
 ## Stable IDs
 
-Delivery Plan IDs use the compact `AL-###` format.
+Delivery stage IDs use the compact `AL-###` format. Executable TDD Plan IDs use
+`AL-###-S##` child slices under those stages.
 
 Related IDs:
 
-- Acceptance IDs: `AL-###-AC##`
-- Evidence IDs: `AL-###-EV##`
+- Acceptance IDs: `AL-###-S##-AC##`
+- Evidence IDs: `AL-###-S##-EV##`
+
+Legacy top-level acceptance and evidence IDs such as `AL-###-AC##` may remain in
+older delivery-control artifacts for backward compatibility, but new current and
+Candidate Next Work acceptance should use slice-level IDs.
 
 Legacy labels such as `Phase 2G`, `Runner-3`, `UI-1C-D`, and `Bootstrap-1`
 remain valid aliases for historical compatibility. They are not replaced and

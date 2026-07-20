@@ -226,3 +226,4 @@ tags:
 - [[outputs/worklogs/2026-07-19-1237-REPORT-al-007-roadmap-control|2026-07-19-1237-REPORT-al-007-roadmap-control]]
 - [[outputs/worklogs/2026-07-19-1605-PLAN-al-007-ui-1d-start-demo-export-acceptance-hardening|2026-07-19-1605-PLAN-al-007-ui-1d-start-demo-export-acceptance-hardening]]
 - [[outputs/worklogs/2026-07-19-1857-REPORT-al-001-historical-roadmap-sync|2026-07-19-1857-REPORT-al-001-historical-roadmap-sync]]
+- [[outputs/worklogs/2026-07-19-1937-REPORT-al-007-ui-1d-start-demo-export-acceptance-hardening|2026-07-19-1937-REPORT-al-007-ui-1d-start-demo-export-acceptance-hardening]]

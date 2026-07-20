@@ -33,7 +33,9 @@ export function AppShell() {
   const monitorStats = buildMonitorStats(state.frame, monitorDataState);
 
   const exportScreenshot = (png: string | null) => {
-    setExportStatus(png ? `PNG ready (${png.length} bytes)` : 'PNG export unavailable');
+    setExportStatus(
+      png ? `${uiText.controls.startScreenshotReady} (${png.length} bytes)` : uiText.controls.startScreenshotUnavailable
+    );
   };
 
   return (

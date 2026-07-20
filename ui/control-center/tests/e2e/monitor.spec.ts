@@ -7,7 +7,7 @@ test('UI-1A Monitor opens at 1024x768 with fixture viewer and Inspector', async 
   await expect(page.getByRole('heading', { name: 'ALife Control Center' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Monitor' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('UI-1A Deterministic Fixture')).toBeVisible();
-  await expect(page.getByText('Tick 128')).toBeVisible();
+  await expect(page.getByText('Fixture Tick 128', { exact: true })).toBeVisible();
   await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
   await expect(page.getByLabel('Cell Inspector')).toContainText('cell-a');
 
@@ -19,5 +19,5 @@ test('UI-1A Monitor opens at 1024x768 with fixture viewer and Inspector', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
   await page.getByRole('button', { name: 'Export viewer PNG' }).click();
-  await expect(page.getByRole('status')).toContainText('PNG ready');
+  await expect(page.getByRole('status')).toContainText('Start screenshot PNG ready');
 });

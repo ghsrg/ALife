@@ -51,4 +51,5 @@ outputs/worklogs/YYYY-MM-DD-HHMM-REPORT-name.md
 - Do not implement behavior that contradicts [[docs/PRINCIPLES|Principles]].
 - Before TDD planning for behavior or simulation mechanics, use [[docs/mechanics/INDEX|Mechanics Index]].
 - Do not add hardcoded biological shortcuts such as species IDs, cell classes for roles, organs, brains, predators, or scripted behaviors unless an ADR explicitly changes the rules.
+- Every change to the delivery roadmap must review `Candidate Next Work` in the same pass and update it when dependencies, priorities, or semantic ownership change.
 - Keep changes scoped to the requested task.

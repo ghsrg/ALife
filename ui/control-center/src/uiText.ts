@@ -13,8 +13,17 @@ export const uiText = {
   controls: {
     exportPng: 'Export PNG',
     exportViewerPng: 'Export viewer PNG',
+    startScreenshotReady: 'Start screenshot PNG ready',
+    startScreenshotUnavailable: 'Start screenshot PNG export unavailable',
     switchToLightTheme: 'Switch to light theme',
     switchToDarkTheme: 'Switch to dark theme'
+  },
+  demo: {
+    startDemo: 'Start demo',
+    fixtureProjectionSource: 'Projection source: fixture',
+    liveProjectionSource: 'Projection source: live',
+    runnerDataPrefix: 'Runner data',
+    unavailableLiveFields: 'Unavailable live fields stay unavailable'
   },
   layers: {
     title: 'Layers',

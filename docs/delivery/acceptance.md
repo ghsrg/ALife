@@ -6,7 +6,28 @@ tags:
 
 # Delivery Acceptance
 
-## Acceptance Matrix
+## Current/Next Acceptance Matrix
+
+Acceptance rows in this section use executable slice Plan IDs. Add or change rows
+here only for the current delivery slice and Candidate Next Work.
+
+| Acceptance ID | Plan ID | Acceptance outcome | Required evidence |
+| --- | --- | --- | --- |
+| `AL-001-S04-AC01` | `AL-001-S04` | Roadmap, status, worklog ledger, source map, control vocabulary, and acceptance matrix have separate responsibilities. | `docs/delivery/roadmap.md`, `docs/delivery/status.md`, `docs/delivery/worklog-ledger.md`, `docs/delivery/source-map.md`, `docs/delivery/control.md`, `docs/delivery/acceptance.md` |
+| `AL-001-S04-AC02` | `AL-001-S04` | Historical worklog-derived roadmap rows are preserved in the ledger and removed from active roadmap scope. | `docs/delivery/worklog-ledger.md`, `docs/delivery/roadmap.md` |
+| `AL-001-S04-AC03` | `AL-001-S04` | Status is an operational dashboard for current, active, blocked, ready-next, and recently closed work. | `docs/delivery/status.md` |
+| `AL-001-S04-AC04` | `AL-001-S04` | Current and next acceptance rows use slice-level `AL-###-S##-AC##` IDs. | `docs/delivery/acceptance.md` |
+| `AL-001-S04-AC05` | `AL-001-S04` | Candidate Next Work is reviewed during roadmap changes. | `docs/delivery/roadmap.md`, `AGENTS.MD` |
+| `AL-003-S02-AC01` | `AL-003-S02` | Genome Runtime contract and registered output coverage can be planned before scheduler/cadence work. | `docs/delivery/roadmap.md` |
+| `AL-004-S01-AC01` | `AL-004-S01` | Observer vocabulary, source, and ownership matrix can be planned before versioned projection expansion. | `docs/delivery/roadmap.md` |
+| `AL-004-S02-AC01` | `AL-004-S02` | Versioned projection envelope can be planned after `AL-004-S01` and before projection-dependent UI work. | `docs/delivery/roadmap.md` |
+| `AL-002-S16-AC01` | `AL-002-S16` | Runner hardening can be planned before UI reconnect/remote-viewer behavior depends on it. | `docs/delivery/roadmap.md` |
+
+## Legacy Acceptance Matrix
+
+These rows preserve the initial top-level `AL-###` delivery-control acceptance
+mapping for backward compatibility. Do not expand or rewrite non-next rows until
+their Plan ID becomes current or Candidate Next Work.
 
 | Acceptance ID | Plan ID | Acceptance outcome | Required evidence |
 | --- | --- | --- | --- |
