@@ -19,7 +19,7 @@ impl SnapshotCadence {
             Self::EveryTick => true,
             Self::EveryNTicks(ticks) => {
                 let ticks = ticks.max(1);
-                committed_tick % ticks == 0
+                committed_tick.is_multiple_of(ticks)
             }
             Self::OnDemandOnly => false,
         }

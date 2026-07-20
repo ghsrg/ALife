@@ -2,8 +2,8 @@ use crate::core::config::{
     CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryHeatConfig,
     ChemistryMaterialConfig, ChemistryReactionConfig, ChemistryRepairConfig,
     ChemistryResourceConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
-    EnvironmentConfig, GrowthConfig, LifecycleConfig, MaterialEffectConfig, ResourceConfig,
-    ResourceInteractionConfig, RuntimeConfig, SchedulerCellConfig, SchedulerConfig,
+    EnvironmentConfig, GenomeCopyingConfig, GrowthConfig, LifecycleConfig, MaterialEffectConfig,
+    ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SchedulerCellConfig, SchedulerConfig,
     SchedulerObserverConfig, SchedulerWorldConfig, SimulationTimeConfig, SpaceConfig,
     SynthesisConfig, WorldConfig,
 };
@@ -124,6 +124,16 @@ pub struct RawDivision {
     pub daughter_spacing: Option<f32>,
     pub min_daughter_radius: Option<f32>,
     pub partition_loss_fraction: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawGenomeCopying {
+    pub enabled: Option<bool>,
+    pub energy_cost_per_step: Option<f32>,
+    pub carrier_resource_cost_per_step: Option<f32>,
+    pub progress_per_step: Option<f32>,
+    pub mutation_rate: Option<f32>,
+    pub mutation_step: Option<f32>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -285,6 +295,7 @@ pub struct RawSchedulerConfig {
 pub struct RawSchedulerCellConfig {
     pub genome_runtime_base_ticks: Option<u64>,
     pub genome_runtime_ticks_per_layer: Option<u64>,
+    pub genome_copying_ticks: Option<u64>,
     pub signal_emit_ticks: Option<u64>,
     pub controlled_reaction_ticks: Option<u64>,
     pub simple_synthesis_ticks: Option<u64>,
@@ -333,6 +344,7 @@ pub struct RawScenarioConfig {
     pub synthesis: Option<RawSynthesis>,
     pub contractility: Option<RawContractility>,
     pub division: Option<RawDivision>,
+    pub genome_copying: Option<RawGenomeCopying>,
     pub decomposition: Option<RawDecomposition>,
     pub material_effects: Option<RawMaterialEffects>,
     pub joints: Option<RawJointConfig>,
@@ -389,6 +401,9 @@ impl RawSchedulerCellConfig {
             genome_runtime_ticks_per_layer: self
                 .genome_runtime_ticks_per_layer
                 .unwrap_or(defaults.genome_runtime_ticks_per_layer),
+            genome_copying_ticks: self
+                .genome_copying_ticks
+                .unwrap_or(defaults.genome_copying_ticks),
             signal_emit_ticks: self.signal_emit_ticks.unwrap_or(defaults.signal_emit_ticks),
             controlled_reaction_ticks: self
                 .controlled_reaction_ticks
@@ -795,6 +810,36 @@ impl RawScenarioConfig {
                     })?,
                 partition_loss_fraction: raw_div.partition_loss_fraction.unwrap_or(0.0),
             };
+        }
+
+        if let Some(ref raw_copying) = self.genome_copying {
+            runtime_config.genome_copying = GenomeCopyingConfig {
+                enabled: raw_copying.enabled.unwrap_or(false),
+                energy_cost_per_step: EnergyAmount::new(
+                    raw_copying.energy_cost_per_step.unwrap_or(0.0),
+                )
+                .map_err(|e| {
+                    ParseError::ValidationError(format!(
+                        "Invalid genome_copying energy_cost_per_step: {:?}",
+                        e
+                    ))
+                })?,
+                carrier_resource_cost_per_step: ResourceAmount::new(
+                    raw_copying.carrier_resource_cost_per_step.unwrap_or(0.0),
+                )
+                .map_err(|e| {
+                    ParseError::ValidationError(format!(
+                        "Invalid genome_copying carrier_resource_cost_per_step: {:?}",
+                        e
+                    ))
+                })?,
+                progress_per_step: raw_copying.progress_per_step.unwrap_or(0.0),
+                mutation_rate: raw_copying.mutation_rate.unwrap_or(0.0),
+                mutation_step: raw_copying.mutation_step.unwrap_or(0.0),
+            };
+            runtime_config
+                .validate_genome_copying_options()
+                .map_err(ParseError::ConfigValidationError)?;
         }
 
         if let Some(ref raw_dec) = self.decomposition {

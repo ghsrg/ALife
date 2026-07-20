@@ -105,6 +105,54 @@ fn cached_action_plan_runs_between_genome_runtime_refreshes() {
 
     let due = executor.step().unwrap();
     assert_eq!(due.metrics.genome_decision_refresh_count, 1);
+    assert_eq!(due.diagnostics.genome_runtime_traces.len(), 1);
+}
+
+#[test]
+fn genome_runtime_trace_is_not_emitted_before_due_tick() {
+    let config = config_with_genome_cadence(10, 0);
+    let first_due_tick = 10 + config.initial_genome_runtime_offsets(1, 10)[0];
+    let mut executor = TickExecutor::new(config).unwrap();
+
+    for _ in 1..first_due_tick {
+        let summary = executor.step().unwrap();
+
+        assert_eq!(summary.metrics.genome_decision_refresh_count, 0);
+        assert!(summary.diagnostics.genome_runtime_traces.is_empty());
+        assert!(
+            summary
+                .diagnostics
+                .attempt_order_by_process
+                .contains(&ProcessId::LocalResourceUptake)
+        );
+    }
+}
+
+#[test]
+fn genome_runtime_refresh_waits_for_next_due_tick_after_refresh() {
+    let cadence = 10;
+    let config = config_with_genome_cadence(cadence, 0);
+    let first_due_tick = cadence + config.initial_genome_runtime_offsets(1, cadence)[0];
+    let mut executor = TickExecutor::new(config).unwrap();
+
+    for _ in 1..first_due_tick {
+        executor.step().unwrap();
+    }
+
+    let due = executor.step().unwrap();
+    assert_eq!(due.metrics.genome_decision_refresh_count, 1);
+    assert_eq!(due.diagnostics.genome_runtime_traces.len(), 1);
+
+    for _ in 1..cadence {
+        let summary = executor.step().unwrap();
+
+        assert_eq!(summary.metrics.genome_decision_refresh_count, 0);
+        assert!(summary.diagnostics.genome_runtime_traces.is_empty());
+    }
+
+    let next_due = executor.step().unwrap();
+    assert_eq!(next_due.metrics.genome_decision_refresh_count, 1);
+    assert_eq!(next_due.diagnostics.genome_runtime_traces.len(), 1);
 }
 
 #[test]

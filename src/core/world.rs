@@ -7,7 +7,7 @@ use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
 use crate::core::fragments::FragmentStore;
-use crate::core::genome::{GenomeId, GenomeState};
+use crate::core::genome::{GenomeId, GenomeOutputValue, GenomeState};
 use crate::core::genome_bootstrap::instantiate_initial_genome;
 use crate::core::ids::ResourceTypeId;
 use crate::core::joints::JointStore;
@@ -473,6 +473,11 @@ impl WorldState {
                 if !self.config.division.enabled {
                     return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
                 }
+                if self.cells.genome_id(cell_idx).is_some()
+                    && self.cells.copied_genome_id(cell_idx).is_none()
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingGenomeCopy);
+                }
 
                 let radius = self.cells.radius(cell_idx).raw();
                 let target = self.config.growth.growth_target_radius.raw();
@@ -535,6 +540,66 @@ impl WorldState {
                 }
             }
             ProcessId::JointRepair => FeasibilityResult::Rejected(RejectionReason::ProcessDisabled),
+            ProcessId::GenomeCopying => {
+                if !self.config.genome_copying.enabled {
+                    return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
+                }
+                if self.cells.genome_id(cell_idx).is_none() {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingGenomeCopy);
+                }
+                if self.cells.copied_genome_id(cell_idx).is_some() {
+                    return FeasibilityResult::Rejected(RejectionReason::GrowthTargetReached);
+                }
+                if !self
+                    .cells
+                    .has_capability(cell_idx, MaterialCapability::GenomeCopying)
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingCapability(
+                        MaterialCapability::GenomeCopying,
+                    ));
+                }
+                let remaining = (1.0 - self.cells.genome_copy_progress(cell_idx)).max(0.0);
+                if remaining <= 0.0 {
+                    return FeasibilityResult::Rejected(RejectionReason::GrowthTargetReached);
+                }
+                let progress = self
+                    .config
+                    .genome_copying
+                    .progress_per_step
+                    .min(action.requested_amount)
+                    .min(remaining);
+                if progress <= 0.0 {
+                    return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
+                }
+                let energy_cost = self.config.genome_copying.energy_cost_per_step.raw();
+                let resource_cost = self
+                    .config
+                    .genome_copying
+                    .carrier_resource_cost_per_step
+                    .raw();
+                if self.cells.energy(cell_idx).current().raw() < energy_cost {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
+                }
+                if self.cells.generic_resource_amount(cell_idx).raw() < resource_cost {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientResources);
+                }
+                if self
+                    .cells
+                    .effective_free_capacity(
+                        cell_idx,
+                        self.config.material_effects.storage_capacity_per_unit,
+                    )
+                    .raw()
+                    < resource_cost
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientCapacity);
+                }
+                FeasibilityResult::Allowed {
+                    accepted_amount: progress,
+                    energy_cost,
+                    resource_cost,
+                }
+            }
             ProcessId::RepairBoundary => {
                 if !self.config.chemistry.repair.enabled {
                     return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
@@ -587,6 +652,78 @@ impl WorldState {
                 }
             }
         }
+    }
+
+    pub fn execute_genome_copying(
+        &mut self,
+        cell_idx: CellIndex,
+        action: &crate::core::process::ActionCandidate,
+    ) -> Result<(), String> {
+        let feasibility = self.validate_feasibility(cell_idx, action);
+        let (accepted_amount, energy_cost, resource_cost) = match feasibility {
+            crate::core::process::FeasibilityResult::Allowed {
+                accepted_amount,
+                energy_cost,
+                resource_cost,
+            } => (accepted_amount, energy_cost, resource_cost),
+            crate::core::process::FeasibilityResult::Rejected(reason) => {
+                return Err(format!("{:?}", reason));
+            }
+        };
+
+        let energy = self.cells.energy(cell_idx);
+        let next_energy = EnergyAmount::new((energy.current().raw() - energy_cost).max(0.0))
+            .expect("genome copying energy cost is feasibility-checked");
+        self.cells
+            .set_energy(cell_idx, EnergyBuffer::new(next_energy, energy.capacity()));
+        let consumed = self
+            .cells
+            .consume_resources(cell_idx, ResourceAmount::new(resource_cost).unwrap());
+        let next_carrier_amount =
+            self.cells.copied_genome_carrier_amount(cell_idx) + consumed.raw();
+        self.cells
+            .set_copied_genome_carrier_amount(cell_idx, next_carrier_amount);
+
+        let next_progress = (self.cells.genome_copy_progress(cell_idx) + accepted_amount).min(1.0);
+        self.cells.set_genome_copy_progress(cell_idx, next_progress);
+        if next_progress < 1.0 || self.cells.copied_genome_id(cell_idx).is_some() {
+            return Ok(());
+        }
+
+        let parent_id = self
+            .cells
+            .genome_id(cell_idx)
+            .ok_or_else(|| "MissingGenomeCopy".to_string())?;
+        let parent = self
+            .genomes
+            .iter()
+            .find(|genome| genome.id == parent_id)
+            .cloned()
+            .ok_or_else(|| "MissingGenomeCopy".to_string())?;
+        let copied_id = self.next_genome_id();
+        let mut copied = parent;
+        copied.id = copied_id;
+        copied.outputs = copied
+            .outputs
+            .into_iter()
+            .enumerate()
+            .map(|(offset, (output_id, value))| {
+                let mutated = mutate_genome_output_value(
+                    self.config.world.seed.raw(),
+                    self.tick.raw(),
+                    self.cells.id_at(cell_idx).raw(),
+                    parent_id.raw(),
+                    offset as u32,
+                    value.raw(),
+                    self.config.genome_copying.mutation_rate,
+                    self.config.genome_copying.mutation_step,
+                );
+                (output_id, GenomeOutputValue::new(mutated))
+            })
+            .collect();
+        self.genomes.push(copied);
+        self.cells.set_copied_genome_id(cell_idx, Some(copied_id));
+        Ok(())
     }
 
     pub fn execute_growth(
@@ -680,6 +817,8 @@ impl WorldState {
         self.joints.break_for_endpoint(cell_idx, current_tick);
 
         let parent_id = self.cells.id_at(cell_idx);
+        let parent_genome_id = self.cells.genome_id(cell_idx);
+        let copied_genome_id = self.cells.copied_genome_id(cell_idx);
         let parent_pos = self.cells.position(cell_idx);
         let parent_radius = self.cells.radius(cell_idx).raw();
         let parent_energy = self.cells.energy(cell_idx);
@@ -788,6 +927,17 @@ impl WorldState {
 
         let daughter_b_id = self.cells.insert_partitioned_daughter(daughter_b_state);
         let daughter_b_index = self.cells.resolve_id_cold(daughter_b_id).unwrap();
+        if parent_genome_id.is_some() {
+            self.cells.set_genome_id(daughter_b_index, copied_genome_id);
+            let copied_carrier = copied_genome_id
+                .and_then(|genome_id| self.genome(genome_id))
+                .map(|genome| genome.carrier.amount)
+                .unwrap_or(0.0);
+            self.cells
+                .set_genome_carrier_amount(daughter_b_index, copied_carrier);
+            self.cells.reset_genome_copy_state(cell_idx);
+            self.cells.reset_genome_copy_state(daughter_b_index);
+        }
         self.cells
             .partition_typed_resources(cell_idx, daughter_b_index, ratio, loss_keep)
             .map_err(|err| format!("{:?}", err))?;
@@ -820,6 +970,17 @@ impl WorldState {
             daughter_a_index: cell_idx,
             daughter_b_index,
         })
+    }
+
+    fn next_genome_id(&self) -> GenomeId {
+        let next = self
+            .genomes
+            .iter()
+            .map(|genome| genome.id.raw())
+            .max()
+            .unwrap_or(0)
+            .saturating_add(1);
+        GenomeId::from_raw(next)
     }
 
     pub fn execute_synthesis(&mut self, cell_idx: CellIndex) -> Result<(), String> {
@@ -1150,6 +1311,37 @@ fn baseline_process_level(raw_level: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+fn mutate_genome_output_value(
+    seed: u64,
+    tick: u64,
+    cell_id: u32,
+    parent_genome_id: u32,
+    output_offset: u32,
+    value: f32,
+    mutation_rate: f32,
+    mutation_step: f32,
+) -> f32 {
+    if mutation_rate <= 0.0 || mutation_step <= 0.0 {
+        return value;
+    }
+    let mut hash = seed
+        ^ tick.wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        ^ u64::from(cell_id).wrapping_mul(0xBF58_476D_1CE4_E5B9)
+        ^ u64::from(parent_genome_id).wrapping_mul(0x94D0_49BB_1331_11EB)
+        ^ u64::from(output_offset);
+    hash ^= hash >> 30;
+    hash = hash.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    hash ^= hash >> 27;
+    hash = hash.wrapping_mul(0x94D0_49BB_1331_11EB);
+    hash ^= hash >> 31;
+    let sample = (hash >> 40) as f32 / (1_u32 << 24) as f32;
+    if sample >= mutation_rate.clamp(0.0, 1.0) {
+        return value;
+    }
+    let sign = if hash & 1 == 0 { -1.0 } else { 1.0 };
+    (value + sign * mutation_step.clamp(0.0, 1.0)).clamp(-1.0, 1.0)
 }
 
 pub(crate) fn repair_resource_type_id(

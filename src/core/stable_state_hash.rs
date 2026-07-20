@@ -115,6 +115,26 @@ impl StableHasher {
                 }
                 None => self.add_bool(false),
             }
+            match cells.copied_genome_id(index) {
+                Some(genome_id) => {
+                    self.add_bool(true);
+                    self.add_u32(genome_id.raw());
+                    if let Some(genome) = world.genome(genome_id) {
+                        self.add_str(genome.template_id.as_str());
+                        self.add_str(&genome.carrier.material_id);
+                        self.add_f32(genome.carrier.amount);
+                        self.add_f32(genome.carrier.integrity);
+                        self.add_usize(genome.outputs.len());
+                        for (output_id, value) in &genome.outputs {
+                            self.add_genome_output(*output_id);
+                            self.add_f32(value.raw());
+                        }
+                    }
+                }
+                None => self.add_bool(false),
+            }
+            self.add_f32(cells.genome_copy_progress(index));
+            self.add_f32(cells.copied_genome_carrier_amount(index));
             self.add_usize(cells.action_plan(index).ordered_processes().len());
             for process in cells.action_plan(index).ordered_processes() {
                 self.add_process_id(*process);
@@ -226,8 +246,9 @@ impl StableHasher {
             ProcessId::ContractileDisplacement => 6,
             ProcessId::PassiveContactExchange => 7,
             ProcessId::RepairBoundary => 8,
-            ProcessId::JointCreate => 9,
-            ProcessId::JointRepair => 10,
+            ProcessId::GenomeCopying => 9,
+            ProcessId::JointCreate => 10,
+            ProcessId::JointRepair => 11,
         });
     }
 
@@ -239,6 +260,7 @@ impl StableHasher {
             GenomeOutputId::RepairPriority => 3,
             GenomeOutputId::MovementPriority => 4,
             GenomeOutputId::DivisionPreparationPriority => 5,
+            GenomeOutputId::GenomeCopyingPriority => 6,
         });
     }
 

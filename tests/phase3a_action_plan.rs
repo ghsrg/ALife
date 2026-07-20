@@ -34,6 +34,7 @@ fn action_plan_sorts_processes_by_descending_genome_priority() {
             ProcessId::MetabolismEnergyConversion,
             ProcessId::MaterialSynthesis,
             ProcessId::LocalResourceUptake,
+            ProcessId::GenomeCopying,
             ProcessId::RepairBoundary,
             ProcessId::ContractileDisplacement,
             ProcessId::GrowthResourceAllocation,
@@ -55,6 +56,18 @@ fn action_plan_uses_stable_baseline_order_without_genome() {
             ProcessId::RepairBoundary,
         ]
     );
+}
+
+#[test]
+fn action_plan_includes_genome_copying_priority_candidate() {
+    let genome = genome(vec![
+        (GenomeOutputId::GenomeCopyingPriority, 1.0),
+        (GenomeOutputId::ResourceUptakePriority, 0.1),
+    ]);
+
+    let plan = ActionPlan::from_genome(Some(&genome));
+
+    assert_eq!(plan.ordered_processes()[0], ProcessId::GenomeCopying);
 }
 
 #[test]

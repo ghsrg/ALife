@@ -368,6 +368,29 @@ impl Default for DivisionConfig {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GenomeCopyingConfig {
+    pub enabled: bool,
+    pub energy_cost_per_step: EnergyAmount,
+    pub carrier_resource_cost_per_step: ResourceAmount,
+    pub progress_per_step: f32,
+    pub mutation_rate: f32,
+    pub mutation_step: f32,
+}
+
+impl Default for GenomeCopyingConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            energy_cost_per_step: EnergyAmount::zero(),
+            carrier_resource_cost_per_step: ResourceAmount::zero(),
+            progress_per_step: 0.0,
+            mutation_rate: 0.0,
+            mutation_step: 0.0,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DecompositionConfig {
     pub enabled: bool,
     pub resource_layer_index: usize,
@@ -434,6 +457,7 @@ pub struct RuntimeConfig {
     pub synthesis: SynthesisConfig,
     pub contractility: ContractilityConfig,
     pub division: DivisionConfig,
+    pub genome_copying: GenomeCopyingConfig,
     pub decomposition: DecompositionConfig,
     pub material_effects: MaterialEffectConfig,
     pub local_interaction: LocalInteractionConfig,
@@ -459,6 +483,7 @@ impl Default for SimulationTimeConfig {
 pub struct SchedulerCellConfig {
     pub genome_runtime_base_ticks: u64,
     pub genome_runtime_ticks_per_layer: u64,
+    pub genome_copying_ticks: u64,
     pub signal_emit_ticks: u64,
     pub controlled_reaction_ticks: u64,
     pub simple_synthesis_ticks: u64,
@@ -471,6 +496,7 @@ impl Default for SchedulerCellConfig {
         Self {
             genome_runtime_base_ticks: 1,
             genome_runtime_ticks_per_layer: 1,
+            genome_copying_ticks: 1,
             signal_emit_ticks: 1,
             controlled_reaction_ticks: 1,
             simple_synthesis_ticks: 1,
@@ -567,6 +593,7 @@ pub enum ConfigError {
     InvalidLocalInteractionRate,
     InvalidJointRate,
     InvalidSchedulerCadence,
+    InvalidGenomeCopyingRate,
 }
 
 impl RuntimeConfig {
@@ -614,6 +641,7 @@ impl RuntimeConfig {
             synthesis: SynthesisConfig::default(),
             contractility: ContractilityConfig::default(),
             division: DivisionConfig::default(),
+            genome_copying: GenomeCopyingConfig::default(),
             decomposition: DecompositionConfig::default(),
             material_effects: MaterialEffectConfig::default(),
             local_interaction: LocalInteractionConfig::default(),
@@ -627,6 +655,7 @@ impl RuntimeConfig {
         let values = [
             self.scheduler.cell.genome_runtime_base_ticks,
             self.scheduler.cell.genome_runtime_ticks_per_layer,
+            self.scheduler.cell.genome_copying_ticks,
             self.scheduler.cell.signal_emit_ticks,
             self.scheduler.cell.controlled_reaction_ticks,
             self.scheduler.cell.simple_synthesis_ticks,
@@ -643,7 +672,7 @@ impl RuntimeConfig {
             self.scheduler.observer.graph_analysis_ticks,
             self.scheduler.observer.debug_trace_ticks,
         ];
-        if values.iter().any(|value| *value == 0) {
+        if values.contains(&0) {
             return Err(ConfigError::InvalidSchedulerCadence);
         }
         Ok(())
@@ -745,6 +774,25 @@ impl RuntimeConfig {
         Ok(())
     }
 
+    pub fn validate_genome_copying_options(&self) -> Result<(), ConfigError> {
+        let cfg = self.genome_copying;
+        for value in [
+            cfg.energy_cost_per_step.raw(),
+            cfg.carrier_resource_cost_per_step.raw(),
+            cfg.progress_per_step,
+            cfg.mutation_rate,
+            cfg.mutation_step,
+        ] {
+            if !value.is_finite() || value < 0.0 {
+                return Err(ConfigError::InvalidGenomeCopyingRate);
+            }
+        }
+        if cfg.progress_per_step > 1.0 || cfg.mutation_rate > 1.0 || cfg.mutation_step > 1.0 {
+            return Err(ConfigError::InvalidGenomeCopyingRate);
+        }
+        Ok(())
+    }
+
     pub fn with_cells(mut self, cells: Vec<CellInitialConfig>) -> Self {
         for cell in &cells {
             assert!(
@@ -773,6 +821,7 @@ impl RuntimeConfig {
             self.simulation_time.tick_duration_ms as u64,
             self.scheduler.cell.genome_runtime_base_ticks,
             self.scheduler.cell.genome_runtime_ticks_per_layer,
+            self.scheduler.cell.genome_copying_ticks,
             self.scheduler.cell.signal_emit_ticks,
             self.scheduler.cell.controlled_reaction_ticks,
             self.scheduler.cell.simple_synthesis_ticks,
@@ -836,6 +885,15 @@ impl RuntimeConfig {
             self.division.daughter_spacing.to_bits() as u64,
             self.division.min_daughter_radius.raw().to_bits() as u64,
             self.division.partition_loss_fraction.to_bits() as u64,
+            self.genome_copying.enabled as u64,
+            self.genome_copying.energy_cost_per_step.raw().to_bits() as u64,
+            self.genome_copying
+                .carrier_resource_cost_per_step
+                .raw()
+                .to_bits() as u64,
+            self.genome_copying.progress_per_step.to_bits() as u64,
+            self.genome_copying.mutation_rate.to_bits() as u64,
+            self.genome_copying.mutation_step.to_bits() as u64,
             self.decomposition.enabled as u64,
             self.decomposition.resource_layer_index as u64,
             self.decomposition.resources_per_tick.raw().to_bits() as u64,

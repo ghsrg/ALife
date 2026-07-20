@@ -92,6 +92,7 @@ pub struct MetricsSummary {
     pub genome_decision_refresh_count: u32,
 }
 
+use crate::core::genome::GenomeRuntimeTrace;
 use crate::core::process::{ProcessId, RejectionReason};
 use std::collections::HashMap;
 
@@ -116,13 +117,14 @@ pub struct AnalyticsSummary {
     pub organism_candidate_count: Option<u32>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ProcessDiagnostics {
     pub attempts_by_process: HashMap<ProcessId, u32>,
     pub rejections_by_process: HashMap<ProcessId, u32>,
     pub rejections_by_reason: HashMap<RejectionReason, u32>,
     pub tool_limited_mechanisms: Vec<String>,
     pub attempt_order_by_process: Vec<ProcessId>,
+    pub genome_runtime_traces: Vec<GenomeRuntimeTrace>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

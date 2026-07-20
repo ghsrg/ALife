@@ -1,4 +1,7 @@
-use crate::core::process::ProcessId;
+use crate::core::ids::CellId;
+use crate::core::process::{MaterialCapability, ProcessId, ProcessSpec};
+use crate::core::units::Tick;
+use std::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct GenomeId(u32);
@@ -38,9 +41,56 @@ pub enum GenomeOutputId {
     RepairPriority,
     MovementPriority,
     DivisionPreparationPriority,
+    GenomeCopyingPriority,
 }
 
 impl GenomeOutputId {
+    pub fn disposition_for(value: &'static str) -> GenomeOutputDisposition {
+        match value {
+            "resource_uptake_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::LocalResourceUptake,
+            },
+            "resource_export_priority" => GenomeOutputDisposition::Deferred {
+                reason: "resource export execution is not yet integrated into ActionPlan",
+            },
+            "energy_conversion_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::MetabolismEnergyConversion,
+            },
+            "material_synthesis_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::MaterialSynthesis,
+            },
+            "repair_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::RepairBoundary,
+            },
+            "signal_emit_priority" => GenomeOutputDisposition::Deferred {
+                reason: "signal emit execution is not yet integrated into ActionPlan",
+            },
+            "movement_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::ContractileDisplacement,
+            },
+            "division_preparation_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::GrowthResourceAllocation,
+            },
+            "genome_copying_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::GenomeCopying,
+            },
+            "division_partition_priority" => GenomeOutputDisposition::Deferred {
+                reason: "division partition execution is not yet integrated into ActionPlan",
+            },
+            "dormancy_bias" => GenomeOutputDisposition::Deferred {
+                reason: "dormancy bias execution is not yet integrated into ActionPlan",
+            },
+            "internal_rebalance_priority" => GenomeOutputDisposition::Deferred {
+                reason: "internal rebalance execution is not yet integrated into ActionPlan",
+            },
+            output_name => {
+                GenomeOutputDisposition::UnsupportedUntilRegistryChange(UnsupportedGenomeOutput {
+                    output_name,
+                })
+            }
+        }
+    }
+
     pub fn parse(value: &str) -> Result<Self, GenomeError> {
         match value {
             "resource_uptake_priority" => Ok(Self::ResourceUptakePriority),
@@ -49,6 +99,14 @@ impl GenomeOutputId {
             "repair_priority" => Ok(Self::RepairPriority),
             "movement_priority" => Ok(Self::MovementPriority),
             "division_preparation_priority" => Ok(Self::DivisionPreparationPriority),
+            "genome_copying_priority" => Ok(Self::GenomeCopyingPriority),
+            "resource_export_priority"
+            | "signal_emit_priority"
+            | "division_partition_priority"
+            | "dormancy_bias"
+            | "internal_rebalance_priority" => {
+                Err(GenomeError::DeferredOutputId(value.to_string()))
+            }
             other => Err(GenomeError::UnknownOutputId(other.to_string())),
         }
     }
@@ -61,6 +119,7 @@ impl GenomeOutputId {
             Self::RepairPriority => "repair_priority",
             Self::MovementPriority => "movement_priority",
             Self::DivisionPreparationPriority => "division_preparation_priority",
+            Self::GenomeCopyingPriority => "genome_copying_priority",
         }
     }
 
@@ -72,7 +131,175 @@ impl GenomeOutputId {
             Self::RepairPriority => ProcessId::RepairBoundary,
             Self::MovementPriority => ProcessId::ContractileDisplacement,
             Self::DivisionPreparationPriority => ProcessId::GrowthResourceAllocation,
+            Self::GenomeCopyingPriority => ProcessId::GenomeCopying,
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GenomeOutputDisposition {
+    EnabledNow { process_id: ProcessId },
+    Deferred { reason: &'static str },
+    UnsupportedUntilRegistryChange(UnsupportedGenomeOutput),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UnsupportedGenomeOutput {
+    pub output_name: &'static str,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GenomeRuntimeInputs {
+    local_energy_level: f32,
+    crowding_pressure: f32,
+    capacity_used_fraction: f32,
+    capabilities: Vec<(MaterialCapability, bool)>,
+}
+
+impl GenomeRuntimeInputs {
+    pub fn new<I>(
+        local_energy_level: f32,
+        crowding_pressure: f32,
+        capacity_limit: f32,
+        capabilities: I,
+    ) -> Self
+    where
+        I: IntoIterator<Item = (MaterialCapability, bool)>,
+    {
+        let capacity_used_fraction = if capacity_limit.is_finite() && capacity_limit > 0.0 {
+            (crowding_pressure / capacity_limit).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        Self {
+            local_energy_level: normalize_unit(local_energy_level),
+            crowding_pressure: normalize_unit(crowding_pressure),
+            capacity_used_fraction,
+            capabilities: capabilities.into_iter().collect(),
+        }
+    }
+
+    pub const fn local_energy_level(&self) -> f32 {
+        self.local_energy_level
+    }
+
+    pub const fn crowding_pressure(&self) -> f32 {
+        self.crowding_pressure
+    }
+
+    pub const fn capacity_used_fraction(&self) -> f32 {
+        self.capacity_used_fraction
+    }
+
+    pub fn capability_available(&self, capability: MaterialCapability) -> bool {
+        self.capabilities
+            .iter()
+            .find(|(candidate, _)| *candidate == capability)
+            .map(|(_, available)| *available)
+            .unwrap_or(false)
+    }
+
+    pub fn can_emit_to(&self, process_id: ProcessId) -> bool {
+        ProcessSpec::for_id(process_id)
+            .required_capabilities
+            .iter()
+            .all(|capability| self.capability_available(*capability))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GenomeRuntimeTrace {
+    tick: Tick,
+    cell_id: CellId,
+    inputs: GenomeRuntimeInputs,
+    outputs: Vec<GenomeTraceOutput>,
+    action_plan: Vec<ProcessId>,
+    feasibility_result: String,
+}
+
+impl GenomeRuntimeTrace {
+    pub fn new<O, A>(
+        tick: Tick,
+        cell_id: CellId,
+        inputs: GenomeRuntimeInputs,
+        outputs: O,
+        action_plan: A,
+        feasibility_result: impl Into<String>,
+    ) -> Self
+    where
+        O: IntoIterator<Item = (&'static str, f32)>,
+        A: IntoIterator<Item = ProcessId>,
+    {
+        Self {
+            tick,
+            cell_id,
+            inputs,
+            outputs: outputs
+                .into_iter()
+                .map(|(output_id, value)| GenomeTraceOutput {
+                    output_id,
+                    value: normalize_signed(value),
+                })
+                .collect(),
+            action_plan: action_plan.into_iter().collect(),
+            feasibility_result: feasibility_result.into(),
+        }
+    }
+
+    pub const fn tick(&self) -> Tick {
+        self.tick
+    }
+
+    pub const fn cell_id(&self) -> CellId {
+        self.cell_id
+    }
+
+    pub const fn inputs(&self) -> &GenomeRuntimeInputs {
+        &self.inputs
+    }
+
+    pub fn outputs(&self) -> &[GenomeTraceOutput] {
+        &self.outputs
+    }
+
+    pub fn action_plan(&self) -> &[ProcessId] {
+        &self.action_plan
+    }
+
+    pub fn feasibility_result(&self) -> &str {
+        &self.feasibility_result
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GenomeTraceOutput {
+    output_id: &'static str,
+    value: f32,
+}
+
+impl GenomeTraceOutput {
+    pub const fn output_id(self) -> &'static str {
+        self.output_id
+    }
+
+    pub const fn value(self) -> f32 {
+        self.value
+    }
+}
+
+fn normalize_unit(value: f32) -> f32 {
+    if value.is_finite() {
+        value.clamp(0.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
+fn normalize_signed(value: f32) -> f32 {
+    if value.is_finite() {
+        value.clamp(-1.0, 1.0)
+    } else {
+        0.0
     }
 }
 
@@ -208,6 +435,7 @@ impl GenomeState {
 pub enum GenomeError {
     EmptyTemplateId,
     UnknownOutputId(String),
+    DeferredOutputId(String),
     EmptyCarrierMaterialId,
     InvalidCarrierAmount,
     InvalidCarrierIntegrity,
@@ -215,3 +443,27 @@ pub enum GenomeError {
     InvalidRuntimeInterval,
     UnknownTemplate(String),
 }
+
+impl fmt::Display for GenomeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyTemplateId => f.write_str("empty Genome template id"),
+            Self::UnknownOutputId(output_id) => {
+                write!(f, "unknown Genome output id: {output_id}")
+            }
+            Self::DeferredOutputId(output_id) => {
+                write!(f, "deferred Genome output id: {output_id}")
+            }
+            Self::EmptyCarrierMaterialId => f.write_str("empty Genome carrier material id"),
+            Self::InvalidCarrierAmount => f.write_str("invalid Genome carrier amount"),
+            Self::InvalidCarrierIntegrity => f.write_str("invalid Genome carrier integrity"),
+            Self::InvalidVariationAmplitude => f.write_str("invalid Genome variation amplitude"),
+            Self::InvalidRuntimeInterval => f.write_str("invalid Genome runtime interval"),
+            Self::UnknownTemplate(template_id) => {
+                write!(f, "unknown Genome template id: {template_id}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for GenomeError {}

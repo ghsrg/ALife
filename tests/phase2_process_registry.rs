@@ -12,6 +12,7 @@ fn test_every_process_id_has_registry_entry() {
         ProcessId::ContractileDisplacement,
         ProcessId::PassiveContactExchange,
         ProcessId::RepairBoundary,
+        ProcessId::GenomeCopying,
         ProcessId::JointCreate,
         ProcessId::JointRepair,
     ];
@@ -19,6 +20,17 @@ fn test_every_process_id_has_registry_entry() {
         let spec = ProcessSpec::for_id(id);
         assert_eq!(spec.process_id, id, "Missing registry entry for {:?}", id);
     }
+}
+
+#[test]
+fn genome_copying_process_is_registered_now() {
+    let spec = ProcessSpec::for_id(ProcessId::GenomeCopying);
+
+    assert_eq!(spec.status, ProcessStatus::Now);
+    assert!(
+        spec.required_capabilities
+            .contains(&MaterialCapability::GenomeCopying)
+    );
 }
 
 #[test]

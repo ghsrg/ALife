@@ -10,6 +10,16 @@ const PHASE3A_BASELINE: [ProcessId; 6] = [
     ProcessId::RepairBoundary,
 ];
 
+const PHASE3C_GENOME_BASELINE: [ProcessId; 7] = [
+    ProcessId::LocalResourceUptake,
+    ProcessId::MetabolismEnergyConversion,
+    ProcessId::MaterialSynthesis,
+    ProcessId::GrowthResourceAllocation,
+    ProcessId::ContractileDisplacement,
+    ProcessId::RepairBoundary,
+    ProcessId::GenomeCopying,
+];
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ActionPlan {
     ordered_processes: Vec<ProcessId>,
@@ -28,7 +38,7 @@ impl ActionPlan {
                 ordered_processes: PHASE3A_BASELINE.to_vec(),
             };
         }
-        let mut weighted = PHASE3A_BASELINE
+        let mut weighted = PHASE3C_GENOME_BASELINE
             .iter()
             .copied()
             .map(|process| {

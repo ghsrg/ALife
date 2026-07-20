@@ -374,3 +374,9 @@ These rows are historical data reconstructed from `REPORT` worklogs in chronolog
 | [[outputs/worklogs/2026-07-19-1857-REPORT-al-001-historical-roadmap-sync|2026-07-19-1857-REPORT-al-001-historical-roadmap-sync]] | REPORT | Docs | AL-001 | historical report |
 | [[outputs/worklogs/2026-07-19-1937-REPORT-al-007-ui-1d-start-demo-export-acceptance-hardening|2026-07-19-1937-REPORT-al-007-ui-1d-start-demo-export-acceptance-hardening]] | REPORT | UI | AL-007 | closure report |
 | [[outputs/worklogs/2026-07-20-1154-REPORT-al-001-s04-delivery-control-baseline-refactor|2026-07-20-1154-REPORT-al-001-s04-delivery-control-baseline-refactor]] | REPORT | Docs | AL-001-S04 | closure report |
+| [[outputs/worklogs/2026-07-20-1209-PLAN-al-003-s02-genome-runtime-contract-output-coverage|2026-07-20-1209-PLAN-al-003-s02-genome-runtime-contract-output-coverage]] | PLAN | Genome | AL-003-S02 | TDD plan |
+| [[outputs/worklogs/2026-07-20-1244-REPORT-al-003-s02-genome-runtime-contract-output-coverage|2026-07-20-1244-REPORT-al-003-s02-genome-runtime-contract-output-coverage]] | REPORT | Genome | AL-003-S02 | closure report |
+| [[outputs/worklogs/2026-07-20-1259-PLAN-al-003-s03-scheduled-genome-runtime-cadence|2026-07-20-1259-PLAN-al-003-s03-scheduled-genome-runtime-cadence]] | PLAN | Genome | AL-003-S03 | TDD plan |
+| [[outputs/worklogs/2026-07-20-1513-REPORT-al-003-s03-scheduled-genome-runtime-cadence|2026-07-20-1513-REPORT-al-003-s03-scheduled-genome-runtime-cadence]] | REPORT | Genome | AL-003-S03 | closure report |
+| [[outputs/worklogs/2026-07-20-1607-PLAN-al-003-s04-genome-copying-mutation-repair|2026-07-20-1607-PLAN-al-003-s04-genome-copying-mutation-repair]] | PLAN | Genome | AL-003-S04 | TDD plan |
+| [[outputs/worklogs/2026-07-20-1741-REPORT-al-003-s04-genome-copying-mutation-repair|2026-07-20-1741-REPORT-al-003-s04-genome-copying-mutation-repair]] | REPORT | Genome | AL-003-S04 | done |

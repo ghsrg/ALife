@@ -116,6 +116,9 @@ pub struct CellStore {
     contact_stimulus_next: Vec<f32>,
     genome_ids: Vec<Option<GenomeId>>,
     genome_carrier_amounts: Vec<f32>,
+    copied_genome_ids: Vec<Option<GenomeId>>,
+    genome_copy_progresses: Vec<f32>,
+    copied_genome_carrier_amounts: Vec<f32>,
     action_plans: Vec<ActionPlan>,
     next_genome_decision_due_ticks: Vec<u64>,
     genome_decision_offsets: Vec<u64>,
@@ -151,6 +154,9 @@ impl CellStore {
             contact_stimulus_next: Vec::with_capacity(capacity),
             genome_ids: Vec::with_capacity(capacity),
             genome_carrier_amounts: Vec::with_capacity(capacity),
+            copied_genome_ids: Vec::with_capacity(capacity),
+            genome_copy_progresses: Vec::with_capacity(capacity),
+            copied_genome_carrier_amounts: Vec::with_capacity(capacity),
             action_plans: Vec::with_capacity(capacity),
             next_genome_decision_due_ticks: Vec::with_capacity(capacity),
             genome_decision_offsets: Vec::with_capacity(capacity),
@@ -189,6 +195,9 @@ impl CellStore {
         self.contact_stimulus_next.push(0.0);
         self.genome_ids.push(None);
         self.genome_carrier_amounts.push(0.0);
+        self.copied_genome_ids.push(None);
+        self.genome_copy_progresses.push(0.0);
+        self.copied_genome_carrier_amounts.push(0.0);
         self.action_plans.push(ActionPlan::empty());
         self.next_genome_decision_due_ticks.push(1);
         self.genome_decision_offsets.push(0);
@@ -258,6 +267,40 @@ impl CellStore {
         self.genome_carrier_amounts[index.raw()] = amount.max(0.0);
     }
 
+    pub fn genome_carrier_amount(&self, index: CellIndex) -> f32 {
+        self.genome_carrier_amounts[index.raw()]
+    }
+
+    pub fn copied_genome_id(&self, index: CellIndex) -> Option<GenomeId> {
+        self.copied_genome_ids[index.raw()]
+    }
+
+    pub fn set_copied_genome_id(&mut self, index: CellIndex, genome_id: Option<GenomeId>) {
+        self.copied_genome_ids[index.raw()] = genome_id;
+    }
+
+    pub fn genome_copy_progress(&self, index: CellIndex) -> f32 {
+        self.genome_copy_progresses[index.raw()]
+    }
+
+    pub fn set_genome_copy_progress(&mut self, index: CellIndex, progress: f32) {
+        self.genome_copy_progresses[index.raw()] = progress.clamp(0.0, 1.0);
+    }
+
+    pub fn copied_genome_carrier_amount(&self, index: CellIndex) -> f32 {
+        self.copied_genome_carrier_amounts[index.raw()]
+    }
+
+    pub fn set_copied_genome_carrier_amount(&mut self, index: CellIndex, amount: f32) {
+        self.copied_genome_carrier_amounts[index.raw()] = amount.max(0.0);
+    }
+
+    pub fn reset_genome_copy_state(&mut self, index: CellIndex) {
+        self.copied_genome_ids[index.raw()] = None;
+        self.genome_copy_progresses[index.raw()] = 0.0;
+        self.copied_genome_carrier_amounts[index.raw()] = 0.0;
+    }
+
     pub fn action_plan(&self, index: CellIndex) -> &ActionPlan {
         &self.action_plans[index.raw()]
     }
@@ -283,7 +326,8 @@ impl CellStore {
     }
 
     pub fn used_capacity(&self, index: CellIndex) -> CapacityAmount {
-        let genome_capacity_used = self.genome_carrier_amounts[index.raw()];
+        let genome_capacity_used = self.genome_carrier_amounts[index.raw()]
+            + self.copied_genome_carrier_amounts[index.raw()];
         let internal_fragments_capacity_used = 0.0;
         let used = self.resource_amount(index).raw()
             + self.total_materials(index).raw()
@@ -540,6 +584,13 @@ impl CellStore {
             MaterialCapability::Repair => self
                 .material_amount_for_slot(index, MaterialSlot::Repair)
                 .raw(),
+            MaterialCapability::GenomeCopying => self
+                .material_amount_for_slot(index, MaterialSlot::Synthesis)
+                .raw()
+                .min(
+                    self.material_amount_for_slot(index, MaterialSlot::Repair)
+                        .raw(),
+                ),
             MaterialCapability::Contractility => self
                 .material_amount_for_slot(index, MaterialSlot::Contractile)
                 .raw(),

@@ -4,8 +4,9 @@ use crate::core::cell_store::{CellIndex, EnergyBuffer, LifecycleState, RuntimeFl
 use crate::core::config::RuntimeConfig;
 use crate::core::deltas::CommitSummary;
 use crate::core::events::EventKind;
+use crate::core::genome::{GenomeRuntimeInputs, GenomeRuntimeTrace};
 use crate::core::materials::MaterialSlot;
-use crate::core::process::{ActionCandidate, FeasibilityResult, ProcessId};
+use crate::core::process::{ActionCandidate, FeasibilityResult, MaterialCapability, ProcessId};
 use crate::core::resources::ResourceLayerIndex;
 use crate::core::summary::{
     AnalyticsSummary, CollapseReason, MetricsSummary, ObserverProjectionSummary,
@@ -500,6 +501,26 @@ impl TickExecutor {
                 .max(1);
             if self.world.cells().next_genome_decision_due_tick(index) <= executing_tick {
                 let plan = ActionPlan::from_genome(genome);
+                let runtime_inputs = genome_runtime_inputs_for_cell(&self.world, index);
+                let runtime_outputs = genome
+                    .map(|state| {
+                        state
+                            .outputs
+                            .iter()
+                            .map(|(output_id, value)| (output_id.as_str(), value.raw()))
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
+                diagnostics
+                    .genome_runtime_traces
+                    .push(GenomeRuntimeTrace::new(
+                        self.world.tick(),
+                        self.world.cells().id_at(index),
+                        runtime_inputs,
+                        runtime_outputs,
+                        plan.ordered_processes().iter().copied(),
+                        "not_evaluated",
+                    ));
                 let cells = self.world.cells_mut_for_commit();
                 cells.set_action_plan(index, plan);
                 cells.set_next_genome_decision_due_tick(index, executing_tick + genome_cadence);
@@ -645,6 +666,27 @@ impl TickExecutor {
                         );
                         if feasible {
                             let _ = self.world.execute_synthesis(index);
+                        }
+                    }
+                    ProcessId::GenomeCopying => {
+                        if !config.genome_copying.enabled {
+                            continue;
+                        }
+                        let (feasible, _) = run_process(
+                            &self.world,
+                            index,
+                            ProcessId::GenomeCopying,
+                            config.genome_copying.progress_per_step,
+                            &mut diagnostics,
+                            &mut process_attempts,
+                            &mut process_rejections,
+                        );
+                        if feasible {
+                            let candidate = ActionCandidate {
+                                process_id: ProcessId::GenomeCopying,
+                                requested_amount: config.genome_copying.progress_per_step,
+                            };
+                            let _ = self.world.execute_genome_copying(index, &candidate);
                         }
                     }
                     ProcessId::GrowthResourceAllocation => {
@@ -1844,13 +1886,14 @@ fn process_attempt_cadence(config: &RuntimeConfig, process: ProcessId) -> u64 {
     match process {
         ProcessId::MaterialSynthesis => config.scheduler.cell.simple_synthesis_ticks,
         ProcessId::RepairBoundary => config.scheduler.cell.basic_repair_ticks,
+        ProcessId::GenomeCopying => config.scheduler.cell.genome_copying_ticks,
         _ => 1,
     }
     .max(1)
 }
 
 fn is_due_on_executing_tick(executing_tick: u64, cadence: u64) -> bool {
-    executing_tick % cadence.max(1) == 0
+    executing_tick.is_multiple_of(cadence.max(1))
 }
 
 fn clamp_position_to_world(position: Position, radius: f32, world_size: WorldSize) -> Position {
@@ -1962,6 +2005,73 @@ fn run_process(
             (false, feasibility)
         }
     }
+}
+
+fn genome_runtime_inputs_for_cell(world: &WorldState, index: CellIndex) -> GenomeRuntimeInputs {
+    let cells = world.cells();
+    let energy = cells.energy(index);
+    let local_energy_level = if energy.capacity().raw() > 0.0 {
+        energy.current().raw() / energy.capacity().raw()
+    } else {
+        0.0
+    };
+    let pressure = 0.0;
+    let capacity_limit = cells.capacity_limit(index).raw();
+    GenomeRuntimeInputs::new(
+        local_energy_level,
+        pressure,
+        capacity_limit,
+        [
+            (
+                MaterialCapability::BoundaryPermeability,
+                cells.capability_level(index, MaterialCapability::BoundaryPermeability) > 0.0,
+            ),
+            (
+                MaterialCapability::ResourceUptake,
+                cells.capability_level(index, MaterialCapability::ResourceUptake) > 0.0,
+            ),
+            (
+                MaterialCapability::Metabolism,
+                cells.capability_level(index, MaterialCapability::Metabolism) > 0.0,
+            ),
+            (
+                MaterialCapability::StorageCapacity,
+                cells.capability_level(index, MaterialCapability::StorageCapacity) > 0.0,
+            ),
+            (
+                MaterialCapability::MaterialSynthesis,
+                cells.capability_level(index, MaterialCapability::MaterialSynthesis) > 0.0,
+            ),
+            (
+                MaterialCapability::StructuralGrowth,
+                cells.capability_level(index, MaterialCapability::StructuralGrowth) > 0.0,
+            ),
+            (
+                MaterialCapability::Repair,
+                cells.capability_level(index, MaterialCapability::Repair) > 0.0,
+            ),
+            (
+                MaterialCapability::GenomeCopying,
+                cells.capability_level(index, MaterialCapability::GenomeCopying) > 0.0,
+            ),
+            (
+                MaterialCapability::Contractility,
+                cells.capability_level(index, MaterialCapability::Contractility) > 0.0,
+            ),
+            (
+                MaterialCapability::ResourceSensing,
+                cells.capability_level(index, MaterialCapability::ResourceSensing) > 0.0,
+            ),
+            (
+                MaterialCapability::PressureSensing,
+                cells.capability_level(index, MaterialCapability::PressureSensing) > 0.0,
+            ),
+            (
+                MaterialCapability::DamageSensing,
+                cells.capability_level(index, MaterialCapability::DamageSensing) > 0.0,
+            ),
+        ],
+    )
 }
 
 struct RepairExecutionContext<'a> {

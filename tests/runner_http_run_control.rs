@@ -66,7 +66,7 @@ async fn post_run_start_with_valid_scenario_returns_canon_fields() {
 
     assert_eq!(response.status(), 200);
     let json = response_json(response).await;
-    assert_eq!(json["ok"].as_bool().unwrap(), true);
+    assert!(json["ok"].as_bool().unwrap());
     assert_eq!(json["active_run_state"].as_str().unwrap(), "running");
     assert!(json["run_id"].as_str().unwrap().starts_with("run-"));
     assert!(

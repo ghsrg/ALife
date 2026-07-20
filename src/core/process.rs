@@ -7,6 +7,7 @@ pub enum MaterialCapability {
     MaterialSynthesis,
     StructuralGrowth,
     Repair,
+    GenomeCopying,
     Contractility,
     ResourceSensing,
     PressureSensing,
@@ -38,6 +39,7 @@ impl MaterialCapabilityFlags {
             MaterialCapability::MaterialSynthesis => self.material_synthesis,
             MaterialCapability::StructuralGrowth => self.structural_growth,
             MaterialCapability::Repair => self.repair,
+            MaterialCapability::GenomeCopying => self.material_synthesis && self.repair,
             MaterialCapability::Contractility => self.contractility,
             MaterialCapability::ResourceSensing => self.resource_sensing,
             MaterialCapability::PressureSensing => self.pressure_sensing,
@@ -57,6 +59,7 @@ pub enum ProcessId {
     ContractileDisplacement,
     PassiveContactExchange,
     RepairBoundary,
+    GenomeCopying,
     JointCreate,
     JointRepair,
 }
@@ -70,6 +73,7 @@ impl ProcessId {
             ProcessId::GrowthResourceAllocation => Some(3),
             ProcessId::ContractileDisplacement => Some(4),
             ProcessId::RepairBoundary => Some(5),
+            ProcessId::GenomeCopying => Some(6),
             _ => None,
         }
     }
@@ -94,6 +98,7 @@ pub enum RejectionReason {
     NoPressure,
     ProcessDisabled,
     MissingTargetDamage,
+    MissingGenomeCopy,
     JointNotLocal,
     JointEndpointLimitReached,
     JointAlreadyExists,
@@ -198,6 +203,12 @@ static PROCESS_REGISTRY: &[ProcessSpec] = &[
         status: ProcessStatus::Now,
         required_capabilities: &[MaterialCapability::Repair],
         description: "Consumes local inputs to restore damaged boundary material.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::GenomeCopying,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::GenomeCopying],
+        description: "Long-running material-backed copying of a Cell's physical Genome carrier.",
     },
     ProcessSpec {
         process_id: ProcessId::JointCreate,
