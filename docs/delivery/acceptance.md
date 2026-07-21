@@ -21,9 +21,9 @@ here only for the current delivery slice and Candidate Next Work.
 | `AL-003-S02-AC01` | `AL-003-S02` | Genome Runtime contract and registered output coverage can be planned before scheduler/cadence work. | `docs/delivery/roadmap.md` |
 | `AL-003-S03-AC01` | `AL-003-S03` | Scheduled Genome Runtime cadence is verified on top of the closed `AL-003-S02` contract without every-Tick recomputation. | `docs/delivery/roadmap.md`, `outputs/worklogs/2026-07-20-1513-REPORT-al-003-s03-scheduled-genome-runtime-cadence.md`, `tests/scheduler_genome_cadence.rs` |
 | `AL-003-S04-AC01` | `AL-003-S04` | Genome copying, mutation, and repair are implemented as material-backed, deterministic Core behavior after scheduled runtime cadence is closed. | `docs/delivery/roadmap.md`, `outputs/worklogs/2026-07-20-1607-PLAN-al-003-s04-genome-copying-mutation-repair.md`, `outputs/worklogs/2026-07-20-1741-REPORT-al-003-s04-genome-copying-mutation-repair.md`, `tests/phase3c_genome_copying.rs`, `config/scenarios/genome/phase3c_genome_copying_conservative.toml` |
-| `AL-004-S01-AC01` | `AL-004-S01` | Observer vocabulary, source, and ownership matrix can be planned before versioned projection expansion. | `docs/delivery/roadmap.md` |
-| `AL-004-S02-AC01` | `AL-004-S02` | Versioned projection envelope can be planned after `AL-004-S01` and before projection-dependent UI work. | `docs/delivery/roadmap.md` |
-| `AL-002-S16-AC01` | `AL-002-S16` | Runner hardening can be planned before UI reconnect/remote-viewer behavior depends on it. | `docs/delivery/roadmap.md` |
+| `AL-004-S01-AC01` | `AL-004-S01` | Observer vocabulary, source, and ownership matrix is closed before versioned projection expansion. | `docs/delivery/roadmap.md`, `outputs/worklogs/2026-07-20-2111-PLAN-al-004-s01-observer-contract-closure.md`, `outputs/worklogs/2026-07-21-1014-REPORT-al-004-s01-observer-contract-closure.md`, `src/observer/contract.rs`, `tests/observer_contract_closure.rs` |
+| `AL-004-S02-AC01` | `AL-004-S02` | Versioned projection envelope can be planned after `AL-004-S01` and before projection-dependent UI work, including top-level projection/entity/source/completeness vocabulary and Rust-only vs generated-schema decision. | `docs/delivery/roadmap.md` |
+| `AL-002-S16-AC01` | `AL-002-S16` | Runner hardening can be executed through a TDD plan before UI reconnect/remote-viewer behavior depends on it. | `docs/delivery/roadmap.md`, `outputs/worklogs/2026-07-20-2134-PLAN-al-002-s16-runner-4-remote-viewer-acceptance-hardening.md` |
 
 ## Legacy Acceptance Matrix
 

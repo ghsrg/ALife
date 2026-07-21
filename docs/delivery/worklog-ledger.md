@@ -380,3 +380,6 @@ These rows are historical data reconstructed from `REPORT` worklogs in chronolog
 | [[outputs/worklogs/2026-07-20-1513-REPORT-al-003-s03-scheduled-genome-runtime-cadence|2026-07-20-1513-REPORT-al-003-s03-scheduled-genome-runtime-cadence]] | REPORT | Genome | AL-003-S03 | closure report |
 | [[outputs/worklogs/2026-07-20-1607-PLAN-al-003-s04-genome-copying-mutation-repair|2026-07-20-1607-PLAN-al-003-s04-genome-copying-mutation-repair]] | PLAN | Genome | AL-003-S04 | TDD plan |
 | [[outputs/worklogs/2026-07-20-1741-REPORT-al-003-s04-genome-copying-mutation-repair|2026-07-20-1741-REPORT-al-003-s04-genome-copying-mutation-repair]] | REPORT | Genome | AL-003-S04 | done |
+| [[outputs/worklogs/2026-07-20-2111-PLAN-al-004-s01-observer-contract-closure|2026-07-20-2111-PLAN-al-004-s01-observer-contract-closure]] | PLAN | Observer | AL-004-S01 | TDD plan |
+| [[outputs/worklogs/2026-07-20-2134-PLAN-al-002-s16-runner-4-remote-viewer-acceptance-hardening|2026-07-20-2134-PLAN-al-002-s16-runner-4-remote-viewer-acceptance-hardening]] | PLAN | Runner | AL-002-S16 | TDD plan |
+| [[outputs/worklogs/2026-07-21-1014-REPORT-al-004-s01-observer-contract-closure|2026-07-21-1014-REPORT-al-004-s01-observer-contract-closure]] | REPORT | Observer | AL-004-S01 | done |
