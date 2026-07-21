@@ -3,3 +3,4 @@ pub mod classifiers;
 pub mod config;
 pub mod contract;
 pub mod projection;
+pub mod projection_envelope;

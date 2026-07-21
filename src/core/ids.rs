@@ -16,6 +16,9 @@ pub struct JointId(u32);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventId(u32);
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LineageEventId(u32);
+
 macro_rules! impl_id {
     ($name:ident) => {
         impl $name {
@@ -36,3 +39,4 @@ impl_id!(MaterialTypeId);
 impl_id!(MaterialFragmentId);
 impl_id!(JointId);
 impl_id!(EventId);
+impl_id!(LineageEventId);

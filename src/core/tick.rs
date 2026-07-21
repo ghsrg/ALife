@@ -1095,10 +1095,16 @@ impl TickExecutor {
                 );
             }
             if next_state == LifecycleState::Dead {
+                let genome_id = self.world.cells().genome_id(index);
                 self.world.events_mut_for_commit().push(
                     current_tick,
                     EventKind::CellDead,
                     Some(cell_id),
+                );
+                self.world.lineage_events_mut_for_commit().push_cell_died(
+                    current_tick,
+                    cell_id,
+                    genome_id,
                 );
             }
 

@@ -9,6 +9,7 @@ pub enum ObserverSourceOwner {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ObserverConsumerSurface {
+    ProjectionEnvelope,
     MetricsProjection,
     LiveFrameProjection,
     MechanismCoverage,
@@ -116,6 +117,18 @@ const RUNNER_FRAME_FIELDS: &[ObserverFieldSpec] = &[
     runner_core("cells.lifecycle"),
 ];
 
+const PROJECTION_ENVELOPE_FIELDS: &[ObserverFieldSpec] = &[
+    envelope_field("projection_envelope.schema_version"),
+    envelope_field("projection_envelope.projection_kind"),
+    envelope_field("projection_envelope.run_id"),
+    envelope_field("projection_envelope.tick"),
+    envelope_field("projection_envelope.config_hash"),
+    envelope_field("projection_envelope.engine_version"),
+    envelope_field("projection_envelope.source"),
+    envelope_field("projection_envelope.completeness"),
+    envelope_field("projection_envelope.generated_at_unix_ms"),
+];
+
 const COVERAGE_STATUSES: &[CoverageStatusSpec] = &[
     status("covered"),
     status("partially_covered"),
@@ -153,7 +166,8 @@ const WARNING_CODES: &[WarningCodeSpec] = &[
 ];
 
 pub fn observer_field_specs() -> &'static [ObserverFieldSpec] {
-    const LEN: usize = METRICS_FIELDS.len() + RUNNER_FRAME_FIELDS.len();
+    const LEN: usize =
+        METRICS_FIELDS.len() + RUNNER_FRAME_FIELDS.len() + PROJECTION_ENVELOPE_FIELDS.len();
     static SPECS: std::sync::OnceLock<[ObserverFieldSpec; LEN]> = std::sync::OnceLock::new();
     SPECS.get_or_init(|| {
         let mut specs = [METRICS_FIELDS[0]; LEN];
@@ -167,6 +181,12 @@ pub fn observer_field_specs() -> &'static [ObserverFieldSpec] {
             specs[index] = RUNNER_FRAME_FIELDS[runner_index];
             index += 1;
             runner_index += 1;
+        }
+        let mut envelope_index = 0;
+        while envelope_index < PROJECTION_ENVELOPE_FIELDS.len() {
+            specs[index] = PROJECTION_ENVELOPE_FIELDS[envelope_index];
+            index += 1;
+            envelope_index += 1;
         }
         specs
     })
@@ -217,6 +237,18 @@ const fn runner_core(field_id: &'static str) -> ObserverFieldSpec {
         consumer_surface: ObserverConsumerSurface::LiveFrameProjection,
         readiness: ObserverReadiness::Current,
         provenance: "CommittedSnapshot -> WorldFrameProjection",
+        follow_up_plan_id: Some("AL-004-S02"),
+        mutable: false,
+    }
+}
+
+const fn envelope_field(field_id: &'static str) -> ObserverFieldSpec {
+    ObserverFieldSpec {
+        field_id,
+        source_owner: ObserverSourceOwner::ObserverDerivedFeature,
+        consumer_surface: ObserverConsumerSurface::ProjectionEnvelope,
+        readiness: ObserverReadiness::Current,
+        provenance: "ProjectionEnvelope metadata",
         follow_up_plan_id: Some("AL-004-S02"),
         mutable: false,
     }

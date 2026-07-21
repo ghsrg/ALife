@@ -236,3 +236,7 @@ tags:
 - [[outputs/worklogs/2026-07-20-2111-PLAN-al-004-s01-observer-contract-closure|2026-07-20-2111-PLAN-al-004-s01-observer-contract-closure]]
 - [[outputs/worklogs/2026-07-20-2134-PLAN-al-002-s16-runner-4-remote-viewer-acceptance-hardening|2026-07-20-2134-PLAN-al-002-s16-runner-4-remote-viewer-acceptance-hardening]]
 - [[outputs/worklogs/2026-07-21-1014-REPORT-al-004-s01-observer-contract-closure|2026-07-21-1014-REPORT-al-004-s01-observer-contract-closure]]
+- [[outputs/worklogs/2026-07-21-1105-PLAN-al-003-s05-lineage-event-log-and-replay|2026-07-21-1105-PLAN-al-003-s05-lineage-event-log-and-replay]]
+- [[outputs/worklogs/2026-07-21-1159-REPORT-al-003-s05-lineage-event-log-and-replay|2026-07-21-1159-REPORT-al-003-s05-lineage-event-log-and-replay]]
+- [[outputs/worklogs/2026-07-21-1248-PLAN-al-004-s02-versioned-projection-envelope|2026-07-21-1248-PLAN-al-004-s02-versioned-projection-envelope]]
+- [[outputs/worklogs/2026-07-21-1312-REPORT-al-004-s02-versioned-projection-envelope|2026-07-21-1312-REPORT-al-004-s02-versioned-projection-envelope]]

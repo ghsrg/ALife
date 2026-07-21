@@ -1,5 +1,9 @@
 use crate::core::cell_store::LifecycleState;
 use crate::core::snapshot::CommittedSnapshot;
+use crate::observer::projection_envelope::{
+    EnvelopedProjection, ProjectionBuildContext, ProjectionEnvelope, ProjectionKind,
+    ProjectionSchemaVersion,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ProjectedCell {
@@ -57,6 +61,25 @@ impl WorldFrameProjection {
                 })
                 .collect(),
         }
+    }
+
+    pub fn as_enveloped(
+        &self,
+        context: ProjectionBuildContext,
+    ) -> EnvelopedProjection<WorldFrameProjection> {
+        EnvelopedProjection::new(
+            ProjectionEnvelope::new(
+                ProjectionSchemaVersion::new(
+                    "WorldFrameProjection",
+                    u16::from(Self::SCHEMA_VERSION),
+                    0,
+                ),
+                ProjectionKind::Frame,
+                Some(self.committed_tick),
+                context,
+            ),
+            self.clone(),
+        )
     }
 }
 

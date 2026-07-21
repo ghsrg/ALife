@@ -11,6 +11,9 @@ use crate::core::genome::{GenomeId, GenomeOutputValue, GenomeState};
 use crate::core::genome_bootstrap::instantiate_initial_genome;
 use crate::core::ids::ResourceTypeId;
 use crate::core::joints::JointStore;
+use crate::core::lineage::{
+    DivisionLineage, GenomeCopyLineage, GenomeMutationDelta, LineageEventLog,
+};
 use crate::core::resources::ResourceGrid;
 use crate::core::spatial::SpatialIndex;
 use crate::core::units::{
@@ -41,6 +44,7 @@ pub struct WorldState {
     spatial_index: SpatialIndex,
     contact_cache: ContactCache,
     events: EventBuffer,
+    lineage_events: LineageEventLog,
     fragments: FragmentStore,
     joints: JointStore,
     genomes: Vec<GenomeState>,
@@ -177,6 +181,23 @@ impl WorldState {
             cells.set_next_genome_decision_due_tick(cell, cadence + offset);
         }
 
+        let mut lineage_events = LineageEventLog::with_capacity(cells.len() + 16);
+        for cell in cells.iter_indices() {
+            let genome_id = cells.genome_id(cell);
+            let genome_template_id = genome_id.and_then(|id| {
+                genomes
+                    .iter()
+                    .find(|genome| genome.id == id)
+                    .map(|genome| genome.template_id.clone())
+            });
+            lineage_events.push_founder_cell(
+                Tick::from_raw(0),
+                cells.id_at(cell),
+                genome_id,
+                genome_template_id,
+            );
+        }
+
         let mut spatial_index = SpatialIndex::new();
         spatial_index.rebuild(&cells, config.world.size, config.space.spatial_grid_size);
         let mut contact_cache = ContactCache::default();
@@ -201,6 +222,7 @@ impl WorldState {
             spatial_index,
             contact_cache,
             events: EventBuffer::with_capacity(128),
+            lineage_events,
             fragments: FragmentStore::default(),
             joints: JointStore::with_capacity(4),
             genomes,
@@ -269,6 +291,14 @@ impl WorldState {
 
     pub fn events_mut_for_commit(&mut self) -> &mut EventBuffer {
         &mut self.events
+    }
+
+    pub fn lineage_events(&self) -> &LineageEventLog {
+        &self.lineage_events
+    }
+
+    pub fn lineage_events_mut_for_commit(&mut self) -> &mut LineageEventLog {
+        &mut self.lineage_events
     }
 
     pub fn fragments(&self) -> &FragmentStore {
@@ -701,7 +731,7 @@ impl WorldState {
             .cloned()
             .ok_or_else(|| "MissingGenomeCopy".to_string())?;
         let copied_id = self.next_genome_id();
-        let mut copied = parent;
+        let mut copied = parent.clone();
         copied.id = copied_id;
         copied.outputs = copied
             .outputs
@@ -721,8 +751,33 @@ impl WorldState {
                 (output_id, GenomeOutputValue::new(mutated))
             })
             .collect();
+        let mutation_deltas = parent
+            .outputs
+            .iter()
+            .zip(copied.outputs.iter())
+            .filter_map(|((parent_output_id, before), (copied_output_id, after))| {
+                debug_assert_eq!(parent_output_id, copied_output_id);
+                (before.raw() != after.raw()).then_some(GenomeMutationDelta {
+                    output_id: *copied_output_id,
+                    before: before.raw(),
+                    after: after.raw(),
+                })
+            })
+            .collect();
+        let copy_lineage = GenomeCopyLineage {
+            cell_id: self.cells.id_at(cell_idx),
+            parent_genome_id: parent_id,
+            copied_genome_id: copied_id,
+            genome_template_id: copied.template_id.clone(),
+            carrier_material_id: copied.carrier.material_id.clone(),
+            carrier_amount: copied.carrier.amount,
+            carrier_integrity: copied.carrier.integrity,
+            mutation_deltas,
+        };
         self.genomes.push(copied);
         self.cells.set_copied_genome_id(cell_idx, Some(copied_id));
+        self.lineage_events
+            .push_genome_copied(self.tick, copy_lineage);
         Ok(())
     }
 
@@ -962,6 +1017,20 @@ impl WorldState {
             self.cells
                 .set_next_genome_decision_due_tick(daughter, self.tick.raw() + 1);
         }
+
+        self.lineage_events.push_cell_divided(
+            self.tick,
+            DivisionLineage {
+                parent_cell_id: parent_id,
+                daughter_a_cell_id: parent_id,
+                daughter_b_cell_id: daughter_b_id,
+                parent_genome_id,
+                daughter_a_genome_id: self.cells.genome_id(cell_idx),
+                daughter_b_genome_id: self.cells.genome_id(daughter_b_index),
+                split_ratio: self.config.division.split_ratio,
+                partition_loss_fraction: self.config.division.partition_loss_fraction,
+            },
+        );
 
         Ok(DivisionOutcome {
             parent_id,
