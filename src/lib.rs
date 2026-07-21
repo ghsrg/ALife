@@ -20,4 +20,5 @@ pub mod bin {
 }
 
 pub mod observer;
+pub mod storage;
 pub mod viewer_server;

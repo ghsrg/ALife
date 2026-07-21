@@ -241,3 +241,4 @@ tags:
 - [[outputs/worklogs/2026-07-21-1248-PLAN-al-004-s02-versioned-projection-envelope|2026-07-21-1248-PLAN-al-004-s02-versioned-projection-envelope]]
 - [[outputs/worklogs/2026-07-21-1312-REPORT-al-004-s02-versioned-projection-envelope|2026-07-21-1312-REPORT-al-004-s02-versioned-projection-envelope]]
 - [[outputs/worklogs/2026-07-21-2221-REPORT-al-002-s16-runner-4-remote-viewer-acceptance-hardening|2026-07-21-2221-REPORT-al-002-s16-runner-4-remote-viewer-acceptance-hardening]]
+- [[outputs/worklogs/2026-07-21-2320-REPORT-al-005-s01-run-metadata-and-storage-index|2026-07-21-2320-REPORT-al-005-s01-run-metadata-and-storage-index]]
