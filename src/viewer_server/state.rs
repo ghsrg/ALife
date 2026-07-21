@@ -3,6 +3,7 @@ use crate::runner::engine::RunEngine;
 use crate::runner::lifecycle::{ActiveRunState, RunnerProcessState};
 use crate::runner::projections::WorldFrameProjection;
 use crate::runner::scenario_doc::{ScenarioDocument, ScenarioSource};
+use crate::runner::server_config::ServerConfig;
 use crate::viewer_server::broadcaster::{Broadcaster, WsMessage};
 use crate::viewer_server::frame_encoder::encode_world_frame;
 use crate::viewer_server::projection_sampler::{
@@ -61,6 +62,7 @@ pub struct RunnerCommandResult {
     pub scenario_hash: Option<String>,
     pub effective_seed: Option<u64>,
     pub terminal_reason: Option<String>,
+    pub ticks_per_second: f32,
 }
 
 pub struct SharedState {
@@ -73,11 +75,14 @@ pub struct SharedState {
     pub scenario_id: Option<String>,
     pub committed_tick: u64,
     pub terminal_reason: Option<String>,
+    pub started_at: Option<Instant>,
+    pub latest_frame: Option<Vec<u8>>,
     pub scenarios_dir: PathBuf,
     pub tick_signal: Option<Arc<TickLoopSignal>>,
     pub engine_snapshot_buffer_size: usize,
     pub target_broadcast_fps: u32,
     pub viewer_projection: ViewerProjectionConfig,
+    pub server_config: ServerConfig,
     pub broadcaster: Broadcaster,
 }
 
@@ -87,6 +92,7 @@ impl SharedState {
         engine_snapshot_buffer_size: usize,
         target_broadcast_fps: u32,
         viewer_projection: ViewerProjectionConfig,
+        server_config: ServerConfig,
     ) -> Self {
         Self {
             engine: None,
@@ -98,11 +104,14 @@ impl SharedState {
             scenario_id: None,
             committed_tick: 0,
             terminal_reason: None,
+            started_at: None,
+            latest_frame: None,
             scenarios_dir,
             tick_signal: None,
             engine_snapshot_buffer_size,
             target_broadcast_fps,
             viewer_projection,
+            server_config,
             broadcaster: Broadcaster::new(128),
         }
     }
@@ -126,6 +135,19 @@ impl SharedState {
             scenario_hash: self.scenario_hash.clone(),
             effective_seed: self.effective_seed,
             terminal_reason: self.terminal_reason.clone(),
+            ticks_per_second: self.ticks_per_second(),
+        }
+    }
+
+    pub fn ticks_per_second(&self) -> f32 {
+        let Some(started_at) = self.started_at else {
+            return 0.0;
+        };
+        let elapsed = started_at.elapsed().as_secs_f32();
+        if elapsed > 0.0 {
+            self.committed_tick as f32 / elapsed
+        } else {
+            0.0
         }
     }
 }
@@ -164,6 +186,8 @@ pub fn status_ws_text_from_state(state: &SharedState) -> String {
         "scenario_hash": state.scenario_hash,
         "effective_seed": state.effective_seed,
         "terminal_reason": state.terminal_reason,
+        "collapse_reason": state.terminal_reason,
+        "ticks_per_second": state.ticks_per_second(),
     })
     .to_string()
 }
@@ -172,7 +196,9 @@ pub fn encode_latest_frame(state: &mut SharedState) -> Option<Vec<u8>> {
     let engine = state.engine.as_mut()?;
     let snapshot = engine.latest_committed_snapshot();
     let projection = WorldFrameProjection::from_committed_snapshot(&snapshot);
-    Some(encode_world_frame(&projection))
+    let bytes = encode_world_frame(&projection);
+    state.latest_frame = Some(bytes.clone());
+    Some(bytes)
 }
 
 pub fn new_app_state(
@@ -202,6 +228,21 @@ pub fn new_app_state_with_projection(
         engine_snapshot_buffer_size,
         target_broadcast_fps,
         viewer_projection,
+        ServerConfig::default(),
+    )))
+}
+
+pub fn new_app_state_with_server_config(
+    scenarios_dir: PathBuf,
+    engine_snapshot_buffer_size: usize,
+    server_config: ServerConfig,
+) -> AppState {
+    Arc::new(Mutex::new(SharedState::new(
+        scenarios_dir,
+        engine_snapshot_buffer_size,
+        server_config.target_broadcast_fps,
+        server_config.viewer_projection,
+        server_config,
     )))
 }
 
@@ -343,6 +384,9 @@ pub fn spawn_tick_loop(state: AppState) {
                 match tick_result {
                     Ok((committed_tick, frame)) => {
                         locked.committed_tick = committed_tick;
+                        if let Some(bytes) = &frame {
+                            locked.latest_frame = Some(bytes.clone());
+                        }
                         Ok(frame)
                     }
                     Err(err) => Err(err),
@@ -369,4 +413,23 @@ pub fn spawn_tick_loop(state: AppState) {
         }
         locked.tick_signal = None;
     });
+}
+
+pub fn request_graceful_shutdown(state: &AppState) {
+    let mut locked = state.lock().unwrap();
+    locked.process_state = RunnerProcessState::ShuttingDown;
+    if let Some(signal) = &locked.tick_signal {
+        signal.request_stop();
+    }
+    if let Some(engine) = locked.engine.as_mut() {
+        let _ = engine.stop();
+    }
+    if matches!(
+        locked.active_run_state,
+        ActiveRunState::Preparing | ActiveRunState::Running | ActiveRunState::Paused
+    ) {
+        locked.active_run_state = ActiveRunState::Completed;
+    }
+    locked.engine = None;
+    locked.tick_signal = None;
 }

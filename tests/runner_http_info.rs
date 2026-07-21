@@ -1,4 +1,5 @@
-use alife::viewer_server::{create_app, state::new_app_state};
+use alife::runner::server_config::ServerConfig;
+use alife::viewer_server::{create_app, create_app_with_config, state::new_app_state};
 use axum::body::Body;
 use axum::http::{Method, Request, header};
 use http_body_util::BodyExt;
@@ -47,6 +48,8 @@ async fn get_server_info_returns_json_with_required_fields() {
     assert!(json.get("engine_version").is_some());
     assert!(json.get("api_version").is_some());
     assert!(json.get("allow_remote_viewer").is_some());
+    assert!(json.get("bind_host").is_some());
+    assert!(json.get("allowed_origins").is_some());
 }
 
 #[tokio::test]
@@ -124,5 +127,85 @@ async fn local_viewer_preflight_receives_cors_headers() {
             .to_str()
             .unwrap()
             .contains("POST")
+    );
+}
+
+#[tokio::test]
+async fn remote_viewer_info_reports_effective_config() {
+    let cfg = ServerConfig {
+        bind_host: "0.0.0.0".to_string(),
+        allow_remote_viewer: true,
+        allowed_origins: vec!["http://192.168.1.51:5173".to_string()],
+        ..ServerConfig::default()
+    };
+    let app = create_app_with_config(make_state(), cfg);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/server/info")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json["allow_remote_viewer"], true);
+    assert_eq!(json["bind_host"], "0.0.0.0");
+    assert_eq!(json["allowed_origins"][0], "http://192.168.1.51:5173");
+}
+
+#[tokio::test]
+async fn remote_viewer_cors_allows_only_configured_origins() {
+    let cfg = ServerConfig {
+        bind_host: "0.0.0.0".to_string(),
+        allow_remote_viewer: true,
+        allowed_origins: vec!["http://192.168.1.51:5173".to_string()],
+        ..ServerConfig::default()
+    };
+    let app = create_app_with_config(make_state(), cfg);
+
+    let allowed = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::OPTIONS)
+                .uri("/run/start")
+                .header(header::ORIGIN, "http://192.168.1.51:5173")
+                .header(header::ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(allowed.status(), 204);
+    assert_eq!(
+        allowed
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .unwrap(),
+        "http://192.168.1.51:5173"
+    );
+
+    let rejected = app
+        .oneshot(
+            Request::builder()
+                .method(Method::OPTIONS)
+                .uri("/run/start")
+                .header(header::ORIGIN, "http://evil.example:5173")
+                .header(header::ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(rejected.status(), 204);
+    assert!(
+        rejected
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_none()
     );
 }

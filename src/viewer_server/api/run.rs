@@ -10,7 +10,7 @@ use crate::viewer_server::state::{
 };
 use axum::{
     Json, Router,
-    extract::{Json as ExtractJson, State},
+    extract::{Json as ExtractJson, State, rejection::JsonRejection},
     http::StatusCode,
     routing::{get, post},
 };
@@ -26,6 +26,8 @@ struct RunStatus {
     scenario_hash: Option<String>,
     effective_seed: Option<u64>,
     terminal_reason: Option<String>,
+    collapse_reason: Option<String>,
+    ticks_per_second: f32,
 }
 
 #[derive(Deserialize)]
@@ -57,6 +59,10 @@ struct ErrorResponse {
     ok: bool,
     category: String,
     message: String,
+    command: String,
+    scenario_id: Option<String>,
+    process_state: String,
+    active_run_state: String,
     current_state: String,
 }
 
@@ -91,21 +97,33 @@ fn status_from_state(state: &crate::viewer_server::state::SharedState) -> RunSta
         scenario_hash: state.scenario_hash.clone(),
         effective_seed: state.effective_seed,
         terminal_reason: state.terminal_reason.clone(),
+        collapse_reason: state.terminal_reason.clone(),
+        ticks_per_second: state.ticks_per_second(),
     }
 }
 
 fn error_response(
+    state: &AppState,
     status: StatusCode,
     category: &str,
     message: impl Into<String>,
+    command: &str,
+    scenario_id: Option<String>,
 ) -> (StatusCode, Json<ErrorResponse>) {
+    let locked = state.lock().unwrap();
+    let process_state = process_state_label(locked.process_state).to_string();
+    let active_run_state = active_state_label(locked.active_run_state).to_string();
     (
         status,
         Json(ErrorResponse {
             ok: false,
             category: category.to_string(),
             message: message.into(),
-            current_state: "see /run/status".to_string(),
+            command: command.to_string(),
+            scenario_id,
+            process_state: process_state.clone(),
+            active_run_state: active_run_state.clone(),
+            current_state: format!("{process_state}/{active_run_state}"),
         }),
     )
 }
@@ -171,33 +189,80 @@ fn document_with_seed_override(
 
 async fn handle_run_start(
     State(state): State<AppState>,
-    ExtractJson(req): ExtractJson<StartRequest>,
+    req: Result<ExtractJson<StartRequest>, JsonRejection>,
 ) -> Result<Json<StartResponse>, (StatusCode, Json<ErrorResponse>)> {
-    {
+    let ExtractJson(req) = req.map_err(|err| {
+        error_response(
+            &state,
+            StatusCode::BAD_REQUEST,
+            "invalid_command",
+            err.to_string(),
+            "StartRun",
+            None,
+        )
+    })?;
+    let start_guard = {
         let locked = state.lock().unwrap();
-        if locked.is_active() {
-            return Err(error_response(
+        if matches!(locked.process_state, RunnerProcessState::ShuttingDown) {
+            Some((
+                StatusCode::SERVICE_UNAVAILABLE,
+                "unsupported_operation",
+                "Runner is shutting down".to_string(),
+            ))
+        } else if locked.is_active() {
+            Some((
                 StatusCode::CONFLICT,
                 "state_conflict",
                 format!("Run already active in {:?}", locked.active_run_state),
-            ));
+            ))
+        } else {
+            None
         }
+    };
+    if let Some((status, category, message)) = start_guard {
+        return Err(error_response(
+            &state,
+            status,
+            category,
+            message,
+            "StartRun",
+            Some(req.scenario_id.clone()),
+        ));
     }
 
     let scenarios_dir = state.lock().unwrap().scenarios_dir.clone();
     let meta = scan_scenarios(&scenarios_dir)
-        .map_err(|err| error_response(StatusCode::BAD_REQUEST, "scenario_error", err.to_string()))?
+        .map_err(|err| {
+            error_response(
+                &state,
+                StatusCode::BAD_REQUEST,
+                "scenario_error",
+                err.to_string(),
+                "StartRun",
+                Some(req.scenario_id.clone()),
+            )
+        })?
         .into_iter()
         .find(|scenario| scenario.id == req.scenario_id)
         .ok_or_else(|| {
             error_response(
+                &state,
                 StatusCode::BAD_REQUEST,
                 "scenario_error",
                 format!("Scenario not found: {}", req.scenario_id),
+                "StartRun",
+                Some(req.scenario_id.clone()),
             )
         })?;
     let document = load_scenario_document(&meta).map_err(|err| {
-        error_response(StatusCode::BAD_REQUEST, "scenario_error", err.to_string())
+        error_response(
+            &state,
+            StatusCode::BAD_REQUEST,
+            "scenario_error",
+            err.to_string(),
+            "StartRun",
+            Some(req.scenario_id.clone()),
+        )
     })?;
     let (document, effective_seed) = document_with_seed_override(document, req.seed_override);
     let scenario_hash = document.scenario_hash.to_string();
@@ -210,16 +275,22 @@ async fn handle_run_start(
     )
     .map_err(|err| {
         error_response(
+            &state,
             StatusCode::INTERNAL_SERVER_ERROR,
             "bootstrap_error",
             err.to_string(),
+            "StartRun",
+            Some(req.scenario_id.clone()),
         )
     })?;
     engine.start().map_err(|err| {
         error_response(
+            &state,
             StatusCode::INTERNAL_SERVER_ERROR,
             "core_error",
             err.to_string(),
+            "StartRun",
+            Some(req.scenario_id.clone()),
         )
     })?;
 
@@ -236,6 +307,8 @@ async fn handle_run_start(
         locked.effective_seed = Some(effective_seed);
         locked.committed_tick = 0;
         locked.terminal_reason = None;
+        locked.started_at = Some(std::time::Instant::now());
+        locked.latest_frame = None;
     }
 
     broadcast_status(&state);
@@ -270,7 +343,17 @@ async fn handle_run_pause(
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
     let response = dispatch_command(&state, RunnerCommand::PauseRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot pause run"))?;
+        .map_err(|category| {
+            let scenario_id = state.lock().unwrap().scenario_id.clone();
+            error_response(
+                &state,
+                StatusCode::CONFLICT,
+                &category,
+                "Cannot pause run",
+                "PauseRun",
+                scenario_id,
+            )
+        })?;
     broadcast_status(&state);
     broadcast_forced_frame(&state);
     Ok(response)
@@ -281,7 +364,17 @@ async fn handle_run_resume(
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
     let response = dispatch_command(&state, RunnerCommand::ResumeRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot resume run"))?;
+        .map_err(|category| {
+            let scenario_id = state.lock().unwrap().scenario_id.clone();
+            error_response(
+                &state,
+                StatusCode::CONFLICT,
+                &category,
+                "Cannot resume run",
+                "ResumeRun",
+                scenario_id,
+            )
+        })?;
     broadcast_status(&state);
     Ok(response)
 }
@@ -291,7 +384,17 @@ async fn handle_run_step(
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
     let response = dispatch_command(&state, RunnerCommand::StepRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot step run"))?;
+        .map_err(|category| {
+            let scenario_id = state.lock().unwrap().scenario_id.clone();
+            error_response(
+                &state,
+                StatusCode::CONFLICT,
+                &category,
+                "Cannot step run",
+                "StepRun",
+                scenario_id,
+            )
+        })?;
     broadcast_status(&state);
     broadcast_forced_frame(&state);
     Ok(response)
@@ -302,7 +405,17 @@ async fn handle_run_stop(
 ) -> Result<Json<CommandResponse>, (StatusCode, Json<ErrorResponse>)> {
     let response = dispatch_command(&state, RunnerCommand::StopRun)
         .map(command_result_response)
-        .map_err(|category| error_response(StatusCode::CONFLICT, &category, "Cannot stop run"))?;
+        .map_err(|category| {
+            let scenario_id = state.lock().unwrap().scenario_id.clone();
+            error_response(
+                &state,
+                StatusCode::CONFLICT,
+                &category,
+                "Cannot stop run",
+                "StopRun",
+                scenario_id,
+            )
+        })?;
     broadcast_status(&state);
     broadcast_forced_frame(&state);
     Ok(response)

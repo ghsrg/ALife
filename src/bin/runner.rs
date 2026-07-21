@@ -4,7 +4,10 @@ use alife::runner::lifecycle::ActiveRunState;
 use alife::runner::progress::{ProgressInterval, ProgressSnapshot, format_progress_table};
 use alife::runner::scenario::{ScenarioMeta, load_scenario_document, scan_scenarios};
 use alife::runner::server_config::{ServerConfig, load_server_config};
-use alife::viewer_server::{create_app, state::new_app_state_with_projection};
+use alife::viewer_server::{
+    create_app,
+    state::{new_app_state_with_projection, request_graceful_shutdown},
+};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -107,7 +110,11 @@ async fn serve_http(server_config: ServerConfig, scenarios_dir: PathBuf) -> Resu
         server_config.target_broadcast_fps,
         server_config.viewer_projection,
     );
-    let app = create_app(app_state);
+    {
+        let mut locked = app_state.lock().unwrap();
+        locked.server_config = server_config.clone();
+    }
+    let app = create_app(app_state.clone());
 
     println!("[runner] HTTP server listening on http://{bind_addr}");
     println!("[runner] GET  /server/info");
@@ -115,7 +122,12 @@ async fn serve_http(server_config: ServerConfig, scenarios_dir: PathBuf) -> Resu
     println!("[runner] GET  /run/status");
     println!("[runner] POST /run/start");
 
+    let shutdown_state = app_state.clone();
     axum::serve(listener, app)
+        .with_graceful_shutdown(async move {
+            let _ = tokio::signal::ctrl_c().await;
+            request_graceful_shutdown(&shutdown_state);
+        })
         .await
         .map_err(|err| format!("HTTP server failed: {err}"))
 }

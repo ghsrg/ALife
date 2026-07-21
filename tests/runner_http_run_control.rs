@@ -57,6 +57,8 @@ async fn get_run_status_initially_idle() {
     assert_eq!(json["process_state"].as_str().unwrap(), "ready");
     assert_eq!(json["active_run_state"].as_str().unwrap(), "idle");
     assert_eq!(json["committed_tick"].as_u64().unwrap(), 0);
+    assert!(json.get("ticks_per_second").is_some());
+    assert!(json.get("collapse_reason").is_some());
 }
 
 #[tokio::test]
@@ -118,6 +120,13 @@ async fn post_run_start_with_unknown_scenario_returns_400() {
         .unwrap();
 
     assert_eq!(response.status(), 400);
+    let json = response_json(response).await;
+    assert_eq!(json["ok"], false);
+    assert_eq!(json["category"], "scenario_error");
+    assert_eq!(json["command"], "StartRun");
+    assert_eq!(json["scenario_id"], "not_a_real_scenario");
+    assert_eq!(json["process_state"], "ready");
+    assert_eq!(json["active_run_state"], "idle");
 }
 
 #[tokio::test]
@@ -129,6 +138,10 @@ async fn post_run_start_when_active_returns_409() {
     assert_eq!(response.status(), 409);
     let json = response_json(response).await;
     assert_eq!(json["category"].as_str().unwrap(), "state_conflict");
+    assert_eq!(json["command"], "StartRun");
+    assert_eq!(json["scenario_id"], "bootstrap_minimal_viable_world");
+    assert_eq!(json["process_state"], "ready");
+    assert_eq!(json["active_run_state"], "running");
 }
 
 #[tokio::test]
@@ -185,6 +198,34 @@ async fn post_run_step_from_running_returns_409_state_conflict() {
     assert_eq!(response.status(), 409);
     let json = response_json(response).await;
     assert_eq!(json["category"].as_str().unwrap(), "state_conflict");
+    assert_eq!(json["command"], "StepRun");
+    assert_eq!(json["scenario_id"], "bootstrap_minimal_viable_world");
+    assert_eq!(json["process_state"], "ready");
+    assert_eq!(json["active_run_state"], "running");
+}
+
+#[tokio::test]
+async fn post_run_start_with_invalid_json_returns_invalid_command_contract() {
+    let app = create_app(make_state());
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/run/start")
+                .header("content-type", "application/json")
+                .body(Body::from("{not-json"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 400);
+    let json = response_json(response).await;
+    assert_eq!(json["ok"], false);
+    assert_eq!(json["category"], "invalid_command");
+    assert_eq!(json["command"], "StartRun");
+    assert_eq!(json["process_state"], "ready");
+    assert_eq!(json["active_run_state"], "idle");
 }
 
 #[tokio::test]

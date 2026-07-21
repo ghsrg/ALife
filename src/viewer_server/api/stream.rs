@@ -39,6 +39,16 @@ async fn handle_ws_client(mut socket: WebSocket, state: AppState) {
         return;
     }
 
+    let latest_frame = {
+        let locked = state.lock().unwrap();
+        locked.latest_frame.clone()
+    };
+    if let Some(bytes) = latest_frame {
+        if socket.send(Message::Binary(bytes.into())).await.is_err() {
+            return;
+        }
+    }
+
     loop {
         tokio::select! {
             received = receiver.recv() => {

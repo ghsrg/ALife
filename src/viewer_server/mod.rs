@@ -4,9 +4,11 @@ pub mod frame_encoder;
 pub mod projection_sampler;
 pub mod state;
 
+use crate::runner::server_config::ServerConfig;
 use axum::{
     Router,
     body::Body,
+    extract::State,
     http::{
         HeaderValue, Method, Request, StatusCode,
         header::{
@@ -14,20 +16,37 @@ use axum::{
             ACCESS_CONTROL_ALLOW_ORIGIN, ORIGIN,
         },
     },
-    middleware::{Next, from_fn},
+    middleware::{Next, from_fn_with_state},
     response::{IntoResponse, Response},
 };
-use state::AppState;
+use state::{AppState, new_app_state_with_server_config};
 
 pub fn create_app(app_state: AppState) -> Router {
-    api::build_router(app_state).layer(from_fn(local_viewer_cors))
+    api::build_router(app_state.clone()).layer(from_fn_with_state(app_state, viewer_cors))
 }
 
-async fn local_viewer_cors(request: Request<Body>, next: Next) -> Response {
+pub fn create_app_with_config(app_state: AppState, server_config: ServerConfig) -> Router {
+    let (scenarios_dir, engine_snapshot_buffer_size) = {
+        let locked = app_state.lock().unwrap();
+        (
+            locked.scenarios_dir.clone(),
+            locked.engine_snapshot_buffer_size,
+        )
+    };
+    let configured_state =
+        new_app_state_with_server_config(scenarios_dir, engine_snapshot_buffer_size, server_config);
+    create_app(configured_state)
+}
+
+async fn viewer_cors(
+    State(app_state): State<AppState>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
     let origin = request
         .headers()
         .get(ORIGIN)
-        .filter(|origin| is_allowed_local_viewer_origin(origin))
+        .filter(|origin| is_allowed_viewer_origin(origin, &app_state))
         .cloned();
 
     if request.method() == Method::OPTIONS {
@@ -69,4 +88,20 @@ fn is_allowed_local_viewer_origin(origin: &HeaderValue) -> bool {
             | "http://127.0.0.1:4173"
             | "http://localhost:4173"
     )
+}
+
+fn is_allowed_viewer_origin(origin: &HeaderValue, app_state: &AppState) -> bool {
+    if is_allowed_local_viewer_origin(origin) {
+        return true;
+    }
+    let Ok(origin) = origin.to_str() else {
+        return false;
+    };
+    let locked = app_state.lock().unwrap();
+    locked.server_config.allow_remote_viewer
+        && locked
+            .server_config
+            .allowed_origins
+            .iter()
+            .any(|allowed| allowed == origin)
 }

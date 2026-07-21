@@ -8,6 +8,7 @@ pub struct ServerConfig {
     pub bind_host: String,
     pub port: u16,
     pub allow_remote_viewer: bool,
+    pub allowed_origins: Vec<String>,
     pub target_broadcast_fps: u32,
     pub runner_pacing: RunnerPacingConfig,
     pub viewer_projection: ViewerProjectionConfig,
@@ -19,6 +20,7 @@ impl Default for ServerConfig {
             bind_host: "127.0.0.1".to_string(),
             port: 8080,
             allow_remote_viewer: false,
+            allowed_origins: Vec::new(),
             target_broadcast_fps: 30,
             runner_pacing: RunnerPacingConfig::default(),
             viewer_projection: ViewerProjectionConfig::default(),
@@ -48,6 +50,23 @@ impl ServerConfig {
     pub fn bind_addr(&self) -> String {
         format!("{}:{}", self.bind_host, self.port)
     }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if !self.allow_remote_viewer && !is_local_bind_host(&self.bind_host) {
+            return Err(format!(
+                "bind_host={} requires allow_remote_viewer=true",
+                self.bind_host
+            ));
+        }
+        if self.allow_remote_viewer && self.allowed_origins.is_empty() {
+            return Err("allow_remote_viewer=true requires allowed_origins".to_string());
+        }
+        Ok(())
+    }
+}
+
+fn is_local_bind_host(bind_host: &str) -> bool {
+    matches!(bind_host, "127.0.0.1" | "localhost" | "::1")
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,5 +91,6 @@ pub fn load_server_config(path: &Path) -> Result<ServerConfig, String> {
     let mut server = parsed.server;
     server.runner_pacing = parsed.runner_pacing;
     server.viewer_projection = parsed.viewer_projection;
+    server.validate()?;
     Ok(server)
 }

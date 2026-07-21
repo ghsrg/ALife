@@ -19,6 +19,8 @@ fn server_config_defaults_are_local() {
     assert_eq!(cfg.port, 8080);
     assert_eq!(cfg.target_broadcast_fps, 30);
     assert!(!cfg.allow_remote_viewer);
+    assert!(cfg.allowed_origins.is_empty());
+    assert!(cfg.validate().is_ok());
 }
 
 #[test]
@@ -29,4 +31,45 @@ fn server_config_bind_addr_formats_correctly() {
         ..ServerConfig::default()
     };
     assert_eq!(cfg.bind_addr(), "127.0.0.1:9090");
+}
+
+#[test]
+fn server_config_rejects_non_local_bind_without_remote_viewer_opt_in() {
+    let cfg = ServerConfig {
+        bind_host: "0.0.0.0".to_string(),
+        allow_remote_viewer: false,
+        ..ServerConfig::default()
+    };
+
+    let error = cfg
+        .validate()
+        .expect_err("remote bind must be explicit opt-in");
+    assert!(error.contains("allow_remote_viewer"));
+}
+
+#[test]
+fn server_config_rejects_remote_viewer_without_allowed_origins() {
+    let cfg = ServerConfig {
+        bind_host: "0.0.0.0".to_string(),
+        allow_remote_viewer: true,
+        allowed_origins: Vec::new(),
+        ..ServerConfig::default()
+    };
+
+    let error = cfg
+        .validate()
+        .expect_err("remote viewer needs an explicit origin allowlist");
+    assert!(error.contains("allowed_origins"));
+}
+
+#[test]
+fn server_config_accepts_remote_viewer_with_allowed_origin() {
+    let cfg = ServerConfig {
+        bind_host: "0.0.0.0".to_string(),
+        allow_remote_viewer: true,
+        allowed_origins: vec!["http://192.168.1.51:5173".to_string()],
+        ..ServerConfig::default()
+    };
+
+    assert!(cfg.validate().is_ok());
 }
