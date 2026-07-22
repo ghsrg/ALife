@@ -54,6 +54,7 @@ interface RunStatusFixture {
   scenarioHash: string | null;
   effectiveSeed: number | null;
   terminalReason: string | null;
+  ticksPerSecond: number;
 }
 
 interface LiveFrameFixture {
@@ -109,7 +110,8 @@ const idleStatus: RunStatusFixture = {
   scenarioId: null,
   scenarioHash: null,
   effectiveSeed: null,
-  terminalReason: null
+  terminalReason: null,
+  ticksPerSecond: 0
 };
 
 const runningStatus: RunStatusFixture = {
@@ -120,7 +122,8 @@ const runningStatus: RunStatusFixture = {
   scenarioId: 'demo-scenario',
   scenarioHash: 'sha256:demo',
   effectiveSeed: 42,
-  terminalReason: null
+  terminalReason: null,
+  ticksPerSecond: 24.5
 };
 
 function setupRunnerMocks() {
@@ -278,6 +281,48 @@ describe('App', () => {
     expect(screen.getByText('Projection source: live')).toBeInTheDocument();
     expect(screen.getByText('Runner data: Live Tick 15')).toBeInTheDocument();
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
+  });
+
+  it('keeps unavailable workspace tabs visible with explicit disabled reasons', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByRole('tab', { name: 'Monitor' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'OrganismView unavailable - observer projection not ready' })).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'World Editor unavailable - debug scenario editor not ready' })).toBeDisabled();
+    expect(screen.getByText('Unavailable workspaces stay visible and disabled')).toBeInTheDocument();
+  });
+
+  it('keeps theme switching in application settings instead of the map toolbar', async () => {
+    const user = userEvent.setup();
+    renderApp(<App />);
+
+    const settings = screen.getByLabelText('Application settings');
+
+    expect(within(settings).getByRole('button', { name: 'Switch to light theme' })).toBeVisible();
+
+    await user.click(within(settings).getByRole('button', { name: 'Switch to light theme' }));
+
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(screen.getByLabelText('Monitor workspace')).not.toHaveTextContent('Light');
+  });
+
+  it('shows simulation rate and visualization FPS without using rendering as simulation truth', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(mockRunner.streamInstances).toHaveLength(1);
+    });
+
+    act(() => {
+      mockRunner.streamInstances[0].handlers.onStatus(runningStatus);
+    });
+
+    expect(screen.getByLabelText('Simulation rate')).toHaveTextContent('24.5 ticks/s');
+    expect(screen.getByLabelText('Visualization FPS')).toHaveTextContent('20-30 target');
   });
 
   it('connects to the Runner, lists scenarios, and starts a live run', async () => {

@@ -1,6 +1,11 @@
 import { createStore } from 'zustand/vanilla';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
 import { loadFixtureFrame, selectCell } from '../projection/fixtureAdapter';
+import {
+  buildProjectionContext,
+  buildUnavailableProjectionContext,
+  type ProjectionContext
+} from '../projection/projectionContext';
 import type { CellId, CellProjection, WorldFrame } from '../projection/types';
 import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClient';
 import type { RunnerStreamConnectionState as ConnectionState } from '../runner/streamClient';
@@ -16,6 +21,9 @@ export type MonitorDataState =
 
 export interface AppState {
   frame: WorldFrame;
+  latestLiveFrame: WorldFrame | null;
+  frameHistory: WorldFrame[];
+  projectionContext: ProjectionContext;
   selectedCellId: CellId | null;
   selectedCell: CellProjection | null;
   theme: ThemeMode;
@@ -32,6 +40,9 @@ export interface AppState {
 
 export interface AppActions {
   setFrame: (frame: WorldFrame) => void;
+  freezeCurrentFrame: () => void;
+  selectHistoryTick: (tick: number) => void;
+  jumpToLive: () => void;
   selectCell: (cellId: CellId | null) => void;
   setTheme: (theme: ThemeMode) => void;
   setRunnerEndpoint: (endpoint: string) => void;
@@ -46,6 +57,8 @@ export interface AppActions {
 }
 
 export type AppStore = AppState & AppActions;
+
+const FRAME_HISTORY_LIMIT = 12;
 
 function selectInitialCell(frame: WorldFrame) {
   return frame.cells[0] ?? null;
@@ -68,9 +81,16 @@ function selectCellForFrame(frame: WorldFrame, currentCellId: CellId | null, sel
 
 export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
   const initialCell = selectInitialCell(initialFrame);
+  const initialContext = buildProjectionContext(
+    initialFrame,
+    initialFrame.source === 'live' ? 'live' : 'fixture'
+  );
 
   return createStore<AppStore>((set, get) => ({
     frame: initialFrame,
+    latestLiveFrame: initialFrame.source === 'live' ? initialFrame : null,
+    frameHistory: initialFrame.source === 'live' ? [initialFrame] : [],
+    projectionContext: initialContext,
     selectedCellId: initialCell?.id ?? null,
     selectedCell: initialCell,
     theme: 'dark',
@@ -84,9 +104,75 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     lastError: null,
     selectionCleared: false,
     setFrame: (frame) => {
-      const selectedCell = selectCellForFrame(frame, get().selectedCellId, get().selectionCleared);
+      const state = get();
+      const isLiveFrame = frame.source === 'live';
+      const frameHistory = isLiveFrame ? appendFrameHistory(state.frameHistory, frame) : state.frameHistory;
+
+      if (state.projectionContext.mode === 'frozen' && isLiveFrame) {
+        set({
+          latestLiveFrame: frame,
+          frameHistory
+        });
+        return;
+      }
+
+      const selectedCell = selectCellForFrame(frame, state.selectedCellId, state.selectionCleared);
       set({
         frame,
+        latestLiveFrame: isLiveFrame ? frame : state.latestLiveFrame,
+        frameHistory,
+        projectionContext: buildProjectionContext(frame, isLiveFrame ? 'live' : 'fixture'),
+        selectedCellId: selectedCell?.id ?? null,
+        selectedCell
+      });
+    },
+    freezeCurrentFrame: () => {
+      const state = get();
+      set({
+        projectionContext: buildProjectionContext(state.frame, 'frozen')
+      });
+    },
+    selectHistoryTick: (tick) => {
+      const state = get();
+      const historicalFrame = state.frameHistory.find((frame) => frame.tick === tick) ?? null;
+
+      if (historicalFrame === null) {
+        set({
+          projectionContext: buildUnavailableProjectionContext({
+            runId: state.latestLiveFrame?.runId ?? state.frame.runId,
+            tick,
+            reason: 'Tick is outside bounded client history'
+          })
+        });
+        return;
+      }
+
+      const selectedCell = selectCellForFrame(
+        historicalFrame,
+        state.selectedCellId,
+        state.selectionCleared
+      );
+      set({
+        frame: historicalFrame,
+        projectionContext: buildProjectionContext(historicalFrame, 'frozen'),
+        selectedCellId: selectedCell?.id ?? null,
+        selectedCell
+      });
+    },
+    jumpToLive: () => {
+      const state = get();
+      if (state.latestLiveFrame === null) {
+        return;
+      }
+
+      const selectedCell = selectCellForFrame(
+        state.latestLiveFrame,
+        state.selectedCellId,
+        state.selectionCleared
+      );
+      set({
+        frame: state.latestLiveFrame,
+        projectionContext: buildProjectionContext(state.latestLiveFrame, 'live'),
         selectedCellId: selectedCell?.id ?? null,
         selectedCell
       });
@@ -101,13 +187,32 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     },
     setTheme: (theme) => set({ theme }),
     setRunnerEndpoint: (runnerEndpoint) => set({ runnerEndpoint }),
-    setConnectionState: (connectionState) => set({ connectionState }),
+    setConnectionState: (connectionState) => {
+      const state = get();
+      if (
+        connectionState === 'disconnected' &&
+        state.frame.source === 'live' &&
+        state.projectionContext.mode === 'live'
+      ) {
+        set({
+          connectionState,
+          projectionContext: buildProjectionContext(state.frame, 'stale')
+        });
+        return;
+      }
+
+      set({ connectionState });
+    },
     setConnected: (serverInfo) =>
-      set({
+      set((state) => ({
         connectionState: 'connected',
         serverInfo,
-        lastError: null
-      }),
+        lastError: null,
+        projectionContext:
+          state.frame.source === 'live' && state.projectionContext.mode === 'stale'
+            ? buildProjectionContext(state.frame, 'live')
+            : state.projectionContext
+      })),
     setScenarios: (scenarios) =>
       set({
         scenarios,
@@ -122,6 +227,11 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     clearPendingCommand: () => set({ pendingCommand: null }),
     setError: (lastError) => set({ lastError })
   }));
+}
+
+function appendFrameHistory(history: WorldFrame[], frame: WorldFrame) {
+  const nextHistory = [...history.filter((historyFrame) => historyFrame.tick !== frame.tick), frame];
+  return nextHistory.slice(-FRAME_HISTORY_LIMIT);
 }
 
 export function getMonitorDataState(

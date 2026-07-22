@@ -1,6 +1,8 @@
 export type CellId = string;
 
-export type FrameSource = 'fixture' | 'live';
+export type FrameSource = 'fixture' | 'live' | 'historical';
+
+export type ProjectionCompleteness = 'full' | 'bounded' | 'partial' | 'stale' | 'unavailable';
 
 export interface ResourceConcentration {
   organic: number;

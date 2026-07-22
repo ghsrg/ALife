@@ -70,7 +70,8 @@ describe('RunnerApiClient', () => {
         scenario_id: 'single_cell_survival',
         scenario_hash: 'scenario-hash',
         effective_seed: 1234,
-        terminal_reason: null
+        terminal_reason: null,
+        ticks_per_second: 18.75
       })
     );
 
@@ -82,7 +83,8 @@ describe('RunnerApiClient', () => {
       scenarioId: 'single_cell_survival',
       scenarioHash: 'scenario-hash',
       effectiveSeed: 1234,
-      terminalReason: null
+      terminalReason: null,
+      ticksPerSecond: 18.75
     });
   });
 
@@ -96,7 +98,8 @@ describe('RunnerApiClient', () => {
         scenario_id: null,
         scenario_hash: null,
         effective_seed: null,
-        terminal_reason: 'completed'
+        terminal_reason: 'completed',
+        ticks_per_second: 0
       })
     ).toEqual({
       processState: 'ready',
@@ -106,7 +109,8 @@ describe('RunnerApiClient', () => {
       scenarioId: null,
       scenarioHash: null,
       effectiveSeed: null,
-      terminalReason: 'completed'
+      terminalReason: 'completed',
+      ticksPerSecond: 0
     });
   });
 

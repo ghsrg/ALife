@@ -8,13 +8,20 @@ export const uiText = {
     monitor: 'Monitor',
     organismView: 'OrganismView',
     worldEditor: 'World Editor',
-    monitorWorkspace: 'Monitor workspace'
+    monitorWorkspace: 'Monitor workspace',
+    unavailable: 'Unavailable',
+    organismViewUnavailable: 'OrganismView unavailable - observer projection not ready',
+    worldEditorUnavailable: 'World Editor unavailable - debug scenario editor not ready',
+    unavailableSummary: 'Unavailable workspaces stay visible and disabled'
   },
   controls: {
     exportPng: 'Export PNG',
     exportViewerPng: 'Export viewer PNG',
     startScreenshotReady: 'Start screenshot PNG ready',
     startScreenshotUnavailable: 'Start screenshot PNG export unavailable',
+    fullScreen: 'Full screen',
+    exitFullScreen: 'Exit full screen',
+    enterStartFullScreen: 'Enter Start full screen',
     switchToLightTheme: 'Switch to light theme',
     switchToDarkTheme: 'Switch to dark theme'
   },
@@ -24,6 +31,13 @@ export const uiText = {
     liveProjectionSource: 'Projection source: live',
     runnerDataPrefix: 'Runner data',
     unavailableLiveFields: 'Unavailable live fields stay unavailable'
+  },
+  dataContext: {
+    title: 'Data Context',
+    freezeFrame: 'Freeze current frame',
+    jumpToLive: 'Jump to Live',
+    boundedHistory: 'Bounded history',
+    inspectTick: 'Inspect Tick'
   },
   layers: {
     title: 'Layers',

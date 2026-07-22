@@ -29,6 +29,7 @@ export interface RunStatus {
   scenarioHash: string | null;
   effectiveSeed: number | null;
   terminalReason: string | null;
+  ticksPerSecond?: number;
 }
 
 export interface StartRunInput {
@@ -72,6 +73,7 @@ interface RunStatusWire {
   scenario_hash: string | null;
   effective_seed: number | null;
   terminal_reason: string | null;
+  ticks_per_second?: number;
 }
 
 interface StartRunResponseWire {
@@ -104,7 +106,10 @@ export function mapStatus(status: RunStatusWire): RunStatus {
     scenarioId: status.scenario_id,
     scenarioHash: status.scenario_hash,
     effectiveSeed: status.effective_seed,
-    terminalReason: status.terminal_reason
+    terminalReason: status.terminal_reason,
+    ...(typeof status.ticks_per_second === 'number'
+      ? { ticksPerSecond: status.ticks_per_second }
+      : {})
   };
 }
 

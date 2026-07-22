@@ -22,9 +22,9 @@ button {
 
 .top-bar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto auto;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(160px, auto) auto auto;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
   min-height: 82px;
   padding: 14px 22px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -46,9 +46,14 @@ button {
 
 .side-panel,
 .viewer-panel {
+  position: relative;
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 8px;
   background: rgba(24, 31, 40, 0.92);
+}
+
+.viewer-panel[data-fullscreen='true'] {
+  min-height: 100vh;
 }
 
 .viewer-panel {
@@ -69,8 +74,15 @@ button {
 
 @media (max-width: 1366px) {
   .top-bar {
+    grid-template-columns: minmax(180px, 1fr) minmax(240px, auto);
     gap: 12px;
     padding: 10px 16px;
+  }
+
+  .workspace-availability,
+  .top-utility-controls,
+  .run-control-stack {
+    justify-self: stretch;
   }
 
   .monitor-grid {
@@ -84,7 +96,7 @@ button {
   }
 
   .world-viewer {
-    min-height: 390px;
+    min-height: 500px;
   }
 
   .viewer-truth-overlay {

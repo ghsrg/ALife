@@ -9,6 +9,7 @@ import { uiText } from '../uiText';
 import { buildViewerHitTargets } from '../viewer/viewerHitTargets';
 import { useViewerCamera } from '../viewer/useViewerCamera';
 import { mountWorldRenderer, type WorldRenderer } from '../viewer/worldRenderer';
+import { fitCameraToWorld, formatMapScaleLabel } from '../viewer/viewerNavigation';
 import { ViewerTruthOverlay } from './ViewerTruthOverlay';
 import { buildViewerTruthState } from './viewerTruth';
 
@@ -18,6 +19,9 @@ interface WorldViewerProps {
   frame: WorldFrame;
   selectedCellId: CellId | null;
   onSelectCell: (cellId: CellId | null) => void;
+  onExportScreenshot?: () => void;
+  onToggleFullScreen?: () => void;
+  isFullScreen?: boolean;
 }
 
 export interface WorldViewerHandle {
@@ -25,7 +29,7 @@ export interface WorldViewerHandle {
 }
 
 export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(function WorldViewer(
-  { frame, selectedCellId, onSelectCell },
+  { frame, selectedCellId, onSelectCell, onExportScreenshot, onToggleFullScreen, isFullScreen = false },
   ref
 ) {
   const viewerRef = useRef<HTMLDivElement | null>(null);
@@ -69,9 +73,11 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       }
 
       const measuredViewport = measureViewport();
+      const fittedCamera = fitCameraToWorld(frame.world, measuredViewport);
       setViewport(measuredViewport);
       rendererRef.current = renderer;
-      renderer.renderFrame(frame, selectedCellId, camera);
+      dispatchCamera({ type: 'fit', world: frame.world, viewport: measuredViewport });
+      renderer.renderFrame(frame, selectedCellId, fittedCamera);
       setIsReady(true);
     });
 
@@ -231,7 +237,17 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         <button type="button" onClick={() => zoomAtCenter(1 / 1.2)} aria-label={uiText.viewer.zoomOut}>-</button>
         <button type="button" onClick={fitView} aria-label={uiText.viewer.fit}>{uiText.viewer.fitButton}</button>
         <button type="button" onClick={resetView} aria-label={uiText.viewer.reset}>{uiText.viewer.resetButton}</button>
-        <span aria-label={uiText.viewer.zoomLabel}>{Math.round(camera.scale * 100)}%</span>
+        {onExportScreenshot ? (
+          <button type="button" onClick={onExportScreenshot} aria-label={uiText.controls.exportViewerPng}>
+            PNG
+          </button>
+        ) : null}
+        {onToggleFullScreen ? (
+          <button type="button" onClick={onToggleFullScreen} aria-label={uiText.controls.enterStartFullScreen}>
+            {isFullScreen ? 'Exit' : 'Full'}
+          </button>
+        ) : null}
+        <span aria-label={uiText.viewer.zoomLabel}>{formatMapScaleLabel(frame.world, viewport, camera.scale)}</span>
       </div>
       <div className="world-hit-targets" aria-label={uiText.viewer.hitTargetsAriaLabel}>
         {buildViewerHitTargets(frame, selectedCellId, viewport, camera).map((target) => {

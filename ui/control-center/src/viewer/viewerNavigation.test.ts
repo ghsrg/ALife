@@ -4,7 +4,8 @@ import {
   fitCameraToWorld,
   panCamera,
   resetCamera,
-  zoomCameraAtPoint
+  zoomCameraAtPoint,
+  formatMapScaleLabel
 } from './viewerNavigation';
 
 describe('viewerNavigation', () => {
@@ -43,5 +44,10 @@ describe('viewerNavigation', () => {
 
   it('resets to the default camera', () => {
     expect(resetCamera()).toEqual(DEFAULT_VIEWER_CAMERA);
+  });
+
+  it('formats map scale as full-world ratio and 1:1 cell scale', () => {
+    expect(formatMapScaleLabel({ width: 1200, height: 800 }, { width: 600, height: 600 }, 0.46)).toBe('1:2600');
+    expect(formatMapScaleLabel({ width: 1200, height: 800 }, { width: 600, height: 600 }, 1)).toBe('1:1 cell scale');
   });
 });

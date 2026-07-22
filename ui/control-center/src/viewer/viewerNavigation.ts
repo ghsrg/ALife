@@ -64,6 +64,17 @@ export function fitCameraToWorld(world: Size, viewport: Size): ViewerCamera {
   };
 }
 
+export function formatMapScaleLabel(world: Size, viewport: Size, scale: number) {
+  if (scale >= 1) {
+    return '1:1 cell scale';
+  }
+
+  const fittedScale = fitCameraToWorld(world, viewport).scale || scale;
+  const fullWorldRatio = 2600;
+  const ratio = Math.max(1, Math.round((fittedScale / Math.max(scale, 0.001)) * fullWorldRatio));
+  return `1:${ratio}`;
+}
+
 function clampZoom(scale: number) {
   return Math.max(MIN_VIEWER_ZOOM, Math.min(MAX_VIEWER_ZOOM, Number(scale.toFixed(3))));
 }

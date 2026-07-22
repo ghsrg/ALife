@@ -36,10 +36,26 @@ describe('WorldViewer', () => {
     );
 
     await waitFor(() => {
-      expect(renderFrame).toHaveBeenCalledWith(ui1aFixture.frame, 'cell-a', { x: 0, y: 0, scale: 1 });
+      expect(renderFrame).toHaveBeenCalledWith(ui1aFixture.frame, 'cell-a', { x: 36, y: 24, scale: 0.94 });
     });
     expect(screen.getByLabelText('Select cell-a')).toBeInTheDocument();
     expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+  });
+
+  it('opens with the full world fitted as map scale 1:2600', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByLabelText('World Viewer zoom')).toHaveTextContent('1:2600');
   });
 
   it('selects cells through accessible hit targets', async () => {
@@ -121,7 +137,7 @@ describe('WorldViewer', () => {
     );
 
     await waitFor(() => {
-      expect(renderFrame).toHaveBeenCalledWith(tinyLiveFrame, 'tiny', { x: 0, y: 0, scale: 1 });
+      expect(renderFrame).toHaveBeenCalledWith(tinyLiveFrame, 'tiny', { x: 36, y: 24, scale: 0.94 });
     });
 
     expect(screen.getByLabelText('Select tiny')).toHaveStyle({ width: '36px', height: '36px' });
@@ -144,12 +160,38 @@ describe('WorldViewer', () => {
 
     await waitFor(() => {
       expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
-        x: -120,
-        y: -80,
-        scale: 1.2
+        x: -76.79999999999995,
+        y: -51.19999999999993,
+        scale: 1.128
       });
     });
-    expect(screen.getByText('120%')).toBeInTheDocument();
+    expect(screen.getByLabelText('World Viewer zoom')).toHaveTextContent('1:1 cell scale');
+  });
+
+  it('renders optional map utility controls next to navigation tools', async () => {
+    const onExport = vi.fn();
+    const onFullScreen = vi.fn();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+        onExportScreenshot={onExport}
+        onToggleFullScreen={onFullScreen}
+        isFullScreen={false}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Export viewer PNG' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Enter Start full screen' }));
+
+    expect(onExport).toHaveBeenCalledTimes(1);
+    expect(onFullScreen).toHaveBeenCalledTimes(1);
   });
 
   it('resets navigation to the default camera', async () => {
@@ -189,10 +231,10 @@ describe('WorldViewer', () => {
     await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
 
     expect(screen.getByLabelText('Select cell-a')).toHaveStyle({
-      left: '276px',
-      top: '304px',
-      width: '57.599999999999994px',
-      height: '57.599999999999994px'
+      left: '295.44px',
+      top: '309.76000000000005px',
+      width: '54.14399999999999px',
+      height: '54.14399999999999px'
     });
   });
 
@@ -216,9 +258,9 @@ describe('WorldViewer', () => {
 
     await waitFor(() => {
       expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
-        x: 30,
-        y: -20,
-        scale: 1
+        x: 66,
+        y: 4,
+        scale: 0.94
       });
     });
   });
@@ -245,8 +287,8 @@ describe('WorldViewer', () => {
       });
 
       expect(screen.getByLabelText('Select cell-a')).toHaveStyle({
-        left: '247.5px',
-        top: '224px',
+        left: '224.4px',
+        top: '167.36px',
         width: '36px',
         height: '36px'
       });

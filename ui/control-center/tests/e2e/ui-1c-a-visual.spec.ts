@@ -53,18 +53,19 @@ test.describe('UI-1C-A visual acceptance', () => {
   test('1366x768 viewer navigation zooms, resets and keeps cell targets usable', async ({ page }) => {
     await openMonitor(page, { width: 1366, height: 768 });
 
+    await expect(page.getByLabel('World Viewer zoom')).toHaveText('1:2600');
     await page.getByRole('button', { name: 'Zoom in World Viewer' }).click();
-    await expect(page.getByLabel('World Viewer zoom')).toHaveText('120%');
+    await expect(page.getByLabel('World Viewer zoom')).not.toHaveText('1:2600');
     await expect(page.getByLabel('Select cell-a')).toBeVisible();
 
     await page.getByRole('button', { name: 'Reset World Viewer navigation' }).click();
-    await expect(page.getByLabel('World Viewer zoom')).toHaveText('100%');
+    await expect(page.getByLabel('World Viewer zoom')).toHaveText('1:1 cell scale');
     await expect(page.getByLabel('Select cell-a')).toBeVisible();
 
     for (let i = 0; i < 20; i += 1) {
       await page.getByRole('button', { name: 'Zoom in World Viewer' }).click();
     }
-    await expect(page.getByLabel('World Viewer zoom')).toHaveText('2400%');
+    await expect(page.getByLabel('World Viewer zoom')).toHaveText('1:1 cell scale');
 
     await page.screenshot({ path: join(screenshotDir, '1366x768-navigation.png'), fullPage: true });
   });
@@ -78,7 +79,7 @@ test.describe('UI-1C-A visual acceptance', () => {
     const beforeScroll = await page.evaluate(() => window.scrollY);
     await page.mouse.wheel(0, -600);
 
-    await expect(page.getByLabel('World Viewer zoom')).not.toHaveText('100%');
+    await expect(page.getByLabel('World Viewer zoom')).not.toHaveText('1:2600');
     expect(await page.evaluate(() => window.scrollY)).toBe(beforeScroll);
 
     await page.getByRole('button', { name: 'Dismiss projection notices' }).click();
@@ -123,6 +124,7 @@ async function openMonitor(page: Page, viewport: { width: number; height: number
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'ALife Control Center' })).toBeVisible();
   await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByLabel('World Viewer zoom')).toHaveText('1:2600');
   await expect(page.getByLabel('Viewer projection truth')).toBeVisible();
   await expect(page.getByLabel('World Viewer navigation', { exact: true })).toBeVisible();
 }
@@ -154,6 +156,7 @@ async function assertWorldFirstLayout(page: Page) {
   expect(w.height).toBeGreaterThan(360);
   expect(v.x).toBeGreaterThan(l.x + l.width - 1);
   expect(i.x).toBeGreaterThan(v.x + v.width - 1);
+  expect(f.x).toBeGreaterThanOrEqual(v.x);
   expect(s.y).toBeGreaterThan(w.y + w.height - 8);
   expect(f.y + f.height).toBeLessThanOrEqual(s.y + 1);
 }

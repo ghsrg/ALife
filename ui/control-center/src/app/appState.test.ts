@@ -231,6 +231,53 @@ describe('createAppStore', () => {
     expect(store.getState().serverInfo).toEqual(connectedInfo);
     expect(store.getState().lastError).toBeNull();
   });
+
+  it('keeps bounded live history, freezes a historical tick, and jumps back to live', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().setFrame({ ...liveFrame, tick: 7 });
+    store.getState().setFrame({ ...liveFrame, tick: 8 });
+
+    store.getState().freezeCurrentFrame();
+    expect(store.getState().projectionContext.mode).toBe('frozen');
+    expect(store.getState().projectionContext.tick).toBe(8);
+
+    store.getState().setFrame({ ...liveFrame, tick: 9 });
+    expect(store.getState().frame.tick).toBe(8);
+    expect(store.getState().latestLiveFrame?.tick).toBe(9);
+    expect(store.getState().projectionContext.mode).toBe('frozen');
+
+    store.getState().jumpToLive();
+    expect(store.getState().frame.tick).toBe(9);
+    expect(store.getState().projectionContext.mode).toBe('live');
+  });
+
+  it('does not substitute a nearby frame when a requested history tick is unavailable', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().setFrame({ ...liveFrame, tick: 7 });
+    store.getState().selectHistoryTick(404);
+
+    expect(store.getState().frame.tick).toBe(7);
+    expect(store.getState().projectionContext.mode).toBe('unavailable');
+    expect(store.getState().projectionContext.tick).toBe(404);
+    expect(store.getState().projectionContext.warning).toBe('Tick is outside bounded client history');
+  });
+
+  it('marks live projection context stale when the runner disconnects and restores live context after reconnect', () => {
+    const store = createAppStore(liveFrame);
+    store.getState().setConnected(connectedInfo);
+
+    store.getState().setConnectionState('disconnected');
+
+    expect(store.getState().projectionContext.mode).toBe('stale');
+    expect(store.getState().projectionContext.isReadOnly).toBe(true);
+
+    store.getState().setConnected(connectedInfo);
+
+    expect(store.getState().projectionContext.mode).toBe('live');
+    expect(store.getState().projectionContext.isReadOnly).toBe(false);
+  });
 });
 
 describe('run control helpers', () => {

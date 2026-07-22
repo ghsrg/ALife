@@ -47,9 +47,40 @@ export function AppShell() {
         </div>
         <nav className="mode-tabs" aria-label={uiText.app.primaryViews}>
           <button type="button" role="tab" aria-selected="true">{uiText.workspace.monitor}</button>
-          <button type="button" role="tab" aria-selected="false" disabled>{uiText.workspace.organismView}</button>
-          <button type="button" role="tab" aria-selected="false" disabled>{uiText.workspace.worldEditor}</button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-label={uiText.workspace.organismViewUnavailable}
+            disabled
+          >
+            {uiText.workspace.organismView}
+            <small>{uiText.workspace.unavailable}</small>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-label={uiText.workspace.worldEditorUnavailable}
+            disabled
+          >
+            {uiText.workspace.worldEditor}
+            <small>{uiText.workspace.unavailable}</small>
+          </button>
         </nav>
+        <p className="workspace-availability">
+          {uiText.workspace.unavailableSummary}
+        </p>
+        <div className="top-utility-controls" aria-label="Application settings">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={state.theme === 'dark' ? uiText.controls.switchToLightTheme : uiText.controls.switchToDarkTheme}
+            title={state.theme === 'dark' ? uiText.controls.switchToLightTheme : uiText.controls.switchToDarkTheme}
+          >
+            {state.theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
+        </div>
         <RunControls
           state={state}
           onStart={controller.startRun}
@@ -66,8 +97,10 @@ export function AppShell() {
           onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
           onReconnect={controller.connectRunner}
           onSelectCell={(cellId) => store.getState().selectCell(cellId)}
-          onToggleTheme={toggleTheme}
           onExportScreenshot={exportScreenshot}
+          onFreezeFrame={() => store.getState().freezeCurrentFrame()}
+          onJumpToLive={() => store.getState().jumpToLive()}
+          onSelectHistoryTick={(tick) => store.getState().selectHistoryTick(tick)}
           exportStatus={exportStatus}
       />
     </div>

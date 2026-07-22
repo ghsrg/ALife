@@ -242,3 +242,5 @@ tags:
 - [[outputs/worklogs/2026-07-21-1312-REPORT-al-004-s02-versioned-projection-envelope|2026-07-21-1312-REPORT-al-004-s02-versioned-projection-envelope]]
 - [[outputs/worklogs/2026-07-21-2221-REPORT-al-002-s16-runner-4-remote-viewer-acceptance-hardening|2026-07-21-2221-REPORT-al-002-s16-runner-4-remote-viewer-acceptance-hardening]]
 - [[outputs/worklogs/2026-07-21-2320-REPORT-al-005-s01-run-metadata-and-storage-index|2026-07-21-2320-REPORT-al-005-s01-run-metadata-and-storage-index]]
+- [[outputs/worklogs/2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition|2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition]]
+- [[outputs/worklogs/2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history|2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history]]
