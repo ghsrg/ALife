@@ -48,3 +48,102 @@ export interface UiFixture {
   scenarioName: string;
   frame: WorldFrame;
 }
+
+export type DebugProjectionCompletenessState =
+  | 'full'
+  | 'bounded'
+  | 'sampled'
+  | 'partial'
+  | 'debug_selected'
+  | 'stale'
+  | 'unavailable';
+
+export interface DebugProjectionCompleteness {
+  state: DebugProjectionCompletenessState;
+  missingFields: string[];
+  reason: string | null;
+}
+
+export interface DebugProjectionSourceMetric {
+  fieldId: string;
+  sourceOwner: string;
+  sourcePath: string;
+}
+
+export interface DebugVisualCell {
+  id: CellId;
+  x: number;
+  y: number;
+  radius: number;
+  energy: number;
+  lifecycleState: string;
+  materials: Array<{ materialTypeId: number; amount: number }>;
+  internalResources: Array<{ resourceTypeId: number; amount: number }>;
+}
+
+export interface DebugResourceLayer {
+  layerIndex: number;
+  totalAmount: number;
+  completeness: DebugProjectionCompleteness;
+}
+
+export interface DebugField {
+  fieldId: string;
+  value: number;
+  sourceMetric: DebugProjectionSourceMetric;
+}
+
+export interface DebugVisualWorldProjection {
+  projectionKind: 'VisualWorldProjection';
+  completeness: DebugProjectionCompleteness;
+  cells: DebugVisualCell[];
+  resourceLayers: DebugResourceLayer[];
+  fields: DebugField[];
+  sourceMetrics: DebugProjectionSourceMetric[];
+}
+
+export interface DebugCoverageProjection {
+  projectionKind: 'CoverageProjection';
+  completeness: DebugProjectionCompleteness;
+  mechanisms: Array<{ mechanismId: string; statusId: string; sourceReport: string }>;
+}
+
+export interface DebugWarningProjection {
+  projectionKind: 'WarningProjection';
+  completeness: DebugProjectionCompleteness;
+  warnings: Array<{
+    code: string;
+    disposition: string;
+    affectedScope: string;
+    sourceReport: string;
+    recommendedReruns: string[];
+  }>;
+}
+
+export interface DebugClassificationProjection {
+  projectionKind: 'ClassificationProjection';
+  completeness: DebugProjectionCompleteness;
+  classifications: unknown[];
+}
+
+export interface DebugBalanceFindingProjection {
+  projectionKind: 'BalanceFindingProjection';
+  completeness: DebugProjectionCompleteness;
+  findings: unknown[];
+}
+
+export type DebugProjectionState =
+  | {
+      status: 'available';
+      runId: string;
+      tick: number;
+      visualWorld: DebugVisualWorldProjection;
+      coverage: DebugCoverageProjection;
+      warnings: DebugWarningProjection;
+      classifications: DebugClassificationProjection;
+      balanceFindings: DebugBalanceFindingProjection;
+    }
+  | {
+      status: 'unavailable';
+      reason: string;
+    };

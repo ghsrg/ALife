@@ -1,3 +1,4 @@
+use crate::bootstrap::generator_spec::BootstrapGeneratorSpec;
 use crate::core::config::RuntimeConfig;
 use crate::runner::config_parser::{ParseError, RawScenarioConfig};
 use std::fmt;
@@ -34,6 +35,8 @@ pub struct ScenarioDocument {
     pub schema_version: u32,
     pub scenario_hash: ScenarioHash,
     pub runtime_config: RuntimeConfig,
+    pub bootstrap_spec: Option<BootstrapGeneratorSpec>,
+    pub resource_type_ids: Vec<String>,
     pub canonical_source: String,
 }
 
@@ -79,6 +82,9 @@ impl ScenarioDocument {
         };
         let runtime_config =
             RawScenarioConfig::parse(&content).map_err(ScenarioDocumentError::Parse)?;
+        let (bootstrap_spec, resource_type_ids) =
+            RawScenarioConfig::parse_bootstrap_context(&content)
+                .map_err(ScenarioDocumentError::Parse)?;
         let canonical_source = canonicalize_scenario_source_v1(&content);
         let id = scenario_id_from_toml(&content).unwrap_or(fallback_id);
         Ok(Self {
@@ -86,6 +92,8 @@ impl ScenarioDocument {
             schema_version: 1,
             scenario_hash: scenario_hash_v1(&canonical_source),
             runtime_config,
+            bootstrap_spec,
+            resource_type_ids,
             canonical_source,
         })
     }
@@ -101,6 +109,8 @@ impl ScenarioDocument {
             schema_version: 1,
             scenario_hash: scenario_hash_v1(&canonical_source),
             runtime_config,
+            bootstrap_spec: None,
+            resource_type_ids: Vec::new(),
             canonical_source,
         }
     }

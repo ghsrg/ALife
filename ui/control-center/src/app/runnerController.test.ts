@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createAppStore } from './appState';
-import { createRequestId, shouldApplyLiveFrame, shouldApplyRunStatus } from './runnerController';
+import {
+  createRequestId,
+  shouldApplyDebugProjections,
+  shouldApplyLiveFrame,
+  shouldApplyRunStatus
+} from './runnerController';
 import type { LiveWorldFrameProjection } from '../runner/alifDecoder';
 
 const liveFrame: LiveWorldFrameProjection = {
@@ -74,6 +79,51 @@ describe('runnerController guards', () => {
       effectiveSeed: null,
       terminalReason: null
     }, store.getState())).toBe(false);
+  });
+
+  it('rejects debug projections older than the current live frame', () => {
+    const store = createAppStore();
+    store.getState().setFrame({
+      ...store.getState().frame,
+      source: 'live',
+      runId: 'run-a',
+      tick: 12,
+      summary: { heat: 0, waste: 0, projectionSequence: 5 }
+    });
+
+    expect(shouldApplyDebugProjections({
+      status: 'available',
+      runId: 'run-a',
+      tick: 10,
+      visualWorld: {
+        projectionKind: 'VisualWorldProjection',
+        completeness: { state: 'partial', missingFields: [], reason: null },
+        cells: [],
+        resourceLayers: [],
+        fields: [],
+        sourceMetrics: []
+      },
+      coverage: {
+        projectionKind: 'CoverageProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        mechanisms: []
+      },
+      warnings: {
+        projectionKind: 'WarningProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        warnings: []
+      },
+      classifications: {
+        projectionKind: 'ClassificationProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        classifications: []
+      },
+      balanceFindings: {
+        projectionKind: 'BalanceFindingProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        findings: []
+      }
+    }, 10, store.getState())).toBe(false);
   });
 
   it('creates deterministic request ids from an injected clock', () => {

@@ -1,33 +1,44 @@
 pub mod cell_placement;
 pub mod field_layers;
+pub mod generator_spec;
 pub mod manifest;
 pub mod prepared;
 pub mod resource_layers;
 pub mod seed_domains;
 pub mod starter_state;
 pub mod viability;
+pub mod world_families;
 
 use crate::bootstrap::manifest::{
-    BootstrapManifest, CellSummary, FieldLayerSummary, GeneratorVersion, ResourceLayerSummary,
+    BootstrapManifest, BootstrapWarning, CellSummary, FieldLayerSummary, GeneratorVersion,
     WorldSummary,
 };
 use crate::bootstrap::prepared::{PreparedWorld, prepared_state_hash_v1};
+use crate::bootstrap::resource_layers::{
+    PreparedResourceLayer, ResourceLayerError, generate_gradient_resource_layer,
+    generate_patch_resource_layer, uniform_prepared_resource_layer,
+};
 use crate::bootstrap::seed_domains::{
-    BOOTSTRAP_SEED_DOMAIN_VERSION, SeedDomain, seed_domain_records,
+    BOOTSTRAP_SEED_DOMAIN_VERSION, SeedDomain, derive_seed_domain, seed_domain_records,
 };
 use crate::bootstrap::viability::{ViabilityError, validate_prepared_config};
+use crate::bootstrap::world_families::{WORLD_FAMILY_GENERATOR_VERSION, resolve_world_family};
 use crate::runner::scenario_doc::ScenarioDocument;
 use std::fmt;
 
 #[derive(Debug)]
 pub enum BootstrapError {
     Viability(ViabilityError),
+    Generator(ResourceLayerError),
+    GeneratorSpec(crate::bootstrap::generator_spec::BootstrapGeneratorSpecError),
 }
 
 impl BootstrapError {
     pub const fn code(&self) -> &'static str {
         match self {
             Self::Viability(_) => "BOOTSTRAP_VIABILITY_FAILED",
+            Self::Generator(err) => err.code(),
+            Self::GeneratorSpec(err) => err.code(),
         }
     }
 }
@@ -36,6 +47,8 @@ impl fmt::Display for BootstrapError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Viability(err) => write!(f, "bootstrap viability failed: {err}"),
+            Self::Generator(err) => write!(f, "bootstrap generator failed: {err}"),
+            Self::GeneratorSpec(err) => write!(f, "bootstrap generator spec failed: {err}"),
         }
     }
 }
@@ -43,40 +56,71 @@ impl fmt::Display for BootstrapError {
 impl std::error::Error for BootstrapError {}
 
 pub fn prepare(document: &ScenarioDocument) -> Result<PreparedWorld, BootstrapError> {
-    let viability =
-        validate_prepared_config(&document.runtime_config).map_err(BootstrapError::Viability)?;
-    let root_seed = document.runtime_config.world.seed.raw();
-    let seed_domains = seed_domain_records(root_seed, document.scenario_hash, SeedDomain::ALL);
-    let resource_summary = document
-        .runtime_config
-        .resources
-        .initial_distribution
+    let mut runtime_config = document.runtime_config.clone();
+    let root_seed = runtime_config.world.seed.raw();
+    let mut seed_domains = seed_domain_records(root_seed, document.scenario_hash, SeedDomain::ALL);
+    let mut generator_versions = vec![
+        GeneratorVersion::new(BOOTSTRAP_SEED_DOMAIN_VERSION),
+        GeneratorVersion::new("prepared_world.v1"),
+        GeneratorVersion::new("viability.v1"),
+    ];
+    let world_family = resolve_world_family(
+        document
+            .bootstrap_spec
+            .as_ref()
+            .and_then(|spec| spec.family.as_deref()),
+    )
+    .map_err(BootstrapError::GeneratorSpec)?;
+    if world_family.is_some() {
+        generator_versions.push(GeneratorVersion::new(WORLD_FAMILY_GENERATOR_VERSION));
+    }
+
+    let grid_width = (runtime_config.world.size.width() / runtime_config.space.spatial_grid_size)
+        .ceil()
+        .max(1.0) as usize;
+    let grid_height = (runtime_config.world.size.height() / runtime_config.space.spatial_grid_size)
+        .ceil()
+        .max(1.0) as usize;
+    let prepared_resources = prepare_resource_layers(
+        document,
+        grid_width,
+        grid_height,
+        &mut seed_domains,
+        &mut generator_versions,
+    )?;
+    let resource_summary = prepared_resources
         .iter()
-        .enumerate()
-        .map(|(index, amount)| ResourceLayerSummary {
-            layer_index: index,
-            total: amount.raw(),
-            min: amount.raw(),
-            max: amount.raw(),
-        })
+        .map(|layer| layer.summary.clone())
         .collect::<Vec<_>>();
+    if document.bootstrap_spec.is_some() {
+        runtime_config.prepared_resource_layers = Some(
+            prepared_resources
+                .iter()
+                .map(|layer| layer.quantities.clone())
+                .collect(),
+        );
+    }
+    let viability = validate_prepared_config(&runtime_config).map_err(BootstrapError::Viability)?;
     let field_summary = vec![
         FieldLayerSummary {
             field_id: "heat".to_string(),
-            min: document.runtime_config.environment.heat_current.raw(),
-            max: document.runtime_config.environment.heat_current.raw(),
+            min: runtime_config.environment.heat_current.raw(),
+            max: runtime_config.environment.heat_current.raw(),
         },
         FieldLayerSummary {
             field_id: "waste".to_string(),
-            min: document.runtime_config.environment.waste_current.raw(),
-            max: document.runtime_config.environment.waste_current.raw(),
+            min: runtime_config.environment.waste_current.raw(),
+            max: runtime_config.environment.waste_current.raw(),
         },
-    ];
-    let cell_count = document.runtime_config.initial_cells.len();
+    ]
+    .into_iter()
+    .chain(generated_field_summaries(document))
+    .collect::<Vec<_>>();
+    let cell_count = runtime_config.initial_cells.len();
     let world_summary = WorldSummary {
-        width: document.runtime_config.world.size.width(),
-        height: document.runtime_config.world.size.height(),
-        spatial_grid_size: document.runtime_config.space.spatial_grid_size,
+        width: runtime_config.world.size.width(),
+        height: runtime_config.world.size.height(),
+        spatial_grid_size: runtime_config.space.spatial_grid_size,
         initial_cells: cell_count,
     };
     let cell_summary = CellSummary {
@@ -88,11 +132,6 @@ pub fn prepare(document: &ScenarioDocument) -> Result<PreparedWorld, BootstrapEr
             .filter(|assignment| assignment.is_some())
             .count(),
     };
-    let generator_versions = vec![
-        GeneratorVersion::new(BOOTSTRAP_SEED_DOMAIN_VERSION),
-        GeneratorVersion::new("prepared_world.v1"),
-        GeneratorVersion::new("viability.v1"),
-    ];
     let prepared_state_hash = prepared_state_hash_v1(
         document.scenario_hash,
         root_seed,
@@ -108,17 +147,126 @@ pub fn prepare(document: &ScenarioDocument) -> Result<PreparedWorld, BootstrapEr
         root_seed,
         generator_versions,
         seed_domains,
+        world_family,
         world_summary,
         resource_summary,
         field_summary,
         cell_summary,
         viability,
-        warnings: Vec::new(),
+        warnings: generated_warnings(document),
     };
 
     Ok(PreparedWorld {
-        runtime_config: document.runtime_config.clone(),
+        runtime_config,
         manifest,
         prepared_state_hash,
     })
+}
+
+fn prepare_resource_layers(
+    document: &ScenarioDocument,
+    width: usize,
+    height: usize,
+    seed_domains: &mut Vec<crate::bootstrap::seed_domains::SeedDomainRecord>,
+    generator_versions: &mut Vec<GeneratorVersion>,
+) -> Result<Vec<PreparedResourceLayer>, BootstrapError> {
+    let cell_count = width * height;
+    let mut layers = document
+        .runtime_config
+        .resources
+        .initial_distribution
+        .iter()
+        .enumerate()
+        .map(|(index, amount)| uniform_prepared_resource_layer(index, cell_count, amount.raw()))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(BootstrapError::Generator)?;
+
+    let Some(spec) = document.bootstrap_spec.as_ref() else {
+        return Ok(layers);
+    };
+
+    for resource in &spec.resources {
+        let Some(layer_index) = document
+            .resource_type_ids
+            .iter()
+            .position(|id| id == &resource.resource_type_id)
+        else {
+            return Err(BootstrapError::GeneratorSpec(
+                crate::bootstrap::generator_spec::BootstrapGeneratorSpecError::new(
+                    "BOOTSTRAP_UNKNOWN_RESOURCE_TYPE",
+                ),
+            ));
+        };
+        let domain = derive_seed_domain(
+            root_seed(document),
+            document.scenario_hash,
+            &resource.seed_domain,
+        );
+        seed_domains.push(domain.clone());
+        generator_versions.push(GeneratorVersion::new(resource.version.clone()));
+        let mut rng = crate::bootstrap::seed_domains::SplitMix64::new(domain.domain_seed);
+        layers[layer_index] = match resource.generator.as_str() {
+            "patches" => generate_patch_resource_layer(
+                layer_index,
+                width,
+                height,
+                resource.patches.unwrap_or(3),
+                resource.min_amount.unwrap_or(0.0),
+                resource.max_amount.unwrap_or(1.0),
+                resource.falloff.unwrap_or(0.35),
+                &mut rng,
+            ),
+            "gradient" => generate_gradient_resource_layer(
+                layer_index,
+                width,
+                height,
+                resource.min_amount.unwrap_or(0.0),
+                resource.max_amount.unwrap_or(1.0),
+            ),
+            _ => Err(ResourceLayerError::new(
+                "BOOTSTRAP_UNKNOWN_RESOURCE_GENERATOR",
+            )),
+        }
+        .map_err(BootstrapError::Generator)?;
+    }
+    seed_domains.sort_by(|a, b| a.label.cmp(&b.label));
+    Ok(layers)
+}
+
+fn generated_field_summaries(document: &ScenarioDocument) -> Vec<FieldLayerSummary> {
+    document
+        .bootstrap_spec
+        .as_ref()
+        .map(|spec| {
+            spec.fields
+                .iter()
+                .map(|field| FieldLayerSummary {
+                    field_id: field.field_id.clone(),
+                    min: field.min_value.unwrap_or(0.0),
+                    max: field.max_value.unwrap_or(0.0),
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn generated_warnings(document: &ScenarioDocument) -> Vec<BootstrapWarning> {
+    if document
+        .bootstrap_spec
+        .as_ref()
+        .is_some_and(|spec| !spec.fields.is_empty())
+    {
+        vec![BootstrapWarning {
+            code: "BOOTSTRAP_FIELD_LAYER_NOT_CORE_INTEGRATED".to_string(),
+            message:
+                "Field generator summaries are manifest-only until Core field grids are integrated."
+                    .to_string(),
+        }]
+    } else {
+        Vec::new()
+    }
+}
+
+fn root_seed(document: &ScenarioDocument) -> u64 {
+    document.runtime_config.world.seed.raw()
 }

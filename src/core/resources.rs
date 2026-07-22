@@ -93,6 +93,42 @@ impl ResourceGrid {
         Ok(grid)
     }
 
+    pub fn new_from_layers(
+        world_size: WorldSize,
+        spatial_grid_size: f32,
+        layers: Vec<Vec<ResourceAmount>>,
+        decay_rate: f32,
+    ) -> Result<Self, ResourceGridError> {
+        if layers.is_empty() {
+            return Err(ResourceGridError::EmptyInitialDistribution);
+        }
+        if !spatial_grid_size.is_finite() || spatial_grid_size <= 0.0 {
+            return Err(ResourceGridError::InvalidGridSize);
+        }
+        if !decay_rate.is_finite() || !(0.0..=1.0).contains(&decay_rate) {
+            return Err(ResourceGridError::InvalidDecayRate);
+        }
+
+        let width = (world_size.width() / spatial_grid_size).ceil().max(1.0) as usize;
+        let height = (world_size.height() / spatial_grid_size).ceil().max(1.0) as usize;
+        let cell_count = width * height;
+        if layers.iter().any(|layer| layer.len() != cell_count) {
+            return Err(ResourceGridError::InvalidGridSize);
+        }
+
+        let layer_count = layers.len();
+        let quantities = layers.into_iter().flatten().collect();
+        Ok(Self {
+            width,
+            height,
+            layer_count,
+            quantities,
+            optional_decay_rate: decay_rate,
+            spatial_grid_size,
+            type_ids: None,
+        })
+    }
+
     pub fn coord_for_position(&self, position: Position) -> GridCoord {
         let max_x = self.width.saturating_sub(1);
         let max_y = self.height.saturating_sub(1);

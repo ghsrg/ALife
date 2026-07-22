@@ -247,3 +247,7 @@ tags:
 - [[outputs/worklogs/2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history|2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history]]
 - [[outputs/worklogs/2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance|2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance]]
 - [[outputs/worklogs/2026-07-22-1331-REPORT-al-004-s05-visual-balance-coverage-warning-projections|2026-07-22-1331-REPORT-al-004-s05-visual-balance-coverage-warning-projections]]
+- [[outputs/worklogs/2026-07-22-1354-PLAN-al-007-s10-debug-visualization-mode-exact-layers|2026-07-22-1354-PLAN-al-007-s10-debug-visualization-mode-exact-layers]]
+- [[outputs/worklogs/2026-07-22-1444-REPORT-al-007-s10-debug-visualization-mode-exact-layers|2026-07-22-1444-REPORT-al-007-s10-debug-visualization-mode-exact-layers]]
+- [[outputs/worklogs/2026-07-22-1516-PLAN-al-002-s11-rich-spatial-generators-and-world-families|2026-07-22-1516-PLAN-al-002-s11-rich-spatial-generators-and-world-families]]
+- [[outputs/worklogs/2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families|2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families]]

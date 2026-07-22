@@ -88,6 +88,85 @@ describe('RunnerApiClient', () => {
     });
   });
 
+  it('loads latest debug projections through the read-only projection gateway', async () => {
+    const client = new RunnerApiClient('http://127.0.0.1:8080');
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        schema_version: 'ControlCenterProjectionBundle/v1',
+        projection_kind: 'DebugProjectionBundle',
+        source: 'live',
+        run_id: 'run-1',
+        tick: 12,
+        visual_world: {
+          projection_kind: 'VisualWorldProjection',
+          completeness: { state: 'partial', missing_fields: ['cells.materials'], reason: 'partial' },
+          payload: {
+            cells: [],
+            resource_layers: [],
+            fields: [],
+            source_metrics: []
+          }
+        },
+        coverage: {
+          projection_kind: 'CoverageProjection',
+          completeness: { state: 'bounded', missing_fields: [], reason: 'none' },
+          payload: { mechanisms: [] }
+        },
+        warnings: {
+          projection_kind: 'WarningProjection',
+          completeness: { state: 'bounded', missing_fields: [], reason: 'none' },
+          payload: { warnings: [] }
+        },
+        classifications: {
+          projection_kind: 'ClassificationProjection',
+          completeness: { state: 'bounded', missing_fields: [], reason: 'none' },
+          payload: { classifications: [] }
+        },
+        balance_findings: {
+          projection_kind: 'BalanceFindingProjection',
+          completeness: { state: 'bounded', missing_fields: [], reason: 'none' },
+          payload: { findings: [] }
+        }
+      })
+    );
+
+    await expect(client.getLatestDebugProjections()).resolves.toMatchObject({
+      status: 'available',
+      runId: 'run-1',
+      tick: 12,
+      visualWorld: {
+        completeness: {
+          state: 'partial',
+          missingFields: ['cells.materials']
+        }
+      }
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('http://127.0.0.1:8080/projections/latest', {
+      method: 'GET'
+    });
+  });
+
+  it('maps unavailable latest debug projections without hiding the reason', async () => {
+    const client = new RunnerApiClient('http://127.0.0.1:8080');
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          ok: false,
+          category: 'projection_unavailable',
+          projection_status: 'unavailable',
+          message: 'No active committed snapshot is available'
+        },
+        { status: 404 }
+      )
+    );
+
+    await expect(client.getLatestDebugProjections()).resolves.toEqual({
+      status: 'unavailable',
+      reason: 'No active committed snapshot is available'
+    });
+  });
+
   it('maps status payloads for stream clients', () => {
     expect(
       mapStatus({

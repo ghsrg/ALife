@@ -22,6 +22,12 @@ pub struct WorldSummary {
     pub initial_cells: usize,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WorldFamilySummary {
+    pub family_id: String,
+    pub generator_version: String,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ResourceLayerSummary {
     pub layer_index: usize,
@@ -57,6 +63,7 @@ pub struct BootstrapManifest {
     pub root_seed: u64,
     pub generator_versions: Vec<GeneratorVersion>,
     pub seed_domains: Vec<SeedDomainRecord>,
+    pub world_family: Option<WorldFamilySummary>,
     pub world_summary: WorldSummary,
     pub resource_summary: Vec<ResourceLayerSummary>,
     pub field_summary: Vec<FieldLayerSummary>,

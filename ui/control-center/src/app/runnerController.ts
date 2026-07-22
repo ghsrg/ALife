@@ -1,5 +1,6 @@
 import type { StoreApi } from 'zustand/vanilla';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
+import type { DebugProjectionState } from '../projection/types';
 import { liveProjectionToWorldFrame } from '../projection/liveAdapter';
 import type { LiveWorldFrameProjection } from '../runner/alifDecoder';
 import { RunnerApiClient, type RunStatus } from '../runner/apiClient';
@@ -65,10 +66,27 @@ export function toErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+export function shouldApplyDebugProjections(
+  debugProjections: DebugProjectionState,
+  requestedFrameTick: number,
+  state: Pick<AppStore, 'frame'>
+) {
+  if (state.frame.source !== 'live') {
+    return true;
+  }
+
+  if (debugProjections.status === 'unavailable') {
+    return state.frame.tick === requestedFrameTick;
+  }
+
+  return debugProjections.tick >= state.frame.tick;
+}
+
 interface RunnerApiPort {
   getServerInfo: RunnerApiClient['getServerInfo'];
   listScenarios: RunnerApiClient['listScenarios'];
   getRunStatus: RunnerApiClient['getRunStatus'];
+  getLatestDebugProjections: RunnerApiClient['getLatestDebugProjections'];
   startRun: RunnerApiClient['startRun'];
   pauseRun: RunnerApiClient['pauseRun'];
   resumeRun: RunnerApiClient['resumeRun'];
@@ -135,7 +153,27 @@ export function createRunnerController({
         if (!shouldApplyLiveFrame(frame, currentState)) {
           return;
         }
+        const requestedFrameTick = frame.committedTick;
         currentState.setFrame(toWorldFrame(frame, currentState));
+        void nextApiClient
+          .getLatestDebugProjections()
+          .then((debugProjections) => {
+            if (isActive() && shouldApplyDebugProjections(debugProjections, requestedFrameTick, store.getState())) {
+              store.getState().setDebugProjections(debugProjections);
+            }
+          })
+          .catch((error: unknown) => {
+            const unavailableDebugProjections: DebugProjectionState = {
+              status: 'unavailable',
+              reason: toErrorMessage(error)
+            };
+            if (
+              isActive() &&
+              shouldApplyDebugProjections(unavailableDebugProjections, requestedFrameTick, store.getState())
+            ) {
+              store.getState().setDebugProjections(unavailableDebugProjections);
+            }
+          });
       },
       onError: (error) => {
         if (!isActive()) {

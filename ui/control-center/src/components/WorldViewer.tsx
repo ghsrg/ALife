@@ -5,9 +5,11 @@ import type {
   WheelEvent as ReactWheelEvent
 } from 'react';
 import type { CellId, WorldFrame } from '../projection/types';
+import type { DebugProjectionState } from '../projection/types';
 import { uiText } from '../uiText';
 import { buildViewerHitTargets } from '../viewer/viewerHitTargets';
 import { useViewerCamera } from '../viewer/useViewerCamera';
+import { buildDebugLayerPlan, type DebugLayerMode } from '../viewer/debugLayers';
 import { mountWorldRenderer, type WorldRenderer } from '../viewer/worldRenderer';
 import { fitCameraToWorld, formatMapScaleLabel } from '../viewer/viewerNavigation';
 import { ViewerTruthOverlay } from './ViewerTruthOverlay';
@@ -22,6 +24,7 @@ interface WorldViewerProps {
   onExportScreenshot?: () => void;
   onToggleFullScreen?: () => void;
   isFullScreen?: boolean;
+  debugProjections?: DebugProjectionState;
 }
 
 export interface WorldViewerHandle {
@@ -29,7 +32,15 @@ export interface WorldViewerHandle {
 }
 
 export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(function WorldViewer(
-  { frame, selectedCellId, onSelectCell, onExportScreenshot, onToggleFullScreen, isFullScreen = false },
+  {
+    frame,
+    selectedCellId,
+    onSelectCell,
+    onExportScreenshot,
+    onToggleFullScreen,
+    isFullScreen = false,
+    debugProjections
+  },
   ref
 ) {
   const viewerRef = useRef<HTMLDivElement | null>(null);
@@ -39,8 +50,16 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const [cameraState, dispatchCamera] = useViewerCamera();
   const { camera } = cameraState;
   const [truthOverlayVisible, setTruthOverlayVisible] = useState(true);
+  const [debugLayerMode, setDebugLayerMode] = useState<DebugLayerMode>('exact');
   const [viewport, setViewport] = useState(() => ({ width: frame.world.width, height: frame.world.height }));
   const truthState = buildViewerTruthState(frame, viewport);
+  const debugLayerPlan = debugProjections
+    ? buildDebugLayerPlan(debugProjections, {
+        mode: debugLayerMode,
+        showResourceLayer: true,
+        showFieldLayer: true
+      })
+    : null;
 
   const measureViewport = () => {
     const host = hostRef.current;
@@ -249,6 +268,64 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         ) : null}
         <span aria-label={uiText.viewer.zoomLabel}>{formatMapScaleLabel(frame.world, viewport, camera.scale)}</span>
       </div>
+      {debugLayerPlan ? (
+        <aside
+          className="debug-visualization-mode"
+          aria-label="Debug Visualization Mode"
+          onMouseDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onWheel={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="debug-mode-header">
+            <strong>Debug</strong>
+            <span>{debugLayerPlan.interpolationLabel}</span>
+            {debugProjections?.status === 'available' ? (
+              <span>{`Tick ${debugProjections.tick}`}</span>
+            ) : null}
+          </div>
+          <div className="debug-mode-actions">
+            <button
+              type="button"
+              onClick={() => setDebugLayerMode(debugLayerMode === 'exact' ? 'smooth' : 'exact')}
+              aria-label={
+                debugLayerMode === 'exact'
+                  ? 'Switch debug layers to Smooth interpolation'
+                  : 'Switch debug layers to Exact interpolation'
+              }
+            >
+              {debugLayerMode === 'exact' ? 'Smooth' : 'Exact'}
+            </button>
+            <label>
+              <input type="checkbox" checked readOnly />
+              Resource / Field
+            </label>
+            <label>
+              <input aria-label="Spatial index overlay unavailable" type="checkbox" disabled />
+              Spatial index
+            </label>
+          </div>
+          <div className="debug-mode-body">
+            {debugProjections?.status === 'available' ? (
+              <>
+                <span>VisualWorldProjection</span>
+                {debugLayerPlan.resources.map((layer) => (
+                  <span key={`resource-${layer.layerIndex}`}>{layer.legendLabel}</span>
+                ))}
+                {debugLayerPlan.fields.map((field) => (
+                  <span key={`field-${field.fieldId}`}>{field.sampledValueLabel}</span>
+                ))}
+                {debugLayerPlan.missingProjectionWarnings.map((warning) => (
+                  <span key={warning} className="debug-mode-warning">{warning}</span>
+                ))}
+                <span className="debug-mode-warning">Missing live projection</span>
+              </>
+            ) : (
+              <span className="debug-mode-warning">{debugLayerPlan.reason}</span>
+            )}
+          </div>
+        </aside>
+      ) : null}
       <div className="world-hit-targets" aria-label={uiText.viewer.hitTargetsAriaLabel}>
         {buildViewerHitTargets(frame, selectedCellId, viewport, camera).map((target) => {
           return (

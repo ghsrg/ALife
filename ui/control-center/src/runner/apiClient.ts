@@ -1,3 +1,9 @@
+import {
+  normalizeDebugProjectionBundle,
+  normalizeUnavailableDebugProjection
+} from '../projection/debugProjectionAdapter';
+import type { DebugProjectionState } from '../projection/types';
+
 export interface ServerInfo {
   engineVersion: string;
   apiVersion: string;
@@ -182,6 +188,25 @@ export class RunnerApiClient {
 
   async getRunStatus(): Promise<RunStatus> {
     return mapStatus(await this.request<RunStatusWire>('/run/status', { method: 'GET' }));
+  }
+
+  async getLatestDebugProjections(): Promise<DebugProjectionState> {
+    const response = await fetch(`${this.baseUrl}/projections/latest`, { method: 'GET' });
+    const body: unknown = await response.json();
+
+    if (!response.ok) {
+      if (isErrorResponse(body) && body.category === 'projection_unavailable') {
+        return normalizeUnavailableDebugProjection(body);
+      }
+
+      if (isErrorResponse(body)) {
+        throw new Error(`${body.category}: ${body.message}`);
+      }
+
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return normalizeDebugProjectionBundle(body);
   }
 
   async startRun(input: StartRunInput): Promise<StartRunResponse> {

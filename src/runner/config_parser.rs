@@ -1,3 +1,4 @@
+use crate::bootstrap::generator_spec::BootstrapGeneratorSpec;
 use crate::core::config::{
     CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryHeatConfig,
     ChemistryMaterialConfig, ChemistryReactionConfig, ChemistryRepairConfig,
@@ -334,6 +335,7 @@ pub struct RawScenarioConfig {
     pub world: RawWorld,
     pub space: RawSpace,
     pub resources: RawResources,
+    pub bootstrap: Option<BootstrapGeneratorSpec>,
     pub resource_interaction: Option<RawResourceInteraction>,
     pub local_interaction: Option<RawLocalInteraction>,
     pub cell: RawCell,
@@ -471,6 +473,30 @@ impl RawScenarioConfig {
         raw.to_runtime_config()
     }
 
+    pub fn parse_bootstrap_context(
+        toml_str: &str,
+    ) -> Result<(Option<BootstrapGeneratorSpec>, Vec<String>), ParseError> {
+        let raw: Self = toml::from_str(toml_str).map_err(ParseError::TomlError)?;
+        if let Some(spec) = raw.bootstrap.as_ref() {
+            spec.validate()
+                .map_err(|err| ParseError::ValidationError(err.code().to_string()))?;
+            for resource in &spec.resources {
+                if !raw
+                    .resources
+                    .resource_type_ids
+                    .iter()
+                    .any(|id| id == &resource.resource_type_id)
+                {
+                    return Err(ParseError::ValidationError(format!(
+                        "Unknown bootstrap resource_type_id: {}",
+                        resource.resource_type_id
+                    )));
+                }
+            }
+        }
+        Ok((raw.bootstrap, raw.resources.resource_type_ids))
+    }
+
     pub fn to_runtime_config(self) -> Result<RuntimeConfig, ParseError> {
         if self.environment.heat_warning_threshold > self.environment.heat_death_threshold {
             return Err(ParseError::ValidationError(
@@ -505,6 +531,23 @@ impl RawScenarioConfig {
             return Err(ParseError::ValidationError(
                 "resource_type_ids length must match initial_distribution length".to_string(),
             ));
+        }
+        if let Some(spec) = self.bootstrap.as_ref() {
+            spec.validate()
+                .map_err(|err| ParseError::ValidationError(err.code().to_string()))?;
+            for resource in &spec.resources {
+                if !self
+                    .resources
+                    .resource_type_ids
+                    .iter()
+                    .any(|id| id == &resource.resource_type_id)
+                {
+                    return Err(ParseError::ValidationError(format!(
+                        "Unknown bootstrap resource_type_id: {}",
+                        resource.resource_type_id
+                    )));
+                }
+            }
         }
 
         let resource_amounts = self

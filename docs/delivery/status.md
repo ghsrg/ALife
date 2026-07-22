@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| None selected | `idle` | `high` | `docs/delivery/roadmap.md` | No active execution focus selected after `AL-004-S05` closure. |
+| None selected | - | - | - | `AL-002-S11` closed; select the next Plan ID before planning or execution. |
 
 ## Operational Rules
 
@@ -39,18 +39,19 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-007-S10` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Debug Visualization Mode and Exact Layers should consume Observer projection payloads and display partial/unavailable fields explicitly. |
-| 2 | `AL-002-S11` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Rich generators/world families are still ready, but intentionally sequenced after the projection/viewer path can display richer worlds. |
+| 1 | `AL-002-S12` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Bootstrap preview/report/calibration is the fastest systematic path to validate rich generated worlds visually without UI-only shortcuts. |
+| 2 | `AL-007-S11` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Direct UI continuation after debug projection state: richer inspectors, search, filters, and comparison. |
 | 3 | `AL-006-S01` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Benchmark harness can start now that `AL-003` is closed; downstream throughput work stays separate. |
-| 4 | `AL-002-S12` | <kbd style="background-color: #cf222e; color: white; border: none;">blocked-dependency</kbd> | `AL-002-S11` | `docs/delivery/roadmap.md` | Bootstrap preview/report should follow rich generators and blocks `AL-007-S13`. |
-| 5 | `AL-002-S17` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Close or explicitly retire remaining AL-002-owned material/repair/boundary/joint-repair debts. |
-| 6 | `AL-005-S02` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Analytics export can plan over typed Observer payloads, but should stay behind UI-2B unless export becomes selected priority. |
-| 7 | `AL-002-S18` | <kbd style="background-color: #cf222e; color: white; border: none;">blocked-dependency</kbd> | `AL-002-S11`, `AL-002-S12`, `AL-002-S17` | `docs/delivery/roadmap.md` | Final AL-002 closure matrix waits for rich generators, bootstrap preview/report, and AL-002 debt disposition. |
+| 4 | `AL-002-S17` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Close or explicitly retire remaining AL-002-owned material/repair/boundary/joint-repair debts. |
+| 5 | `AL-005-S02` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Analytics export can plan over typed Observer payloads, but should stay behind UI-2B/UI-2C unless export becomes selected priority. |
+| 6 | `AL-002-S18` | <kbd style="background-color: #cf222e; color: white; border: none;">blocked-dependency</kbd> | `AL-002-S12`, `AL-002-S17` | `docs/delivery/roadmap.md` | Final AL-002 closure matrix waits for bootstrap preview/report and AL-002 debt disposition. |
 
 ## Recently Closed
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-002-S11` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families.md` | Typed Bootstrap generator specs, deterministic prepared resource layers, `patchy_temperate_v1` manifest metadata, explicit field-grid warning, and rich Runner/Core smoke are closed. Full `cargo test` is blocked by local disk capacity during link, not by an assertion failure. |
+| `AL-007-S10` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-1444-REPORT-al-007-s10-debug-visualization-mode-exact-layers.md` | Read-only Observer projection gateway, UI debug projection state, compact Debug Visualization Mode, disabled unsupported overlays, and map-first Monitor layout are closed. Exact per-cell material/resource grids and richer inspectors remain downstream. |
 | `AL-004-S05` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-1331-REPORT-al-004-s05-visual-balance-coverage-warning-projections.md` | Typed Observer payload builders are closed for bounded visual world data, classification provenance, coverage statuses, warning dispositions, and balance findings. Per-Cell material/internal-resource payloads remain explicitly partial until Core/Observer exposes that snapshot data. |
 | `AL-004-S03` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance.md` | Implemented early Observer classification baseline is closed for config loading, deterministic Cell role/behavior/archetype classifiers, mode/status/confidence/version/evidence/completeness fields, and read-only boundary. Concrete consumer classification payload/provenance is now covered by `AL-004-S05`; Research UI display remains downstream. |
 | `AL-007-S09` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history.md` | UI-2A is closed for Data Context, projection source/version/completeness display, bounded client live history, frozen read-only inspection, stale context, Jump to Live, and explicit unavailable Tick/no-nearest-frame-substitution behavior. Full storage replay and exact debug layers remain later slices. |

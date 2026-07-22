@@ -444,6 +444,7 @@ pub struct RuntimeConfig {
     pub world: WorldConfig,
     pub space: SpaceConfig,
     pub resources: ResourceConfig,
+    pub prepared_resource_layers: Option<Vec<Vec<ResourceAmount>>>,
     pub resource_interaction: ResourceInteractionConfig,
     pub cell: CellInitialConfig,
     pub environment: EnvironmentConfig,
@@ -628,6 +629,7 @@ impl RuntimeConfig {
             world,
             space,
             resources,
+            prepared_resource_layers: None,
             resource_interaction,
             cell,
             environment,
@@ -941,6 +943,16 @@ impl RuntimeConfig {
         for amount in &self.resources.initial_distribution {
             hash ^= amount.raw().to_bits() as u64;
             hash = hash.wrapping_mul(0x100000001b3);
+        }
+        if let Some(layers) = &self.prepared_resource_layers {
+            for layer in layers {
+                for amount in layer {
+                    hash ^= amount.raw().to_bits() as u64;
+                    hash = hash.wrapping_mul(0x100000001b3);
+                }
+                hash ^= 0xff;
+                hash = hash.wrapping_mul(0x100000001b3);
+            }
         }
         hash ^= self.resources.optional_decay_rate.to_bits() as u64;
         hash = hash.wrapping_mul(0x100000001b3);

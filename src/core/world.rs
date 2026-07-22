@@ -203,12 +203,21 @@ impl WorldState {
         let mut contact_cache = ContactCache::default();
         contact_cache.rebuild(&cells, &spatial_index);
 
-        let resources = ResourceGrid::new(
-            config.world.size,
-            config.space.spatial_grid_size,
-            config.resources.initial_distribution.clone(),
-            config.resources.optional_decay_rate,
-        )
+        let resources = if let Some(layers) = config.prepared_resource_layers.clone() {
+            ResourceGrid::new_from_layers(
+                config.world.size,
+                config.space.spatial_grid_size,
+                layers,
+                config.resources.optional_decay_rate,
+            )
+        } else {
+            ResourceGrid::new(
+                config.world.size,
+                config.space.spatial_grid_size,
+                config.resources.initial_distribution.clone(),
+                config.resources.optional_decay_rate,
+            )
+        }
         .map_err(|_| WorldInitError::InvalidInitialState)?;
 
         let environment = EnvironmentState::from_config(&config.environment);

@@ -104,6 +104,22 @@ describe('createAppStore', () => {
     expect(store.getState().selectedCellId).toBe('live-cell-a');
   });
 
+  it('stores debug projection state separately from the current world frame', () => {
+    const store = createAppStore(liveFrame);
+    const originalFrame = store.getState().frame;
+
+    store.getState().setDebugProjections({
+      status: 'unavailable',
+      reason: 'No active committed snapshot is available'
+    });
+
+    expect(store.getState().frame).toBe(originalFrame);
+    expect(store.getState().debugProjections).toEqual({
+      status: 'unavailable',
+      reason: 'No active committed snapshot is available'
+    });
+  });
+
   it('preserves selected cell across frame updates when present and selects the first available cell otherwise', () => {
     const store = createAppStore(liveFrame);
 

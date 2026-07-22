@@ -7,6 +7,7 @@ import {
   type ProjectionContext
 } from '../projection/projectionContext';
 import type { CellId, CellProjection, WorldFrame } from '../projection/types';
+import type { DebugProjectionState } from '../projection/types';
 import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClient';
 import type { RunnerStreamConnectionState as ConnectionState } from '../runner/streamClient';
 
@@ -24,6 +25,7 @@ export interface AppState {
   latestLiveFrame: WorldFrame | null;
   frameHistory: WorldFrame[];
   projectionContext: ProjectionContext;
+  debugProjections: DebugProjectionState;
   selectedCellId: CellId | null;
   selectedCell: CellProjection | null;
   theme: ThemeMode;
@@ -43,6 +45,7 @@ export interface AppActions {
   freezeCurrentFrame: () => void;
   selectHistoryTick: (tick: number) => void;
   jumpToLive: () => void;
+  setDebugProjections: (debugProjections: DebugProjectionState) => void;
   selectCell: (cellId: CellId | null) => void;
   setTheme: (theme: ThemeMode) => void;
   setRunnerEndpoint: (endpoint: string) => void;
@@ -91,6 +94,10 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     latestLiveFrame: initialFrame.source === 'live' ? initialFrame : null,
     frameHistory: initialFrame.source === 'live' ? [initialFrame] : [],
     projectionContext: initialContext,
+    debugProjections: {
+      status: 'unavailable',
+      reason: 'No live Observer debug projection has been loaded'
+    },
     selectedCellId: initialCell?.id ?? null,
     selectedCell: initialCell,
     theme: 'dark',
@@ -177,6 +184,7 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         selectedCell
       });
     },
+    setDebugProjections: (debugProjections) => set({ debugProjections }),
     selectCell: (cellId) => {
       const selectedCell = selectCell(get().frame, cellId);
       set({

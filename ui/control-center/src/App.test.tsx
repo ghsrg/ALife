@@ -10,6 +10,7 @@ const mockRunner = vi.hoisted(() => {
     getServerInfo: vi.fn(),
     listScenarios: vi.fn(),
     getRunStatus: vi.fn(),
+    getLatestDebugProjections: vi.fn(),
     startRun: vi.fn(),
     pauseRun: vi.fn(),
     resumeRun: vi.fn(),
@@ -136,6 +137,43 @@ function setupRunnerMocks() {
     { id: 'demo-scenario', path: 'scenarios/demo.toml' }
   ]);
   mockRunner.apiInstance.getRunStatus.mockResolvedValue(idleStatus);
+  mockRunner.apiInstance.getLatestDebugProjections.mockResolvedValue({
+    status: 'available',
+    runId: 'run-live-1',
+    tick: 7,
+    visualWorld: {
+      projectionKind: 'VisualWorldProjection',
+      completeness: {
+        state: 'partial',
+        missingFields: ['cells.materials'],
+        reason: 'CommittedSnapshot lacks per-cell material data'
+      },
+      cells: [],
+      resourceLayers: [],
+      fields: [],
+      sourceMetrics: []
+    },
+    coverage: {
+      projectionKind: 'CoverageProjection',
+      completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+      mechanisms: []
+    },
+    warnings: {
+      projectionKind: 'WarningProjection',
+      completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+      warnings: []
+    },
+    classifications: {
+      projectionKind: 'ClassificationProjection',
+      completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+      classifications: []
+    },
+    balanceFindings: {
+      projectionKind: 'BalanceFindingProjection',
+      completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+      findings: []
+    }
+  });
   mockRunner.apiInstance.startRun.mockResolvedValue({
     ok: true,
     runId: 'run-live-1',
@@ -272,9 +310,10 @@ describe('App', () => {
       expect(mockRunner.streamInstances).toHaveLength(1);
     });
 
-    act(() => {
+    await act(async () => {
       mockRunner.streamInstances[0].handlers.onStatus(runningStatus);
       mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 15, sequence: 5, cellId: 1505 }));
+      await Promise.resolve();
     });
 
     expect(screen.getByText('Start demo')).toBeInTheDocument();
@@ -411,9 +450,10 @@ describe('App', () => {
       expect(mockRunner.streamInstances).toHaveLength(1);
     });
 
-    act(() => {
+    await act(async () => {
       mockRunner.streamInstances[0].handlers.onStatus(runningStatus);
       mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 9, sequence: 3, cellId: 77 }));
+      await Promise.resolve();
     });
 
     const workspace = screen.getByLabelText(/monitor workspace/i);
@@ -424,7 +464,7 @@ describe('App', () => {
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Resources');
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
     expect(screen.getByText('Composite Resource Concentration')).toBeInTheDocument();
-    expect(screen.getByText('Missing live projection')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('Layer controls')).getByText('Missing live projection')).toBeInTheDocument();
   });
 
   it('ignores late stream callbacks after unmount', async () => {
@@ -457,12 +497,13 @@ describe('App', () => {
       expect(mockRunner.streamInstances).toHaveLength(1);
     });
 
-    act(() => {
+    await act(async () => {
       mockRunner.streamInstances[0].handlers.onStatus(runningStatus);
       mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 12, sequence: 4, cellId: 1204 }));
       mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 11, sequence: 9, cellId: 1199 }));
       mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 12, sequence: 4, cellId: 1203 }));
       mockRunner.streamInstances[0].handlers.onFrame(liveFrame({ tick: 12, sequence: 3, cellId: 1202 }));
+      await Promise.resolve();
     });
 
     const workspace = screen.getByLabelText(/monitor workspace/i);

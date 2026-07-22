@@ -1,0 +1,122 @@
+import { describe, expect, it } from 'vitest';
+import type { DebugProjectionState } from '../projection/types';
+import { buildDebugLayerPlan } from './debugLayers';
+
+const availableDebugProjections: DebugProjectionState = {
+  status: 'available',
+  runId: 'run-1',
+  tick: 12,
+  visualWorld: {
+    projectionKind: 'VisualWorldProjection',
+    completeness: {
+      state: 'partial',
+      missingFields: ['cells.materials'],
+      reason: 'CommittedSnapshot lacks per-cell materials'
+    },
+    cells: [],
+    resourceLayers: [
+      {
+        layerIndex: 0,
+        totalAmount: 4,
+        completeness: {
+          state: 'bounded',
+          missingFields: [],
+          reason: 'Totals only'
+        }
+      }
+    ],
+    fields: [
+      {
+        fieldId: 'heat',
+        value: 2.5,
+        sourceMetric: {
+          fieldId: 'heat',
+          sourceOwner: 'CoreCommittedSnapshot',
+          sourcePath: 'CommittedSnapshot.heat'
+        }
+      }
+    ],
+    sourceMetrics: []
+  },
+  coverage: {
+    projectionKind: 'CoverageProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    mechanisms: []
+  },
+  warnings: {
+    projectionKind: 'WarningProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    warnings: []
+  },
+  classifications: {
+    projectionKind: 'ClassificationProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    classifications: []
+  },
+  balanceFindings: {
+    projectionKind: 'BalanceFindingProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    findings: []
+  }
+};
+
+describe('buildDebugLayerPlan', () => {
+  it('plans exact resource and field layers with source-backed legend entries', () => {
+    const plan = buildDebugLayerPlan(availableDebugProjections, {
+      mode: 'exact',
+      showResourceLayer: true,
+      showFieldLayer: true
+    });
+
+    expect(plan.status).toBe('available');
+    expect(plan.interpolationLabel).toBe('Exact');
+    expect(plan.resources[0]).toMatchObject({
+      layerIndex: 0,
+      totalAmount: 4,
+      availability: 'bounded',
+      legendLabel: 'Resource layer 0 total 4'
+    });
+    expect(plan.fields[0]).toMatchObject({
+      fieldId: 'heat',
+      value: 2.5,
+      sourceOwner: 'CoreCommittedSnapshot',
+      legendLabel: 'heat 2.5'
+    });
+    expect(plan.missingProjectionWarnings).toEqual(['cells.materials']);
+  });
+
+  it('marks smooth mode as interpolation without changing sampled values', () => {
+    const plan = buildDebugLayerPlan(availableDebugProjections, {
+      mode: 'smooth',
+      showResourceLayer: true,
+      showFieldLayer: true
+    });
+
+    expect(plan.interpolationLabel).toBe('Smooth interpolated');
+    expect(plan.fields[0].value).toBe(2.5);
+    expect(plan.fields[0].sampledValueLabel).toBe('sampled heat: 2.5');
+  });
+
+  it('keeps unavailable projections explicit and produces no drawable layers', () => {
+    const plan = buildDebugLayerPlan(
+      {
+        status: 'unavailable',
+        reason: 'No active committed snapshot is available'
+      },
+      {
+        mode: 'exact',
+        showResourceLayer: true,
+        showFieldLayer: true
+      }
+    );
+
+    expect(plan).toEqual({
+      status: 'unavailable',
+      reason: 'No active committed snapshot is available',
+      interpolationLabel: 'Exact',
+      resources: [],
+      fields: [],
+      missingProjectionWarnings: []
+    });
+  });
+});

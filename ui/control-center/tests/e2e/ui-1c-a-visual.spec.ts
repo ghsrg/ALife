@@ -154,9 +154,12 @@ async function assertWorldFirstLayout(page: Page) {
   expect(w.width).toBeGreaterThan(l.width);
   expect(w.width).toBeGreaterThan(i.width);
   expect(w.height).toBeGreaterThan(360);
+  expect(w.width * w.height).toBeGreaterThan(l.width * l.height);
+  expect(w.width * w.height).toBeGreaterThan(i.width * i.height);
   expect(v.x).toBeGreaterThan(l.x + l.width - 1);
   expect(i.x).toBeGreaterThan(v.x + v.width - 1);
   expect(f.x).toBeGreaterThanOrEqual(v.x);
+  expect(f.y).toBeGreaterThanOrEqual(w.y + w.height - 1);
   expect(s.y).toBeGreaterThan(w.y + w.height - 8);
   expect(f.y + f.height).toBeLessThanOrEqual(s.y + 1);
 }

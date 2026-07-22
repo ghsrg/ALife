@@ -22,11 +22,11 @@ button {
 
 .top-bar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(160px, auto) auto auto;
+  grid-template-columns: minmax(180px, 0.9fr) auto minmax(140px, auto) auto auto;
   align-items: center;
-  gap: 14px;
-  min-height: 82px;
-  padding: 14px 22px;
+  gap: 10px;
+  min-height: 64px;
+  padding: 8px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(18, 23, 30, 0.96);
 }
@@ -38,10 +38,10 @@ button {
 
 .monitor-grid {
   display: grid;
-  grid-template-columns: 260px minmax(420px, 1fr) 300px;
-  gap: 16px;
-  padding: 16px;
-  min-height: calc(100vh - 82px);
+  grid-template-columns: 240px minmax(560px, 1fr) 280px;
+  gap: 12px;
+  padding: 12px;
+  min-height: calc(100vh - 64px);
 }
 
 .side-panel,
@@ -57,6 +57,8 @@ button {
 }
 
 .viewer-panel {
+  display: grid;
+  grid-template-rows: auto minmax(520px, 1fr) auto auto;
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 8px;
   background: rgba(24, 31, 40, 0.92);
@@ -86,13 +88,13 @@ button {
   }
 
   .monitor-grid {
-    grid-template-columns: 230px minmax(520px, 1fr) 260px;
-    gap: 12px;
-    padding: 12px;
+    grid-template-columns: 210px minmax(520px, 1fr) 240px;
+    gap: 10px;
+    padding: 10px;
   }
 
   .viewer-panel {
-    grid-template-rows: auto minmax(390px, 1fr) auto auto;
+    grid-template-rows: auto minmax(500px, 1fr) auto auto;
   }
 
   .world-viewer {

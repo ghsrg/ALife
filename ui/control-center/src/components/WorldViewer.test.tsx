@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
 import type { WorldFrame } from '../projection/types';
+import type { DebugProjectionState } from '../projection/types';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
 
 const renderFrame = vi.fn();
@@ -18,6 +19,64 @@ vi.mock('../viewer/worldRenderer', () => ({
     destroy
   }))
 }));
+
+const debugProjections: DebugProjectionState = {
+  status: 'available',
+  runId: 'run-1',
+  tick: 213,
+  visualWorld: {
+    projectionKind: 'VisualWorldProjection',
+    completeness: {
+      state: 'partial',
+      missingFields: ['cells.materials'],
+      reason: 'CommittedSnapshot lacks per-cell material data'
+    },
+    cells: [],
+    resourceLayers: [
+      {
+        layerIndex: 0,
+        totalAmount: 4,
+        completeness: {
+          state: 'bounded',
+          missingFields: [],
+          reason: 'Totals only'
+        }
+      }
+    ],
+    fields: [
+      {
+        fieldId: 'heat',
+        value: 2.5,
+        sourceMetric: {
+          fieldId: 'heat',
+          sourceOwner: 'CoreCommittedSnapshot',
+          sourcePath: 'CommittedSnapshot.heat'
+        }
+      }
+    ],
+    sourceMetrics: []
+  },
+  coverage: {
+    projectionKind: 'CoverageProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    mechanisms: []
+  },
+  warnings: {
+    projectionKind: 'WarningProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    warnings: []
+  },
+  classifications: {
+    projectionKind: 'ClassificationProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    classifications: []
+  },
+  balanceFindings: {
+    projectionKind: 'BalanceFindingProjection',
+    completeness: { state: 'bounded', missingFields: [], reason: 'No rows' },
+    findings: []
+  }
+};
 
 describe('WorldViewer', () => {
   beforeEach(() => {
@@ -192,6 +251,30 @@ describe('WorldViewer', () => {
 
     expect(onExport).toHaveBeenCalledTimes(1);
     expect(onFullScreen).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows data-bound Debug Visualization Mode controls and disabled future overlays', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+        debugProjections={debugProjections}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Debug');
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Exact');
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('VisualWorldProjection');
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Tick 213');
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('cells.materials');
+    expect(screen.getByRole('button', { name: 'Switch debug layers to Smooth interpolation' })).toBeEnabled();
+    expect(screen.getByRole('checkbox', { name: 'Spatial index overlay unavailable' })).toBeDisabled();
+    expect(screen.getByText('Missing live projection')).toBeVisible();
   });
 
   it('resets navigation to the default camera', async () => {

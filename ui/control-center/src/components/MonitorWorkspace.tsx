@@ -143,6 +143,7 @@ export function MonitorWorkspace({
           onExportScreenshot={exportScreenshot}
           onToggleFullScreen={toggleFullScreen}
           isFullScreen={isFullScreen}
+          debugProjections={state.debugProjections}
         />
         <SelectedEntityFocusCard selectedCell={state.selectedCell} />
         <BottomStatsStrip stats={monitorStats} />
