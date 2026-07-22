@@ -244,3 +244,4 @@ tags:
 - [[outputs/worklogs/2026-07-21-2320-REPORT-al-005-s01-run-metadata-and-storage-index|2026-07-21-2320-REPORT-al-005-s01-run-metadata-and-storage-index]]
 - [[outputs/worklogs/2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition|2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition]]
 - [[outputs/worklogs/2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history|2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history]]
+- [[outputs/worklogs/2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance|2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance]]
