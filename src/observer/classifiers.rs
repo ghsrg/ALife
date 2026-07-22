@@ -17,13 +17,13 @@ pub enum ClassificationStatus {
     Unstable,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct LabelResult {
     pub label: String,
     pub confidence: f32,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct EvidenceRecord {
     pub feature: String,
     pub expected: String,

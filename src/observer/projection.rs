@@ -1,7 +1,19 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
+use crate::core::snapshot::CommittedSnapshot;
 use crate::core::summary::MetricsSummary;
+use crate::observer::balance::{BalanceFinding, BalanceOutcome};
+use crate::observer::classifiers::ClassificationResult;
+use crate::observer::contract::{coverage_status_specs, warning_code_specs};
+use crate::observer::payloads::{
+    BalanceFindingProjectionPayload, ClassificationEvidencePayload,
+    ClassificationProjectionPayload, CoverageMechanismPayload, CoverageProjectionPayload,
+    FieldSummaryPayload, ObserverProjectionPayloadError, ProjectionSourceMetricRef,
+    ResourceLayerSummaryPayload, VisualCellPayload, VisualWorldProjection,
+    WarningProjectionPayload,
+};
+use crate::observer::projection_envelope::ProjectionCompleteness;
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub enum EntityType {
@@ -207,6 +219,233 @@ pub fn metrics_summary_features(metrics: &MetricsSummary) -> HashMap<String, f32
         metrics.joint_mechanical_correction_amount,
     );
     features
+}
+
+pub fn build_visual_world_projection(snapshot: &CommittedSnapshot) -> VisualWorldProjection {
+    let completeness = ProjectionCompleteness::partial(
+        vec!["cells.materials", "cells.internal_resources"],
+        "CommittedSnapshot currently carries cell draw data and resource layer totals, but not per-cell material or internal resource breakdowns.",
+    );
+
+    let cells = snapshot
+        .cells
+        .iter()
+        .map(|cell| VisualCellPayload {
+            id: cell.id.raw(),
+            x: cell.position.x(),
+            y: cell.position.y(),
+            radius: cell.radius.raw(),
+            energy: cell.energy.raw(),
+            lifecycle_state: cell.lifecycle_state,
+            materials: Vec::new(),
+            internal_resources: Vec::new(),
+        })
+        .collect();
+
+    let resource_layers = snapshot
+        .resource_layer_totals
+        .iter()
+        .enumerate()
+        .map(|(index, total_amount)| ResourceLayerSummaryPayload {
+            layer_index: index as u32,
+            total_amount: total_amount.raw(),
+            completeness: ProjectionCompleteness::bounded(
+                "CommittedSnapshot exposes resource layer totals, not exact grid cells.",
+            ),
+        })
+        .collect();
+
+    let fields = vec![
+        FieldSummaryPayload {
+            field_id: "heat".to_string(),
+            value: snapshot.heat,
+            source_metric: source_metric("heat", "CommittedSnapshot.heat"),
+        },
+        FieldSummaryPayload {
+            field_id: "waste".to_string(),
+            value: snapshot.waste,
+            source_metric: source_metric("waste", "CommittedSnapshot.waste"),
+        },
+    ];
+
+    let source_metrics = vec![
+        source_metric("tick", "CommittedSnapshot.tick"),
+        source_metric("cells.id", "CommittedSnapshot.cells[].id"),
+        source_metric("cells.position", "CommittedSnapshot.cells[].position"),
+        source_metric("cells.radius", "CommittedSnapshot.cells[].radius"),
+        source_metric("cells.energy", "CommittedSnapshot.cells[].energy"),
+        source_metric(
+            "cells.lifecycle",
+            "CommittedSnapshot.cells[].lifecycle_state",
+        ),
+        source_metric(
+            "resource_layer_totals",
+            "CommittedSnapshot.resource_layer_totals",
+        ),
+        source_metric("heat", "CommittedSnapshot.heat"),
+        source_metric("waste", "CommittedSnapshot.waste"),
+    ];
+
+    VisualWorldProjection {
+        tick: snapshot.tick.raw(),
+        cells,
+        resource_layers,
+        fields,
+        completeness,
+        source_metrics,
+    }
+}
+
+fn source_metric(field_id: &str, source_path: &str) -> ProjectionSourceMetricRef {
+    ProjectionSourceMetricRef::new(field_id, "CoreCommittedSnapshot", source_path)
+}
+
+pub fn build_classification_projection(
+    result: &ClassificationResult,
+    entity_type: EntityType,
+    run_id: &str,
+    registry_version: &str,
+    source_projection: &str,
+    limitations: Vec<String>,
+) -> ClassificationProjectionPayload {
+    let classification_id = format!(
+        "{}:{:?}:{}:{}:{}-{}:{:?}:{}:{}",
+        run_id,
+        entity_type,
+        result.entity_id,
+        result.dimension_id,
+        result.tick_start,
+        result.tick_end,
+        result.mode,
+        result.classifier_version,
+        registry_version
+    );
+
+    let completeness = if result.data_completeness >= 1.0 {
+        ProjectionCompleteness::full()
+    } else {
+        ProjectionCompleteness::partial(
+            vec!["classification.source_window"],
+            "Classification is based on a bounded derived feature window.",
+        )
+    };
+
+    let evidence = result
+        .evidence
+        .iter()
+        .map(|record| ClassificationEvidencePayload {
+            feature: record.feature.clone(),
+            expected: record.expected.clone(),
+            actual: record.actual,
+            matched: record.matched,
+            source_metric: ProjectionSourceMetricRef::new(
+                record.feature.clone(),
+                "ObserverDerivedFeature",
+                format!("{}::{}", source_projection, record.feature),
+            ),
+        })
+        .collect();
+
+    ClassificationProjectionPayload {
+        classification_id,
+        dimension_id: result.dimension_id.clone(),
+        entity_type,
+        entity_id: result.entity_id.clone(),
+        mode: result.mode.clone(),
+        primary_label: result.primary_label.clone(),
+        secondary_labels: result.secondary_labels.clone(),
+        status: result.status.clone(),
+        confidence: result.confidence,
+        tick_start: result.tick_start,
+        tick_end: result.tick_end,
+        classifier_version: result.classifier_version.clone(),
+        registry_version: registry_version.to_string(),
+        source_projection: source_projection.to_string(),
+        completeness,
+        evidence,
+        limitations,
+    }
+}
+
+pub fn build_coverage_projection(
+    mechanisms: Vec<(String, String, String)>,
+) -> Result<CoverageProjectionPayload, ObserverProjectionPayloadError> {
+    let mut payload_mechanisms = Vec::with_capacity(mechanisms.len());
+
+    for (mechanism_id, status_id, source_report) in mechanisms {
+        if !coverage_status_specs()
+            .iter()
+            .any(|spec| spec.status_id == status_id)
+        {
+            return Err(ObserverProjectionPayloadError::UnknownCoverageStatus(
+                status_id,
+            ));
+        }
+
+        payload_mechanisms.push(CoverageMechanismPayload {
+            mechanism_id,
+            status_id,
+            source_report,
+        });
+    }
+
+    Ok(CoverageProjectionPayload {
+        mechanisms: payload_mechanisms,
+    })
+}
+
+pub fn build_warning_projection(
+    code: &str,
+    affected_scope: &str,
+    source_report: &str,
+    recommended_reruns: Vec<String>,
+) -> Result<WarningProjectionPayload, ObserverProjectionPayloadError> {
+    let spec = warning_code_specs()
+        .iter()
+        .find(|spec| spec.code == code)
+        .ok_or_else(|| ObserverProjectionPayloadError::UnknownWarningCode(code.to_string()))?;
+
+    Ok(WarningProjectionPayload {
+        code: code.to_string(),
+        disposition: spec.disposition,
+        affected_scope: affected_scope.to_string(),
+        source_report: source_report.to_string(),
+        recommended_reruns,
+    })
+}
+
+pub fn project_balance_finding(
+    finding: &BalanceFinding,
+    source_report: &str,
+) -> BalanceFindingProjectionPayload {
+    let (claimed_result, limitations) = if finding.equal_requirements {
+        (finding.result, Vec::new())
+    } else {
+        (
+            BalanceOutcome::Inconclusive,
+            vec![
+                "Balance claim suppressed because compared profiles do not have equal requirements."
+                    .to_string(),
+            ],
+        )
+    };
+
+    BalanceFindingProjectionPayload {
+        finding_id: finding.finding_id.clone(),
+        compared_profiles: finding.compared_profiles.clone(),
+        equal_requirements: finding.equal_requirements,
+        reported_result: finding.result,
+        claimed_result,
+        evidence_metrics: finding.evidence_metrics.clone(),
+        dominance_rate: finding.dominance_rate,
+        affected_scenarios: finding.affected_scenarios.clone(),
+        suspected_cause: finding.suspected_cause.clone(),
+        recommendation: finding.recommendation.clone(),
+        recommended_reruns: finding.recommended_reruns.clone(),
+        confidence: finding.confidence,
+        source_report: source_report.to_string(),
+        limitations,
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

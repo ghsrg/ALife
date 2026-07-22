@@ -235,6 +235,7 @@ tags:
 - [[outputs/worklogs/2026-07-20-1741-REPORT-al-003-s04-genome-copying-mutation-repair|2026-07-20-1741-REPORT-al-003-s04-genome-copying-mutation-repair]]
 - [[outputs/worklogs/2026-07-20-2111-PLAN-al-004-s01-observer-contract-closure|2026-07-20-2111-PLAN-al-004-s01-observer-contract-closure]]
 - [[outputs/worklogs/2026-07-20-2134-PLAN-al-002-s16-runner-4-remote-viewer-acceptance-hardening|2026-07-20-2134-PLAN-al-002-s16-runner-4-remote-viewer-acceptance-hardening]]
+- [[outputs/worklogs/2026-07-22-1304-PLAN-al-004-s05-visual-balance-coverage-warning-projections|2026-07-22-1304-PLAN-al-004-s05-visual-balance-coverage-warning-projections]]
 - [[outputs/worklogs/2026-07-21-1014-REPORT-al-004-s01-observer-contract-closure|2026-07-21-1014-REPORT-al-004-s01-observer-contract-closure]]
 - [[outputs/worklogs/2026-07-21-1105-PLAN-al-003-s05-lineage-event-log-and-replay|2026-07-21-1105-PLAN-al-003-s05-lineage-event-log-and-replay]]
 - [[outputs/worklogs/2026-07-21-1159-REPORT-al-003-s05-lineage-event-log-and-replay|2026-07-21-1159-REPORT-al-003-s05-lineage-event-log-and-replay]]
@@ -245,3 +246,4 @@ tags:
 - [[outputs/worklogs/2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition|2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition]]
 - [[outputs/worklogs/2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history|2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history]]
 - [[outputs/worklogs/2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance|2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance]]
+- [[outputs/worklogs/2026-07-22-1331-REPORT-al-004-s05-visual-balance-coverage-warning-projections|2026-07-22-1331-REPORT-al-004-s05-visual-balance-coverage-warning-projections]]

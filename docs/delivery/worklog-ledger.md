@@ -392,3 +392,5 @@ These rows are historical data reconstructed from `REPORT` worklogs in chronolog
 | [[outputs/worklogs/2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition|2026-07-22-0003-REPORT-al-007-s20-start-track-residual-visual-gap-disposition]] | REPORT | UI | AL-007-S20 | done |
 | [[outputs/worklogs/2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history|2026-07-22-1059-REPORT-al-007-s09-versioned-projections-keyframes-history]] | REPORT | UI | AL-007-S09 | done |
 | [[outputs/worklogs/2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance|2026-07-22-1256-REPORT-al-004-s03-classification-registry-and-provenance]] | REPORT | Observer | AL-004-S03 | done |
+| [[outputs/worklogs/2026-07-22-1304-PLAN-al-004-s05-visual-balance-coverage-warning-projections|2026-07-22-1304-PLAN-al-004-s05-visual-balance-coverage-warning-projections]] | PLAN | Observer | AL-004-S05 | TDD plan |
+| [[outputs/worklogs/2026-07-22-1331-REPORT-al-004-s05-visual-balance-coverage-warning-projections|2026-07-22-1331-REPORT-al-004-s05-visual-balance-coverage-warning-projections]] | REPORT | Observer | AL-004-S05 | done |
