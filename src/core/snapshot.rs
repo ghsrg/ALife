@@ -4,13 +4,45 @@ use crate::core::resources::ResourceLayerIndex;
 use crate::core::units::{EnergyAmount, Position, Radius, ResourceAmount, Tick};
 use crate::core::world::WorldState;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct MaterialSnapshot {
+    pub material_type_id: u32,
+    pub amount: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ResourceAmountSnapshot {
+    pub resource_type_id: u32,
+    pub amount: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct CellSnapshot {
     pub id: CellId,
     pub position: Position,
     pub radius: Radius,
     pub energy: EnergyAmount,
+    pub energy_capacity: EnergyAmount,
     pub lifecycle_state: LifecycleState,
+    pub materials: [f32; 9],
+    pub internal_resources: Vec<ResourceAmount>,
+    pub local_external_resources: Vec<ResourceAmount>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ResourceLayerCellSnapshot {
+    pub x: u32,
+    pub y: u32,
+    pub amount: ResourceAmount,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ResourceLayerSnapshot {
+    pub layer_index: u32,
+    pub width: u32,
+    pub height: u32,
+    pub total_amount: ResourceAmount,
+    pub cells: Vec<ResourceLayerCellSnapshot>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -20,6 +52,7 @@ pub struct CommittedSnapshot {
     pub heat: f32,
     pub waste: f32,
     pub resource_layer_totals: Vec<ResourceAmount>,
+    pub resource_layers: Vec<ResourceLayerSnapshot>,
 }
 
 impl CommittedSnapshot {
@@ -27,12 +60,39 @@ impl CommittedSnapshot {
         let cells = world
             .cells()
             .iter_indices()
-            .map(|index| CellSnapshot {
-                id: world.cells().id_at(index),
-                position: world.cells().position(index),
-                radius: world.cells().radius(index),
-                energy: world.cells().energy(index).current(),
-                lifecycle_state: world.cells().lifecycle_state(index),
+            .map(|index| {
+                let coord = world
+                    .resources()
+                    .coord_for_position(world.cells().position(index));
+                let local_external_resources = (0..world.resources().layer_count())
+                    .map(|layer| {
+                        world
+                            .resources()
+                            .amount_at(ResourceLayerIndex::from_raw(layer), coord)
+                            .unwrap_or_else(|_| ResourceAmount::zero())
+                    })
+                    .collect();
+                CellSnapshot {
+                    id: world.cells().id_at(index),
+                    position: world.cells().position(index),
+                    radius: world.cells().radius(index),
+                    energy: world.cells().energy(index).current(),
+                    energy_capacity: world.cells().energy(index).capacity(),
+                    lifecycle_state: world.cells().lifecycle_state(index),
+                    materials: [
+                        world.cells().boundary_material(index).raw(),
+                        world.cells().transport_material(index).raw(),
+                        world.cells().metabolic_material(index).raw(),
+                        world.cells().storage_material(index).raw(),
+                        world.cells().synthesis_material(index).raw(),
+                        world.cells().structural_material(index).raw(),
+                        world.cells().repair_material(index).raw(),
+                        world.cells().contractile_material(index).raw(),
+                        world.cells().sensory_material(index).raw(),
+                    ],
+                    internal_resources: vec![world.cells().resource_amount(index)],
+                    local_external_resources,
+                }
             })
             .collect();
 
@@ -44,6 +104,35 @@ impl CommittedSnapshot {
                     .expect("layer range is derived from layer_count")
             })
             .collect();
+        let resource_layers = (0..world.resources().layer_count())
+            .map(|layer| {
+                let layer_index = ResourceLayerIndex::from_raw(layer);
+                let mut cells = Vec::with_capacity(world.resources().cell_count());
+                for y in 0..world.resources().height() {
+                    for x in 0..world.resources().width() {
+                        let coord = crate::core::units::GridCoord::new(x, y);
+                        cells.push(ResourceLayerCellSnapshot {
+                            x: x as u32,
+                            y: y as u32,
+                            amount: world
+                                .resources()
+                                .amount_at(layer_index, coord)
+                                .expect("coord range is derived from resource grid"),
+                        });
+                    }
+                }
+                ResourceLayerSnapshot {
+                    layer_index: layer as u32,
+                    width: world.resources().width() as u32,
+                    height: world.resources().height() as u32,
+                    total_amount: world
+                        .resources()
+                        .total_amount_for_layer(layer_index)
+                        .expect("layer range is derived from layer_count"),
+                    cells,
+                }
+            })
+            .collect();
 
         Self {
             tick: world.tick(),
@@ -51,6 +140,7 @@ impl CommittedSnapshot {
             heat: world.environment().heat().raw(),
             waste: world.environment().waste().raw(),
             resource_layer_totals,
+            resource_layers,
         }
     }
 }

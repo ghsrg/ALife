@@ -398,3 +398,6 @@ These rows are historical data reconstructed from `REPORT` worklogs in chronolog
 | [[outputs/worklogs/2026-07-22-1444-REPORT-al-007-s10-debug-visualization-mode-exact-layers|2026-07-22-1444-REPORT-al-007-s10-debug-visualization-mode-exact-layers]] | REPORT | UI | AL-007-S10 | done |
 | [[outputs/worklogs/2026-07-22-1516-PLAN-al-002-s11-rich-spatial-generators-and-world-families|2026-07-22-1516-PLAN-al-002-s11-rich-spatial-generators-and-world-families]] | PLAN | Bootstrap | AL-002-S11 | TDD plan |
 | [[outputs/worklogs/2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families|2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families]] | REPORT | Bootstrap | AL-002-S11 | done |
+| [[outputs/worklogs/2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair|2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair]] | REPORT | UI | AL-007-S21 | done |
+| [[outputs/worklogs/2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration]] | PLAN | Bootstrap | AL-002-S12 | TDD plan |
+| [[outputs/worklogs/2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration]] | REPORT | Bootstrap | AL-002-S12 | done |

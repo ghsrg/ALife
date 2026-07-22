@@ -74,7 +74,20 @@ With debug progress:
 cargo run --bin runner -- --debug --progress-interval-ms 200 config/scenarios/demo/demo_living_world.toml
 ```
 
-## 7. Start HTTP service mode
+## 7. Preview Bootstrap without running Core
+
+```bash
+cargo run --bin runner -- --bootstrap-preview demo_world_resource
+```
+
+This prints compact JSON with Scenario hash, prepared-state hash, generator versions,
+seed domains, resource preview cells, field summaries, viability checks, and warnings.
+It prepares Tick 0 only; it does not start Core or execute simulation ticks.
+
+Bootstrap field generators currently appear as manifest summaries. They are not
+spatial Core field grids until that mechanism exists.
+
+## 8. Start HTTP service mode
 
 ```bash
 cargo run --bin runner -- --serve
@@ -86,7 +99,7 @@ Default server:
 http://127.0.0.1:8080
 ```
 
-## 8. Basic HTTP checks
+## 9. Basic HTTP checks
 
 ```bash
 curl http://127.0.0.1:8080/server/info
@@ -94,7 +107,7 @@ curl http://127.0.0.1:8080/scenarios
 curl http://127.0.0.1:8080/run/status
 ```
 
-## 9. Start a world through HTTP
+## 10. Start a world through HTTP
 
 ```bash
 curl -X POST http://127.0.0.1:8080/run/start \
@@ -108,7 +121,7 @@ Then check status:
 curl http://127.0.0.1:8080/run/status
 ```
 
-## 10. Pause, step, resume, stop
+## 11. Pause, step, resume, stop
 
 Pause:
 
@@ -136,7 +149,7 @@ Stop:
 curl -X POST http://127.0.0.1:8080/run/stop
 ```
 
-## 11. Important semantics
+## 12. Important semantics
 
 `run` mode:
 
@@ -162,7 +175,7 @@ returns to Paused
 
 It is a debug command, not "run N ticks".
 
-## 12. Which scenario to use
+## 13. Which scenario to use
 
 | Scenario | Use when | Notes |
 |---|---|---|
@@ -170,8 +183,9 @@ It is a debug command, not "run N ticks".
 | `world_mechanism_showcase` | quick behavior check | shorter mechanics showcase |
 | `world_baseline_stable` | longer stability run | more regression-style |
 | `bootstrap_minimal_viable_world` | smoke test | minimal, not visually rich |
+| `demo_world_resource` | Bootstrap/UI resource preview | rich generated resource layers and manifest-only field summaries |
 
-## 13. Current limitation
+## 14. Current limitation
 
 Current scenarios are mostly explicit configs. They are useful for smoke, regression, and early demos.
 

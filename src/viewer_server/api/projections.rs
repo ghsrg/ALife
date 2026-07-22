@@ -44,6 +44,7 @@ fn visual_world_json(state: &mut crate::viewer_server::state::SharedState) -> Op
                 "y": cell.y,
                 "radius": cell.radius,
                 "energy": cell.energy,
+                "energy_capacity": cell.energy_capacity,
                 "lifecycle_state": format!("{:?}", cell.lifecycle_state),
                 "materials": cell.materials.iter().map(|material| json!({
                     "material_type_id": material.material_type_id,
@@ -53,10 +54,21 @@ fn visual_world_json(state: &mut crate::viewer_server::state::SharedState) -> Op
                     "resource_type_id": resource.resource_type_id,
                     "amount": resource.amount,
                 })).collect::<Vec<_>>(),
+                "local_external_resources": cell.local_external_resources.iter().map(|resource| json!({
+                    "resource_type_id": resource.resource_type_id,
+                    "amount": resource.amount,
+                })).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
             "resource_layers": projection.resource_layers.iter().map(|layer| json!({
                 "layer_index": layer.layer_index,
+                "width": layer.width,
+                "height": layer.height,
                 "total_amount": layer.total_amount,
+                "cells": layer.cells.iter().map(|cell| json!({
+                    "x": cell.x,
+                    "y": cell.y,
+                    "amount": cell.amount,
+                })).collect::<Vec<_>>(),
                 "completeness": completeness_json(&layer.completeness),
             })).collect::<Vec<_>>(),
             "fields": projection.fields.iter().map(|field| json!({

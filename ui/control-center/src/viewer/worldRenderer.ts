@@ -136,9 +136,8 @@ function drawResourceLayer(frame: WorldFrame, width: number, height: number, cam
   frame.resources.forEach((row, y) => {
     row.forEach((resource, x) => {
       const total = Math.max(0, Math.min(1, (resource.organic + resource.mineral + resource.energy) / 3));
-      const energyBias = Math.max(0, Math.min(1, resource.energy));
       const alpha = 0.12 + total * 0.38;
-      const color = energyBias > resource.organic ? 0x2f80ed : 0x27b582;
+      const color = dominantResourceColor(resource);
       layer.rect(camera.x + x * cellWidth, camera.y + y * cellHeight, cellWidth, cellHeight);
       layer.fill({ color, alpha });
     });
@@ -147,12 +146,25 @@ function drawResourceLayer(frame: WorldFrame, width: number, height: number, cam
   return layer;
 }
 
+function dominantResourceColor(resource: { organic: number; mineral: number; energy: number }) {
+  if (resource.energy >= resource.organic && resource.energy >= resource.mineral) {
+    return 0xffd166;
+  }
+  if (resource.mineral >= resource.organic) {
+    return 0x2f80ed;
+  }
+  return 0x27b582;
+}
+
 function cellFillColor(lifecycleState: LifecycleVisualState, energyRatio: number) {
   if (lifecycleState === 'dead') {
     return 0x7b8794;
   }
-  if (lifecycleState === 'decomposing') {
+  if (lifecycleState === 'dormant') {
     return 0xb08d57;
+  }
+  if (lifecycleState === 'stressed') {
+    return energyRatio > 0.66 ? 0xd6b14f : 0xc8893d;
   }
   if (lifecycleState === 'unavailable') {
     return energyRatio > 0.66 ? 0x74ded2 : 0x5ee08d;

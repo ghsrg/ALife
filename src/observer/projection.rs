@@ -10,8 +10,8 @@ use crate::observer::payloads::{
     BalanceFindingProjectionPayload, ClassificationEvidencePayload,
     ClassificationProjectionPayload, CoverageMechanismPayload, CoverageProjectionPayload,
     FieldSummaryPayload, ObserverProjectionPayloadError, ProjectionSourceMetricRef,
-    ResourceLayerSummaryPayload, VisualCellPayload, VisualWorldProjection,
-    WarningProjectionPayload,
+    ResourceAmountPayload, ResourceLayerCellPayload, ResourceLayerSummaryPayload,
+    VisualCellPayload, VisualWorldProjection, WarningProjectionPayload,
 };
 use crate::observer::projection_envelope::ProjectionCompleteness;
 
@@ -222,9 +222,8 @@ pub fn metrics_summary_features(metrics: &MetricsSummary) -> HashMap<String, f32
 }
 
 pub fn build_visual_world_projection(snapshot: &CommittedSnapshot) -> VisualWorldProjection {
-    let completeness = ProjectionCompleteness::partial(
-        vec!["cells.materials", "cells.internal_resources"],
-        "CommittedSnapshot currently carries cell draw data and resource layer totals, but not per-cell material or internal resource breakdowns.",
+    let completeness = ProjectionCompleteness::bounded(
+        "CommittedSnapshot exposes exact current resource grid cells and bounded per-cell material/resource summaries for Control Center visualization.",
     );
 
     let cells = snapshot
@@ -236,21 +235,59 @@ pub fn build_visual_world_projection(snapshot: &CommittedSnapshot) -> VisualWorl
             y: cell.position.y(),
             radius: cell.radius.raw(),
             energy: cell.energy.raw(),
+            energy_capacity: cell.energy_capacity.raw(),
             lifecycle_state: cell.lifecycle_state,
-            materials: Vec::new(),
-            internal_resources: Vec::new(),
+            materials: cell
+                .materials
+                .iter()
+                .enumerate()
+                .map(
+                    |(index, amount)| crate::observer::payloads::MaterialAmountPayload {
+                        material_type_id: index as u32,
+                        amount: *amount,
+                    },
+                )
+                .collect(),
+            internal_resources: cell
+                .internal_resources
+                .iter()
+                .enumerate()
+                .map(|(index, amount)| ResourceAmountPayload {
+                    resource_type_id: index as u32,
+                    amount: amount.raw(),
+                })
+                .collect(),
+            local_external_resources: cell
+                .local_external_resources
+                .iter()
+                .enumerate()
+                .map(|(index, amount)| ResourceAmountPayload {
+                    resource_type_id: index as u32,
+                    amount: amount.raw(),
+                })
+                .collect(),
         })
         .collect();
 
     let resource_layers = snapshot
-        .resource_layer_totals
+        .resource_layers
         .iter()
-        .enumerate()
-        .map(|(index, total_amount)| ResourceLayerSummaryPayload {
-            layer_index: index as u32,
-            total_amount: total_amount.raw(),
+        .map(|layer| ResourceLayerSummaryPayload {
+            layer_index: layer.layer_index,
+            width: layer.width,
+            height: layer.height,
+            total_amount: layer.total_amount.raw(),
+            cells: layer
+                .cells
+                .iter()
+                .map(|cell| ResourceLayerCellPayload {
+                    x: cell.x,
+                    y: cell.y,
+                    amount: cell.amount.raw(),
+                })
+                .collect(),
             completeness: ProjectionCompleteness::bounded(
-                "CommittedSnapshot exposes resource layer totals, not exact grid cells.",
+                "CommittedSnapshot exposes exact current resource grid cells for this bounded world.",
             ),
         })
         .collect();
@@ -274,6 +311,19 @@ pub fn build_visual_world_projection(snapshot: &CommittedSnapshot) -> VisualWorl
         source_metric("cells.position", "CommittedSnapshot.cells[].position"),
         source_metric("cells.radius", "CommittedSnapshot.cells[].radius"),
         source_metric("cells.energy", "CommittedSnapshot.cells[].energy"),
+        source_metric(
+            "cells.energy_capacity",
+            "CommittedSnapshot.cells[].energy_capacity",
+        ),
+        source_metric("cells.materials", "CommittedSnapshot.cells[].materials"),
+        source_metric(
+            "cells.internal_resources",
+            "CommittedSnapshot.cells[].internal_resources",
+        ),
+        source_metric(
+            "cells.local_external_resources",
+            "CommittedSnapshot.cells[].local_external_resources",
+        ),
         source_metric(
             "cells.lifecycle",
             "CommittedSnapshot.cells[].lifecycle_state",

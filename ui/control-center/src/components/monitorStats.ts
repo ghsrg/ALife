@@ -15,8 +15,8 @@ export function buildMonitorStats(frame: WorldFrame, _dataState: MonitorDataStat
   const lifecycleValues = frame.cells
     .map((cell) => cell.lifecycle)
     .filter((value): value is number => typeof value === 'number');
-  const alive = lifecycleValues.filter((value) => value === 1).length;
-  const dead = lifecycleValues.filter((value) => value === 2).length;
+  const alive = lifecycleValues.filter((value) => value >= 0 && value <= 2).length;
+  const dead = lifecycleValues.filter((value) => value === 3).length;
   const unknown = frame.cells.length - lifecycleValues.length;
   const energy = frame.cells.reduce((sum, cell) => sum + cell.energy, 0);
   const resourceCells = frame.resources.reduce((sum, row) => sum + row.length, 0);

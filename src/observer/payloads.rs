@@ -46,15 +46,27 @@ pub struct VisualCellPayload {
     pub y: f32,
     pub radius: f32,
     pub energy: f32,
+    pub energy_capacity: f32,
     pub lifecycle_state: LifecycleState,
     pub materials: Vec<MaterialAmountPayload>,
     pub internal_resources: Vec<ResourceAmountPayload>,
+    pub local_external_resources: Vec<ResourceAmountPayload>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ResourceLayerCellPayload {
+    pub x: u32,
+    pub y: u32,
+    pub amount: f32,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ResourceLayerSummaryPayload {
     pub layer_index: u32,
+    pub width: u32,
+    pub height: u32,
     pub total_amount: f32,
+    pub cells: Vec<ResourceLayerCellPayload>,
     pub completeness: ProjectionCompleteness,
 }
 

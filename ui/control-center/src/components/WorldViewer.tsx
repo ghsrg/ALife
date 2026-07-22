@@ -310,7 +310,14 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
               <>
                 <span>VisualWorldProjection</span>
                 {debugLayerPlan.resources.map((layer) => (
-                  <span key={`resource-${layer.layerIndex}`}>{layer.legendLabel}</span>
+                  <span key={`resource-${layer.layerIndex}`} className="debug-resource-legend-row">
+                    <span
+                      className="debug-resource-swatch"
+                      style={{ backgroundColor: layer.colorHex }}
+                      aria-hidden="true"
+                    />
+                    {layer.legendLabel}
+                  </span>
                 ))}
                 {debugLayerPlan.fields.map((field) => (
                   <span key={`field-${field.fieldId}`}>{field.sampledValueLabel}</span>

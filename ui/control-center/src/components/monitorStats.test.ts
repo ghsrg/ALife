@@ -11,9 +11,10 @@ const frame: WorldFrame = {
   world: { width: 1200, height: 800 },
   resources: [],
   cells: [
-    { id: '1', x: 10, y: 20, radius: 4, energy: 0.8, integrity: 1, generation: 0, roleHint: 'alive lifecycle state', lifecycle: 1 },
-    { id: '2', x: 30, y: 40, radius: 6, energy: 0.2, integrity: 0, generation: 0, roleHint: 'dead lifecycle state', lifecycle: 2 },
-    { id: '3', x: 50, y: 60, radius: 8, energy: 0.5, integrity: 1, generation: 0, roleHint: 'lifecycle unknown' }
+    { id: '1', x: 10, y: 20, radius: 4, energy: 0.8, integrity: 1, generation: 0, roleHint: 'alive lifecycle state', lifecycle: 0 },
+    { id: '2', x: 30, y: 40, radius: 6, energy: 0.2, integrity: 0.7, generation: 0, roleHint: 'dormant lifecycle state', lifecycle: 2 },
+    { id: '3', x: 50, y: 60, radius: 8, energy: 0.5, integrity: 0, generation: 0, roleHint: 'dead lifecycle state', lifecycle: 3 },
+    { id: '4', x: 70, y: 80, radius: 8, energy: 0.5, integrity: 1, generation: 0, roleHint: 'lifecycle unknown' }
   ],
   summary: { heat: 2.5, waste: 1.25, projectionSequence: 7, previousTick: 41, generatedAtMs: 1000 }
 };
@@ -23,9 +24,9 @@ describe('buildMonitorStats', () => {
     const stats = buildMonitorStats(frame, 'live');
 
     expect(stats).toEqual([
-      { id: 'cells', label: 'Cells', value: '3', state: 'available' },
-      { id: 'alive-dead', label: 'Alive / Dead', value: '1 / 1', state: 'partial', note: '1 unknown' },
-      { id: 'cell-energy', label: 'Projected Cell Energy', value: '1.50', state: 'available', note: 'sum of projected cell buffers' },
+      { id: 'cells', label: 'Cells', value: '4', state: 'available' },
+      { id: 'alive-dead', label: 'Alive / Dead', value: '2 / 1', state: 'partial', note: '1 unknown' },
+      { id: 'cell-energy', label: 'Projected Cell Energy', value: '2.00', state: 'available', note: 'sum of projected cell buffers' },
       { id: 'world', label: 'World', value: '1200 x 800', state: 'available' },
       { id: 'resources', label: 'Resources', value: 'Missing projection', state: 'missing', note: 'Runner ALIF v2 does not include resource grid' }
     ]);

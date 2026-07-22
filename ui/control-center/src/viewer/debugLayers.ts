@@ -12,6 +12,8 @@ export interface DebugResourceLayerPlan {
   layerIndex: number;
   totalAmount: number;
   availability: string;
+  channelLabel: string;
+  colorHex: string;
   legendLabel: string;
 }
 
@@ -54,7 +56,9 @@ export function buildDebugLayerPlan(
         layerIndex: layer.layerIndex,
         totalAmount: layer.totalAmount,
         availability: layer.completeness.state,
-        legendLabel: `Resource layer ${layer.layerIndex} total ${layer.totalAmount}`
+        channelLabel: resourceChannelLabel(layer.layerIndex),
+        colorHex: resourceChannelColor(layer.layerIndex),
+        legendLabel: `Layer ${layer.layerIndex} ${resourceChannelLabel(layer.layerIndex)} total ${formatAmount(layer.totalAmount)}`
       }))
     : [];
 
@@ -75,4 +79,30 @@ export function buildDebugLayerPlan(
     fields,
     missingProjectionWarnings: debugProjections.visualWorld.completeness.missingFields
   };
+}
+
+function resourceChannelLabel(layerIndex: number) {
+  const channel = layerIndex % 3;
+  if (channel === 0) {
+    return 'green channel';
+  }
+  if (channel === 1) {
+    return 'blue channel';
+  }
+  return 'amber channel';
+}
+
+function resourceChannelColor(layerIndex: number) {
+  const channel = layerIndex % 3;
+  if (channel === 0) {
+    return '#27b582';
+  }
+  if (channel === 1) {
+    return '#2f80ed';
+  }
+  return '#ffd166';
+}
+
+function formatAmount(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }

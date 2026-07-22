@@ -16,10 +16,15 @@ export interface CellProjection {
   y: number;
   radius: number;
   energy: number;
+  energyRaw?: number;
+  energyCapacity?: number;
   integrity: number;
   generation: number;
   roleHint: string;
   lifecycle?: number;
+  materials?: Array<{ materialTypeId: number; amount: number }>;
+  internalResources?: Array<{ resourceTypeId: number; amount: number }>;
+  localExternalResources?: Array<{ resourceTypeId: number; amount: number }>;
 }
 
 export interface WorldFrame {
@@ -76,14 +81,25 @@ export interface DebugVisualCell {
   y: number;
   radius: number;
   energy: number;
+  energyCapacity: number;
   lifecycleState: string;
   materials: Array<{ materialTypeId: number; amount: number }>;
   internalResources: Array<{ resourceTypeId: number; amount: number }>;
+  localExternalResources: Array<{ resourceTypeId: number; amount: number }>;
+}
+
+export interface DebugResourceCell {
+  x: number;
+  y: number;
+  amount: number;
 }
 
 export interface DebugResourceLayer {
   layerIndex: number;
+  width: number;
+  height: number;
   totalAmount: number;
+  cells: DebugResourceCell[];
   completeness: DebugProjectionCompleteness;
 }
 

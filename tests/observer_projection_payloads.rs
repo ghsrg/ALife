@@ -1,6 +1,8 @@
 use alife::core::cell_store::LifecycleState;
 use alife::core::ids::CellId;
-use alife::core::snapshot::{CellSnapshot, CommittedSnapshot};
+use alife::core::snapshot::{
+    CellSnapshot, CommittedSnapshot, ResourceLayerCellSnapshot, ResourceLayerSnapshot,
+};
 use alife::core::units::{EnergyAmount, Position, Radius, ResourceAmount, Tick};
 use alife::observer::balance::{BalanceFinding, BalanceOutcome};
 use alife::observer::classifiers::{
@@ -22,13 +24,44 @@ fn visual_world_projection_is_bounded_and_source_backed() {
             position: Position::new(3.0, 5.0),
             radius: Radius::new(1.5).unwrap(),
             energy: EnergyAmount::new(12.0).unwrap(),
+            energy_capacity: EnergyAmount::new(20.0).unwrap(),
             lifecycle_state: LifecycleState::Alive,
+            materials: [1.0, 0.5, 2.0, 0.0, 0.0, 1.5, 0.0, 0.25, 0.75],
+            internal_resources: vec![ResourceAmount::new(3.0).unwrap()],
+            local_external_resources: vec![
+                ResourceAmount::new(1.0).unwrap(),
+                ResourceAmount::new(2.0).unwrap(),
+            ],
         }],
         heat: 2.5,
         waste: 0.75,
         resource_layer_totals: vec![
             ResourceAmount::new(4.0).unwrap(),
             ResourceAmount::new(8.0).unwrap(),
+        ],
+        resource_layers: vec![
+            ResourceLayerSnapshot {
+                layer_index: 0,
+                width: 1,
+                height: 1,
+                total_amount: ResourceAmount::new(4.0).unwrap(),
+                cells: vec![ResourceLayerCellSnapshot {
+                    x: 0,
+                    y: 0,
+                    amount: ResourceAmount::new(4.0).unwrap(),
+                }],
+            },
+            ResourceLayerSnapshot {
+                layer_index: 1,
+                width: 1,
+                height: 1,
+                total_amount: ResourceAmount::new(8.0).unwrap(),
+                cells: vec![ResourceLayerCellSnapshot {
+                    x: 0,
+                    y: 0,
+                    amount: ResourceAmount::new(8.0).unwrap(),
+                }],
+            },
         ],
     };
 
@@ -37,12 +70,9 @@ fn visual_world_projection_is_bounded_and_source_backed() {
     assert_eq!(payload.tick, 42);
     assert_eq!(
         payload.completeness.state(),
-        ProjectionCompletenessState::Partial
+        ProjectionCompletenessState::Bounded
     );
-    assert_eq!(
-        payload.completeness.missing_fields(),
-        &["cells.internal_resources", "cells.materials"]
-    );
+    assert!(payload.completeness.missing_fields().is_empty());
 
     assert_eq!(payload.cells.len(), 1);
     assert_eq!(payload.cells[0].id, 7);
@@ -50,13 +80,16 @@ fn visual_world_projection_is_bounded_and_source_backed() {
     assert_eq!(payload.cells[0].y, 5.0);
     assert_eq!(payload.cells[0].radius, 1.5);
     assert_eq!(payload.cells[0].energy, 12.0);
+    assert_eq!(payload.cells[0].energy_capacity, 20.0);
     assert_eq!(payload.cells[0].lifecycle_state, LifecycleState::Alive);
-    assert!(payload.cells[0].materials.is_empty());
-    assert!(payload.cells[0].internal_resources.is_empty());
+    assert_eq!(payload.cells[0].materials.len(), 9);
+    assert_eq!(payload.cells[0].internal_resources[0].amount, 3.0);
+    assert_eq!(payload.cells[0].local_external_resources.len(), 2);
 
     assert_eq!(payload.resource_layers.len(), 2);
     assert_eq!(payload.resource_layers[0].layer_index, 0);
     assert_eq!(payload.resource_layers[0].total_amount, 4.0);
+    assert_eq!(payload.resource_layers[0].cells[0].amount, 4.0);
     assert_eq!(payload.resource_layers[1].layer_index, 1);
     assert_eq!(payload.resource_layers[1].total_amount, 8.0);
 
@@ -79,6 +112,10 @@ fn visual_world_projection_is_bounded_and_source_backed() {
             "cells.position",
             "cells.radius",
             "cells.energy",
+            "cells.energy_capacity",
+            "cells.materials",
+            "cells.internal_resources",
+            "cells.local_external_resources",
             "cells.lifecycle",
             "resource_layer_totals",
             "heat",

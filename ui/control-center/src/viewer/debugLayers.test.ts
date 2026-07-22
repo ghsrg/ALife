@@ -17,7 +17,15 @@ const availableDebugProjections: DebugProjectionState = {
     resourceLayers: [
       {
         layerIndex: 0,
+        width: 2,
+        height: 2,
         totalAmount: 4,
+        cells: [
+          { x: 0, y: 0, amount: 1 },
+          { x: 1, y: 0, amount: 1 },
+          { x: 0, y: 1, amount: 1 },
+          { x: 1, y: 1, amount: 1 }
+        ],
         completeness: {
           state: 'bounded',
           missingFields: [],
@@ -74,7 +82,9 @@ describe('buildDebugLayerPlan', () => {
       layerIndex: 0,
       totalAmount: 4,
       availability: 'bounded',
-      legendLabel: 'Resource layer 0 total 4'
+      channelLabel: 'green channel',
+      colorHex: '#27b582',
+      legendLabel: 'Layer 0 green channel total 4'
     });
     expect(plan.fields[0]).toMatchObject({
       fieldId: 'heat',

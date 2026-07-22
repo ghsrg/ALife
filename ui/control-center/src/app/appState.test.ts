@@ -120,6 +120,160 @@ describe('createAppStore', () => {
     });
   });
 
+  it('applies available debug resource grid and cell details to the visible frame', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().setDebugProjections({
+      status: 'available',
+      runId: 'run-1',
+      tick: 6,
+      visualWorld: {
+        projectionKind: 'VisualWorldProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        cells: [
+          {
+            id: 'live-cell-a',
+            x: 10,
+            y: 20,
+            radius: 3,
+            energy: 10,
+            energyCapacity: 20,
+            lifecycleState: 'Alive',
+            materials: [{ materialTypeId: 1, amount: 2 }],
+            internalResources: [{ resourceTypeId: 0, amount: 1 }],
+            localExternalResources: [{ resourceTypeId: 0, amount: 4 }]
+          }
+        ],
+        resourceLayers: [
+          {
+            layerIndex: 0,
+            width: 2,
+            height: 2,
+            totalAmount: 4,
+            cells: [
+              { x: 0, y: 0, amount: 1 },
+              { x: 1, y: 0, amount: 0.5 },
+              { x: 0, y: 1, amount: 2 },
+              { x: 1, y: 1, amount: 0.5 }
+            ],
+            completeness: { state: 'bounded', missingFields: [], reason: null }
+          },
+          {
+            layerIndex: 1,
+            width: 2,
+            height: 2,
+            totalAmount: 3,
+            cells: [
+              { x: 0, y: 0, amount: 0.25 },
+              { x: 1, y: 0, amount: 1 },
+              { x: 0, y: 1, amount: 0.75 },
+              { x: 1, y: 1, amount: 1 }
+            ],
+            completeness: { state: 'bounded', missingFields: [], reason: null }
+          },
+          {
+            layerIndex: 2,
+            width: 2,
+            height: 2,
+            totalAmount: 2,
+            cells: [
+              { x: 0, y: 0, amount: 0.1 },
+              { x: 1, y: 0, amount: 0.4 },
+              { x: 0, y: 1, amount: 0.5 },
+              { x: 1, y: 1, amount: 1 }
+            ],
+            completeness: { state: 'bounded', missingFields: [], reason: null }
+          }
+        ],
+        fields: [],
+        sourceMetrics: []
+      },
+      coverage: { projectionKind: 'CoverageProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, mechanisms: [] },
+      warnings: { projectionKind: 'WarningProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, warnings: [] },
+      classifications: { projectionKind: 'ClassificationProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, classifications: [] },
+      balanceFindings: { projectionKind: 'BalanceFindingProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, findings: [] }
+    });
+
+    expect(store.getState().frame.resources).toEqual([
+      [
+        { organic: 1, mineral: 0.25, energy: 0.1 },
+        { organic: 0.5, mineral: 1, energy: 0.4 }
+      ],
+      [
+        { organic: 2, mineral: 0.75, energy: 0.5 },
+        { organic: 0.5, mineral: 1, energy: 1 }
+      ]
+    ]);
+    expect(store.getState().selectedCell).toMatchObject({
+      id: 'live-cell-a',
+      energy: 0.5,
+      energyRaw: 10,
+      energyCapacity: 20,
+      materials: [{ materialTypeId: 1, amount: 2 }],
+      internalResources: [{ resourceTypeId: 0, amount: 1 }],
+      localExternalResources: [{ resourceTypeId: 0, amount: 4 }]
+    });
+  });
+
+  it('keeps debug projection enrichment across later live frame updates from the same run', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().setDebugProjections({
+      status: 'available',
+      runId: 'run-1',
+      tick: 6,
+      visualWorld: {
+        projectionKind: 'VisualWorldProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        cells: [
+          {
+            id: 'live-cell-a',
+            x: 10,
+            y: 20,
+            radius: 3,
+            energy: 10,
+            energyCapacity: 20,
+            lifecycleState: 'Alive',
+            materials: [{ materialTypeId: 1, amount: 2 }],
+            internalResources: [{ resourceTypeId: 0, amount: 1 }],
+            localExternalResources: [{ resourceTypeId: 0, amount: 4 }]
+          }
+        ],
+        resourceLayers: [
+          {
+            layerIndex: 0,
+            width: 1,
+            height: 1,
+            totalAmount: 4,
+            cells: [{ x: 0, y: 0, amount: 1 }],
+            completeness: { state: 'bounded', missingFields: [], reason: null }
+          }
+        ],
+        fields: [],
+        sourceMetrics: []
+      },
+      coverage: { projectionKind: 'CoverageProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, mechanisms: [] },
+      warnings: { projectionKind: 'WarningProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, warnings: [] },
+      classifications: { projectionKind: 'ClassificationProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, classifications: [] },
+      balanceFindings: { projectionKind: 'BalanceFindingProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, findings: [] }
+    });
+
+    store.getState().setFrame({
+      ...liveFrame,
+      tick: 7,
+      cells: [{ ...liveFrame.cells[0], energy: 0.25 }]
+    });
+
+    expect(store.getState().frame.resources).toEqual([[{ organic: 1, mineral: 0, energy: 0 }]]);
+    expect(store.getState().selectedCell).toMatchObject({
+      id: 'live-cell-a',
+      energy: 0.5,
+      energyRaw: 10,
+      energyCapacity: 20,
+      materials: [{ materialTypeId: 1, amount: 2 }]
+    });
+  });
+
   it('preserves selected cell across frame updates when present and selects the first available cell otherwise', () => {
     const store = createAppStore(liveFrame);
 

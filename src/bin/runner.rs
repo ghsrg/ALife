@@ -1,3 +1,4 @@
+use alife::bootstrap::preview::{BootstrapPreviewOptions, build_bootstrap_preview};
 use alife::core::cell_store::LifecycleState;
 use alife::runner::engine::{RunEngine, RunEngineConfig};
 use alife::runner::lifecycle::ActiveRunState;
@@ -14,6 +15,7 @@ use std::time::Instant;
 #[derive(Debug, Clone)]
 struct RunnerCli {
     scenario: Option<String>,
+    bootstrap_preview: bool,
     list: bool,
     serve: bool,
     debug: bool,
@@ -23,6 +25,7 @@ struct RunnerCli {
 fn parse_cli(args: &[String]) -> Result<RunnerCli, String> {
     let mut cli = RunnerCli {
         scenario: None,
+        bootstrap_preview: false,
         list: false,
         serve: false,
         debug: false,
@@ -33,6 +36,7 @@ fn parse_cli(args: &[String]) -> Result<RunnerCli, String> {
         match args[index].as_str() {
             "--list" => cli.list = true,
             "--serve" => cli.serve = true,
+            "--bootstrap-preview" => cli.bootstrap_preview = true,
             "--debug" => cli.debug = true,
             "--progress-interval-ms" => {
                 index += 1;
@@ -64,7 +68,7 @@ async fn main() {
     let cli = parse_cli(&args).unwrap_or_else(|err| {
         eprintln!("[runner] {err}");
         eprintln!(
-            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --list | --serve"
+            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --bootstrap-preview <scenario-id-or-path> | --list | --serve"
         );
         std::process::exit(2);
     });
@@ -88,10 +92,18 @@ async fn main() {
     }
     let Some(scenario) = cli.scenario.as_deref() else {
         eprintln!(
-            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --list | --serve"
+            "Usage: runner [--debug] [--progress-interval-ms N] <scenario-id-or-path> | --bootstrap-preview <scenario-id-or-path> | --list | --serve"
         );
         std::process::exit(2);
     };
+
+    if cli.bootstrap_preview {
+        if let Err(err) = print_bootstrap_preview(scenario, &scenarios_dir) {
+            eprintln!("[runner] {err}");
+            std::process::exit(1);
+        }
+        return;
+    }
 
     if let Err(err) = run_headless(scenario, &scenarios_dir, cli.debug, cli.progress_interval) {
         eprintln!("[runner] {err}");
@@ -208,6 +220,17 @@ fn run_headless(
         snapshot.heat,
         snapshot.waste
     );
+    Ok(())
+}
+
+fn print_bootstrap_preview(scenario: &str, scenarios_dir: &Path) -> Result<(), String> {
+    let meta = resolve_scenario(scenario, scenarios_dir)?;
+    let document = load_scenario_document(&meta).map_err(|err| err.to_string())?;
+    let preview = build_bootstrap_preview(&document, BootstrapPreviewOptions::default())
+        .map_err(|err| err.to_string())?;
+    let json = serde_json::to_string_pretty(&preview)
+        .map_err(|err| format!("failed to encode bootstrap preview: {err}"))?;
+    println!("{json}");
     Ok(())
 }
 

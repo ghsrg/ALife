@@ -86,10 +86,13 @@ async fn latest_projections_return_bounded_observer_payload_bundle() {
         json["visual_world"]["projection_kind"],
         "VisualWorldProjection"
     );
-    assert_eq!(json["visual_world"]["completeness"]["state"], "partial");
+    assert_eq!(json["visual_world"]["completeness"]["state"], "bounded");
     assert_eq!(
-        json["visual_world"]["completeness"]["missing_fields"][0],
-        "cells.internal_resources"
+        json["visual_world"]["completeness"]["missing_fields"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
     );
     assert_eq!(
         json["visual_world"]["payload"]["source_metrics"][0]["source_owner"],
@@ -97,6 +100,13 @@ async fn latest_projections_return_bounded_observer_payload_bundle() {
     );
     assert!(
         json["visual_world"]["payload"]["cells"]
+            .as_array()
+            .unwrap()
+            .len()
+            > 0
+    );
+    assert!(
+        json["visual_world"]["payload"]["resource_layers"][0]["cells"]
             .as_array()
             .unwrap()
             .len()

@@ -1,0 +1,147 @@
+scenario_id = "demo_world_resource"
+seed = 7721
+tick_count = 48
+legacy_material_distribution = false
+
+[world]
+size = [128.0, 96.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = ["nutrient_A", "mineral_A", "signal_A"]
+initial_distribution = [0.0, 0.0, 0.0]
+optional_decay_rate = 0.0
+
+[bootstrap]
+family = "patchy_temperate_v1"
+
+[[bootstrap.resources]]
+resource_type_id = "nutrient_A"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.nutrient_A"
+patches = 3
+min_amount = 0.5
+max_amount = 6.0
+falloff = 0.35
+
+[[bootstrap.resources]]
+resource_type_id = "mineral_A"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.mineral_A"
+patches = 3
+min_amount = 0.3
+max_amount = 4.5
+falloff = 0.45
+
+[[bootstrap.resources]]
+resource_type_id = "signal_A"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.signal_A"
+min_amount = 0.0
+max_amount = 2.5
+
+[[bootstrap.fields]]
+field_id = "temperature"
+generator = "band"
+version = "band.v1"
+seed_domain = "fields.layers.temperature"
+min_value = 16.0
+max_value = 29.0
+
+[[bootstrap.fields]]
+field_id = "light"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "fields.layers.light"
+min_value = 0.2
+max_value = 1.0
+
+[[bootstrap.fields]]
+field_id = "toxicity"
+generator = "band"
+version = "band.v1"
+seed_domain = "fields.layers.toxicity"
+min_value = 0.0
+max_value = 0.4
+
+[cell]
+initial_position = [36.0, 28.0]
+radius = 1.6
+initial_resources = { nutrient_A = 2.5, mineral_A = 0.8, signal_A = 0.2 }
+initial_materials = { boundary = 1.3, transport = 1.6, metabolic = 1.0, storage = 1.4, synthesis = 0.4, structural = 1.0, repair = 0.2, contractile = 0.3, sensory = 0.9 }
+initial_energy = 8.0
+energy_capacity = 20.0
+mandatory_cost_per_tick = 0.05
+capacity_limit = 24.0
+
+[[cells]]
+initial_position = [62.0, 34.0]
+radius = 2.0
+initial_resources = { nutrient_A = 1.0, mineral_A = 2.5, signal_A = 0.5 }
+initial_materials = { boundary = 1.6, transport = 0.9, metabolic = 1.8, storage = 1.1, synthesis = 0.8, structural = 1.8, repair = 0.5, contractile = 0.2, sensory = 0.4 }
+initial_energy = 11.0
+energy_capacity = 26.0
+mandatory_cost_per_tick = 0.06
+capacity_limit = 30.0
+
+[[cells]]
+initial_position = [88.0, 30.0]
+radius = 1.3
+initial_resources = { nutrient_A = 0.8, mineral_A = 0.3, signal_A = 1.8 }
+initial_materials = { boundary = 0.9, transport = 1.2, metabolic = 0.8, storage = 0.7, synthesis = 0.5, structural = 0.7, repair = 0.3, contractile = 1.5, sensory = 1.8 }
+initial_energy = 6.5
+energy_capacity = 18.0
+mandatory_cost_per_tick = 0.04
+capacity_limit = 20.0
+
+[[cells]]
+initial_position = [46.0, 68.0]
+radius = 1.8
+initial_resources = { nutrient_A = 2.0, mineral_A = 1.4, signal_A = 0.6 }
+initial_materials = { boundary = 1.8, transport = 1.0, metabolic = 1.2, storage = 1.9, synthesis = 0.3, structural = 1.4, repair = 1.0, contractile = 0.1, sensory = 0.5 }
+initial_energy = 9.5
+energy_capacity = 24.0
+mandatory_cost_per_tick = 0.05
+capacity_limit = 28.0
+
+[[cells]]
+initial_position = [94.0, 72.0]
+radius = 1.5
+initial_resources = { nutrient_A = 1.5, mineral_A = 1.0, signal_A = 1.2 }
+initial_materials = { boundary = 1.1, transport = 1.7, metabolic = 1.3, storage = 0.9, synthesis = 0.7, structural = 1.0, repair = 0.6, contractile = 0.6, sensory = 1.4 }
+initial_energy = 7.5
+energy_capacity = 22.0
+mandatory_cost_per_tick = 0.05
+capacity_limit = 25.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 0.2
+metabolism_resource_per_tick = 0.05
+energy_per_resource = 1.0
+heat_per_resource = 0.01
+waste_per_resource = 0.01
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.1
+heat_warning_threshold = 20.0
+heat_death_threshold = 40.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.1
+waste_warning_threshold = 20.0
+waste_death_threshold = 40.0
+
+[lifecycle]
+stress_energy_threshold = 2.0
+dormancy_allowed = false
+critical_capacity_overrun = 5.0

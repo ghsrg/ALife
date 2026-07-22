@@ -12,7 +12,7 @@ h1, h2 {
 }
 
 h1 {
-  font-size: 20px;
+  font-size: 19px;
 }
 
 h2 {
@@ -41,13 +41,14 @@ h2 {
 
 .workspace-availability {
   margin: 0;
-  max-width: 190px;
+  max-width: 180px;
+  line-height: 1.25;
 }
 
 .mode-tabs button,
 .run-controls button,
 .top-utility-controls button {
-  min-height: 36px;
+  min-height: 34px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 6px;
   padding: 0 12px;
@@ -118,10 +119,10 @@ button:disabled {
 
 .map-context-strip {
   display: grid;
-  grid-template-columns: minmax(150px, 0.7fr) minmax(190px, 0.95fr) minmax(160px, 0.75fr) minmax(120px, 0.6fr) auto;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(190px, 1fr) minmax(170px, 0.8fr) minmax(110px, 0.5fr) auto;
   align-items: center;
   gap: 5px 10px;
-  padding: 6px 10px;
+  padding: 4px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(6, 13, 17, 0.36);
 }
@@ -168,17 +169,18 @@ button:disabled {
 .data-context-actions,
 .history-strip {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 6px;
+  overflow-x: auto;
 }
 
 .data-context-actions button,
 .history-strip button {
-  min-height: 30px;
+  min-height: 26px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 5px;
-  padding: 0 9px;
+  padding: 0 8px;
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
 }
@@ -196,7 +198,7 @@ button:disabled {
 
 .world-viewer {
   position: relative;
-  min-height: clamp(520px, calc(100vh - 240px), 780px);
+  min-height: clamp(600px, calc(100vh - 190px), 860px);
   overflow: hidden;
   cursor: grab;
   overscroll-behavior: contain;
@@ -385,10 +387,10 @@ button:disabled {
   align-items: center;
   gap: 10px;
   width: auto;
-  margin: 0 10px 8px;
+  margin: 0 10px 6px;
   border: 1px solid rgba(116, 222, 210, 0.32);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   background: rgba(8, 19, 24, 0.86);
   pointer-events: auto;
 }
@@ -452,7 +454,7 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
-  padding: 10px 12px 12px;
+  padding: 8px 12px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(6, 13, 17, 0.58);
 }
@@ -527,6 +529,20 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 5px 8px;
+}
+
+.debug-resource-legend-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.debug-resource-swatch {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .debug-mode-warning {

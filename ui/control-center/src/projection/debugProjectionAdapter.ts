@@ -69,6 +69,7 @@ function normalizeVisualWorld(value: any): DebugVisualWorldProjection {
       y: cell.y,
       radius: cell.radius,
       energy: cell.energy,
+      energyCapacity: cell.energy_capacity ?? cell.energy,
       lifecycleState: cell.lifecycle_state,
       materials: (cell.materials ?? []).map((material: any) => ({
         materialTypeId: material.material_type_id,
@@ -77,11 +78,22 @@ function normalizeVisualWorld(value: any): DebugVisualWorldProjection {
       internalResources: (cell.internal_resources ?? []).map((resource: any) => ({
         resourceTypeId: resource.resource_type_id,
         amount: resource.amount
+      })),
+      localExternalResources: (cell.local_external_resources ?? []).map((resource: any) => ({
+        resourceTypeId: resource.resource_type_id,
+        amount: resource.amount
       }))
     })),
     resourceLayers: (value.payload?.resource_layers ?? []).map((layer: any) => ({
       layerIndex: layer.layer_index,
+      width: layer.width ?? 0,
+      height: layer.height ?? 0,
       totalAmount: layer.total_amount,
+      cells: (layer.cells ?? []).map((cell: any) => ({
+        x: cell.x,
+        y: cell.y,
+        amount: cell.amount
+      })),
       completeness: completeness(layer.completeness)
     })),
     fields: (value.payload?.fields ?? []).map((field: any) => ({

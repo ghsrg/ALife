@@ -6,8 +6,7 @@ import {
   buildUnavailableProjectionContext,
   type ProjectionContext
 } from '../projection/projectionContext';
-import type { CellId, CellProjection, WorldFrame } from '../projection/types';
-import type { DebugProjectionState } from '../projection/types';
+import type { CellId, CellProjection, DebugProjectionState, ResourceConcentration, WorldFrame } from '../projection/types';
 import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClient';
 import type { RunnerStreamConnectionState as ConnectionState } from '../runner/streamClient';
 
@@ -113,22 +112,25 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     setFrame: (frame) => {
       const state = get();
       const isLiveFrame = frame.source === 'live';
-      const frameHistory = isLiveFrame ? appendFrameHistory(state.frameHistory, frame) : state.frameHistory;
+      const visibleFrame = enrichFrameWithDebugProjection(frame, state.debugProjections);
+      const frameHistory = isLiveFrame
+        ? appendFrameHistory(state.frameHistory, visibleFrame)
+        : state.frameHistory;
 
       if (state.projectionContext.mode === 'frozen' && isLiveFrame) {
         set({
-          latestLiveFrame: frame,
+          latestLiveFrame: visibleFrame,
           frameHistory
         });
         return;
       }
 
-      const selectedCell = selectCellForFrame(frame, state.selectedCellId, state.selectionCleared);
+      const selectedCell = selectCellForFrame(visibleFrame, state.selectedCellId, state.selectionCleared);
       set({
-        frame,
-        latestLiveFrame: isLiveFrame ? frame : state.latestLiveFrame,
+        frame: visibleFrame,
+        latestLiveFrame: isLiveFrame ? visibleFrame : state.latestLiveFrame,
         frameHistory,
-        projectionContext: buildProjectionContext(frame, isLiveFrame ? 'live' : 'fixture'),
+        projectionContext: buildProjectionContext(visibleFrame, isLiveFrame ? 'live' : 'fixture'),
         selectedCellId: selectedCell?.id ?? null,
         selectedCell
       });
@@ -184,7 +186,26 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         selectedCell
       });
     },
-    setDebugProjections: (debugProjections) => set({ debugProjections }),
+    setDebugProjections: (debugProjections) => {
+      const state = get();
+      const enrichedFrame = enrichFrameWithDebugProjection(state.frame, debugProjections);
+      const enrichedLatestLiveFrame =
+        state.latestLiveFrame === null
+          ? null
+          : enrichFrameWithDebugProjection(state.latestLiveFrame, debugProjections);
+      const selectedCell = selectCellForFrame(
+        enrichedFrame,
+        state.selectedCellId,
+        state.selectionCleared
+      );
+      set({
+        debugProjections,
+        frame: enrichedFrame,
+        latestLiveFrame: enrichedLatestLiveFrame,
+        selectedCellId: selectedCell?.id ?? null,
+        selectedCell
+      });
+    },
     selectCell: (cellId) => {
       const selectedCell = selectCell(get().frame, cellId);
       set({
@@ -235,6 +256,74 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     clearPendingCommand: () => set({ pendingCommand: null }),
     setError: (lastError) => set({ lastError })
   }));
+}
+
+function enrichFrameWithDebugProjection(frame: WorldFrame, debugProjections: DebugProjectionState): WorldFrame {
+  if (debugProjections.status !== 'available') {
+    return frame;
+  }
+  if (frame.source !== 'live' || frame.runId !== debugProjections.runId) {
+    return frame;
+  }
+
+  const resources =
+    debugProjections.visualWorld.resourceLayers.length > 0
+      ? resourceLayersToGrid(debugProjections.visualWorld.resourceLayers)
+      : frame.resources;
+  const debugCells = new Map(debugProjections.visualWorld.cells.map((cell) => [cell.id, cell]));
+  const cells = frame.cells.map((cell) => {
+    const debugCell = debugCells.get(cell.id);
+    if (!debugCell) {
+      return cell;
+    }
+    const energyCapacity = Math.max(0, debugCell.energyCapacity);
+    const energyRatio = energyCapacity > 0 ? debugCell.energy / energyCapacity : cell.energy;
+    return {
+      ...cell,
+      energy: Math.max(0, Math.min(1, energyRatio)),
+      energyRaw: debugCell.energy,
+      energyCapacity,
+      materials: debugCell.materials,
+      internalResources: debugCell.internalResources,
+      localExternalResources: debugCell.localExternalResources
+    };
+  });
+
+  return {
+    ...frame,
+    resources,
+    cells
+  };
+}
+
+function resourceLayersToGrid(
+  layers: Extract<DebugProjectionState, { status: 'available' }>['visualWorld']['resourceLayers']
+) {
+  const width = Math.max(...layers.map((layer) => layer.width));
+  const height = Math.max(...layers.map((layer) => layer.height));
+  const rows: ResourceConcentration[][] = Array.from({ length: height }, () =>
+    Array.from({ length: width }, () => ({ organic: 0, mineral: 0, energy: 0 }))
+  );
+
+  layers.forEach((layer, index) => {
+    const channel = index % 3;
+    for (const cell of layer.cells) {
+      if (cell.y >= rows.length || cell.x >= (rows[cell.y]?.length ?? 0)) {
+        continue;
+      }
+
+      const current = rows[cell.y][cell.x];
+      if (channel === 0) {
+        current.organic = cell.amount;
+      } else if (channel === 1) {
+        current.mineral = cell.amount;
+      } else {
+        current.energy = cell.amount;
+      }
+    }
+  });
+
+  return rows;
 }
 
 function appendFrameHistory(history: WorldFrame[], frame: WorldFrame) {

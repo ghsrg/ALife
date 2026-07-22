@@ -74,15 +74,21 @@ function clamp01(value: number) {
 }
 
 function lifecycleToIntegrity(lifecycle: number) {
-  return lifecycle === 2 ? 0 : 1;
+  return lifecycle === 3 ? 0 : 1;
 }
 
 function lifecycleLabel(lifecycle: number) {
-  if (lifecycle === 2) {
-    return 'dead lifecycle state';
+  if (lifecycle === 0) {
+    return 'alive lifecycle state';
   }
   if (lifecycle === 1) {
-    return 'alive lifecycle state';
+    return 'stressed lifecycle state';
+  }
+  if (lifecycle === 2) {
+    return 'dormant lifecycle state';
+  }
+  if (lifecycle === 3) {
+    return 'dead lifecycle state';
   }
   return `lifecycle ${lifecycle}`;
 }

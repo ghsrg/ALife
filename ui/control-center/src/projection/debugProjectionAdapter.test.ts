@@ -29,15 +29,25 @@ const bundle = {
           y: 5,
           radius: 1.5,
           energy: 12,
+          energy_capacity: 20,
           lifecycle_state: 'Alive',
-          materials: [],
-          internal_resources: []
+          materials: [{ material_type_id: 1, amount: 2.5 }],
+          internal_resources: [{ resource_type_id: 0, amount: 1.5 }],
+          local_external_resources: [{ resource_type_id: 0, amount: 3.5 }]
         }
       ],
       resource_layers: [
         {
           layer_index: 0,
+          width: 2,
+          height: 2,
           total_amount: 4,
+          cells: [
+            { x: 0, y: 0, amount: 1 },
+            { x: 1, y: 0, amount: 0.5 },
+            { x: 0, y: 1, amount: 2 },
+            { x: 1, y: 1, amount: 0.5 }
+          ],
           completeness: {
             state: 'bounded',
             missing_fields: [],
@@ -115,9 +125,22 @@ describe('normalizeDebugProjectionBundle', () => {
       y: 5,
       radius: 1.5,
       energy: 12,
+      energyCapacity: 20,
       lifecycleState: 'Alive',
-      materials: [],
-      internalResources: []
+      materials: [{ materialTypeId: 1, amount: 2.5 }],
+      internalResources: [{ resourceTypeId: 0, amount: 1.5 }],
+      localExternalResources: [{ resourceTypeId: 0, amount: 3.5 }]
+    });
+    expect(normalized.visualWorld.resourceLayers[0]).toMatchObject({
+      layerIndex: 0,
+      width: 2,
+      height: 2,
+      cells: [
+        { x: 0, y: 0, amount: 1 },
+        { x: 1, y: 0, amount: 0.5 },
+        { x: 0, y: 1, amount: 2 },
+        { x: 1, y: 1, amount: 0.5 }
+      ]
     });
     expect(normalized.visualWorld.fields[0].sourceMetric.sourceOwner).toBe('CoreCommittedSnapshot');
   });

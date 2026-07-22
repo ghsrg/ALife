@@ -35,7 +35,15 @@ const debugProjections: DebugProjectionState = {
     resourceLayers: [
       {
         layerIndex: 0,
+        width: 2,
+        height: 2,
         totalAmount: 4,
+        cells: [
+          { x: 0, y: 0, amount: 1 },
+          { x: 1, y: 0, amount: 1 },
+          { x: 0, y: 1, amount: 1 },
+          { x: 1, y: 1, amount: 1 }
+        ],
         completeness: {
           state: 'bounded',
           missingFields: [],
@@ -224,7 +232,7 @@ describe('WorldViewer', () => {
         scale: 1.128
       });
     });
-    expect(screen.getByLabelText('World Viewer zoom')).toHaveTextContent('1:1 cell scale');
+    expect(screen.getByLabelText('World Viewer zoom')).toHaveTextContent(/^1:\d+$/);
   });
 
   it('renders optional map utility controls next to navigation tools', async () => {

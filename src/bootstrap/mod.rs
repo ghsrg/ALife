@@ -3,6 +3,7 @@ pub mod field_layers;
 pub mod generator_spec;
 pub mod manifest;
 pub mod prepared;
+pub mod preview;
 pub mod resource_layers;
 pub mod seed_domains;
 pub mod starter_state;

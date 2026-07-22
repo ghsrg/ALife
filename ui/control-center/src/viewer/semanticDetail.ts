@@ -1,7 +1,7 @@
 import type { CellProjection } from '../projection/types';
 
 export type SemanticZoomLevel = 'overview' | 'entity' | 'structure' | 'internal-detail';
-export type LifecycleVisualState = 'alive' | 'dead' | 'decomposing' | 'unavailable';
+export type LifecycleVisualState = 'alive' | 'stressed' | 'dormant' | 'dead' | 'unavailable';
 
 export interface SemanticZoomInput {
   displayRadiusPx: number;
@@ -59,14 +59,17 @@ export function normalizeRatio(value: number): number {
 }
 
 function lifecycleVisualState(lifecycle: number | undefined): LifecycleVisualState {
-  if (lifecycle === 1) {
+  if (lifecycle === 0) {
     return 'alive';
   }
+  if (lifecycle === 1) {
+    return 'stressed';
+  }
   if (lifecycle === 2) {
-    return 'dead';
+    return 'dormant';
   }
   if (lifecycle === 3) {
-    return 'decomposing';
+    return 'dead';
   }
   return 'unavailable';
 }

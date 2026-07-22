@@ -251,3 +251,6 @@ tags:
 - [[outputs/worklogs/2026-07-22-1444-REPORT-al-007-s10-debug-visualization-mode-exact-layers|2026-07-22-1444-REPORT-al-007-s10-debug-visualization-mode-exact-layers]]
 - [[outputs/worklogs/2026-07-22-1516-PLAN-al-002-s11-rich-spatial-generators-and-world-families|2026-07-22-1516-PLAN-al-002-s11-rich-spatial-generators-and-world-families]]
 - [[outputs/worklogs/2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families|2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families]]
+- [[outputs/worklogs/2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair|2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair]]
+- [[outputs/worklogs/2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration]]
+- [[outputs/worklogs/2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration]]

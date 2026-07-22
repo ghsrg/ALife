@@ -21,7 +21,7 @@ const frame: WorldFrame = {
       integrity: 1,
       generation: 0,
       roleHint: 'alive lifecycle state',
-      lifecycle: 1
+      lifecycle: 0
     }
   ]
 };

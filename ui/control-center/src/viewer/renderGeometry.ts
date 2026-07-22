@@ -16,7 +16,7 @@ export interface RenderedCellGeometry {
   presentationMinimumApplied: boolean;
 }
 
-export const MIN_CELL_DISPLAY_RADIUS_PX = 7;
+export const MIN_CELL_DISPLAY_RADIUS_PX = 2.5;
 export const MIN_CELL_INTERACTION_RADIUS_PX = 18;
 
 export function projectCellForRender(

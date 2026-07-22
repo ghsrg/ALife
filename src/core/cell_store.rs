@@ -408,6 +408,10 @@ impl CellStore {
         Ok(self.typed_resources[offset])
     }
 
+    pub fn typed_resource_types(&self) -> &[ResourceTypeId] {
+        &self.typed_resource_types
+    }
+
     pub fn set_typed_resource_amount(
         &mut self,
         index: CellIndex,

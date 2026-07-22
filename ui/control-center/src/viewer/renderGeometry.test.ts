@@ -46,7 +46,7 @@ describe('projectCellForRender', () => {
     const projection = projectCellForRender(cell(2), frame, { width: 1200, height: 800 });
 
     expect(projection.physicalRadiusPx).toBe(2);
-    expect(projection.displayRadiusPx).toBe(7);
+    expect(projection.displayRadiusPx).toBe(2.5);
     expect(projection.interactionRadiusPx).toBe(18);
     expect(projection.presentationMinimumApplied).toBe(true);
   });
@@ -57,8 +57,8 @@ describe('projectCellForRender', () => {
     expect(projection.x).toBe(60);
     expect(projection.y).toBe(80);
     expect(projection.physicalRadiusPx).toBe(6);
-    expect(projection.displayRadiusPx).toBe(7);
-    expect(projection.presentationMinimumApplied).toBe(true);
+    expect(projection.displayRadiusPx).toBe(6);
+    expect(projection.presentationMinimumApplied).toBe(false);
   });
 
   it('applies viewer camera transform to position and radius for navigated rendering', () => {

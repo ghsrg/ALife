@@ -69,10 +69,16 @@ function formatRatio(value: number) {
 }
 
 function formatLifecycle(lifecycle: number | undefined) {
-  if (lifecycle === 1) {
+  if (lifecycle === 0) {
     return 'alive';
   }
+  if (lifecycle === 1) {
+    return 'stressed';
+  }
   if (lifecycle === 2) {
+    return 'dormant';
+  }
+  if (lifecycle === 3) {
     return 'dead';
   }
   return 'Unavailable';

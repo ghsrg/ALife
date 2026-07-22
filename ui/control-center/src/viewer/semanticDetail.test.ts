@@ -15,7 +15,7 @@ const baseCell: CellProjection = {
   integrity: 0.91,
   generation: 3,
   roleHint: 'high-energy cluster member',
-  lifecycle: 1
+  lifecycle: 0
 };
 
 describe('semanticDetail', () => {
@@ -58,6 +58,13 @@ describe('semanticDetail', () => {
 
     expect(detail.lifecycleState).toBe('unavailable');
     expect(detail.showLabel).toBe(false);
+  });
+
+  it('maps runner lifecycle bytes using the Rust enum order', () => {
+    expect(buildCellSemanticDetail({ ...baseCell, lifecycle: 0 }, { displayRadiusPx: 24, selected: false }).lifecycleState).toBe('alive');
+    expect(buildCellSemanticDetail({ ...baseCell, lifecycle: 1 }, { displayRadiusPx: 24, selected: false }).lifecycleState).toBe('stressed');
+    expect(buildCellSemanticDetail({ ...baseCell, lifecycle: 2 }, { displayRadiusPx: 24, selected: false }).lifecycleState).toBe('dormant');
+    expect(buildCellSemanticDetail({ ...baseCell, lifecycle: 3 }, { displayRadiusPx: 24, selected: false }).lifecycleState).toBe('dead');
   });
 
   it('keeps unselected high-zoom cells free of external metric rings', () => {
