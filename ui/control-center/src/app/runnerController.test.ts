@@ -4,7 +4,8 @@ import {
   createRequestId,
   shouldApplyDebugProjections,
   shouldApplyLiveFrame,
-  shouldApplyRunStatus
+  shouldApplyRunStatus,
+  shouldSetDebugProjectionLoading
 } from './runnerController';
 import type { LiveWorldFrameProjection } from '../runner/alifDecoder';
 
@@ -149,6 +150,46 @@ describe('runnerController guards', () => {
       tick: 10,
       reason: 'Latest debug projection Tick 10 is behind live Tick 12'
     }, 10, store.getState())).toBe(false);
+  });
+
+  it('does not re-enter debug projection loading when the same run already has a payload', () => {
+    const store = createAppStore();
+    store.getState().setDebugProjections({
+      status: 'available',
+      runId: 'run-a',
+      tick: 10,
+      visualWorld: {
+        projectionKind: 'VisualWorldProjection',
+        completeness: { state: 'partial', missingFields: [], reason: null },
+        cells: [],
+        resourceLayers: [],
+        fields: [],
+        sourceMetrics: []
+      },
+      coverage: {
+        projectionKind: 'CoverageProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        mechanisms: []
+      },
+      warnings: {
+        projectionKind: 'WarningProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        warnings: []
+      },
+      classifications: {
+        projectionKind: 'ClassificationProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        classifications: []
+      },
+      balanceFindings: {
+        projectionKind: 'BalanceFindingProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        findings: []
+      }
+    });
+
+    expect(shouldSetDebugProjectionLoading('run-a', store.getState())).toBe(false);
+    expect(shouldSetDebugProjectionLoading('run-b', store.getState())).toBe(true);
   });
 
   it('creates deterministic request ids from an injected clock', () => {

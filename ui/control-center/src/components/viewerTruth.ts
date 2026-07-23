@@ -54,6 +54,20 @@ function buildResourceLayerTruth(
   debugProjections?: DebugProjectionState
 ): ViewerTruthItem {
   if (resourceCellCount > 0) {
+    if (
+      frame.source === 'live' &&
+      debugProjections?.status === 'available' &&
+      debugProjections.runId === frame.runId &&
+      debugProjections.tick < frame.tick
+    ) {
+      return {
+        state: 'stale',
+        label: 'Resources',
+        value: 'Stale projection',
+        note: `Debug projection Tick ${debugProjections.tick} is behind live Tick ${frame.tick}`
+      };
+    }
+
     return {
       state: 'available',
       label: 'Resources',

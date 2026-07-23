@@ -68,6 +68,40 @@ describe('buildViewerTruthState', () => {
     });
   });
 
+  it('marks last-known debug resources as stale when the payload is behind the live Tick', () => {
+    const state = buildViewerTruthState(
+      {
+        ...baseFrame,
+        resources: [[{ organic: 0.2, mineral: 0.1, energy: 0.5 }]]
+      },
+      { width: 1200, height: 800 },
+      {
+        status: 'available',
+        runId: 'run-live',
+        tick: 12,
+        visualWorld: {
+          projectionKind: 'VisualWorldProjection',
+          completeness: { state: 'bounded', missingFields: [], reason: null },
+          cells: [],
+          resourceLayers: [],
+          fields: [],
+          sourceMetrics: []
+        },
+        coverage: { projectionKind: 'CoverageProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, mechanisms: [] },
+        warnings: { projectionKind: 'WarningProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, warnings: [] },
+        classifications: { projectionKind: 'ClassificationProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, classifications: [] },
+        balanceFindings: { projectionKind: 'BalanceFindingProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, findings: [] }
+      }
+    );
+
+    expect(state.resourceLayer).toEqual({
+      state: 'stale',
+      label: 'Resources',
+      value: 'Stale projection',
+      note: 'Debug projection Tick 12 is behind live Tick 20'
+    });
+  });
+
   it('marks fixture resource grid as available data', () => {
     const state = buildViewerTruthState({
       ...baseFrame,

@@ -160,12 +160,14 @@ export function createRunnerController({
         const requestedFrameTick = frame.committedTick;
         const liveWorldFrame = toWorldFrame(frame, currentState);
         currentState.setFrame(liveWorldFrame);
-        store.getState().setDebugProjections({
-          status: 'loading',
-          runId: liveWorldFrame.runId,
-          requestedTick: requestedFrameTick,
-          reason: 'Waiting for Observer debug projection'
-        });
+        if (shouldSetDebugProjectionLoading(liveWorldFrame.runId, store.getState())) {
+          store.getState().setDebugProjections({
+            status: 'loading',
+            runId: liveWorldFrame.runId,
+            requestedTick: requestedFrameTick,
+            reason: 'Waiting for Observer debug projection'
+          });
+        }
         void nextApiClient
           .getLatestDebugProjections()
           .then((debugProjections) => {
@@ -174,13 +176,11 @@ export function createRunnerController({
             }
             const state = store.getState();
             if (debugProjections.status === 'available' && debugProjections.tick < state.frame.tick) {
-              if (state.frame.tick === requestedFrameTick) {
-                store.getState().setDebugProjections({
-                  status: 'stale',
-                  runId: debugProjections.runId,
-                  tick: debugProjections.tick,
-                  reason: `Latest debug projection Tick ${debugProjections.tick} is behind live Tick ${state.frame.tick}`
-                });
+              if (
+                state.frame.tick === requestedFrameTick &&
+                shouldApplyLaggedAvailableDebugProjection(debugProjections, state)
+              ) {
+                store.getState().setDebugProjections(debugProjections);
               }
               return;
             }
@@ -308,4 +308,26 @@ export function createRunnerController({
       void runCommand('stop', (client) => client.stopRun());
     }
   };
+}
+
+export function shouldSetDebugProjectionLoading(
+  runId: string,
+  state: Pick<AppStore, 'debugProjections'>
+) {
+  return !(state.debugProjections.status === 'available' && state.debugProjections.runId === runId);
+}
+
+function shouldApplyLaggedAvailableDebugProjection(
+  debugProjections: Extract<DebugProjectionState, { status: 'available' }>,
+  state: Pick<AppStore, 'debugProjections'>
+) {
+  if (state.debugProjections.status !== 'available') {
+    return true;
+  }
+
+  if (state.debugProjections.runId !== debugProjections.runId) {
+    return true;
+  }
+
+  return debugProjections.tick >= state.debugProjections.tick;
 }
