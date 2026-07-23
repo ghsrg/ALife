@@ -33,7 +33,7 @@ fn bootstrap_preview_exports_stable_manifest_and_bounded_resource_preview_withou
     assert_eq!(preview_a.scenario_hash, preview_b.scenario_hash);
     assert_eq!(preview_a.prepared_state_hash, preview_b.prepared_state_hash);
     assert_eq!(preview_a.generator_versions, preview_b.generator_versions);
-    assert_eq!(preview_a.resource_layers.len(), 3);
+    assert_eq!(preview_a.resource_layers.len(), 27);
     assert_eq!(preview_a.resource_layers[0].sampled_cells.len(), 4);
     assert!(preview_a.resource_layers[0].total > 0.0);
     assert!(preview_a.resource_layers[0].max >= preview_a.resource_layers[0].min);
@@ -106,7 +106,7 @@ fn seed_sweep_report_is_deterministic_and_compact() {
         report_a
             .rows
             .iter()
-            .all(|row| row.resource_layer_count == 3)
+            .all(|row| row.resource_layer_count == 27)
     );
     assert!(report_a.rows.iter().any(|row| !row.warnings.is_empty()));
 }

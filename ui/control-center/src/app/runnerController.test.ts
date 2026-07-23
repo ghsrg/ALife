@@ -126,6 +126,31 @@ describe('runnerController guards', () => {
     }, 10, store.getState())).toBe(false);
   });
 
+  it('applies loading and stale debug projection states only to their requested live tick', () => {
+    const store = createAppStore();
+    store.getState().setFrame({
+      ...store.getState().frame,
+      source: 'live',
+      runId: 'run-a',
+      tick: 12,
+      summary: { heat: 0, waste: 0, projectionSequence: 5 }
+    });
+
+    expect(shouldApplyDebugProjections({
+      status: 'loading',
+      runId: 'run-a',
+      requestedTick: 12,
+      reason: 'Waiting for Observer debug projection'
+    }, 12, store.getState())).toBe(true);
+
+    expect(shouldApplyDebugProjections({
+      status: 'stale',
+      runId: 'run-a',
+      tick: 10,
+      reason: 'Latest debug projection Tick 10 is behind live Tick 12'
+    }, 10, store.getState())).toBe(false);
+  });
+
   it('creates deterministic request ids from an injected clock', () => {
     expect(createRequestId(() => 1234)).toBe('ui-1234');
     expect(vi.isMockFunction(createRequestId)).toBe(false);

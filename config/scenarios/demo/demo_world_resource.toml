@@ -1,50 +1,153 @@
 scenario_id = "demo_world_resource"
 seed = 7721
-tick_count = 48
+tick_count = 50000
 legacy_material_distribution = false
 
+[time]
+tick_duration_ms = 100
+
 [world]
-size = [128.0, 96.0]
+size = [160.0, 120.0]
 
 [space]
 spatial_grid_size = 8.0
 physics_solver_iterations = 2
 
+[scheduler.cell]
+genome_runtime_base_ticks = 10
+genome_runtime_ticks_per_layer = 10
+signal_emit_ticks = 2
+controlled_reaction_ticks = 2
+simple_synthesis_ticks = 5
+basic_repair_ticks = 10
+internal_rebalance_ticks = 5
+
+[scheduler.world]
+resource_diffusion_ticks = 2
+resource_decay_ticks = 10
+passive_reactions_ticks = 2
+background_material_degradation_ticks = 5
+environment_heat_diffusion_ticks = 2
+field_update_ticks = 5
+
+[scheduler.observer]
+observer_metrics_ticks = 10
+resource_totals_ticks = 10
+graph_analysis_ticks = 50
+debug_trace_ticks = 10
+
 [resources]
-resource_type_ids = ["nutrient_A", "mineral_A", "signal_A"]
-initial_distribution = [0.0, 0.0, 0.0]
-optional_decay_rate = 0.0
+resource_type_ids = [
+  "boundary_feed_a", "boundary_feed_b", "boundary_feed_c",
+  "transport_feed_a", "transport_feed_b", "transport_feed_c",
+  "metabolic_feed_a", "metabolic_feed_b", "metabolic_feed_c",
+  "storage_feed_a", "storage_feed_b", "storage_feed_c",
+  "synthesis_feed_a", "synthesis_feed_b", "synthesis_feed_c",
+  "structural_feed_a", "structural_feed_b", "structural_feed_c",
+  "repair_feed_a", "repair_feed_b", "repair_feed_c",
+  "contractile_feed_a", "contractile_feed_b", "contractile_feed_c",
+  "sensory_feed_a", "sensory_feed_b", "sensory_feed_c"
+]
+initial_distribution = [
+  2400.0, 900.0, 650.0,
+  1300.0, 720.0, 520.0,
+  1800.0, 820.0, 560.0,
+  1100.0, 760.0, 520.0,
+  900.0, 620.0, 460.0,
+  1200.0, 760.0, 540.0,
+  800.0, 520.0, 380.0,
+  760.0, 500.0, 360.0,
+  700.0, 480.0, 340.0
+]
+optional_decay_rate = 0.00001
+passive_energy_income_placeholder = 0.0
 
 [bootstrap]
 family = "patchy_temperate_v1"
 
 [[bootstrap.resources]]
-resource_type_id = "nutrient_A"
+resource_type_id = "boundary_feed_a"
 generator = "patches"
 version = "patches.v1"
-seed_domain = "resources.layers.nutrient_A"
-patches = 3
-min_amount = 0.5
-max_amount = 6.0
-falloff = 0.35
+seed_domain = "resources.layers.boundary_feed_a"
+patches = 8
+min_amount = 2.0
+max_amount = 10.0
+falloff = 0.28
 
 [[bootstrap.resources]]
-resource_type_id = "mineral_A"
+resource_type_id = "transport_feed_a"
 generator = "patches"
 version = "patches.v1"
-seed_domain = "resources.layers.mineral_A"
-patches = 3
-min_amount = 0.3
-max_amount = 4.5
-falloff = 0.45
+seed_domain = "resources.layers.transport_feed_a"
+patches = 7
+min_amount = 1.0
+max_amount = 7.0
+falloff = 0.34
 
 [[bootstrap.resources]]
-resource_type_id = "signal_A"
+resource_type_id = "metabolic_feed_a"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.metabolic_feed_a"
+patches = 8
+min_amount = 1.5
+max_amount = 9.0
+falloff = 0.30
+
+[[bootstrap.resources]]
+resource_type_id = "storage_feed_a"
 generator = "gradient"
 version = "gradient.v1"
-seed_domain = "resources.layers.signal_A"
-min_amount = 0.0
-max_amount = 2.5
+seed_domain = "resources.layers.storage_feed_a"
+min_amount = 0.3
+max_amount = 4.0
+
+[[bootstrap.resources]]
+resource_type_id = "synthesis_feed_a"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.synthesis_feed_a"
+patches = 5
+min_amount = 0.7
+max_amount = 5.0
+falloff = 0.42
+
+[[bootstrap.resources]]
+resource_type_id = "structural_feed_a"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.structural_feed_a"
+patches = 6
+min_amount = 1.0
+max_amount = 6.5
+falloff = 0.36
+
+[[bootstrap.resources]]
+resource_type_id = "repair_feed_a"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.repair_feed_a"
+min_amount = 0.2
+max_amount = 3.2
+
+[[bootstrap.resources]]
+resource_type_id = "contractile_feed_a"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.contractile_feed_a"
+patches = 5
+min_amount = 0.5
+max_amount = 4.5
+falloff = 0.44
+
+[[bootstrap.resources]]
+resource_type_id = "sensory_feed_a"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.sensory_feed_a"
+min_amount = 0.3
+max_amount = 3.8
 
 [[bootstrap.fields]]
 field_id = "temperature"
@@ -68,80 +171,374 @@ generator = "band"
 version = "band.v1"
 seed_domain = "fields.layers.toxicity"
 min_value = 0.0
-max_value = 0.4
+max_value = 0.25
 
 [cell]
-initial_position = [36.0, 28.0]
-radius = 1.6
-initial_resources = { nutrient_A = 2.5, mineral_A = 0.8, signal_A = 0.2 }
-initial_materials = { boundary = 1.3, transport = 1.6, metabolic = 1.0, storage = 1.4, synthesis = 0.4, structural = 1.0, repair = 0.2, contractile = 0.3, sensory = 0.9 }
-initial_energy = 8.0
-energy_capacity = 20.0
-mandatory_cost_per_tick = 0.05
-capacity_limit = 24.0
-
+initial_position = [18.0, 16.0]
+radius = 1.05
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 3.0, metabolic_feed_a = 4.0, storage_feed_a = 2.0, synthesis_feed_a = 1.0, structural_feed_a = 2.0, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 4.0, transport = 3.2, metabolic = 3.6, storage = 7.2, synthesis = 2.8, structural = 6.0, repair = 2.4, contractile = 1.6, sensory = 1.8 }
+initial_energy = 90.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
 [[cells]]
-initial_position = [62.0, 34.0]
-radius = 2.0
-initial_resources = { nutrient_A = 1.0, mineral_A = 2.5, signal_A = 0.5 }
-initial_materials = { boundary = 1.6, transport = 0.9, metabolic = 1.8, storage = 1.1, synthesis = 0.8, structural = 1.8, repair = 0.5, contractile = 0.2, sensory = 0.4 }
-initial_energy = 11.0
-energy_capacity = 26.0
-mandatory_cost_per_tick = 0.06
-capacity_limit = 30.0
-
+initial_position = [38.0, 18.0]
+radius = 1.10
+initial_resources = { boundary_feed_a = 12.0, transport_feed_b = 2.0, metabolic_feed_a = 5.0, storage_feed_b = 2.0, synthesis_feed_b = 1.2, structural_feed_a = 2.5, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 3.5, transport = 4.0, metabolic = 4.2, storage = 6.8, synthesis = 3.0, structural = 5.6, repair = 2.0, contractile = 1.8, sensory = 2.2 }
+initial_energy = 88.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
 [[cells]]
-initial_position = [88.0, 30.0]
-radius = 1.3
-initial_resources = { nutrient_A = 0.8, mineral_A = 0.3, signal_A = 1.8 }
-initial_materials = { boundary = 0.9, transport = 1.2, metabolic = 0.8, storage = 0.7, synthesis = 0.5, structural = 0.7, repair = 0.3, contractile = 1.5, sensory = 1.8 }
-initial_energy = 6.5
-energy_capacity = 18.0
-mandatory_cost_per_tick = 0.04
-capacity_limit = 20.0
-
+initial_position = [58.0, 16.0]
+radius = 1.18
+initial_resources = { boundary_feed_a = 15.0, transport_feed_c = 2.0, metabolic_feed_b = 4.0, storage_feed_c = 2.0, synthesis_feed_c = 1.0, structural_feed_b = 2.0, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 4.2, transport = 3.0, metabolic = 3.8, storage = 7.5, synthesis = 2.5, structural = 6.4, repair = 2.2, contractile = 1.4, sensory = 2.5 }
+initial_energy = 92.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
 [[cells]]
-initial_position = [46.0, 68.0]
-radius = 1.8
-initial_resources = { nutrient_A = 2.0, mineral_A = 1.4, signal_A = 0.6 }
-initial_materials = { boundary = 1.8, transport = 1.0, metabolic = 1.2, storage = 1.9, synthesis = 0.3, structural = 1.4, repair = 1.0, contractile = 0.1, sensory = 0.5 }
-initial_energy = 9.5
-energy_capacity = 24.0
-mandatory_cost_per_tick = 0.05
-capacity_limit = 28.0
-
+initial_position = [78.0, 18.0]
+radius = 1.25
+initial_resources = { boundary_feed_a = 13.0, transport_feed_a = 2.0, metabolic_feed_c = 5.0, storage_feed_a = 2.0, synthesis_feed_a = 1.4, structural_feed_c = 2.0, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 3.8, transport = 3.6, metabolic = 4.5, storage = 7.0, synthesis = 3.4, structural = 6.2, repair = 2.6, contractile = 1.2, sensory = 2.0 }
+initial_energy = 94.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
 [[cells]]
-initial_position = [94.0, 72.0]
-radius = 1.5
-initial_resources = { nutrient_A = 1.5, mineral_A = 1.0, signal_A = 1.2 }
-initial_materials = { boundary = 1.1, transport = 1.7, metabolic = 1.3, storage = 0.9, synthesis = 0.7, structural = 1.0, repair = 0.6, contractile = 0.6, sensory = 1.4 }
-initial_energy = 7.5
-energy_capacity = 22.0
-mandatory_cost_per_tick = 0.05
-capacity_limit = 25.0
-
+initial_position = [98.0, 16.0]
+radius = 1.05
+initial_resources = { boundary_feed_a = 14.0, transport_feed_b = 2.0, metabolic_feed_a = 4.0, storage_feed_b = 2.0, synthesis_feed_b = 1.0, structural_feed_a = 2.5, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 4.0, transport = 4.1, metabolic = 3.5, storage = 7.8, synthesis = 2.7, structural = 5.8, repair = 2.3, contractile = 1.7, sensory = 1.9 }
+initial_energy = 90.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [118.0, 18.0]
+radius = 1.12
+initial_resources = { boundary_feed_a = 12.0, transport_feed_c = 2.0, metabolic_feed_b = 5.0, storage_feed_c = 2.0, synthesis_feed_c = 1.2, structural_feed_b = 2.0, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 3.6, transport = 3.3, metabolic = 4.1, storage = 6.6, synthesis = 3.1, structural = 6.5, repair = 2.1, contractile = 1.5, sensory = 2.4 }
+initial_energy = 86.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [21.0, 28.0]
+radius = 1.20
+initial_resources = { boundary_feed_a = 16.0, transport_feed_a = 3.0, metabolic_feed_c = 4.0, storage_feed_a = 2.0, synthesis_feed_a = 1.0, structural_feed_c = 2.5, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 4.4, transport = 3.8, metabolic = 3.7, storage = 7.4, synthesis = 2.9, structural = 6.1, repair = 2.7, contractile = 1.3, sensory = 2.1 }
+initial_energy = 96.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [41.0, 30.0]
+radius = 1.08
+initial_resources = { boundary_feed_a = 13.0, transport_feed_b = 2.0, metabolic_feed_a = 5.0, storage_feed_b = 2.0, synthesis_feed_b = 1.3, structural_feed_a = 2.0, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 3.7, transport = 4.3, metabolic = 4.0, storage = 7.1, synthesis = 3.2, structural = 5.9, repair = 2.4, contractile = 1.9, sensory = 1.7 }
+initial_energy = 89.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [61.0, 28.0]
+radius = 1.16
+initial_resources = { boundary_feed_a = 14.0, transport_feed_c = 2.0, metabolic_feed_b = 4.0, storage_feed_c = 2.0, synthesis_feed_c = 1.0, structural_feed_b = 2.4, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 4.1, transport = 3.1, metabolic = 4.4, storage = 7.6, synthesis = 2.6, structural = 6.6, repair = 2.0, contractile = 1.6, sensory = 2.6 }
+initial_energy = 91.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [81.0, 30.0]
+radius = 1.24
+initial_resources = { boundary_feed_a = 15.0, transport_feed_a = 2.0, metabolic_feed_c = 5.0, storage_feed_a = 2.0, synthesis_feed_a = 1.5, structural_feed_c = 2.0, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 3.9, transport = 3.9, metabolic = 3.9, storage = 7.2, synthesis = 3.5, structural = 6.3, repair = 2.5, contractile = 1.1, sensory = 2.3 }
+initial_energy = 93.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [101.0, 28.0]
+radius = 1.06
+initial_resources = { boundary_feed_a = 12.0, transport_feed_b = 2.0, metabolic_feed_a = 4.0, storage_feed_b = 2.0, synthesis_feed_b = 1.0, structural_feed_a = 2.2, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 4.3, transport = 4.0, metabolic = 3.6, storage = 7.7, synthesis = 2.8, structural = 5.7, repair = 2.8, contractile = 1.8, sensory = 1.8 }
+initial_energy = 87.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [121.0, 30.0]
+radius = 1.14
+initial_resources = { boundary_feed_a = 14.0, transport_feed_c = 3.0, metabolic_feed_b = 5.0, storage_feed_c = 2.0, synthesis_feed_c = 1.2, structural_feed_b = 2.0, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 3.6, transport = 3.5, metabolic = 4.3, storage = 6.9, synthesis = 3.3, structural = 6.7, repair = 2.2, contractile = 1.4, sensory = 2.5 }
+initial_energy = 90.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [18.0, 40.0]
+radius = 1.18
+initial_resources = { boundary_feed_a = 15.0, transport_feed_a = 2.0, metabolic_feed_c = 4.0, storage_feed_a = 2.0, synthesis_feed_a = 1.0, structural_feed_c = 2.3, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 4.2, transport = 3.7, metabolic = 3.8, storage = 7.3, synthesis = 3.0, structural = 6.0, repair = 2.6, contractile = 1.2, sensory = 2.2 }
+initial_energy = 95.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [38.0, 42.0]
+radius = 1.10
+initial_resources = { boundary_feed_a = 13.0, transport_feed_b = 2.0, metabolic_feed_a = 5.0, storage_feed_b = 2.0, synthesis_feed_b = 1.3, structural_feed_a = 2.0, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 3.8, transport = 4.2, metabolic = 4.1, storage = 7.0, synthesis = 3.1, structural = 5.8, repair = 2.3, contractile = 1.7, sensory = 1.9 }
+initial_energy = 88.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [58.0, 40.0]
+radius = 1.22
+initial_resources = { boundary_feed_a = 16.0, transport_feed_c = 2.0, metabolic_feed_b = 4.0, storage_feed_c = 2.0, synthesis_feed_c = 1.0, structural_feed_b = 2.5, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 4.5, transport = 3.2, metabolic = 4.5, storage = 7.9, synthesis = 2.7, structural = 6.8, repair = 2.1, contractile = 1.5, sensory = 2.7 }
+initial_energy = 92.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [78.0, 42.0]
+radius = 1.04
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 2.0, metabolic_feed_c = 5.0, storage_feed_a = 2.0, synthesis_feed_a = 1.4, structural_feed_c = 2.1, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 3.9, transport = 3.8, metabolic = 4.0, storage = 7.1, synthesis = 3.4, structural = 6.4, repair = 2.7, contractile = 1.3, sensory = 2.1 }
+initial_energy = 94.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [98.0, 40.0]
+radius = 1.12
+initial_resources = { boundary_feed_a = 12.0, transport_feed_b = 2.0, metabolic_feed_a = 4.0, storage_feed_b = 2.0, synthesis_feed_b = 1.0, structural_feed_a = 2.0, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 4.0, transport = 4.4, metabolic = 3.7, storage = 7.6, synthesis = 2.9, structural = 5.9, repair = 2.4, contractile = 1.9, sensory = 1.8 }
+initial_energy = 89.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [118.0, 42.0]
+radius = 1.20
+initial_resources = { boundary_feed_a = 15.0, transport_feed_c = 3.0, metabolic_feed_b = 5.0, storage_feed_c = 2.0, synthesis_feed_c = 1.2, structural_feed_b = 2.4, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 3.7, transport = 3.4, metabolic = 4.2, storage = 6.7, synthesis = 3.2, structural = 6.6, repair = 2.0, contractile = 1.6, sensory = 2.6 }
+initial_energy = 91.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [21.0, 52.0]
+radius = 1.10
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 2.0, metabolic_feed_c = 4.0, storage_feed_a = 2.0, synthesis_feed_a = 1.0, structural_feed_c = 2.0, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 4.1, transport = 3.9, metabolic = 3.8, storage = 7.5, synthesis = 3.0, structural = 6.2, repair = 2.5, contractile = 1.2, sensory = 2.0 }
+initial_energy = 93.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [41.0, 54.0]
+radius = 1.18
+initial_resources = { boundary_feed_a = 13.0, transport_feed_b = 2.0, metabolic_feed_a = 5.0, storage_feed_b = 2.0, synthesis_feed_b = 1.3, structural_feed_a = 2.3, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 3.8, transport = 4.1, metabolic = 4.3, storage = 7.2, synthesis = 3.3, structural = 5.8, repair = 2.2, contractile = 1.8, sensory = 2.3 }
+initial_energy = 88.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [61.0, 52.0]
+radius = 1.26
+initial_resources = { boundary_feed_a = 16.0, transport_feed_c = 2.0, metabolic_feed_b = 4.0, storage_feed_c = 2.0, synthesis_feed_c = 1.0, structural_feed_b = 2.5, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 4.4, transport = 3.0, metabolic = 4.6, storage = 7.8, synthesis = 2.6, structural = 6.9, repair = 2.1, contractile = 1.4, sensory = 2.7 }
+initial_energy = 96.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [81.0, 54.0]
+radius = 1.08
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 3.0, metabolic_feed_c = 5.0, storage_feed_a = 2.0, synthesis_feed_a = 1.5, structural_feed_c = 2.0, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 3.9, transport = 3.7, metabolic = 4.0, storage = 7.3, synthesis = 3.5, structural = 6.4, repair = 2.8, contractile = 1.1, sensory = 2.2 }
+initial_energy = 94.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [101.0, 52.0]
+radius = 1.16
+initial_resources = { boundary_feed_a = 12.0, transport_feed_b = 2.0, metabolic_feed_a = 4.0, storage_feed_b = 2.0, synthesis_feed_b = 1.0, structural_feed_a = 2.1, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 4.2, transport = 4.2, metabolic = 3.6, storage = 7.7, synthesis = 2.8, structural = 5.7, repair = 2.4, contractile = 1.9, sensory = 1.9 }
+initial_energy = 89.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [121.0, 54.0]
+radius = 1.24
+initial_resources = { boundary_feed_a = 15.0, transport_feed_c = 2.0, metabolic_feed_b = 5.0, storage_feed_c = 2.0, synthesis_feed_c = 1.2, structural_feed_b = 2.4, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 3.6, transport = 3.3, metabolic = 4.4, storage = 6.9, synthesis = 3.3, structural = 6.8, repair = 2.0, contractile = 1.5, sensory = 2.5 }
+initial_energy = 92.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [18.0, 64.0]
+radius = 1.14
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 2.0, metabolic_feed_c = 4.0, storage_feed_a = 2.0, synthesis_feed_a = 1.0, structural_feed_c = 2.2, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 4.0, transport = 3.8, metabolic = 3.9, storage = 7.4, synthesis = 3.1, structural = 6.1, repair = 2.5, contractile = 1.3, sensory = 2.1 }
+initial_energy = 91.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [38.0, 66.0]
+radius = 1.22
+initial_resources = { boundary_feed_a = 13.0, transport_feed_b = 2.0, metabolic_feed_a = 5.0, storage_feed_b = 2.0, synthesis_feed_b = 1.3, structural_feed_a = 2.0, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 3.7, transport = 4.3, metabolic = 4.2, storage = 7.1, synthesis = 3.2, structural = 5.9, repair = 2.2, contractile = 1.8, sensory = 2.2 }
+initial_energy = 88.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [58.0, 64.0]
+radius = 1.04
+initial_resources = { boundary_feed_a = 16.0, transport_feed_c = 2.0, metabolic_feed_b = 4.0, storage_feed_c = 2.0, synthesis_feed_c = 1.0, structural_feed_b = 2.5, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 4.5, transport = 3.1, metabolic = 4.5, storage = 7.9, synthesis = 2.7, structural = 6.7, repair = 2.1, contractile = 1.5, sensory = 2.6 }
+initial_energy = 95.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [78.0, 66.0]
+radius = 1.12
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 3.0, metabolic_feed_c = 5.0, storage_feed_a = 2.0, synthesis_feed_a = 1.4, structural_feed_c = 2.2, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 3.9, transport = 3.6, metabolic = 4.1, storage = 7.2, synthesis = 3.4, structural = 6.3, repair = 2.7, contractile = 1.2, sensory = 2.0 }
+initial_energy = 93.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [98.0, 64.0]
+radius = 1.20
+initial_resources = { boundary_feed_a = 12.0, transport_feed_b = 2.0, metabolic_feed_a = 4.0, storage_feed_b = 2.0, synthesis_feed_b = 1.0, structural_feed_a = 2.0, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 4.1, transport = 4.1, metabolic = 3.7, storage = 7.8, synthesis = 2.9, structural = 5.8, repair = 2.4, contractile = 1.9, sensory = 1.8 }
+initial_energy = 90.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [118.0, 66.0]
+radius = 1.08
+initial_resources = { boundary_feed_a = 15.0, transport_feed_c = 2.0, metabolic_feed_b = 5.0, storage_feed_c = 2.0, synthesis_feed_c = 1.2, structural_feed_b = 2.3, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 3.6, transport = 3.4, metabolic = 4.3, storage = 6.8, synthesis = 3.3, structural = 6.6, repair = 2.0, contractile = 1.6, sensory = 2.5 }
+initial_energy = 91.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [21.0, 76.0]
+radius = 1.18
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 2.0, metabolic_feed_c = 4.0, storage_feed_a = 2.0, synthesis_feed_a = 1.0, structural_feed_c = 2.1, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 4.2, transport = 3.7, metabolic = 3.8, storage = 7.4, synthesis = 3.0, structural = 6.1, repair = 2.6, contractile = 1.2, sensory = 2.1 }
+initial_energy = 94.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [41.0, 78.0]
+radius = 1.26
+initial_resources = { boundary_feed_a = 13.0, transport_feed_b = 2.0, metabolic_feed_a = 5.0, storage_feed_b = 2.0, synthesis_feed_b = 1.3, structural_feed_a = 2.0, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 3.8, transport = 4.2, metabolic = 4.2, storage = 7.0, synthesis = 3.2, structural = 5.9, repair = 2.3, contractile = 1.8, sensory = 2.2 }
+initial_energy = 88.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [61.0, 76.0]
+radius = 1.10
+initial_resources = { boundary_feed_a = 16.0, transport_feed_c = 2.0, metabolic_feed_b = 4.0, storage_feed_c = 2.0, synthesis_feed_c = 1.0, structural_feed_b = 2.5, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 4.4, transport = 3.0, metabolic = 4.6, storage = 7.8, synthesis = 2.6, structural = 6.8, repair = 2.1, contractile = 1.5, sensory = 2.7 }
+initial_energy = 96.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [81.0, 78.0]
+radius = 1.16
+initial_resources = { boundary_feed_a = 14.0, transport_feed_a = 3.0, metabolic_feed_c = 5.0, storage_feed_a = 2.0, synthesis_feed_a = 1.4, structural_feed_c = 2.0, repair_feed_a = 1.0, contractile_feed_a = 1.0, sensory_feed_a = 1.0 }
+initial_materials = { boundary = 3.9, transport = 3.6, metabolic = 4.0, storage = 7.3, synthesis = 3.4, structural = 6.3, repair = 2.7, contractile = 1.2, sensory = 2.0 }
+initial_energy = 93.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [101.0, 76.0]
+radius = 1.22
+initial_resources = { boundary_feed_a = 12.0, transport_feed_b = 2.0, metabolic_feed_a = 4.0, storage_feed_b = 2.0, synthesis_feed_b = 1.0, structural_feed_a = 2.0, repair_feed_b = 1.0, contractile_feed_b = 1.0, sensory_feed_b = 1.0 }
+initial_materials = { boundary = 4.0, transport = 4.1, metabolic = 3.7, storage = 7.8, synthesis = 2.9, structural = 5.8, repair = 2.4, contractile = 1.9, sensory = 1.8 }
+initial_energy = 90.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
+[[cells]]
+initial_position = [121.0, 78.0]
+radius = 1.04
+initial_resources = { boundary_feed_a = 15.0, transport_feed_c = 2.0, metabolic_feed_b = 5.0, storage_feed_c = 2.0, synthesis_feed_c = 1.2, structural_feed_b = 2.3, repair_feed_c = 1.0, contractile_feed_c = 1.0, sensory_feed_c = 1.0 }
+initial_materials = { boundary = 3.6, transport = 3.4, metabolic = 4.3, storage = 6.8, synthesis = 3.3, structural = 6.6, repair = 2.0, contractile = 1.6, sensory = 2.5 }
+initial_energy = 91.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.02
+capacity_limit = 220.0
 [resource_interaction]
 enabled = true
 uptake_layer_index = 0
-max_uptake_per_tick = 0.2
-metabolism_resource_per_tick = 0.05
-energy_per_resource = 1.0
-heat_per_resource = 0.01
-waste_per_resource = 0.01
+max_uptake_per_tick = 1.4
+metabolism_resource_per_tick = 0.7
+energy_per_resource = 1.8
+heat_per_resource = 0.002
+waste_per_resource = 0.002
 
 [environment]
 heat_current = 0.0
 heat_generated_per_tick = 0.0
-heat_dissipation_rate = 0.1
-heat_warning_threshold = 20.0
-heat_death_threshold = 40.0
+heat_dissipation_rate = 0.25
+heat_warning_threshold = 400.0
+heat_death_threshold = 800.0
 waste_current = 0.0
 waste_generated_per_tick = 0.0
-waste_sink_rate = 0.1
-waste_warning_threshold = 20.0
-waste_death_threshold = 40.0
+waste_sink_rate = 0.25
+waste_warning_threshold = 1200.0
+waste_death_threshold = 2400.0
 
 [lifecycle]
 stress_energy_threshold = 2.0
 dormancy_allowed = false
-critical_capacity_overrun = 5.0
+critical_capacity_overrun = 220.0
+
+[synthesis]
+cost_resource = 0.1
+cost_energy = 0.1
+
+[growth]
+growth_cost_resource = 0.02
+growth_cost_energy = 0.02
+growth_target_radius = 1.05
+max_division_pressure = 2.0
+
+[material_effects]
+transport_uptake_per_unit = 1.0
+metabolic_conversion_per_unit = 1.0
+storage_capacity_per_unit = 2.0
+structural_growth_per_unit = 0.00008
+contractile_force_per_unit = 1.0
+sensory_input_per_unit = 1.0
+boundary_retention_per_unit = 1.0
+repair_stress_buffer_per_unit = 1.0

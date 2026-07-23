@@ -28,6 +28,46 @@ describe('buildViewerTruthState', () => {
     });
   });
 
+  it('marks live resources as loading while debug projections are pending', () => {
+    const state = (buildViewerTruthState as unknown as Function)(
+      baseFrame,
+      { width: 1200, height: 800 },
+      {
+        status: 'loading',
+        runId: 'run-live',
+        requestedTick: 20,
+        reason: 'Waiting for Observer debug projection'
+      }
+    );
+
+    expect(state.resourceLayer).toEqual({
+      state: 'loading',
+      label: 'Resources',
+      value: 'Loading projection',
+      note: 'Waiting for Observer debug projection for Tick 20'
+    });
+  });
+
+  it('marks stale debug resources without replacing them with missing', () => {
+    const state = (buildViewerTruthState as unknown as Function)(
+      baseFrame,
+      { width: 1200, height: 800 },
+      {
+        status: 'stale',
+        runId: 'run-live',
+        tick: 12,
+        reason: 'Latest debug projection is behind live Tick 20'
+      }
+    );
+
+    expect(state.resourceLayer).toEqual({
+      state: 'stale',
+      label: 'Resources',
+      value: 'Stale projection',
+      note: 'Latest debug projection is behind live Tick 20'
+    });
+  });
+
   it('marks fixture resource grid as available data', () => {
     const state = buildViewerTruthState({
       ...baseFrame,

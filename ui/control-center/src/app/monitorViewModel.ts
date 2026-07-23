@@ -6,7 +6,7 @@ export interface MonitorViewModel {
   subtitle: string;
   projectionLabel: 'fixture/v1' | 'live/v1';
   hasResourceLayer: boolean;
-  resourceLayerState: 'Available projection' | 'Missing live projection';
+  resourceLayerState: 'Available projection' | 'Loading projection' | 'Stale projection' | 'Missing live projection';
   startDemo: {
     projectionSource: 'fixture' | 'live';
     runnerDataLabel: string;
@@ -24,13 +24,29 @@ export function buildMonitorViewModel(state: AppStore): MonitorViewModel {
     subtitle: buildFrameSubtitle(state, dataState),
     projectionLabel: state.frame.source === 'live' ? 'live/v1' : 'fixture/v1',
     hasResourceLayer,
-    resourceLayerState: hasResourceLayer ? 'Available projection' : 'Missing live projection',
+    resourceLayerState: buildResourceLayerState(state, hasResourceLayer),
     startDemo: {
       projectionSource,
       runnerDataLabel: buildRunnerDataLabel(state, dataState),
       unavailableFieldsLabel: 'Unavailable live fields stay unavailable'
     }
   };
+}
+
+function buildResourceLayerState(state: AppStore, hasResourceLayer: boolean): MonitorViewModel['resourceLayerState'] {
+  if (hasResourceLayer) {
+    return 'Available projection';
+  }
+
+  if (state.debugProjections.status === 'loading') {
+    return 'Loading projection';
+  }
+
+  if (state.debugProjections.status === 'stale') {
+    return 'Stale projection';
+  }
+
+  return 'Missing live projection';
 }
 
 function buildFrameSubtitle(state: AppStore, dataState: ReturnType<typeof getMonitorDataState>) {

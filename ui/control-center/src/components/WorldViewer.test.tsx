@@ -282,7 +282,95 @@ describe('WorldViewer', () => {
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('cells.materials');
     expect(screen.getByRole('button', { name: 'Switch debug layers to Smooth interpolation' })).toBeEnabled();
     expect(screen.getByRole('checkbox', { name: 'Spatial index overlay unavailable' })).toBeDisabled();
-    expect(screen.getByText('Missing live projection')).toBeVisible();
+    expect(screen.queryByText('Missing live projection')).not.toBeInTheDocument();
+  });
+
+  it('bounds large debug resource legends so they cannot cover the map', async () => {
+    const resourceLayers = Array.from({ length: 27 }, (_, layerIndex) => ({
+      layerIndex,
+      width: 1,
+      height: 1,
+      totalAmount: layerIndex + 1,
+      cells: [{ x: 0, y: 0, amount: layerIndex + 1 }],
+      completeness: {
+        state: 'bounded' as const,
+        missingFields: [],
+        reason: null
+      }
+    }));
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+        debugProjections={{
+          ...debugProjections,
+          visualWorld: {
+            ...debugProjections.visualWorld,
+            resourceLayers
+          }
+        }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    const debugOverlay = screen.getByLabelText('Debug Visualization Mode');
+    expect(debugOverlay).toHaveTextContent('Resource layers 8 of 27');
+    expect(debugOverlay).toHaveTextContent('+19 resource layers hidden');
+    expect(debugOverlay).toHaveTextContent('Layer 0 green channel total 1');
+    expect(debugOverlay).not.toHaveTextContent('Layer 26');
+  });
+
+  it('shows loading debug projections without marking resources missing', async () => {
+    render(
+      <WorldViewer
+        frame={{ ...ui1aFixture.frame, source: 'live', resources: [] }}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+        debugProjections={{
+          status: 'loading',
+          runId: ui1aFixture.frame.runId,
+          requestedTick: ui1aFixture.frame.tick,
+          reason: 'Waiting for Observer debug projection'
+        } as unknown as DebugProjectionState}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Loading projection');
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Waiting for Observer debug projection');
+    expect(screen.queryByText('Missing live projection')).not.toBeInTheDocument();
+  });
+
+  it('filters source-backed cells and resource layers from the map search box', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+        debugProjections={debugProjections}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    fireEvent.change(screen.getByLabelText('Search cells or resource layers'), {
+      target: { value: 'cell-c' }
+    });
+
+    expect(screen.getByLabelText('Select cell-c')).toBeVisible();
+    expect(screen.getByLabelText('Select cell-a')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Search match: cell-c');
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Unsupported: process/contact/history search');
   });
 
   it('resets navigation to the default camera', async () => {

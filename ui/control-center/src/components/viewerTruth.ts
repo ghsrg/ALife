@@ -1,7 +1,13 @@
-import type { WorldFrame } from '../projection/types';
+import type { DebugProjectionState, WorldFrame } from '../projection/types';
 import { projectCellForRender, type ViewportSize } from '../viewer/renderGeometry';
 
-export type ViewerTruthStateLevel = 'available' | 'missing' | 'physical-scale' | 'presentation-minimum';
+export type ViewerTruthStateLevel =
+  | 'available'
+  | 'loading'
+  | 'stale'
+  | 'missing'
+  | 'physical-scale'
+  | 'presentation-minimum';
 
 export interface ViewerTruthItem {
   state: ViewerTruthStateLevel;
@@ -15,25 +21,17 @@ export interface ViewerTruthState {
   cellScale: ViewerTruthItem;
 }
 
-export function buildViewerTruthState(frame: WorldFrame, viewport: ViewportSize): ViewerTruthState {
+export function buildViewerTruthState(
+  frame: WorldFrame,
+  viewport: ViewportSize,
+  debugProjections?: DebugProjectionState
+): ViewerTruthState {
   const resourceCellCount = frame.resources.reduce((sum, row) => sum + row.length, 0);
   const renderedCells = frame.cells.map((cell) => projectCellForRender(cell, frame, viewport));
   const enlargedCount = renderedCells.filter((cell) => cell.presentationMinimumApplied).length;
 
   return {
-    resourceLayer: resourceCellCount === 0
-      ? {
-          state: 'missing',
-          label: 'Resources',
-          value: 'Missing projection',
-          note: 'Runner ALIF v2 does not include resource grid'
-        }
-      : {
-          state: 'available',
-          label: 'Resources',
-          value: frame.source === 'live' ? 'Live grid' : 'Fixture grid',
-          note: `${resourceCellCount} resource cells`
-        },
+    resourceLayer: buildResourceLayerTruth(frame, resourceCellCount, debugProjections),
     cellScale: enlargedCount === 0
       ? {
           state: 'physical-scale',
@@ -47,5 +45,45 @@ export function buildViewerTruthState(frame: WorldFrame, viewport: ViewportSize)
           value: 'Display minimum applied',
           note: `${enlargedCount} of ${frame.cells.length} cells enlarged for visibility`
         }
+  };
+}
+
+function buildResourceLayerTruth(
+  frame: WorldFrame,
+  resourceCellCount: number,
+  debugProjections?: DebugProjectionState
+): ViewerTruthItem {
+  if (resourceCellCount > 0) {
+    return {
+      state: 'available',
+      label: 'Resources',
+      value: frame.source === 'live' ? 'Live grid' : 'Fixture grid',
+      note: `${resourceCellCount} resource cells`
+    };
+  }
+
+  if (debugProjections?.status === 'loading') {
+    return {
+      state: 'loading',
+      label: 'Resources',
+      value: 'Loading projection',
+      note: `${debugProjections.reason} for Tick ${debugProjections.requestedTick}`
+    };
+  }
+
+  if (debugProjections?.status === 'stale') {
+    return {
+      state: 'stale',
+      label: 'Resources',
+      value: 'Stale projection',
+      note: debugProjections.reason
+    };
+  }
+
+  return {
+    state: 'missing',
+    label: 'Resources',
+    value: 'Missing projection',
+    note: 'Runner ALIF v2 does not include resource grid'
   };
 }

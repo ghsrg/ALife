@@ -69,6 +69,29 @@ const availableDebugProjections: DebugProjectionState = {
 };
 
 describe('buildDebugLayerPlan', () => {
+  it('keeps projection loading explicit until Observer debug layers arrive', () => {
+    const plan = buildDebugLayerPlan(
+      {
+        status: 'loading',
+        runId: 'run-1',
+        requestedTick: 44,
+        reason: 'Waiting for Observer debug projection'
+      } as unknown as DebugProjectionState,
+      {
+        mode: 'exact',
+        showResourceLayer: true,
+        showFieldLayer: true
+      }
+    );
+
+    expect(plan).toMatchObject({
+      status: 'loading',
+      reason: 'Waiting for Observer debug projection',
+      resources: [],
+      fields: []
+    });
+  });
+
   it('plans exact resource and field layers with source-backed legend entries', () => {
     const plan = buildDebugLayerPlan(availableDebugProjections, {
       mode: 'exact',
@@ -126,7 +149,42 @@ describe('buildDebugLayerPlan', () => {
       interpolationLabel: 'Exact',
       resources: [],
       fields: [],
+      totalResourceLayerCount: 0,
+      hiddenResourceLayerCount: 0,
       missingProjectionWarnings: []
     });
+  });
+
+  it('bounds large resource legends while preserving total layer count', () => {
+    const resourceLayers = Array.from({ length: 27 }, (_, layerIndex) => ({
+      layerIndex,
+      width: 1,
+      height: 1,
+      totalAmount: layerIndex + 1,
+      cells: [{ x: 0, y: 0, amount: layerIndex + 1 }],
+      completeness: {
+        state: 'bounded' as const,
+        missingFields: [],
+        reason: null
+      }
+    }));
+    const plan = buildDebugLayerPlan(
+      {
+        ...availableDebugProjections,
+        visualWorld: {
+          ...availableDebugProjections.visualWorld,
+          resourceLayers
+        }
+      },
+      {
+        mode: 'exact',
+        showResourceLayer: true,
+        showFieldLayer: true
+      }
+    );
+
+    expect(plan.resources).toHaveLength(8);
+    expect(plan.totalResourceLayerCount).toBe(27);
+    expect(plan.hiddenResourceLayerCount).toBe(19);
   });
 });

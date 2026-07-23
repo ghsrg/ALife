@@ -265,6 +265,9 @@ function enrichFrameWithDebugProjection(frame: WorldFrame, debugProjections: Deb
   if (frame.source !== 'live' || frame.runId !== debugProjections.runId) {
     return frame;
   }
+  if (debugProjections.tick < frame.tick) {
+    return frame;
+  }
 
   const resources =
     debugProjections.visualWorld.resourceLayers.length > 0

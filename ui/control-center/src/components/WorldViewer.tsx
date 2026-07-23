@@ -51,8 +51,10 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const { camera } = cameraState;
   const [truthOverlayVisible, setTruthOverlayVisible] = useState(true);
   const [debugLayerMode, setDebugLayerMode] = useState<DebugLayerMode>('exact');
+  const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [viewport, setViewport] = useState(() => ({ width: frame.world.width, height: frame.world.height }));
-  const truthState = buildViewerTruthState(frame, viewport);
+  const normalizedMapSearchQuery = mapSearchQuery.trim().toLowerCase();
+  const truthState = buildViewerTruthState(frame, viewport, debugProjections);
   const debugLayerPlan = debugProjections
     ? buildDebugLayerPlan(debugProjections, {
         mode: debugLayerMode,
@@ -282,6 +284,10 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
             <span>{debugLayerPlan.interpolationLabel}</span>
             {debugProjections?.status === 'available' ? (
               <span>{`Tick ${debugProjections.tick}`}</span>
+            ) : debugProjections?.status === 'loading' ? (
+              <span>{`Tick ${debugProjections.requestedTick}`}</span>
+            ) : debugProjections?.status === 'stale' ? (
+              <span>{`Tick ${debugProjections.tick}`}</span>
             ) : null}
           </div>
           <div className="debug-mode-actions">
@@ -304,12 +310,27 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
               <input aria-label="Spatial index overlay unavailable" type="checkbox" disabled />
               Spatial index
             </label>
+            <input
+              type="search"
+              className="debug-mode-search"
+              value={mapSearchQuery}
+              onChange={(event) => setMapSearchQuery(event.target.value)}
+              aria-label="Search cells or resource layers"
+              placeholder="Search id/layer"
+            />
           </div>
           <div className="debug-mode-body">
             {debugProjections?.status === 'available' ? (
               <>
                 <span>VisualWorldProjection</span>
-                {debugLayerPlan.resources.map((layer) => (
+                {normalizedMapSearchQuery ? <span>{`Search match: ${mapSearchQuery}`}</span> : null}
+                {normalizedMapSearchQuery ? (
+                  <span className="debug-mode-muted">Unsupported: process/contact/history search</span>
+                ) : null}
+                {debugLayerPlan.totalResourceLayerCount > 0 ? (
+                  <span>{`Resource layers ${debugLayerPlan.resources.length} of ${debugLayerPlan.totalResourceLayerCount}`}</span>
+                ) : null}
+                {debugLayerPlan.resources.filter((layer) => matchesResourceLayerSearch(layer, normalizedMapSearchQuery)).map((layer) => (
                   <span key={`resource-${layer.layerIndex}`} className="debug-resource-legend-row">
                     <span
                       className="debug-resource-swatch"
@@ -319,13 +340,23 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
                     {layer.legendLabel}
                   </span>
                 ))}
+                {debugLayerPlan.hiddenResourceLayerCount > 0 ? (
+                  <span className="debug-mode-muted">{`+${debugLayerPlan.hiddenResourceLayerCount} resource layers hidden`}</span>
+                ) : null}
                 {debugLayerPlan.fields.map((field) => (
                   <span key={`field-${field.fieldId}`}>{field.sampledValueLabel}</span>
                 ))}
                 {debugLayerPlan.missingProjectionWarnings.map((warning) => (
                   <span key={warning} className="debug-mode-warning">{warning}</span>
                 ))}
-                <span className="debug-mode-warning">Missing live projection</span>
+                {truthState.resourceLayer.state === 'missing' ? (
+                  <span className="debug-mode-warning">Missing live projection</span>
+                ) : null}
+              </>
+            ) : debugLayerPlan.status === 'loading' || debugLayerPlan.status === 'stale' ? (
+              <>
+                <span>{debugLayerPlan.status === 'loading' ? 'VisualWorldProjection loading' : 'VisualWorldProjection stale'}</span>
+                <span className="debug-mode-warning">{debugLayerPlan.reason}</span>
               </>
             ) : (
               <span className="debug-mode-warning">{debugLayerPlan.reason}</span>
@@ -335,14 +366,16 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       ) : null}
       <div className="world-hit-targets" aria-label={uiText.viewer.hitTargetsAriaLabel}>
         {buildViewerHitTargets(frame, selectedCellId, viewport, camera).map((target) => {
+          const isSearchMatch = matchesCellSearch(frame, target.id, normalizedMapSearchQuery);
           return (
             <Fragment key={target.id}>
               <button
                 type="button"
-                className="cell-hotspot"
+                className={isSearchMatch ? 'cell-hotspot search-match' : 'cell-hotspot'}
                 data-semantic-level={target.detail.level}
                 data-lifecycle-state={target.detail.lifecycleState}
                 style={target.style}
+                aria-hidden={normalizedMapSearchQuery && !isSearchMatch ? 'true' : undefined}
                 onMouseDown={(event) => event.stopPropagation()}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
@@ -367,3 +400,40 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     </div>
   );
 });
+
+function matchesCellSearch(frame: WorldFrame, cellId: CellId, query: string) {
+  if (!query) {
+    return true;
+  }
+
+  const cell = frame.cells.find((candidate) => candidate.id === cellId);
+  if (!cell) {
+    return false;
+  }
+
+  return [
+    cell.id,
+    cell.roleHint,
+    cell.lifecycle === undefined ? '' : `lifecycle ${cell.lifecycle}`,
+    ...((cell.materials ?? []).map((material) => `material ${material.materialTypeId}`)),
+    ...((cell.internalResources ?? []).map((resource) => `internal resource ${resource.resourceTypeId}`)),
+    ...((cell.localExternalResources ?? []).map((resource) => `local external resource ${resource.resourceTypeId}`))
+  ].some((value) => value.toLowerCase().includes(query));
+}
+
+function matchesResourceLayerSearch(
+  layer: NonNullable<ReturnType<typeof buildDebugLayerPlan>['resources'][number]>,
+  query: string
+) {
+  if (!query) {
+    return true;
+  }
+
+  return [
+    `layer ${layer.layerIndex}`,
+    String(layer.layerIndex),
+    layer.channelLabel,
+    layer.availability,
+    layer.legendLabel
+  ].some((value) => value.toLowerCase().includes(query));
+}

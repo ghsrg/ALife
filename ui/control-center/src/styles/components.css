@@ -113,6 +113,67 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.inspector-data-section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+}
+
+.inspector-data-section h3 {
+  margin: 0;
+  color: #dce6f1;
+  font-size: 13px;
+}
+
+.inspector-data-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+}
+
+.inspector-data-more {
+  margin: 0;
+  color: #9fadb9;
+  font-size: 12px;
+}
+
+.inspector-actions {
+  display: flex !important;
+  flex-direction: row;
+  gap: 8px !important;
+}
+
+.inspector-actions button {
+  min-height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: inherit;
+}
+
+.inspector-actions button:disabled {
+  opacity: 0.45;
+}
+
+.inspector-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  border: 1px solid rgba(116, 222, 210, 0.22);
+  border-radius: 6px;
+  padding: 8px;
+  background: rgba(6, 13, 17, 0.44);
+}
+
+.inspector-comparison h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 13px;
+}
+
 .top-utility-controls {
   justify-content: flex-end;
 }
@@ -356,6 +417,11 @@ button:disabled {
     0 0 28px rgba(255, 209, 102, 0.28);
 }
 
+.cell-hotspot.search-match {
+  border-color: rgba(255, 209, 102, 0.72);
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.24);
+}
+
 .cell-detail-label {
   position: absolute;
   z-index: 3;
@@ -492,6 +558,8 @@ button:disabled {
   display: grid;
   gap: 6px;
   width: min(340px, calc(100% - 44px));
+  max-height: min(260px, calc(100% - 44px));
+  overflow: hidden;
   border: 1px solid rgba(116, 222, 210, 0.22);
   border-radius: 6px;
   padding: 8px;
@@ -525,10 +593,24 @@ button:disabled {
   color: inherit;
 }
 
+.debug-mode-search {
+  min-height: 28px;
+  min-width: 0;
+  width: 120px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.07);
+  color: inherit;
+}
+
 .debug-mode-body {
   display: flex;
   flex-wrap: wrap;
   gap: 5px 8px;
+  max-height: 144px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .debug-resource-legend-row {
@@ -547,6 +629,10 @@ button:disabled {
 
 .debug-mode-warning {
   color: #f0b84f !important;
+}
+
+.debug-mode-muted {
+  color: #9fadb9 !important;
 }
 
 :root[data-theme='light'] .world-canvas-host {

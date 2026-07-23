@@ -79,6 +79,10 @@ export function shouldApplyDebugProjections(
     return state.frame.tick === requestedFrameTick;
   }
 
+  if (debugProjections.status === 'loading' || debugProjections.status === 'stale') {
+    return state.frame.tick === requestedFrameTick;
+  }
+
   return debugProjections.tick >= state.frame.tick;
 }
 
@@ -154,11 +158,33 @@ export function createRunnerController({
           return;
         }
         const requestedFrameTick = frame.committedTick;
-        currentState.setFrame(toWorldFrame(frame, currentState));
+        const liveWorldFrame = toWorldFrame(frame, currentState);
+        currentState.setFrame(liveWorldFrame);
+        store.getState().setDebugProjections({
+          status: 'loading',
+          runId: liveWorldFrame.runId,
+          requestedTick: requestedFrameTick,
+          reason: 'Waiting for Observer debug projection'
+        });
         void nextApiClient
           .getLatestDebugProjections()
           .then((debugProjections) => {
-            if (isActive() && shouldApplyDebugProjections(debugProjections, requestedFrameTick, store.getState())) {
+            if (!isActive()) {
+              return;
+            }
+            const state = store.getState();
+            if (debugProjections.status === 'available' && debugProjections.tick < state.frame.tick) {
+              if (state.frame.tick === requestedFrameTick) {
+                store.getState().setDebugProjections({
+                  status: 'stale',
+                  runId: debugProjections.runId,
+                  tick: debugProjections.tick,
+                  reason: `Latest debug projection Tick ${debugProjections.tick} is behind live Tick ${state.frame.tick}`
+                });
+              }
+              return;
+            }
+            if (shouldApplyDebugProjections(debugProjections, requestedFrameTick, state)) {
               store.getState().setDebugProjections(debugProjections);
             }
           })

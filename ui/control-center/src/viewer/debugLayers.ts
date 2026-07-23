@@ -26,13 +26,17 @@ export interface DebugFieldLayerPlan {
 }
 
 export interface DebugLayerPlan {
-  status: 'available' | 'unavailable';
+  status: 'available' | 'loading' | 'stale' | 'unavailable';
   reason?: string;
   interpolationLabel: 'Exact' | 'Smooth interpolated';
   resources: DebugResourceLayerPlan[];
   fields: DebugFieldLayerPlan[];
+  totalResourceLayerCount: number;
+  hiddenResourceLayerCount: number;
   missingProjectionWarnings: string[];
 }
+
+const DEBUG_RESOURCE_LEGEND_LIMIT = 8;
 
 export function buildDebugLayerPlan(
   debugProjections: DebugProjectionState,
@@ -40,26 +44,29 @@ export function buildDebugLayerPlan(
 ): DebugLayerPlan {
   const interpolationLabel = options.mode === 'smooth' ? 'Smooth interpolated' : 'Exact';
 
-  if (debugProjections.status === 'unavailable') {
+  if (debugProjections.status !== 'available') {
     return {
-      status: 'unavailable',
+      status: debugProjections.status,
       reason: debugProjections.reason,
       interpolationLabel,
       resources: [],
       fields: [],
+      totalResourceLayerCount: 0,
+      hiddenResourceLayerCount: 0,
       missingProjectionWarnings: []
     };
   }
 
+  const allResources = debugProjections.visualWorld.resourceLayers.map((layer) => ({
+    layerIndex: layer.layerIndex,
+    totalAmount: layer.totalAmount,
+    availability: layer.completeness.state,
+    channelLabel: resourceChannelLabel(layer.layerIndex),
+    colorHex: resourceChannelColor(layer.layerIndex),
+    legendLabel: `Layer ${layer.layerIndex} ${resourceChannelLabel(layer.layerIndex)} total ${formatAmount(layer.totalAmount)}`
+  }));
   const resources = options.showResourceLayer
-    ? debugProjections.visualWorld.resourceLayers.map((layer) => ({
-        layerIndex: layer.layerIndex,
-        totalAmount: layer.totalAmount,
-        availability: layer.completeness.state,
-        channelLabel: resourceChannelLabel(layer.layerIndex),
-        colorHex: resourceChannelColor(layer.layerIndex),
-        legendLabel: `Layer ${layer.layerIndex} ${resourceChannelLabel(layer.layerIndex)} total ${formatAmount(layer.totalAmount)}`
-      }))
+    ? allResources.slice(0, DEBUG_RESOURCE_LEGEND_LIMIT)
     : [];
 
   const fields = options.showFieldLayer
@@ -77,6 +84,10 @@ export function buildDebugLayerPlan(
     interpolationLabel,
     resources,
     fields,
+    totalResourceLayerCount: options.showResourceLayer ? allResources.length : 0,
+    hiddenResourceLayerCount: options.showResourceLayer
+      ? Math.max(0, allResources.length - resources.length)
+      : 0,
     missingProjectionWarnings: debugProjections.visualWorld.completeness.missingFields
   };
 }

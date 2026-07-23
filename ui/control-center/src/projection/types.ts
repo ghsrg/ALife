@@ -160,6 +160,18 @@ export type DebugProjectionState =
       balanceFindings: DebugBalanceFindingProjection;
     }
   | {
+      status: 'loading';
+      runId: string;
+      requestedTick: number;
+      reason: string;
+    }
+  | {
+      status: 'stale';
+      runId: string;
+      tick: number;
+      reason: string;
+    }
+  | {
       status: 'unavailable';
       reason: string;
     };

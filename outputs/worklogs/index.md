@@ -254,3 +254,4 @@ tags:
 - [[outputs/worklogs/2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair|2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair]]
 - [[outputs/worklogs/2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration]]
 - [[outputs/worklogs/2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration]]
+- [[outputs/worklogs/2026-07-23-1235-REPORT-al-007-s11-inspectors-search-filters-comparison|2026-07-23-1235-REPORT-al-007-s11-inspectors-search-filters-comparison]]

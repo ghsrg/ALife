@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| None selected | - | - | - | `AL-002-S12` closed; select the next Plan ID before planning or execution. |
+| None selected | - | - | - | `AL-007-S11` closed; select the next Plan ID before planning or execution. |
 
 ## Operational Rules
 
@@ -39,7 +39,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-007-S11` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Direct UI continuation after source-backed resource/material visibility and Bootstrap preview JSON: richer inspectors, search, filters, and comparison. |
+| 1 | `AL-007-S12` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Continue the UI/debug track with balance analytics, warnings, charts, and raw data over source-backed Observer payloads. |
 | 2 | `AL-002-S17` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Close or explicitly retire remaining AL-002-owned material/repair/boundary/joint-repair debts. |
 | 3 | `AL-006-S01` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Benchmark harness can start now that `AL-003` is closed; downstream throughput work stays separate. |
 | 4 | `AL-005-S02` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Analytics export can plan over typed Observer payloads, but should stay behind UI-2B/UI-2C unless export becomes selected priority. |
@@ -49,6 +49,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-007-S11` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-23-1235-REPORT-al-007-s11-inspectors-search-filters-comparison.md` | UI-2C is closed for compact source-backed Cell inspector sections, debug projection loading/stale states, bounded resource legend, map search/filter over available Cell/resource/layer/field text, and local pinned Cell comparison. Unsupported process/contact/history search remains explicit until source-backed payloads exist. |
 | `AL-002-S12` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration.md` | Bootstrap-4 preview/report/calibration is closed for shared preview API, bounded resource preview, stable manifest JSON, deterministic compact seed sweep, CLI `--bootstrap-preview`, and explicit manifest-only field warnings. |
 | `AL-007-S21` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair.md` | Rich world visibility repair is closed: `demo_world_resource`, exact resource layer payload cells, per-Cell energy/material/internal/local resource details, multi-layer map overlay merge, Cell Inspector details, and map-first layout verification. Bootstrap fields remain manifest-only until Core has spatial field grids. |
 | `AL-002-S11` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families.md` | Typed Bootstrap generator specs, deterministic prepared resource layers, `patchy_temperate_v1` manifest metadata, explicit field-grid warning, and rich Runner/Core smoke are closed. Full `cargo test` is blocked by local disk capacity during link, not by an assertion failure. |

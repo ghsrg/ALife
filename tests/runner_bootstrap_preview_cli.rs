@@ -18,7 +18,7 @@ fn runner_bootstrap_preview_prints_json_without_running_ticks() {
         serde_json::from_slice(&output.stdout).expect("bootstrap preview stdout should be JSON");
     assert_eq!(json["scenario_id"], "demo_world_resource");
     assert_eq!(json["tick_executed"], false);
-    assert_eq!(json["resource_layers"].as_array().unwrap().len(), 3);
+    assert_eq!(json["resource_layers"].as_array().unwrap().len(), 27);
     assert_eq!(json["field_layers"].as_array().unwrap().len(), 5);
     assert!(
         json["warnings"]
