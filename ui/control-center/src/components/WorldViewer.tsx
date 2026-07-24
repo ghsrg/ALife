@@ -25,6 +25,7 @@ interface WorldViewerProps {
   onToggleFullScreen?: () => void;
   isFullScreen?: boolean;
   debugProjections?: DebugProjectionState;
+  activeResourceLayers?: number[];
 }
 
 export interface WorldViewerHandle {
@@ -39,7 +40,8 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     onExportScreenshot,
     onToggleFullScreen,
     isFullScreen = false,
-    debugProjections
+    debugProjections,
+    activeResourceLayers
   },
   ref
 ) {
@@ -98,7 +100,11 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       setViewport(measuredViewport);
       rendererRef.current = renderer;
       dispatchCamera({ type: 'fit', world: frame.world, viewport: measuredViewport });
-      renderer.renderFrame(frame, selectedCellId, fittedCamera);
+      if (activeResourceLayers !== undefined) {
+        renderer.renderFrame(frame, selectedCellId, fittedCamera, activeResourceLayers);
+      } else {
+        renderer.renderFrame(frame, selectedCellId, fittedCamera);
+      }
       setIsReady(true);
     });
 
@@ -110,8 +116,12 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   }, []);
 
   useEffect(() => {
-    rendererRef.current?.renderFrame(frame, selectedCellId, camera);
-  }, [frame, selectedCellId, camera]);
+    if (activeResourceLayers !== undefined) {
+      rendererRef.current?.renderFrame(frame, selectedCellId, camera, activeResourceLayers);
+    } else {
+      rendererRef.current?.renderFrame(frame, selectedCellId, camera);
+    }
+  }, [frame, selectedCellId, camera, activeResourceLayers]);
 
   const zoomAtCenter = (scaleFactor: number) => {
     const point = { x: frame.world.width / 2, y: frame.world.height / 2 };

@@ -58,7 +58,7 @@ export function normalizeRatio(value: number): number {
   return Math.max(0, Math.min(1, Number(value.toFixed(3))));
 }
 
-function lifecycleVisualState(lifecycle: number | undefined): LifecycleVisualState {
+export function lifecycleVisualState(lifecycle: number | undefined): LifecycleVisualState {
   if (lifecycle === 0) {
     return 'alive';
   }

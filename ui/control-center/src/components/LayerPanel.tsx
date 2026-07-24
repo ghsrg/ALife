@@ -39,12 +39,66 @@ export function LayerPanel({
         <span>{uiText.layers.cells}</span>
       </label>
       <label className={monitorViewModel.hasResourceLayer ? 'layer-option' : 'layer-option layer-option-missing'}>
-        <input type="checkbox" checked={monitorViewModel.hasResourceLayer} readOnly disabled={!monitorViewModel.hasResourceLayer} />
+        <input
+          type="checkbox"
+          checked={monitorViewModel.hasResourceLayer && (state.activeResourceLayers?.length ?? 0) > 0}
+          readOnly
+          disabled={!monitorViewModel.hasResourceLayer}
+        />
         <span>
           {uiText.layers.resources}
           <small>{monitorViewModel.resourceLayerState}</small>
         </span>
       </label>
+
+      {/* Field Layers & Dynamic Resource Toggles */}
+      {(() => {
+        const debugLayers =
+          state.debugProjections?.status === 'available'
+            ? state.debugProjections.visualWorld.resourceLayers
+            : [];
+        const colors = ['#2ec4b6', '#3a86ff', '#ffb703', '#8338ec'];
+
+        let layerItems: { index: number; name: string; color: string }[] = [];
+
+        if (debugLayers.length > 0) {
+          layerItems = debugLayers.map((l) => ({
+            index: l.layerIndex,
+            name: `Layer ${l.layerIndex} (${l.totalAmount > 0 ? l.totalAmount.toFixed(1) + ' total' : 'empty'})`,
+            color: colors[l.layerIndex % colors.length]
+          }));
+        } else if (monitorViewModel.hasResourceLayer) {
+          layerItems = [
+            { index: 0, name: 'Nutrient / Organic', color: '#2ec4b6' },
+            { index: 1, name: 'Mineral', color: '#3a86ff' },
+            { index: 2, name: 'Energy', color: '#ffb703' }
+          ];
+        }
+
+        if (layerItems.length === 0) return null;
+
+        return (
+          <div className="field-layers-selector" aria-label="Field layers selection">
+            <span className="field-layers-title">FIELD LAYERS ({layerItems.length})</span>
+            {layerItems.map((layer) => {
+              const isActive = state.activeResourceLayers?.includes(layer.index) ?? true;
+              return (
+                <label key={layer.index} className="resource-layer-item">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    disabled={!monitorViewModel.hasResourceLayer}
+                    onChange={() => state.toggleResourceLayer?.(layer.index)}
+                  />
+                  <span className="resource-dot" style={{ backgroundColor: layer.color }} />
+                  <span className="resource-name">{layer.name}</span>
+                </label>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       <label className="layer-option muted">
         <input type="checkbox" disabled />
         <span>{uiText.layers.joints}</span>

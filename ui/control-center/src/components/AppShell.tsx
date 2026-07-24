@@ -41,54 +41,57 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <header className="top-bar" data-testid="monitor-top-context">
-        <div>
-          <p className="eyebrow">{uiText.app.eyebrow}</p>
-          <h1>{uiText.app.title}</h1>
+        <div className="top-bar-left">
+          <div className="brand-title">
+            <p className="eyebrow">{uiText.app.eyebrow}</p>
+            <h1>{uiText.app.title}</h1>
+          </div>
+          <nav className="mode-tabs" aria-label={uiText.app.primaryViews}>
+            <button type="button" role="tab" aria-selected="true">{uiText.workspace.monitor}</button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-label={uiText.workspace.organismViewUnavailable}
+              title={uiText.workspace.unavailableSummary}
+              disabled
+            >
+              {uiText.workspace.organismView}
+              <small>{uiText.workspace.unavailable}</small>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-label={uiText.workspace.worldEditorUnavailable}
+              title={uiText.workspace.unavailableSummary}
+              disabled
+            >
+              {uiText.workspace.worldEditor}
+              <small>{uiText.workspace.unavailable}</small>
+            </button>
+          </nav>
         </div>
-        <nav className="mode-tabs" aria-label={uiText.app.primaryViews}>
-          <button type="button" role="tab" aria-selected="true">{uiText.workspace.monitor}</button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected="false"
-            aria-label={uiText.workspace.organismViewUnavailable}
-            disabled
-          >
-            {uiText.workspace.organismView}
-            <small>{uiText.workspace.unavailable}</small>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected="false"
-            aria-label={uiText.workspace.worldEditorUnavailable}
-            disabled
-          >
-            {uiText.workspace.worldEditor}
-            <small>{uiText.workspace.unavailable}</small>
-          </button>
-        </nav>
-        <p className="workspace-availability">
-          {uiText.workspace.unavailableSummary}
-        </p>
-        <div className="top-utility-controls" aria-label="Application settings">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={state.theme === 'dark' ? uiText.controls.switchToLightTheme : uiText.controls.switchToDarkTheme}
-            title={state.theme === 'dark' ? uiText.controls.switchToLightTheme : uiText.controls.switchToDarkTheme}
-          >
-            {state.theme === 'dark' ? 'Light' : 'Dark'}
-          </button>
+        <div className="top-bar-right">
+          <RunControls
+            state={state}
+            onStart={controller.startRun}
+            onPause={controller.pauseRun}
+            onResume={controller.resumeRun}
+            onStep={controller.stepRun}
+            onStop={controller.stopRun}
+          />
+          <div className="top-utility-controls" aria-label="Application settings">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={state.theme === 'dark' ? uiText.controls.switchToLightTheme : uiText.controls.switchToDarkTheme}
+              title={state.theme === 'dark' ? uiText.controls.switchToLightTheme : uiText.controls.switchToDarkTheme}
+            >
+              {state.theme === 'dark' ? 'Light' : 'Dark'}
+            </button>
+          </div>
         </div>
-        <RunControls
-          state={state}
-          onStart={controller.startRun}
-          onPause={controller.pauseRun}
-          onResume={controller.resumeRun}
-          onStep={controller.stepRun}
-          onStop={controller.stopRun}
-        />
       </header>
 
       <MonitorWorkspace

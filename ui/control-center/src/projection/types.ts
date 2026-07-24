@@ -27,6 +27,15 @@ export interface CellProjection {
   localExternalResources?: Array<{ resourceTypeId: number; amount: number }>;
 }
 
+export interface JointProjection {
+  id: string;
+  sourceCellId: CellId;
+  targetCellId: CellId;
+  channelType: 'mechanical' | 'resource' | 'signal' | 'heat';
+  tension?: number;
+  activeSignal?: boolean;
+}
+
 export interface WorldFrame {
   schemaVersion: 'WorldFrameProjection/v1';
   source?: FrameSource;
@@ -39,6 +48,7 @@ export interface WorldFrame {
   };
   resources: ResourceConcentration[][];
   cells: CellProjection[];
+  joints?: JointProjection[];
   summary?: {
     heat: number;
     waste: number;

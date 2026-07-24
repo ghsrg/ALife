@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| None selected | - | - | - | `AL-007-S11` closed; select the next Plan ID before planning or execution. |
+| `AL-002-S17` | in-progress | high | `docs/delivery/roadmap.md` | Phase 2 Debt Closure: material repair, boundary retention, max local temperature metric, and JointRepair disposition audit. |
 
 ## Operational Rules
 
@@ -39,17 +39,18 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-007-S12` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Continue the UI/debug track with balance analytics, warnings, charts, and raw data over source-backed Observer payloads. |
-| 2 | `AL-002-S17` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Close or explicitly retire remaining AL-002-owned material/repair/boundary/joint-repair debts. |
-| 3 | `AL-006-S01` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Benchmark harness can start now that `AL-003` is closed; downstream throughput work stays separate. |
-| 4 | `AL-005-S02` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Analytics export can plan over typed Observer payloads, but should stay behind UI-2B/UI-2C unless export becomes selected priority. |
-| 5 | `AL-002-S18` | <kbd style="background-color: #cf222e; color: white; border: none;">blocked-dependency</kbd> | `AL-002-S17` | `docs/delivery/roadmap.md` | Final AL-002 closure matrix waits for AL-002 debt disposition. |
+| 1 | `AL-002-S18` | <kbd style="background-color: #cf222e; color: white; border: none;">blocked-dependency</kbd> | `AL-002-S17` | `docs/delivery/roadmap.md` | Final AL-002 closure matrix waits for AL-002 debt disposition. |
+| 2 | `AL-006-S01` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Benchmark harness can start now that `AL-003` is closed; downstream throughput work stays separate. |
+| 3 | `AL-005-S02` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Analytics export can plan over typed Observer payloads. |
 
 ## Recently Closed
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
-| `AL-007-S11` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-23-1235-REPORT-al-007-s11-inspectors-search-filters-comparison.md` | UI-2C is closed for compact source-backed Cell inspector sections, debug projection loading/stale states, bounded resource legend, map search/filter over available Cell/resource/layer/field text, and local pinned Cell comparison. Unsupported process/contact/history search remains explicit until source-backed payloads exist. |
+| `AL-007-S13` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-1238-REPORT-v3-ui-charts-docking-and-ecosystem-balance.md` | V3 Control Center layout alignment, charts docking under Map Viewer, live metric streams, and living ecosystem balance tuning. |
+| `AL-007-S13` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-1115-REPORT-living-ecosystem-scenario-finalization.md` | Unified production scenario `living_ecosystem.toml` created with 4 resource layers, environmental fields, balanced cell energy, genome execution, and dynamic UI streaming. |
+| `AL-007-S12` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-23-2150-REPORT-al-007-s12-balance-analytics.md` | UI-2D is closed for Matter Cycle accounting, Unaccounted difference badge, Energy utilization progress, Population lifecycle breakdown, Engineering Warnings list, searchable Raw Data grid, CSV export, and V3 Monitor tabs. |
+| `AL-007-S11` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-23-1235-REPORT-al-007-s11-inspectors-search-filters-comparison.md` | UI-2C is closed for compact source-backed Cell inspector sections, debug projection loading/stale states, bounded resource legend, map search/filter over available Cell/resource/layer/field text, and local pinned Cell comparison. |
 | `AL-002-S12` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration.md` | Bootstrap-4 preview/report/calibration is closed for shared preview API, bounded resource preview, stable manifest JSON, deterministic compact seed sweep, CLI `--bootstrap-preview`, and explicit manifest-only field warnings. |
 | `AL-007-S21` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-2035-REPORT-al-007-s21-rich-world-visibility-repair.md` | Rich world visibility repair is closed: `demo_world_resource`, exact resource layer payload cells, per-Cell energy/material/internal/local resource details, multi-layer map overlay merge, Cell Inspector details, and map-first layout verification. Bootstrap fields remain manifest-only until Core has spatial field grids. |
 | `AL-002-S11` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-22-1547-REPORT-al-002-s11-rich-spatial-generators-and-world-families.md` | Typed Bootstrap generator specs, deterministic prepared resource layers, `patchy_temperate_v1` manifest metadata, explicit field-grid warning, and rich Runner/Core smoke are closed. Full `cargo test` is blocked by local disk capacity during link, not by an assertion failure. |

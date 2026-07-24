@@ -37,6 +37,7 @@ export interface AppState {
   pendingCommand: PendingCommand | null;
   lastError: string | null;
   selectionCleared: boolean;
+  activeResourceLayers: number[];
 }
 
 export interface AppActions {
@@ -46,6 +47,7 @@ export interface AppActions {
   jumpToLive: () => void;
   setDebugProjections: (debugProjections: DebugProjectionState) => void;
   selectCell: (cellId: CellId | null) => void;
+  toggleResourceLayer: (layerIndex: number) => void;
   setTheme: (theme: ThemeMode) => void;
   setRunnerEndpoint: (endpoint: string) => void;
   setConnectionState: (connectionState: ConnectionState) => void;
@@ -109,6 +111,14 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     pendingCommand: null,
     lastError: null,
     selectionCleared: false,
+    activeResourceLayers: [0, 1, 2, 3],
+    toggleResourceLayer: (layerIndex) => {
+      const current = get().activeResourceLayers;
+      const next = current.includes(layerIndex)
+        ? current.filter((idx) => idx !== layerIndex)
+        : [...current, layerIndex];
+      set({ activeResourceLayers: next });
+    },
     setFrame: (frame) => {
       const state = get();
       const isLiveFrame = frame.source === 'live';

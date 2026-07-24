@@ -255,3 +255,18 @@ tags:
 - [[outputs/worklogs/2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-PLAN-al-002-s12-bootstrap-preview-reports-calibration]]
 - [[outputs/worklogs/2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration]]
 - [[outputs/worklogs/2026-07-23-1235-REPORT-al-007-s11-inspectors-search-filters-comparison|2026-07-23-1235-REPORT-al-007-s11-inspectors-search-filters-comparison]]
+- [[outputs/worklogs/2026-07-23-2050-PLAN-visual-rendering-audit-and-next-steps|2026-07-23-2050-PLAN-visual-rendering-audit-and-next-steps]]
+- [[outputs/worklogs/2026-07-23-2140-PLAN-al-007-s12-balance-analytics|2026-07-23-2140-PLAN-al-007-s12-balance-analytics]]
+- [[outputs/worklogs/2026-07-23-2150-REPORT-al-007-s12-balance-analytics|2026-07-23-2150-REPORT-al-007-s12-balance-analytics]]
+- [[outputs/worklogs/2026-07-23-2220-PLAN-v3-ui-charts-resource-layers|2026-07-23-2220-PLAN-v3-ui-charts-resource-layers]]
+- [[outputs/worklogs/2026-07-24-1045-PLAN-v3-layout-dynamic-resources-living-world|2026-07-24-1045-PLAN-v3-layout-dynamic-resources-living-world]]
+- [[outputs/worklogs/2026-07-24-1110-PLAN-living-ecosystem-scenario-finalization|2026-07-24-1110-PLAN-living-ecosystem-scenario-finalization]]
+- [[outputs/worklogs/2026-07-24-1115-REPORT-living-ecosystem-scenario-finalization|2026-07-24-1115-REPORT-living-ecosystem-scenario-finalization]]
+- [[outputs/worklogs/2026-07-24-1120-PLAN-living-ecosystem-materials-and-parser-fix|2026-07-24-1120-PLAN-living-ecosystem-materials-and-parser-fix]]
+- [[outputs/worklogs/2026-07-24-1222-PLAN-living-ecosystem-gradient-and-viability-fix|2026-07-24-1222-PLAN-living-ecosystem-gradient-and-viability-fix]]
+- [[outputs/worklogs/2026-07-24-1230-PLAN-v3-ui-charts-docking-and-ecosystem-balance|2026-07-24-1230-PLAN-v3-ui-charts-docking-and-ecosystem-balance]]
+- [[outputs/worklogs/2026-07-24-1238-REPORT-v3-ui-charts-docking-and-ecosystem-balance|2026-07-24-1238-REPORT-v3-ui-charts-docking-and-ecosystem-balance]]
+- [[outputs/worklogs/2026-07-24-1905-PLAN-al-002-s17-phase-2-debt-closure|2026-07-24-1905-PLAN-al-002-s17-phase-2-debt-closure]]
+- [[outputs/worklogs/2026-07-23-2100-REPORT-visual-rendering-upgrade|2026-07-23-2100-REPORT-visual-rendering-upgrade]]
+
+

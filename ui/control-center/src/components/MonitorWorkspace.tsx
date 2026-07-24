@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { getMonitorDataState, type AppStore } from '../app/appState';
+import { buildBalanceViewModel } from '../app/balanceViewModel';
 import { buildMonitorViewModel } from '../app/monitorViewModel';
 import { describeProjectionContext } from '../projection/projectionContext';
 import type { CellId } from '../projection/types';
 import { uiText } from '../uiText';
+import { BalanceAnalyticsPanel } from './BalanceAnalyticsPanel';
+import { BottomDataPanel } from './BottomDataPanel';
 import { BottomStatsStrip } from './BottomStatsStrip';
 import { CellInspector } from './CellInspector';
 import { LayerPanel } from './LayerPanel';
+import { RawDataGridPanel } from './RawDataGridPanel';
 import { SelectedEntityFocusCard } from './SelectedEntityFocusCard';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
 import type { MonitorStat } from './monitorStats';
@@ -40,6 +44,7 @@ export function MonitorWorkspace({
   const viewerRef = useRef<WorldViewerHandle | null>(null);
   const workspaceRef = useRef<HTMLElement | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'viewer' | 'analytics' | 'rawdata'>('viewer');
   const monitorDataState = getMonitorDataState(state);
   const monitorViewModel = buildMonitorViewModel(state);
 
@@ -83,9 +88,13 @@ export function MonitorWorkspace({
         <section className="map-context-strip" aria-label={uiText.dataContext.title}>
           <div className="map-context-primary">
             <strong>{monitorViewModel.scenarioTitle}</strong>
-            <span>{monitorViewModel.subtitle}</span>
+            <span className="context-pill">{describeProjectionContext(state.projectionContext)}</span>
+            <span className="context-pill">{state.projectionContext.isReadOnly ? 'read-only' : 'live'}</span>
+            {state.projectionContext.warning ? (
+              <span className="context-pill warning" role="alert">{state.projectionContext.warning}</span>
+            ) : null}
           </div>
-          <div className="start-demo-provenance compact" aria-label="Start demo provenance">
+          <div className="start-demo-provenance compact" aria-label="Start demo provenance" style={{ display: 'none' }}>
             <strong>{uiText.demo.startDemo}</strong>
             <span>
               {monitorViewModel.startDemo.projectionSource === 'live'
@@ -95,17 +104,6 @@ export function MonitorWorkspace({
             <span>{`${uiText.demo.runnerDataPrefix}: ${monitorViewModel.startDemo.runnerDataLabel}`}</span>
             <span>{monitorViewModel.startDemo.unavailableFieldsLabel}</span>
           </div>
-          <div className="data-context-summary">
-            <span>{uiText.dataContext.title}</span>
-            <strong>{describeProjectionContext(state.projectionContext)}</strong>
-          </div>
-          <div className="data-context-run">
-            <span>Run {state.projectionContext.runId}</span>
-            <span>{state.projectionContext.isReadOnly ? 'read-only' : 'live writable controls'}</span>
-          </div>
-          {state.projectionContext.warning ? (
-            <p role="alert">{state.projectionContext.warning}</p>
-          ) : null}
           <div className="data-context-actions">
             <button type="button" onClick={onFreezeFrame} aria-label={uiText.dataContext.freezeFrame}>
               Freeze
@@ -122,7 +120,7 @@ export function MonitorWorkspace({
           <div className="history-strip" aria-label={uiText.dataContext.boundedHistory}>
             {[...state.frameHistory, state.frame]
               .filter((frame, index, frames) => frames.findIndex((item) => item.tick === frame.tick) === index)
-              .slice(-8)
+              .slice(-5)
               .map((frame) => (
                 <button
                   type="button"
@@ -135,18 +133,60 @@ export function MonitorWorkspace({
               ))}
           </div>
         </section>
-        <WorldViewer
-          ref={viewerRef}
-          frame={state.frame}
-          selectedCellId={state.selectedCellId}
-          onSelectCell={onSelectCell}
-          onExportScreenshot={exportScreenshot}
-          onToggleFullScreen={toggleFullScreen}
-          isFullScreen={isFullScreen}
-          debugProjections={state.debugProjections}
-        />
-        <SelectedEntityFocusCard selectedCell={state.selectedCell} />
-        <BottomStatsStrip stats={monitorStats} />
+
+        <nav className="workspace-tab-nav" aria-label="Workspace View Mode">
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'viewer' ? 'active' : ''}`}
+            onClick={() => setActiveTab('viewer')}
+          >
+            Map Viewer
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            Analytics
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'rawdata' ? 'active' : ''}`}
+            onClick={() => setActiveTab('rawdata')}
+          >
+            Raw Data
+          </button>
+        </nav>
+
+        {activeTab === 'viewer' && (
+          <div className="viewer-tab-content">
+            <SelectedEntityFocusCard selectedCell={state.selectedCell} />
+            <WorldViewer
+              ref={viewerRef}
+              frame={state.frame}
+              selectedCellId={state.selectedCellId}
+              onSelectCell={onSelectCell}
+              onExportScreenshot={exportScreenshot}
+              onToggleFullScreen={toggleFullScreen}
+              isFullScreen={isFullScreen}
+              debugProjections={state.debugProjections}
+              activeResourceLayers={state.activeResourceLayers}
+            />
+            <BottomDataPanel state={state} />
+            <BottomStatsStrip stats={monitorStats} />
+          </div>
+        )}
+        {activeTab === 'analytics' && (
+          <div className="viewer-tab-content">
+            <BalanceAnalyticsPanel viewModel={buildBalanceViewModel(state)} />
+          </div>
+        )}
+        {activeTab === 'rawdata' && (
+          <div className="viewer-tab-content">
+            <RawDataGridPanel frame={state.latestLiveFrame ?? state.frame} onSelectCell={(id) => onSelectCell(id)} />
+          </div>
+        )}
+
         {exportStatus ? <p className="export-status" role="status">{exportStatus}</p> : null}
       </section>
       <CellInspector selectedCell={state.selectedCell} />

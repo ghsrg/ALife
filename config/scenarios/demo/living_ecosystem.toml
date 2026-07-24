@@ -1,0 +1,608 @@
+scenario_id = "living_ecosystem"
+seed = 424242
+tick_count = 100000
+legacy_material_distribution = false
+
+[time]
+tick_duration_ms = 100
+
+[world]
+size = [320.0, 240.0]
+
+[space]
+spatial_grid_size = 16.0
+physics_solver_iterations = 2
+
+[scheduler.cell]
+genome_runtime_base_ticks = 10
+genome_runtime_ticks_per_layer = 10
+signal_emit_ticks = 2
+controlled_reaction_ticks = 2
+simple_synthesis_ticks = 5
+basic_repair_ticks = 10
+internal_rebalance_ticks = 5
+
+[scheduler.world]
+resource_diffusion_ticks = 30
+resource_decay_ticks = 10
+passive_reactions_ticks = 2
+background_material_degradation_ticks = 5
+environment_heat_diffusion_ticks = 2
+field_update_ticks = 5
+
+[scheduler.observer]
+observer_metrics_ticks = 10
+resource_totals_ticks = 10
+graph_analysis_ticks = 50
+debug_trace_ticks = 10
+
+[resources]
+resource_type_ids = ["nutrient_A", "mineral_A", "energy_A", "waste_A"]
+initial_distribution = [6000.0, 4000.0, 5000.0, 0.0]
+optional_decay_rate = 0.00001
+passive_energy_income_placeholder = 0.05
+
+[bootstrap]
+family = "patchy_temperate_v1"
+
+[[bootstrap.resources]]
+resource_type_id = "nutrient_A"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.nutrient_A"
+patches = 5
+min_amount = 0.0
+max_amount = 45.0
+falloff = 0.65
+
+[[bootstrap.resources]]
+resource_type_id = "mineral_A"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.mineral_A"
+patches = 4
+min_amount = 0.0
+max_amount = 35.0
+falloff = 0.70
+
+[[bootstrap.resources]]
+resource_type_id = "energy_A"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.energy_A"
+patches = 4
+min_amount = 0.0
+max_amount = 40.0
+falloff = 0.60
+
+[[bootstrap.resources]]
+resource_type_id = "waste_A"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.waste_A"
+min_amount = 0.0
+max_amount = 15.0
+
+[[bootstrap.fields]]
+field_id = "temperature"
+generator = "band"
+version = "band.v1"
+seed_domain = "fields.layers.temperature"
+min_value = 18.0
+max_value = 32.0
+
+[[bootstrap.fields]]
+field_id = "pressure"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "fields.layers.pressure"
+min_value = 1.0
+max_value = 2.5
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.25
+heat_warning_threshold = 400.0
+heat_death_threshold = 800.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.50
+waste_warning_threshold = 1200.0
+waste_death_threshold = 2400.0
+
+[lifecycle]
+stress_energy_threshold = 2.0
+dormancy_allowed = false
+critical_capacity_overrun = 220.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 3.5
+metabolism_resource_per_tick = 0.7
+energy_per_resource = 3.5
+heat_per_resource = 0.002
+waste_per_resource = 0.002
+
+[synthesis]
+cost_resource = 0.1
+cost_energy = 0.1
+
+[growth]
+growth_cost_resource = 0.02
+growth_cost_energy = 0.02
+growth_target_radius = 1.4
+max_division_pressure = 2.0
+
+[material_effects]
+transport_uptake_per_unit = 1.0
+metabolic_conversion_per_unit = 1.0
+storage_capacity_per_unit = 2.0
+structural_growth_per_unit = 0.00008
+contractile_force_per_unit = 1.0
+sensory_input_per_unit = 1.0
+boundary_retention_per_unit = 1.0
+repair_stress_buffer_per_unit = 1.0
+
+[division]
+enabled = true
+energy_cost = 12.0
+split_ratio = 0.5
+daughter_spacing = 2.4
+min_daughter_radius = 0.7
+partition_loss_fraction = 0.02
+
+[genome_copying]
+enabled = true
+energy_cost_per_step = 0.1
+carrier_resource_cost_per_step = 0.05
+progress_per_step = 0.1
+mutation_rate = 0.02
+mutation_step = 0.05
+
+[decomposition]
+enabled = true
+resource_layer_index = 0
+resources_per_tick = 0.15
+materials_per_tick = 0.08
+remove_when_empty = true
+
+[local_interaction]
+enabled = true
+contact_exchange_rate = 0.15
+max_exchange_per_pair = 0.25
+min_boundary_capability = 0.1
+min_transport_capability = 0.1
+contact_stimulus_per_overlap = 0.08
+stimulus_decay_per_tick = 0.04
+
+[joints]
+enabled = true
+creation_distance_margin = 0.3
+creation_material_cost = 0.08
+creation_resource_cost = 0.02
+creation_energy_cost = 0.02
+mechanical_strength = 0.25
+resource_transfer_rate = 0.18
+max_resource_transfer_per_tick = 0.35
+signal_conductivity = 0.45
+signal_decay = 0.04
+heat_conductivity = 0.2
+upkeep_material_decay_per_tick = 0.0005
+break_damage_threshold = 4.0
+max_joints_per_cell = 4
+
+[cell]
+initial_position = [60.0, 60.0]
+radius = 1.4
+initial_resources = { nutrient_A = 12.0, mineral_A = 6.0, energy_A = 8.0, waste_A = 0.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 6.0, synthesis = 3.0, structural = 5.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 88.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.0005
+capacity_limit = 150.0
+
+[cell.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [60.0, 60.0]
+radius = 1.4
+initial_resources = { nutrient_A = 12.0, mineral_A = 6.0, energy_A = 8.0, waste_A = 0.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 6.0, synthesis = 3.0, structural = 5.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 88.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.0005
+capacity_limit = 150.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [64.0, 62.0]
+radius = 1.4
+initial_resources = { nutrient_A = 10.0, mineral_A = 5.0, energy_A = 7.0, waste_A = 0.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 5.0, synthesis = 3.0, structural = 4.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 86.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+[cells.genome]
+template = "rapid_replicator"
+
+[[cells]]
+initial_position = [160.0, 60.0]
+radius = 1.4
+initial_resources = { nutrient_A = 14.0, mineral_A = 8.0, energy_A = 10.0, waste_A = 0.0 }
+initial_materials = { boundary = 4.0, transport = 3.0, metabolic = 3.0, storage = 6.0, synthesis = 3.0, structural = 6.0, repair = 3.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 92.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+[cells.genome]
+template = "high_efficiency"
+
+[[cells]]
+initial_position = [164.0, 62.0]
+radius = 1.4
+initial_resources = { nutrient_A = 11.0, mineral_A = 6.0, energy_A = 9.0, waste_A = 0.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 6.0, synthesis = 3.0, structural = 5.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 87.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [60.0, 160.0]
+radius = 1.4
+initial_resources = { nutrient_A = 13.0, mineral_A = 7.0, energy_A = 9.0, waste_A = 0.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 6.0, synthesis = 3.0, structural = 5.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 90.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+[cells.genome]
+template = "balanced"
+
+[[cells]]
+initial_position = [160.0, 160.0]
+radius = 1.4
+initial_resources = { nutrient_A = 12.5, mineral_A = 6.5, energy_A = 8.5, waste_A = 0.0 }
+initial_materials = { boundary = 3.0, transport = 3.0, metabolic = 3.0, storage = 6.0, synthesis = 3.0, structural = 5.0, repair = 2.0, contractile = 1.0, sensory = 1.0 }
+initial_energy = 89.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+[cells.genome]
+template = "balanced"
+
+[genome_templates.balanced]
+variation_amplitude = 0.08
+runtime_interval_ticks = 10
+
+[genome_templates.balanced.carrier]
+material_id = "genome_carrier_A"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.balanced.outputs]
+resource_uptake_priority = 0.8
+energy_conversion_priority = 0.75
+material_synthesis_priority = 0.45
+division_preparation_priority = 0.5
+repair_priority = 0.2
+
+[genome_templates.rapid_replicator]
+variation_amplitude = 0.12
+runtime_interval_ticks = 8
+
+[genome_templates.rapid_replicator.carrier]
+material_id = "genome_carrier_A"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.rapid_replicator.outputs]
+resource_uptake_priority = 0.95
+energy_conversion_priority = 0.85
+material_synthesis_priority = 0.65
+division_preparation_priority = 0.90
+repair_priority = 0.1
+
+[genome_templates.high_efficiency]
+variation_amplitude = 0.05
+runtime_interval_ticks = 12
+
+[genome_templates.high_efficiency.carrier]
+material_id = "genome_carrier_B"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.high_efficiency.outputs]
+resource_uptake_priority = 0.70
+energy_conversion_priority = 0.95
+material_synthesis_priority = 0.50
+division_preparation_priority = 0.40
+repair_priority = 0.50
+
+# --- Chemistry Resources & Material Trade-offs (3 variants per functional role) ---
+
+[chemistry.resources.nutrient_A]
+volume = 1.0
+diffusion_rate = 0.05
+energy_value = 1.8
+decay_rate = 0.00001
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["energy_source"]
+
+[chemistry.resources.mineral_A]
+volume = 1.0
+diffusion_rate = 0.02
+energy_value = 0.5
+decay_rate = 0.00001
+reactivity_profile = "stable"
+permeability = "passive"
+tags = ["structural_precursor"]
+
+[chemistry.resources.energy_A]
+volume = 0.5
+diffusion_rate = 0.08
+energy_value = 3.5
+decay_rate = 0.00005
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["energy_source"]
+
+[chemistry.resources.waste_A]
+volume = 1.0
+diffusion_rate = 0.03
+energy_value = 0.0
+decay_rate = 0.001
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["waste"]
+
+# Boundary Materials
+[chemistry.materials.boundary_high_integrity]
+volume = 0.25
+stability = 0.99
+strength = 0.90
+permeability = 0.01
+energy_capacity = 0.0
+decay_rate = 0.0001
+repair_resource = "nutrient_A"
+repair_amount = 0.4
+
+[chemistry.materials.boundary_balanced]
+volume = 0.20
+stability = 0.90
+strength = 0.40
+permeability = 0.05
+energy_capacity = 0.0
+decay_rate = 0.0004
+repair_resource = "nutrient_A"
+repair_amount = 0.3
+
+[chemistry.materials.boundary_high_flux]
+volume = 0.15
+stability = 0.75
+strength = 0.20
+permeability = 0.20
+energy_capacity = 0.0
+decay_rate = 0.0010
+repair_resource = "nutrient_A"
+repair_amount = 0.2
+
+# Transport Materials
+[chemistry.materials.transport_rapid]
+volume = 0.10
+stability = 0.80
+strength = 0.20
+permeability = 0.30
+energy_capacity = 0.0
+decay_rate = 0.0008
+repair_resource = "mineral_A"
+repair_amount = 0.2
+
+[chemistry.materials.transport_balanced]
+volume = 0.15
+stability = 0.90
+strength = 0.35
+permeability = 0.15
+energy_capacity = 0.0
+decay_rate = 0.0003
+repair_resource = "mineral_A"
+repair_amount = 0.3
+
+[chemistry.materials.transport_durable]
+volume = 0.25
+stability = 0.98
+strength = 0.60
+permeability = 0.08
+energy_capacity = 0.0
+decay_rate = 0.00005
+repair_resource = "mineral_A"
+repair_amount = 0.4
+
+# Metabolic Materials
+[chemistry.materials.metabolic_high_efficiency]
+volume = 0.15
+stability = 0.85
+strength = 0.30
+permeability = 0.0
+energy_capacity = 10.0
+decay_rate = 0.0005
+repair_resource = "energy_A"
+repair_amount = 0.3
+
+[chemistry.materials.metabolic_balanced]
+volume = 0.20
+stability = 0.92
+strength = 0.40
+permeability = 0.0
+energy_capacity = 6.0
+decay_rate = 0.0002
+repair_resource = "energy_A"
+repair_amount = 0.3
+
+[chemistry.materials.metabolic_cool]
+volume = 0.25
+stability = 0.98
+strength = 0.50
+permeability = 0.0
+energy_capacity = 4.0
+decay_rate = 0.00008
+repair_resource = "energy_A"
+repair_amount = 0.4
+
+# Structural Materials
+[chemistry.materials.structural_heavy]
+volume = 0.40
+stability = 0.99
+strength = 0.95
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.00001
+repair_resource = "mineral_A"
+repair_amount = 0.6
+
+[chemistry.materials.structural_standard]
+volume = 0.25
+stability = 0.95
+strength = 0.70
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.00005
+repair_resource = "mineral_A"
+repair_amount = 0.4
+
+[chemistry.materials.structural_light]
+volume = 0.10
+stability = 0.85
+strength = 0.35
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0002
+repair_resource = "mineral_A"
+repair_amount = 0.2
+
+# Synthesis & Catalyst Materials
+[chemistry.materials.synthesis_fast]
+volume = 0.10
+stability = 0.82
+strength = 0.20
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0006
+repair_resource = "nutrient_A"
+repair_amount = 0.2
+
+[chemistry.materials.synthesis_standard]
+volume = 0.15
+stability = 0.92
+strength = 0.30
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0002
+repair_resource = "nutrient_A"
+repair_amount = 0.3
+
+[chemistry.materials.synthesis_precise]
+volume = 0.22
+stability = 0.98
+strength = 0.45
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.00005
+repair_resource = "nutrient_A"
+repair_amount = 0.4
+
+# Storage, Repair, Contractile, Sensory
+[chemistry.materials.storage_standard]
+volume = 0.30
+stability = 0.95
+strength = 0.30
+permeability = 0.0
+energy_capacity = 25.0
+decay_rate = 0.0001
+repair_resource = "nutrient_A"
+repair_amount = 0.3
+
+[chemistry.materials.repair_standard]
+volume = 0.15
+stability = 0.94
+strength = 0.30
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0002
+repair_resource = "mineral_A"
+repair_amount = 0.3
+
+[chemistry.materials.contractile_standard]
+volume = 0.20
+stability = 0.92
+strength = 0.60
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0003
+repair_resource = "energy_A"
+repair_amount = 0.3
+
+[chemistry.materials.sensory_standard]
+volume = 0.12
+stability = 0.90
+strength = 0.20
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.0004
+repair_resource = "mineral_A"
+repair_amount = 0.2
+
+[chemistry.materials.genome_carrier_A]
+volume = 0.20
+stability = 0.85
+strength = 0.20
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.00005
+repair_resource = "nutrient_A"
+repair_amount = 0.05
+
+[chemistry.materials.genome_carrier_B]
+volume = 0.18
+stability = 0.95
+strength = 0.30
+permeability = 0.0
+energy_capacity = 0.0
+decay_rate = 0.00002
+repair_resource = "mineral_A"
+repair_amount = 0.05
+
+[chemistry.reactions.passive_decay]
+mode = "passive"
+inputs = { nutrient_A = 0.01 }
+outputs = { waste_A = 0.01 }
+required_materials = {}
+configured_sink_amount = 0.0
+energy_output = 0.0
+heat_output = 0.001
+rate = 0.005
+probability = 1.0
+accounting_destination = "waste_A"
+
+[chemistry.heat]
+capacity = 1.0
+dissipation_rate = 0.25
+warning_threshold = 400.0
+death_threshold = 800.0
+
+[chemistry.boundary]
+default_permeability = "passive"
+retention_rate = 0.98
+
+[chemistry.repair]
+enabled = true
+energy_cost = 0.01
+max_amount_per_tick = 0.1

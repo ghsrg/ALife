@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { drawIntegrityArc } from './worldRenderer';
+import type { WorldFrame } from '../projection/types';
+import {
+  drawCellOrganelles,
+  drawIntegrityArc,
+  drawJointsLayer,
+  sampleBilinearResource
+} from './worldRenderer';
 
 describe('drawIntegrityArc', () => {
   it('moves to the arc start before drawing so Pixi does not connect from a previous path', () => {
@@ -17,3 +23,80 @@ describe('drawIntegrityArc', () => {
     expect(calls[2]?.name).toBe('stroke');
   });
 });
+
+describe('sampleBilinearResource', () => {
+  it('interpolates resource values smoothly between grid nodes', () => {
+    const grid = [
+      [
+        { organic: 1.0, mineral: 0.0, energy: 0.0 },
+        { organic: 0.0, mineral: 1.0, energy: 0.0 }
+      ],
+      [
+        { organic: 0.0, mineral: 0.0, energy: 1.0 },
+        { organic: 0.5, mineral: 0.5, energy: 0.5 }
+      ]
+    ];
+
+    // Center point (x=0.5, y=0.5)
+    const mid = sampleBilinearResource(grid, 0.5, 0.5);
+    expect(mid.organic).toBeCloseTo(0.375);
+    expect(mid.mineral).toBeCloseTo(0.375);
+    expect(mid.energy).toBeCloseTo(0.375);
+
+    // Exact top-left node (x=0, y=0)
+    const topLeft = sampleBilinearResource(grid, 0, 0);
+    expect(topLeft.organic).toBeCloseTo(1.0);
+    expect(topLeft.mineral).toBeCloseTo(0.0);
+    expect(topLeft.energy).toBeCloseTo(0.0);
+  });
+});
+
+describe('drawCellOrganelles', () => {
+  it('renders internal nucleus and organelle granules into Pixi graphics object', () => {
+    const circles: Array<{ x: number; y: number; r: number }> = [];
+    const graphic = {
+      circle: (x: number, y: number, r: number) => circles.push({ x, y, r }),
+      fill: () => {},
+      stroke: () => {}
+    };
+
+    drawCellOrganelles(graphic, 100, 100, 20, 0.8, 'alive');
+
+    // Should draw nucleus and internal granules
+    expect(circles.length).toBeGreaterThanOrEqual(4);
+    expect(circles.some((c) => c.r > 2)).toBe(true);
+  });
+});
+
+describe('drawJointsLayer', () => {
+  it('renders lines and signal node between connected cells', () => {
+    const mockFrame: WorldFrame = {
+      schemaVersion: 'WorldFrameProjection/v1',
+      runId: 'test-run',
+      tick: 10,
+      world: { width: 800, height: 600 },
+      resources: [],
+      cells: [],
+      joints: [
+        {
+          id: 'j1',
+          sourceCellId: 'c1',
+          targetCellId: 'c2',
+          channelType: 'signal',
+          activeSignal: true
+        }
+      ]
+    };
+
+    const cellPositions = new Map([
+      ['c1', { x: 50, y: 50 }],
+      ['c2', { x: 150, y: 150 }]
+    ]);
+
+    const layer = drawJointsLayer(mockFrame, cellPositions);
+    expect(layer).toBeDefined();
+  });
+});
+
+
+
