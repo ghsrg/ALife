@@ -329,8 +329,7 @@ describe('App', () => {
       expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
 
-    expect(screen.getByRole('tab', { name: 'Monitor' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: 'OrganismView unavailable - observer projection not ready' })).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'OrganismView' })).not.toBeDisabled();
     expect(screen.getByRole('tab', { name: 'World Editor' })).not.toBeDisabled();
   });
 

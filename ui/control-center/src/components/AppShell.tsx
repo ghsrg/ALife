@@ -8,6 +8,8 @@ import { buildMonitorStats } from './monitorStats';
 import { uiText } from '../uiText';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { ExperimentWorkspace } from './ExperimentWorkspace';
+import { EvolutionWorkspace } from './EvolutionWorkspace';
+import { OrganismWorkspace } from './OrganismWorkspace';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
@@ -41,7 +43,7 @@ export function AppShell() {
     );
   };
 
-  const [activeWorkspace, setActiveWorkspace] = useState<'monitor' | 'world-editor' | 'experiments' | 'diagnostics'>('monitor');
+  const [activeWorkspace, setActiveWorkspace] = useState<'monitor' | 'organism-view' | 'world-editor' | 'experiments' | 'evolution' | 'diagnostics'>('monitor');
 
   return (
     <div className="app-shell">
@@ -63,13 +65,10 @@ export function AppShell() {
             <button
               type="button"
               role="tab"
-              aria-selected="false"
-              aria-label={uiText.workspace.organismViewUnavailable}
-              title={uiText.workspace.unavailableSummary}
-              disabled
+              aria-selected={activeWorkspace === 'organism-view'}
+              onClick={() => setActiveWorkspace('organism-view')}
             >
               {uiText.workspace.organismView}
-              <small>{uiText.workspace.unavailable}</small>
             </button>
             <button
               type="button"
@@ -86,6 +85,14 @@ export function AppShell() {
               onClick={() => setActiveWorkspace('experiments')}
             >
               Experiments & Comparison
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWorkspace === 'evolution'}
+              onClick={() => setActiveWorkspace('evolution')}
+            >
+              Evolution Observatory
             </button>
             <button
               type="button"
@@ -132,6 +139,13 @@ export function AppShell() {
           onSelectHistoryTick={(tick) => store.getState().selectHistoryTick(tick)}
           exportStatus={exportStatus}
         />
+      ) : activeWorkspace === 'organism-view' ? (
+        <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+          <OrganismWorkspace
+            state={state}
+            onSelectCell={(cellId) => store.getState().selectCell(cellId)}
+          />
+        </div>
       ) : activeWorkspace === 'world-editor' ? (
         <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
           <WorldEditorWorkspace
@@ -147,6 +161,10 @@ export function AppShell() {
       ) : activeWorkspace === 'experiments' ? (
         <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
           <ExperimentWorkspace state={state} />
+        </div>
+      ) : activeWorkspace === 'evolution' ? (
+        <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+          <EvolutionWorkspace state={state} />
         </div>
       ) : (
         <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
