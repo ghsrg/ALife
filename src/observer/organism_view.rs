@@ -21,13 +21,12 @@ pub fn build_organism_view_projection(world: &WorldState) -> OrganismViewProject
     }
 
     for joint_id in joints.active_ids() {
-        if let Some(endpoints) = joints.endpoints(joint_id) {
-            if cells.lifecycle_state(endpoints.a) != LifecycleState::Dead
-                && cells.lifecycle_state(endpoints.b) != LifecycleState::Dead
-            {
-                adjacency.entry(endpoints.a).or_default().push(endpoints.b);
-                adjacency.entry(endpoints.b).or_default().push(endpoints.a);
-            }
+        if let Some(endpoints) = joints.endpoints(joint_id)
+            && cells.lifecycle_state(endpoints.a) != LifecycleState::Dead
+            && cells.lifecycle_state(endpoints.b) != LifecycleState::Dead
+        {
+            adjacency.entry(endpoints.a).or_default().push(endpoints.b);
+            adjacency.entry(endpoints.b).or_default().push(endpoints.a);
         }
     }
 
@@ -114,10 +113,11 @@ pub fn build_organism_view_projection(world: &WorldState) -> OrganismViewProject
         let cell_set: HashSet<CellIndex> = component_cells.iter().copied().collect();
         let mut organism_joints_count = 0;
         for joint_id in joints.active_ids() {
-            if let Some(endpoints) = joints.endpoints(joint_id) {
-                if cell_set.contains(&endpoints.a) && cell_set.contains(&endpoints.b) {
-                    organism_joints_count += 1;
-                }
+            if let Some(endpoints) = joints.endpoints(joint_id)
+                && cell_set.contains(&endpoints.a)
+                && cell_set.contains(&endpoints.b)
+            {
+                organism_joints_count += 1;
             }
         }
 

@@ -182,12 +182,12 @@ fn observer_contract_is_static_and_read_only() {
     assert!(
         observer_field_specs()
             .iter()
-            .all(|spec| spec.mutable == false)
+            .all(|spec| !spec.mutable)
     );
     assert!(
         warning_code_specs()
             .iter()
-            .all(|spec| spec.mutable == false)
+            .all(|spec| !spec.mutable)
     );
 }
 

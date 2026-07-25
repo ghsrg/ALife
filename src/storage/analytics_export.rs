@@ -194,14 +194,13 @@ impl AnalyticsExporter {
         fs::create_dir_all(output_dir)?;
 
         let manifest_json_path = output_dir.join("manifest.json");
-        let manifest_json = serde_json::to_string_pretty(&dataset.manifest)
-            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
+        let manifest_json =
+            serde_json::to_string_pretty(&dataset.manifest).map_err(std::io::Error::other)?;
         let mut file = File::create(&manifest_json_path)?;
         file.write_all(manifest_json.as_bytes())?;
 
         let dataset_json_path = output_dir.join("dataset.json");
-        let dataset_json = Self::to_json(dataset)
-            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
+        let dataset_json = Self::to_json(dataset).map_err(std::io::Error::other)?;
         let mut file = File::create(&dataset_json_path)?;
         file.write_all(dataset_json.as_bytes())?;
 

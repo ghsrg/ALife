@@ -1,0 +1,14 @@
+# Long-Run Evolution Stress Scenario (AL-005-S03)
+[world]
+width = 1200.0
+height = 800.0
+
+[resources]
+passive_energy_income_placeholder = 0.001
+
+[evolution_suite]
+scenario_id = "long_run_stress"
+seed_matrix = [42, 101, 2024]
+max_ticks = 5000
+min_population_threshold = 20
+sampling_cadence = 250

@@ -29,7 +29,7 @@ fn bootstrap_preview_exports_stable_manifest_and_bounded_resource_preview_withou
     .expect("preview should be deterministic");
 
     assert_eq!(preview_a.scenario_id, "demo_world_resource");
-    assert_eq!(preview_a.tick_executed, false);
+    assert!(!preview_a.tick_executed);
     assert_eq!(preview_a.scenario_hash, preview_b.scenario_hash);
     assert_eq!(preview_a.prepared_state_hash, preview_b.prepared_state_hash);
     assert_eq!(preview_a.generator_versions, preview_b.generator_versions);
@@ -69,7 +69,7 @@ fn bootstrap_preview_keeps_fields_manifest_only_with_explicit_warning() {
         preview
             .field_layers
             .iter()
-            .all(|field| field.spatial_grid_available == false)
+            .all(|field| !field.spatial_grid_available)
     );
     assert!(preview.warnings.iter().any(|warning| {
         warning.code == "BOOTSTRAP_FIELD_LAYER_NOT_CORE_INTEGRATED"
@@ -101,7 +101,7 @@ fn seed_sweep_report_is_deterministic_and_compact() {
 
     assert_eq!(report_a.rows, report_b.rows);
     assert_eq!(report_a.rows.len(), 4);
-    assert!(report_a.rows.iter().all(|row| row.tick_executed == false));
+    assert!(report_a.rows.iter().all(|row| !row.tick_executed));
     assert!(
         report_a
             .rows

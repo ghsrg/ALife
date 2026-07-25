@@ -2,6 +2,7 @@ pub mod balance;
 pub mod classifiers;
 pub mod config;
 pub mod contract;
+pub mod evolution_suite;
 pub mod organism_view;
 pub mod payloads;
 pub mod projection;

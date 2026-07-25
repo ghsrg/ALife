@@ -43,10 +43,10 @@ async fn handle_ws_client(mut socket: WebSocket, state: AppState) {
         let locked = state.lock().unwrap();
         locked.latest_frame.clone()
     };
-    if let Some(bytes) = latest_frame {
-        if socket.send(Message::Binary(bytes.into())).await.is_err() {
-            return;
-        }
+    if let Some(bytes) = latest_frame
+        && socket.send(Message::Binary(bytes.into())).await.is_err()
+    {
+        return;
     }
 
     loop {

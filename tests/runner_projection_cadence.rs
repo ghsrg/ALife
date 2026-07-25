@@ -59,7 +59,10 @@ async fn projection_streaming_supports_full_and_sampled_stride() {
         .unwrap();
     assert_eq!(response_full.status(), 200);
     let json_full = response_json(response_full).await;
-    assert_eq!(json_full["schema_version"], "ControlCenterProjectionBundle/v1");
+    assert_eq!(
+        json_full["schema_version"],
+        "ControlCenterProjectionBundle/v1"
+    );
 
     // Sampled resolution (stride=2)
     let app_sampled = create_app(state);
@@ -74,5 +77,8 @@ async fn projection_streaming_supports_full_and_sampled_stride() {
         .unwrap();
     assert_eq!(response_sampled.status(), 200);
     let json_sampled = response_json(response_sampled).await;
-    assert_eq!(json_sampled["schema_version"], "ControlCenterProjectionBundle/v1");
+    assert_eq!(
+        json_sampled["schema_version"],
+        "ControlCenterProjectionBundle/v1"
+    );
 }

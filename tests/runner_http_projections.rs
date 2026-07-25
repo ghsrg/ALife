@@ -99,18 +99,16 @@ async fn latest_projections_return_bounded_observer_payload_bundle() {
         "CoreCommittedSnapshot"
     );
     assert!(
-        json["visual_world"]["payload"]["cells"]
+        !json["visual_world"]["payload"]["cells"]
             .as_array()
             .unwrap()
-            .len()
-            > 0
+            .is_empty()
     );
     assert!(
-        json["visual_world"]["payload"]["resource_layers"][0]["cells"]
+        !json["visual_world"]["payload"]["resource_layers"][0]["cells"]
             .as_array()
             .unwrap()
-            .len()
-            > 0
+            .is_empty()
     );
     assert!(
         json["coverage"]["projection_kind"]

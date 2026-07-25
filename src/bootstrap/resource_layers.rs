@@ -80,6 +80,7 @@ pub fn patches_resource_layer(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn generate_patch_resource_layer(
     layer_index: usize,
     width: usize,

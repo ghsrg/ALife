@@ -33,7 +33,10 @@ fn completeness_json(completeness: &ProjectionCompleteness) -> Value {
     })
 }
 
-fn visual_world_json(state: &mut crate::viewer_server::state::SharedState, stride: usize) -> Option<Value> {
+fn visual_world_json(
+    state: &mut crate::viewer_server::state::SharedState,
+    stride: usize,
+) -> Option<Value> {
     let snapshot = state.engine.as_mut()?.latest_committed_snapshot();
     let projection = build_visual_world_projection_sampled(&snapshot, stride);
 

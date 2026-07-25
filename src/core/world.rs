@@ -1391,6 +1391,7 @@ fn baseline_process_level(raw_level: f32) -> f32 {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn mutate_genome_output_value(
     seed: u64,
     tick: u64,
