@@ -69,7 +69,7 @@ export function toErrorMessage(error: unknown) {
 export function shouldApplyDebugProjections(
   debugProjections: DebugProjectionState,
   requestedFrameTick: number,
-  state: Pick<AppStore, 'frame'>
+  state: Pick<AppStore, 'frame' | 'debugProjections'>
 ) {
   if (state.frame.source !== 'live') {
     return true;
@@ -81,6 +81,10 @@ export function shouldApplyDebugProjections(
 
   if (debugProjections.status === 'loading' || debugProjections.status === 'stale') {
     return state.frame.tick === requestedFrameTick;
+  }
+
+  if (state.debugProjections.status === 'loading' && state.debugProjections.runId === debugProjections.runId) {
+    return true;
   }
 
   return debugProjections.tick >= state.frame.tick;
@@ -168,8 +172,9 @@ export function createRunnerController({
             reason: 'Waiting for Observer debug projection'
           });
         }
+        const stride = (liveWorldFrame.world.width >= 120 && currentState.runStatus?.activeRunState === 'running') ? 2 : 1;
         void nextApiClient
-          .getLatestDebugProjections()
+          .getLatestDebugProjections(stride)
           .then((debugProjections) => {
             if (!isActive()) {
               return;

@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-002-S18` | in-progress | high | `docs/delivery/roadmap.md` | Core-Bootstrap-Runner Closure Matrix And Diverse World Setup: Config, spatial resource oases, varied initial cell genomes, and seed-driven UI diversity. |
+| `AL-007-S14` | in-progress | high | `docs/delivery/roadmap.md` | Debug Experiments, Fixtures, Diagnostics, Stale Recovery, And Projection Cadence Optimization. |
 
 ## Operational Rules
 
@@ -46,6 +46,10 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-007-S14` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence.md` | Debug Experiments, Diagnostics, Recovery, And Projection Cadence Optimization closed for adaptive grid stride streaming, lightweight HTTP debug payloads, and smooth real-time projection updates. |
+| `AL-007-S13` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-25-1215-REPORT-al-007-s13-world-editor-and-scenario-runner.md` | World Editor And Scenario Runner closed for pre-run TOML config editor, scenario presets, validation diagnostics, SHA-256 config hashing, localStorage draft recovery, relaunch controls, and read-only execution safety. |
+| `AL-004-S04` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-25-1150-REPORT-al-004-s04-organism-view-projection.md` | Observer-Only OrganismView Projection closed for OrganismViewPayload, OrganismViewProjection, graph connected-component BFS analysis, centroid, and read-only Observer boundary. |
+| `AL-002-S18` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-25-1140-REPORT-al-002-s18-diverse-rich-world-and-closure.md` | Core-Bootstrap-Runner Closure Matrix And Diverse World Setup closed for diverse_rich_world.toml, patchy resource oases, specialized genome profiles, seed-driven diversity, and AL-002 block closure. |
 | `AL-005-S02` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-25-1125-REPORT-al-005-s02-analytics-export-foundation.md` | Analytics Export Foundation closed for AnalyticsExportManifest, Population, Balance, Lineage, Environment datasets, JSON/CSV formatting, and export_to_dir verification. |
 | `AL-006-S01` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-2305-REPORT-al-006-s01-benchmark-harness-target-scenarios.md` | Benchmark Harness And Target Scenarios closed for scale_20k_cells.toml, scale_40k_joints.toml, scale_scenarios_smoke, scale_benchmark_harness, and determinism verification. |
 | `AL-002-S17` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-1925-REPORT-al-002-s17-phase-2-debt-closure.md` | Phase 2 Debt Closure closed JointRepair canonical disposition, RepairBoundary & material damage execution, boundary retention, and observer environment heat metrics. |

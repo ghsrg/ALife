@@ -53,6 +53,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const { camera } = cameraState;
   const [truthOverlayVisible, setTruthOverlayVisible] = useState(true);
   const [debugLayerMode, setDebugLayerMode] = useState<DebugLayerMode>('exact');
+  const [isDebugOverlayCollapsed, setIsDebugOverlayCollapsed] = useState(false);
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [viewport, setViewport] = useState(() => ({ width: frame.world.width, height: frame.world.height }));
   const normalizedMapSearchQuery = mapSearchQuery.trim().toLowerCase();
@@ -277,6 +278,12 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       onClick={handleViewerClick}
     >
       <div ref={hostRef} className="world-canvas-host" />
+      {(!isReady || debugProjections?.status === 'loading') ? (
+        <div className="world-loading-overlay" aria-label="Loading world projection">
+          <div className="loading-spinner" aria-hidden="true" />
+          <span>{debugProjections?.status === 'loading' ? 'Loading World & Resource Grids...' : 'Initializing World Viewer...'}</span>
+        </div>
+      ) : null}
       {truthOverlayVisible ? <ViewerTruthOverlay truthState={truthState} onDismiss={() => setTruthOverlayVisible(false)} /> : null}
       <div
         className="viewer-navigation-controls"
@@ -304,25 +311,47 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       </div>
       {debugLayerPlan ? (
         <aside
-          className="debug-visualization-mode"
+          className={isDebugOverlayCollapsed ? 'debug-visualization-mode collapsed' : 'debug-visualization-mode'}
           aria-label="Debug Visualization Mode"
           onMouseDown={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
           onWheel={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="debug-mode-header">
-            <strong>Debug</strong>
-            <span>{debugLayerPlan.interpolationLabel}</span>
-            {debugProjections?.status === 'available' ? (
-              <span>{`Tick ${debugProjections.tick}`}</span>
-            ) : debugProjections?.status === 'loading' ? (
-              <span>{`Tick ${debugProjections.requestedTick}`}</span>
-            ) : debugProjections?.status === 'stale' ? (
-              <span>{`Tick ${debugProjections.tick}`}</span>
-            ) : null}
+          <div className="debug-mode-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <strong>Debug</strong>
+              <span>{debugLayerPlan.interpolationLabel}</span>
+              {debugProjections?.status === 'available' ? (
+                <span>{`Tick ${debugProjections.tick}`}</span>
+              ) : debugProjections?.status === 'loading' ? (
+                <span>{`Tick ${debugProjections.requestedTick}`}</span>
+              ) : debugProjections?.status === 'stale' ? (
+                <span>{`Tick ${debugProjections.tick}`}</span>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="debug-collapse-btn"
+              onClick={() => setIsDebugOverlayCollapsed(!isDebugOverlayCollapsed)}
+              aria-label={isDebugOverlayCollapsed ? 'Expand debug overlay' : 'Collapse debug overlay'}
+              style={{
+                padding: '2px 6px',
+                fontSize: '11px',
+                borderRadius: '4px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: '#dce6f1',
+                cursor: 'pointer'
+              }}
+            >
+              {isDebugOverlayCollapsed ? 'Expand ▲' : 'Minimize ▼'}
+            </button>
           </div>
-          <div className="debug-mode-actions">
+
+          {!isDebugOverlayCollapsed && (
+            <>
+              <div className="debug-mode-actions">
             <button
               type="button"
               onClick={() => setDebugLayerMode(debugLayerMode === 'exact' ? 'smooth' : 'exact')}
@@ -394,6 +423,8 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
               <span className="debug-mode-warning">{debugLayerPlan.reason}</span>
             )}
           </div>
+            </>
+          )}
         </aside>
       ) : null}
       <div className="world-hit-targets" aria-label={uiText.viewer.hitTargetsAriaLabel}>

@@ -160,10 +160,22 @@ export function BottomDataPanel({ state }: BottomDataPanelProps) {
                 const alive = cells.filter((c) => (c.energy ?? 0) > 0);
                 const dead = cells.length - alive.length;
 
-                // Group by radius / energy proxy behavior
-                const metabolic = alive.filter((c) => (c.energy ?? 0) > 5.0).length;
-                const transport = alive.filter((c) => (c.radius ?? 1) >= 1.3).length;
-                const structural = alive.filter((c) => (c.radius ?? 1) < 1.3 && (c.energy ?? 0) <= 5.0).length;
+                // Mutually exclusive partitioning across functional cell categories
+                let metabolic = 0;
+                let transport = 0;
+                let structural = 0;
+
+                for (const c of alive) {
+                  const energy = c.energy ?? 0;
+                  const radius = c.radius ?? 1.0;
+                  if (energy >= 75.0 && radius < 1.35) {
+                    metabolic++;
+                  } else if (radius >= 1.35) {
+                    transport++;
+                  } else {
+                    structural++;
+                  }
+                }
 
                 const items = [
                   { name: 'Metabolic (High Energy)', count: metabolic, color: '#2ec4b6' },

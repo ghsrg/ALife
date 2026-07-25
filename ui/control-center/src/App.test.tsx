@@ -331,7 +331,7 @@ describe('App', () => {
 
     expect(screen.getByRole('tab', { name: 'Monitor' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'OrganismView unavailable - observer projection not ready' })).toBeDisabled();
-    expect(screen.getByRole('tab', { name: 'World Editor unavailable - debug scenario editor not ready' })).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'World Editor' })).not.toBeDisabled();
   });
 
   it('keeps theme switching in application settings instead of the map toolbar', async () => {

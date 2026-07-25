@@ -174,3 +174,28 @@ pub struct BalanceFindingProjectionPayload {
     pub source_report: String,
     pub limitations: Vec<String>,
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct OrganismViewPayload {
+    pub organism_id: u32,
+    pub cell_ids: Vec<u32>,
+    pub primary_cell_id: u32,
+    pub total_cells_count: usize,
+    pub total_mass: f32,
+    pub total_energy: f32,
+    pub total_joints_count: usize,
+    pub centroid_x: f32,
+    pub centroid_y: f32,
+    pub confidence: f32,
+    pub completeness: ProjectionCompleteness,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct OrganismViewProjection {
+    pub tick: u64,
+    pub organisms: Vec<OrganismViewPayload>,
+    pub total_organisms_count: usize,
+    pub unattached_cells_count: usize,
+    pub completeness: ProjectionCompleteness,
+    pub source_metrics: Vec<ProjectionSourceMetricRef>,
+}

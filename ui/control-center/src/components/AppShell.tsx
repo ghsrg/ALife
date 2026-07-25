@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { createAppStore, getMonitorDataState } from '../app/appState';
 import { createRunnerController } from '../app/runnerController';
 import { MonitorWorkspace } from './MonitorWorkspace';
+import { WorldEditorWorkspace } from './WorldEditorWorkspace';
 import { RunControls } from './RunControls';
 import { buildMonitorStats } from './monitorStats';
 import { uiText } from '../uiText';
+
+import { DiagnosticsPanel } from './DiagnosticsPanel';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
@@ -38,6 +41,8 @@ export function AppShell() {
     );
   };
 
+  const [activeWorkspace, setActiveWorkspace] = useState<'monitor' | 'world-editor' | 'diagnostics'>('monitor');
+
   return (
     <div className="app-shell">
       <header className="top-bar" data-testid="monitor-top-context">
@@ -47,7 +52,14 @@ export function AppShell() {
             <h1>{uiText.app.title}</h1>
           </div>
           <nav className="mode-tabs" aria-label={uiText.app.primaryViews}>
-            <button type="button" role="tab" aria-selected="true">{uiText.workspace.monitor}</button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWorkspace === 'monitor'}
+              onClick={() => setActiveWorkspace('monitor')}
+            >
+              {uiText.workspace.monitor}
+            </button>
             <button
               type="button"
               role="tab"
@@ -62,13 +74,18 @@ export function AppShell() {
             <button
               type="button"
               role="tab"
-              aria-selected="false"
-              aria-label={uiText.workspace.worldEditorUnavailable}
-              title={uiText.workspace.unavailableSummary}
-              disabled
+              aria-selected={activeWorkspace === 'world-editor'}
+              onClick={() => setActiveWorkspace('world-editor')}
             >
               {uiText.workspace.worldEditor}
-              <small>{uiText.workspace.unavailable}</small>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWorkspace === 'diagnostics'}
+              onClick={() => setActiveWorkspace('diagnostics')}
+            >
+              Diagnostics & Recovery
             </button>
           </nav>
         </div>
@@ -94,7 +111,8 @@ export function AppShell() {
         </div>
       </header>
 
-      <MonitorWorkspace
+      {activeWorkspace === 'monitor' ? (
+        <MonitorWorkspace
           state={state}
           monitorStats={monitorStats}
           onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
@@ -105,8 +123,32 @@ export function AppShell() {
           onJumpToLive={() => store.getState().jumpToLive()}
           onSelectHistoryTick={(tick) => store.getState().selectHistoryTick(tick)}
           exportStatus={exportStatus}
-      />
+        />
+      ) : activeWorkspace === 'world-editor' ? (
+        <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+          <WorldEditorWorkspace
+            state={state}
+            onSelectScenario={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
+            onRelaunchRun={(scenarioId) => {
+              store.getState().setSelectedScenarioId(scenarioId);
+              controller.startRun();
+              setActiveWorkspace('monitor');
+            }}
+          />
+        </div>
+      ) : (
+        <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+          <DiagnosticsPanel
+            appState={state}
+            monitorDataState={monitorDataState}
+            serverInfo={state.serverInfo}
+            scenarios={state.scenarios}
+            endpoint="ws://localhost:3000/ws"
+            connectionState={state.connectionState}
+            onReconnect={controller.connectRunner}
+          />
+        </div>
+      )}
     </div>
   );
 }
-

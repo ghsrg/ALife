@@ -86,8 +86,16 @@ tags:
 - [[outputs/worklogs/2026-07-24-2245-PLAN-al-006-s01-benchmark-harness-target-scenarios|2026-07-24-2245-PLAN-al-006-s01-benchmark-harness-target-scenarios]]
 - [[outputs/worklogs/2026-07-25-1040-PLAN-al-005-s02-analytics-export-foundation|2026-07-25-1040-PLAN-al-005-s02-analytics-export-foundation]]
 - [[outputs/worklogs/2026-07-25-1130-PLAN-al-002-s18-diverse-rich-world-and-closure|2026-07-25-1130-PLAN-al-002-s18-diverse-rich-world-and-closure]]
+- [[outputs/worklogs/2026-07-25-1145-PLAN-al-004-s04-organism-view-projection|2026-07-25-1145-PLAN-al-004-s04-organism-view-projection]]
+- [[outputs/worklogs/2026-07-25-1200-PLAN-al-007-s13-world-editor-and-scenario-runner|2026-07-25-1200-PLAN-al-007-s13-world-editor-and-scenario-runner]]
+- [[outputs/worklogs/2026-07-25-1535-PLAN-al-007-s14-debug-diagnostics-recovery-and-projection-cadence|2026-07-25-1535-PLAN-al-007-s14-debug-diagnostics-recovery-and-projection-cadence]]
 
 ## Reports
+- [[outputs/worklogs/2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence|2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence]]
+- [[outputs/worklogs/2026-07-25-1215-REPORT-al-007-s13-world-editor-and-scenario-runner|2026-07-25-1215-REPORT-al-007-s13-world-editor-and-scenario-runner]]
+- [[outputs/worklogs/2026-07-25-1150-REPORT-al-004-s04-organism-view-projection|2026-07-25-1150-REPORT-al-004-s04-organism-view-projection]]
+- [[outputs/worklogs/2026-07-25-1140-REPORT-al-002-s18-diverse-rich-world-and-closure|2026-07-25-1140-REPORT-al-002-s18-diverse-rich-world-and-closure]]
+- [[outputs/worklogs/2026-07-25-1125-REPORT-al-005-s02-analytics-export-foundation|2026-07-25-1125-REPORT-al-005-s02-analytics-export-foundation]]
 - [[outputs/worklogs/2026-07-24-2305-REPORT-al-006-s01-benchmark-harness-target-scenarios|2026-07-24-2305-REPORT-al-006-s01-benchmark-harness-target-scenarios]]
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
 - [[outputs/worklogs/2026-06-29-2320-REPORT-sync-readmes-adr-gitignore|2026-06-29-2320-REPORT-sync-readmes-adr-gitignore]]

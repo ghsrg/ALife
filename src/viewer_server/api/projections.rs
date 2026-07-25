@@ -1,10 +1,17 @@
 use crate::observer::projection::{
-    build_coverage_projection, build_visual_world_projection, build_warning_projection,
+    build_coverage_projection, build_visual_world_projection_sampled, build_warning_projection,
 };
 use crate::observer::projection_envelope::{ProjectionCompleteness, ProjectionCompletenessState};
 use crate::viewer_server::state::AppState;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
 use serde_json::{Value, json};
+
+use axum::extract::Query;
+
+#[derive(serde::Deserialize, Debug)]
+pub struct ProjectionParams {
+    pub stride: Option<usize>,
+}
 
 fn completeness_state_label(state: ProjectionCompletenessState) -> &'static str {
     match state {
@@ -26,9 +33,9 @@ fn completeness_json(completeness: &ProjectionCompleteness) -> Value {
     })
 }
 
-fn visual_world_json(state: &mut crate::viewer_server::state::SharedState) -> Option<Value> {
+fn visual_world_json(state: &mut crate::viewer_server::state::SharedState, stride: usize) -> Option<Value> {
     let snapshot = state.engine.as_mut()?.latest_committed_snapshot();
-    let projection = build_visual_world_projection(&snapshot);
+    let projection = build_visual_world_projection_sampled(&snapshot, stride);
 
     Some(json!({
         "schema_version": "VisualWorldProjection/v1",
@@ -104,10 +111,12 @@ fn empty_section_json(projection_kind: &str, payload_key: &str, payload: Value) 
 }
 
 async fn handle_latest_projections(
+    Query(params): Query<ProjectionParams>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     let mut locked = state.lock().unwrap();
-    let Some(visual_world) = visual_world_json(&mut locked) else {
+    let stride = params.stride.unwrap_or(1);
+    let Some(visual_world) = visual_world_json(&mut locked, stride) else {
         return Err((
             StatusCode::NOT_FOUND,
             Json(json!({

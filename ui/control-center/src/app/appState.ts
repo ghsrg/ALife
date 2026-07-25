@@ -10,6 +10,9 @@ import type { CellId, CellProjection, DebugProjectionState, ResourceConcentratio
 import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClient';
 import type { RunnerStreamConnectionState as ConnectionState } from '../runner/streamClient';
 
+export type { RunStatus, ScenarioListItem, ServerInfo };
+export type { ConnectionState };
+
 export type ThemeMode = 'dark' | 'light';
 export type PendingCommand = 'connect' | 'start' | 'pause' | 'resume' | 'step' | 'stop';
 export type MonitorDataState =

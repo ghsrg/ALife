@@ -1456,3 +1456,38 @@ button:disabled {
   color: #8fa1b1;
   font-size: 12px;
 }
+
+/* WORLD VIEWER LOADING OVERLAY */
+.world-loading-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(6, 13, 17, 0.88);
+  border: 1px solid rgba(116, 222, 210, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  color: #74ded2;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(116, 222, 210, 0.3);
+  border-top-color: #74ded2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

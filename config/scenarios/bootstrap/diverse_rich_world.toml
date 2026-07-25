@@ -1,0 +1,213 @@
+scenario_id = "diverse_rich_world"
+seed = 42
+tick_count = 100
+legacy_material_distribution = false
+
+[world]
+size = [160.0, 160.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = [
+    "glucose_nutrient",
+    "amino_building_block",
+    "mineral_catalyst_iron",
+    "mineral_silica",
+    "photon_energy_ambient",
+    "geothermal_heat_source",
+    "metabolic_waste_co2",
+    "toxic_heavy_metal"
+]
+initial_distribution = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+optional_decay_rate = 0.001
+
+[bootstrap]
+family = "patchy_temperate_v1"
+
+# 1. Glucose Organic Nutrient (Rich Oases)
+[[bootstrap.resources]]
+resource_type_id = "glucose_nutrient"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.glucose_nutrient"
+patches = 8
+min_amount = 0.5
+max_amount = 12.0
+falloff = 0.3
+
+# 2. Amino Building Blocks (Patchy Clusters)
+[[bootstrap.resources]]
+resource_type_id = "amino_building_block"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.amino_building_block"
+patches = 6
+min_amount = 0.2
+max_amount = 8.0
+falloff = 0.35
+
+# 3. Iron Mineral Catalyst (Mineral Veins)
+[[bootstrap.resources]]
+resource_type_id = "mineral_catalyst_iron"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.mineral_catalyst_iron"
+patches = 5
+min_amount = 0.1
+max_amount = 10.0
+falloff = 0.4
+
+# 4. Silica Mineral (Dense Deposits)
+[[bootstrap.resources]]
+resource_type_id = "mineral_silica"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.mineral_silica"
+patches = 4
+min_amount = 0.1
+max_amount = 15.0
+falloff = 0.45
+
+# 5. Photon Radiant Energy (Solar Gradient)
+[[bootstrap.resources]]
+resource_type_id = "photon_energy_ambient"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.photon_energy_ambient"
+min_amount = 1.0
+max_amount = 15.0
+
+# 6. Geothermal Heat Energy (Deep Hotspots)
+[[bootstrap.resources]]
+resource_type_id = "geothermal_heat_source"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.geothermal_heat_source"
+patches = 3
+min_amount = 0.5
+max_amount = 20.0
+falloff = 0.25
+
+# 7. Metabolic CO2 Waste (Atmospheric Gradient)
+[[bootstrap.resources]]
+resource_type_id = "metabolic_waste_co2"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.metabolic_waste_co2"
+min_amount = 0.0
+max_amount = 3.0
+
+# 8. Toxic Heavy Metal (Inhibitory Pools)
+[[bootstrap.resources]]
+resource_type_id = "toxic_heavy_metal"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.toxic_heavy_metal"
+patches = 3
+min_amount = 0.0
+max_amount = 5.0
+falloff = 0.5
+
+[[bootstrap.fields]]
+field_id = "temperature"
+generator = "band"
+version = "band.v1"
+seed_domain = "fields.layers.temperature"
+min_value = 12.0
+max_value = 35.0
+
+# Base Cell Template
+[cell]
+initial_position = [30.0, 30.0]
+radius = 1.2
+initial_resources = { glucose_nutrient = 10.0, amino_building_block = 5.0, mineral_catalyst_iron = 2.0, mineral_silica = 1.0, photon_energy_ambient = 20.0, geothermal_heat_source = 0.0, metabolic_waste_co2 = 0.0, toxic_heavy_metal = 0.0 }
+initial_materials = { boundary = 3.0, transport = 2.0, metabolic = 4.0, storage = 5.0, synthesis = 8.0, structural = 3.0, repair = 2.0, contractile = 1.0, sensory = 2.0 }
+initial_energy = 100.0
+energy_capacity = 150.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+
+# Initial Cell Population with 5 Diverse Specializations across the world
+# 1. Phototrophic Specialist (Metabolic: High Energy, Compact Radius)
+[[cells]]
+initial_position = [30.0, 30.0]
+radius = 1.2
+initial_resources = { glucose_nutrient = 10.0, amino_building_block = 5.0, mineral_catalyst_iron = 2.0, mineral_silica = 1.0, photon_energy_ambient = 20.0, geothermal_heat_source = 0.0, metabolic_waste_co2 = 0.0, toxic_heavy_metal = 0.0 }
+initial_materials = { boundary = 3.0, transport = 2.0, metabolic = 4.0, storage = 5.0, synthesis = 8.0, structural = 3.0, repair = 2.0, contractile = 1.0, sensory = 2.0 }
+initial_energy = 100.0
+energy_capacity = 150.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+
+# 2. Organotrophic Heterotroph (Transport: Large Radius)
+[[cells]]
+initial_position = [120.0, 40.0]
+radius = 1.6
+initial_resources = { glucose_nutrient = 25.0, amino_building_block = 12.0, mineral_catalyst_iron = 1.0, mineral_silica = 0.0, photon_energy_ambient = 5.0, geothermal_heat_source = 0.0, metabolic_waste_co2 = 0.0, toxic_heavy_metal = 0.0 }
+initial_materials = { boundary = 3.5, transport = 6.0, metabolic = 6.0, storage = 4.0, synthesis = 2.0, structural = 3.0, repair = 2.0, contractile = 3.0, sensory = 2.5 }
+initial_energy = 85.0
+energy_capacity = 130.0
+mandatory_cost_per_tick = 0.006
+capacity_limit = 150.0
+
+# 3. Lithotrophic Mineral Harvester (Structural: Compact Radius, Heavy Armor)
+[[cells]]
+initial_position = [50.0, 120.0]
+radius = 1.1
+initial_resources = { glucose_nutrient = 5.0, amino_building_block = 3.0, mineral_catalyst_iron = 15.0, mineral_silica = 25.0, photon_energy_ambient = 2.0, geothermal_heat_source = 5.0, metabolic_waste_co2 = 0.0, toxic_heavy_metal = 0.0 }
+initial_materials = { boundary = 6.0, transport = 3.0, metabolic = 3.0, storage = 6.0, synthesis = 4.0, structural = 8.0, repair = 4.0, contractile = 1.0, sensory = 2.0 }
+initial_energy = 60.0
+energy_capacity = 160.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 160.0
+
+# 4. Extremophile Thermophile (Metabolic: High Energy)
+[[cells]]
+initial_position = [130.0, 130.0]
+radius = 1.25
+initial_resources = { glucose_nutrient = 8.0, amino_building_block = 6.0, mineral_catalyst_iron = 5.0, mineral_silica = 2.0, photon_energy_ambient = 0.0, geothermal_heat_source = 30.0, metabolic_waste_co2 = 0.0, toxic_heavy_metal = 0.0 }
+initial_materials = { boundary = 4.0, transport = 4.0, metabolic = 5.0, storage = 4.0, synthesis = 3.0, structural = 4.0, repair = 5.0, contractile = 2.0, sensory = 3.0 }
+initial_energy = 110.0
+energy_capacity = 140.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+
+# 5. Motile Explorer (Transport: Large Radius)
+[[cells]]
+initial_position = [80.0, 80.0]
+radius = 1.4
+initial_resources = { glucose_nutrient = 12.0, amino_building_block = 8.0, mineral_catalyst_iron = 3.0, mineral_silica = 1.0, photon_energy_ambient = 10.0, geothermal_heat_source = 0.0, metabolic_waste_co2 = 0.0, toxic_heavy_metal = 0.0 }
+initial_materials = { boundary = 2.5, transport = 5.0, metabolic = 3.0, storage = 4.0, synthesis = 3.0, structural = 2.5, repair = 2.0, contractile = 6.0, sensory = 6.0 }
+initial_energy = 90.0
+energy_capacity = 120.0
+mandatory_cost_per_tick = 0.005
+capacity_limit = 150.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 0.3
+metabolism_resource_per_tick = 0.05
+energy_per_resource = 1.5
+heat_per_resource = 0.01
+waste_per_resource = 0.01
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.1
+heat_warning_threshold = 25.0
+heat_death_threshold = 50.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.1
+waste_warning_threshold = 25.0
+waste_death_threshold = 50.0
+
+[lifecycle]
+stress_energy_threshold = 5.0
+dormancy_allowed = false
+critical_capacity_overrun = 10.0

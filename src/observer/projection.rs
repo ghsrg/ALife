@@ -222,8 +222,16 @@ pub fn metrics_summary_features(metrics: &MetricsSummary) -> HashMap<String, f32
 }
 
 pub fn build_visual_world_projection(snapshot: &CommittedSnapshot) -> VisualWorldProjection {
+    build_visual_world_projection_sampled(snapshot, 1)
+}
+
+pub fn build_visual_world_projection_sampled(
+    snapshot: &CommittedSnapshot,
+    grid_stride: usize,
+) -> VisualWorldProjection {
+    let stride = grid_stride.max(1) as u32;
     let completeness = ProjectionCompleteness::bounded(
-        "CommittedSnapshot exposes exact current resource grid cells and bounded per-cell material/resource summaries for Control Center visualization.",
+        "CommittedSnapshot exposes sampled/bounded resource grid cells and per-cell material/resource summaries for Control Center visualization.",
     );
 
     let cells = snapshot
@@ -280,6 +288,7 @@ pub fn build_visual_world_projection(snapshot: &CommittedSnapshot) -> VisualWorl
             cells: layer
                 .cells
                 .iter()
+                .filter(|cell| stride == 1 || (cell.x % stride == 0 && cell.y % stride == 0))
                 .map(|cell| ResourceLayerCellPayload {
                     x: cell.x,
                     y: cell.y,
@@ -287,7 +296,7 @@ pub fn build_visual_world_projection(snapshot: &CommittedSnapshot) -> VisualWorl
                 })
                 .collect(),
             completeness: ProjectionCompleteness::bounded(
-                "CommittedSnapshot exposes exact current resource grid cells for this bounded world.",
+                "CommittedSnapshot exposes resource grid cells for this bounded world.",
             ),
         })
         .collect();

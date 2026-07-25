@@ -190,8 +190,9 @@ export class RunnerApiClient {
     return mapStatus(await this.request<RunStatusWire>('/run/status', { method: 'GET' }));
   }
 
-  async getLatestDebugProjections(): Promise<DebugProjectionState> {
-    const response = await fetch(`${this.baseUrl}/projections/latest`, { method: 'GET' });
+  async getLatestDebugProjections(stride?: number): Promise<DebugProjectionState> {
+    const url = stride && stride > 1 ? `${this.baseUrl}/projections/latest?stride=${stride}` : `${this.baseUrl}/projections/latest`;
+    const response = await fetch(url, { method: 'GET' });
     const body: unknown = await response.json();
 
     if (!response.ok) {
