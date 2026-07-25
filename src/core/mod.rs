@@ -6,6 +6,7 @@ pub mod cell_store;
 pub mod config;
 pub mod contact;
 pub mod deltas;
+pub mod dirty_regions;
 pub mod environment;
 pub mod events;
 pub mod fragments;

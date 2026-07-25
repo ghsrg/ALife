@@ -95,11 +95,15 @@ tags:
 - [[outputs/worklogs/2026-07-25-2005-PLAN-al-007-s18-specialization-analytics|2026-07-25-2005-PLAN-al-007-s18-specialization-analytics]]
 - [[outputs/worklogs/2026-07-25-2015-PLAN-al-007-s19-library-placement-reporting-research-export|2026-07-25-2015-PLAN-al-007-s19-library-placement-reporting-research-export]]
 - [[outputs/worklogs/2026-07-25-2025-PLAN-al-005-s03-long-run-evolution-scenario-suite|2026-07-25-2025-PLAN-al-005-s03-long-run-evolution-scenario-suite]]
+- [[outputs/worklogs/2026-07-25-2255-PLAN-al-005-s04-evolution-calibration-comparison-tools|2026-07-25-2255-PLAN-al-005-s04-evolution-calibration-comparison-tools]]
+- [[outputs/worklogs/2026-07-25-2310-PLAN-al-006-s02-hot-path-optimization-dirty-regions|2026-07-25-2310-PLAN-al-006-s02-hot-path-optimization-dirty-regions]]
 
 ## Reports
 - [[outputs/worklogs/2026-07-25-2025-REPORT-al-007-s18-specialization-analytics|2026-07-25-2025-REPORT-al-007-s18-specialization-analytics]]
 - [[outputs/worklogs/2026-07-25-2040-REPORT-al-007-s19-library-placement-reporting-research-export|2026-07-25-2040-REPORT-al-007-s19-library-placement-reporting-research-export]]
 - [[outputs/worklogs/2026-07-25-2045-REPORT-al-005-s03-long-run-evolution-scenario-suite|2026-07-25-2045-REPORT-al-005-s03-long-run-evolution-scenario-suite]]
+- [[outputs/worklogs/2026-07-25-2315-REPORT-al-005-s04-evolution-calibration-comparison-tools|2026-07-25-2315-REPORT-al-005-s04-evolution-calibration-comparison-tools]]
+- [[outputs/worklogs/2026-07-25-2335-REPORT-al-006-s02-hot-path-optimization-dirty-regions|2026-07-25-2335-REPORT-al-006-s02-hot-path-optimization-dirty-regions]]
 - [[outputs/worklogs/2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence|2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence]]
 - [[outputs/worklogs/2026-07-25-1630-REPORT-al-007-s15-experiments-and-run-comparison|2026-07-25-1630-REPORT-al-007-s15-experiments-and-run-comparison]]
 - [[outputs/worklogs/2026-07-25-1655-REPORT-al-007-s16-evolution-observatory|2026-07-25-1655-REPORT-al-007-s16-evolution-observatory]]

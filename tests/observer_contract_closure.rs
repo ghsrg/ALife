@@ -179,16 +179,8 @@ fn runner_world_frame_fields_have_observer_contract_mapping() {
 
 #[test]
 fn observer_contract_is_static_and_read_only() {
-    assert!(
-        observer_field_specs()
-            .iter()
-            .all(|spec| !spec.mutable)
-    );
-    assert!(
-        warning_code_specs()
-            .iter()
-            .all(|spec| !spec.mutable)
-    );
+    assert!(observer_field_specs().iter().all(|spec| !spec.mutable));
+    assert!(warning_code_specs().iter().all(|spec| !spec.mutable));
 }
 
 #[test]

@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-006-S02` | planned | high | `docs/delivery/roadmap.md` | Hot Path Optimization And Dirty Regions: SoA, dirty region tracking, spatial index optimization. |
+| `AL-006-S03` | planned | high | `docs/delivery/roadmap.md` | Deterministic Parallelism: parallel execution preserving stable state hashes. |
 
 ## Operational Rules
 
