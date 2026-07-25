@@ -309,29 +309,51 @@ function enrichFrameWithDebugProjection(frame: WorldFrame, debugProjections: Deb
   };
 }
 
+function detectStride(cells: { x: number; y: number }[]): number {
+  if (cells.length < 2) return 1;
+  let minDx = Infinity;
+  const firstY = cells[0].y;
+  for (let i = 1; i < cells.length; i++) {
+    if (cells[i].y === firstY) {
+      const dx = cells[i].x - cells[i - 1].x;
+      if (dx > 0 && dx < minDx) minDx = dx;
+    }
+  }
+  return minDx === Infinity ? 1 : minDx;
+}
+
 function resourceLayersToGrid(
   layers: Extract<DebugProjectionState, { status: 'available' }>['visualWorld']['resourceLayers']
 ) {
   const width = Math.max(...layers.map((layer) => layer.width));
   const height = Math.max(...layers.map((layer) => layer.height));
   const rows: ResourceConcentration[][] = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => ({ organic: 0, mineral: 0, energy: 0 }))
+    Array.from({ length: width }, () => ({ organic: 0, mineral: 0, energy: 0, layers: {} }))
   );
 
-  layers.forEach((layer, index) => {
-    const channel = index % 3;
+  layers.forEach((layer) => {
+    const stride = detectStride(layer.cells);
     for (const cell of layer.cells) {
-      if (cell.y >= rows.length || cell.x >= (rows[cell.y]?.length ?? 0)) {
-        continue;
-      }
+      for (let dy = 0; dy < stride; dy++) {
+        const ry = cell.y + dy;
+        if (ry >= rows.length) continue;
+        for (let dx = 0; dx < stride; dx++) {
+          const rx = cell.x + dx;
+          if (rx >= (rows[ry]?.length ?? 0)) continue;
 
-      const current = rows[cell.y][cell.x];
-      if (channel === 0) {
-        current.organic = cell.amount;
-      } else if (channel === 1) {
-        current.mineral = cell.amount;
-      } else {
-        current.energy = cell.amount;
+          const current = rows[ry][rx];
+          if (!current.layers) current.layers = {};
+          current.layers[layer.layerIndex] = cell.amount;
+
+          const channel = layer.layerIndex % 3;
+          if (channel === 0) {
+            current.organic = cell.amount;
+          } else if (channel === 1) {
+            current.mineral = cell.amount;
+          } else {
+            current.energy = cell.amount;
+          }
+        }
       }
     }
   });

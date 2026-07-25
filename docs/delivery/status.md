@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-007-S14` | in-progress | high | `docs/delivery/roadmap.md` | Debug Experiments, Fixtures, Diagnostics, Stale Recovery, And Projection Cadence Optimization. |
+| `AL-007-S16` | planned | high | `docs/delivery/roadmap.md` | Evolution Observatory: genome, mutation, lineage, diversity, and spatial lineage projections. |
 
 ## Operational Rules
 

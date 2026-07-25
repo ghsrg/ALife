@@ -196,12 +196,12 @@ describe('createAppStore', () => {
 
     expect(store.getState().frame.resources).toEqual([
       [
-        { organic: 1, mineral: 0.25, energy: 0.1 },
-        { organic: 0.5, mineral: 1, energy: 0.4 }
+        { organic: 1, mineral: 0.25, energy: 0.1, layers: { '0': 1, '1': 0.25, '2': 0.1 } },
+        { organic: 0.5, mineral: 1, energy: 0.4, layers: { '0': 0.5, '1': 1, '2': 0.4 } }
       ],
       [
-        { organic: 2, mineral: 0.75, energy: 0.5 },
-        { organic: 0.5, mineral: 1, energy: 1 }
+        { organic: 2, mineral: 0.75, energy: 0.5, layers: { '0': 2, '1': 0.75, '2': 0.5 } },
+        { organic: 0.5, mineral: 1, energy: 1, layers: { '0': 0.5, '1': 1, '2': 1 } }
       ]
     ]);
     expect(store.getState().selectedCell).toMatchObject({
@@ -264,7 +264,7 @@ describe('createAppStore', () => {
       cells: [{ ...liveFrame.cells[0], energy: 0.25 }]
     });
 
-    expect(store.getState().frame.resources).toEqual([[{ organic: 1, mineral: 0, energy: 0 }]]);
+    expect(store.getState().frame.resources).toEqual([[{ organic: 1, mineral: 0, energy: 0, layers: { '0': 1 } }]]);
     expect(store.getState().selectedCell).toMatchObject({
       id: 'live-cell-a',
       energy: 0.5,

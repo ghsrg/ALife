@@ -89,9 +89,11 @@ tags:
 - [[outputs/worklogs/2026-07-25-1145-PLAN-al-004-s04-organism-view-projection|2026-07-25-1145-PLAN-al-004-s04-organism-view-projection]]
 - [[outputs/worklogs/2026-07-25-1200-PLAN-al-007-s13-world-editor-and-scenario-runner|2026-07-25-1200-PLAN-al-007-s13-world-editor-and-scenario-runner]]
 - [[outputs/worklogs/2026-07-25-1535-PLAN-al-007-s14-debug-diagnostics-recovery-and-projection-cadence|2026-07-25-1535-PLAN-al-007-s14-debug-diagnostics-recovery-and-projection-cadence]]
+- [[outputs/worklogs/2026-07-25-1610-PLAN-al-007-s15-experiments-and-run-comparison|2026-07-25-1610-PLAN-al-007-s15-experiments-and-run-comparison]]
 
 ## Reports
 - [[outputs/worklogs/2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence|2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence]]
+- [[outputs/worklogs/2026-07-25-1630-REPORT-al-007-s15-experiments-and-run-comparison|2026-07-25-1630-REPORT-al-007-s15-experiments-and-run-comparison]]
 - [[outputs/worklogs/2026-07-25-1215-REPORT-al-007-s13-world-editor-and-scenario-runner|2026-07-25-1215-REPORT-al-007-s13-world-editor-and-scenario-runner]]
 - [[outputs/worklogs/2026-07-25-1150-REPORT-al-004-s04-organism-view-projection|2026-07-25-1150-REPORT-al-004-s04-organism-view-projection]]
 - [[outputs/worklogs/2026-07-25-1140-REPORT-al-002-s18-diverse-rich-world-and-closure|2026-07-25-1140-REPORT-al-002-s18-diverse-rich-world-and-closure]]

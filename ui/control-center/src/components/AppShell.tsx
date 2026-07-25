@@ -6,8 +6,8 @@ import { WorldEditorWorkspace } from './WorldEditorWorkspace';
 import { RunControls } from './RunControls';
 import { buildMonitorStats } from './monitorStats';
 import { uiText } from '../uiText';
-
 import { DiagnosticsPanel } from './DiagnosticsPanel';
+import { ExperimentWorkspace } from './ExperimentWorkspace';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
@@ -41,7 +41,7 @@ export function AppShell() {
     );
   };
 
-  const [activeWorkspace, setActiveWorkspace] = useState<'monitor' | 'world-editor' | 'diagnostics'>('monitor');
+  const [activeWorkspace, setActiveWorkspace] = useState<'monitor' | 'world-editor' | 'experiments' | 'diagnostics'>('monitor');
 
   return (
     <div className="app-shell">
@@ -78,6 +78,14 @@ export function AppShell() {
               onClick={() => setActiveWorkspace('world-editor')}
             >
               {uiText.workspace.worldEditor}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWorkspace === 'experiments'}
+              onClick={() => setActiveWorkspace('experiments')}
+            >
+              Experiments & Comparison
             </button>
             <button
               type="button"
@@ -135,6 +143,10 @@ export function AppShell() {
               setActiveWorkspace('monitor');
             }}
           />
+        </div>
+      ) : activeWorkspace === 'experiments' ? (
+        <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+          <ExperimentWorkspace state={state} />
         </div>
       ) : (
         <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>

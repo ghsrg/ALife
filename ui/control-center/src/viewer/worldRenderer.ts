@@ -296,6 +296,17 @@ export function sampleBilinearResource(
   return { organic, mineral, energy };
 }
 
+const DYNAMIC_LAYER_COLORS: number[] = [
+  0x2ec4b6, // Layer 0: Teal
+  0x3a86ff, // Layer 1: Blue
+  0xffb703, // Layer 2: Amber
+  0x8338ec, // Layer 3: Purple
+  0xe76f51, // Layer 4: Coral
+  0x27b582, // Layer 5: Green
+  0xf4a261, // Layer 6: Orange
+  0xe7c6ff  // Layer 7: Lavender
+];
+
 function drawResourceLayer(
   frame: WorldFrame,
   width: number,
@@ -304,6 +315,10 @@ function drawResourceLayer(
   activeResourceLayers: number[] = [0, 1, 2, 3]
 ) {
   const layer = new Graphics();
+  if (!activeResourceLayers || activeResourceLayers.length === 0) {
+    return layer;
+  }
+
   const rows = frame.resources.length;
   const cols = frame.resources[0]?.length ?? 0;
 
@@ -314,32 +329,31 @@ function drawResourceLayer(
   const cellWidth = (width / cols) * camera.scale;
   const cellHeight = (height / rows) * camera.scale;
 
-  const showOrganic = activeResourceLayers.includes(0);
-  const showMineral = activeResourceLayers.includes(1);
-  const showEnergy = activeResourceLayers.includes(2);
-
   frame.resources.forEach((row, gy) => {
     row.forEach((resource, gx) => {
       const px = camera.x + gx * cellWidth;
       const py = camera.y + gy * cellHeight;
+      let drawnTile = false;
 
-      // Draw beautiful structured resource tile squares
-      if (showOrganic && resource.organic > 0.01) {
-        layer.rect(px, py, cellWidth, cellHeight);
-        layer.fill({ color: 0x27b582, alpha: Math.min(0.65, 0.15 + resource.organic * 0.50) });
-      }
-      if (showMineral && resource.mineral > 0.01) {
-        layer.rect(px, py, cellWidth, cellHeight);
-        layer.fill({ color: 0x2f80ed, alpha: Math.min(0.65, 0.15 + resource.mineral * 0.50) });
-      }
-      if (showEnergy && resource.energy > 0.01) {
-        layer.rect(px, py, cellWidth, cellHeight);
-        layer.fill({ color: 0xffb703, alpha: Math.min(0.65, 0.15 + resource.energy * 0.50) });
-      }
+      activeResourceLayers.forEach((layerIndex) => {
+        const amount = resource.layers?.[layerIndex] ?? (
+          layerIndex === 0 ? resource.organic :
+          layerIndex === 1 ? resource.mineral :
+          layerIndex === 2 ? resource.energy : 0
+        );
 
-      // Crisp tile mesh grid lines
-      layer.rect(px, py, cellWidth, cellHeight);
-      layer.stroke({ width: 1, color: 0x1e2d3a, alpha: 0.35 });
+        if (amount > 0.01) {
+          const color = DYNAMIC_LAYER_COLORS[layerIndex % DYNAMIC_LAYER_COLORS.length];
+          layer.rect(px, py, cellWidth, cellHeight);
+          layer.fill({ color, alpha: Math.min(0.65, 0.15 + amount * 0.50) });
+          drawnTile = true;
+        }
+      });
+
+      if (drawnTile) {
+        layer.rect(px, py, cellWidth, cellHeight);
+        layer.stroke({ width: 1, color: 0x1e2d3a, alpha: 0.35 });
+      }
     });
   });
 

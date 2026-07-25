@@ -8,6 +8,7 @@ export interface ResourceConcentration {
   organic: number;
   mineral: number;
   energy: number;
+  layers?: Record<number, number>;
 }
 
 export interface CellProjection {
