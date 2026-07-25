@@ -83,8 +83,12 @@ tags:
 - [[outputs/worklogs/2026-07-16-2324-PLAN-ui-1c-c-viewer-zoom-pan-navigation|2026-07-16-2324-PLAN-ui-1c-c-viewer-zoom-pan-navigation]]
 - [[outputs/worklogs/2026-07-17-0050-PLAN-ui-1c-d-atmospheric-renderer-selection-semantic-detail|2026-07-17-0050-PLAN-ui-1c-d-atmospheric-renderer-selection-semantic-detail]]
 - [[outputs/worklogs/2026-07-17-1305-PLAN-ui-architecture-stabilization|2026-07-17-1305-PLAN-ui-architecture-stabilization]]
+- [[outputs/worklogs/2026-07-24-2245-PLAN-al-006-s01-benchmark-harness-target-scenarios|2026-07-24-2245-PLAN-al-006-s01-benchmark-harness-target-scenarios]]
+- [[outputs/worklogs/2026-07-25-1040-PLAN-al-005-s02-analytics-export-foundation|2026-07-25-1040-PLAN-al-005-s02-analytics-export-foundation]]
+- [[outputs/worklogs/2026-07-25-1130-PLAN-al-002-s18-diverse-rich-world-and-closure|2026-07-25-1130-PLAN-al-002-s18-diverse-rich-world-and-closure]]
 
 ## Reports
+- [[outputs/worklogs/2026-07-24-2305-REPORT-al-006-s01-benchmark-harness-target-scenarios|2026-07-24-2305-REPORT-al-006-s01-benchmark-harness-target-scenarios]]
 - [[outputs/worklogs/2026-06-29-2311-REPORT-current-state-agents|2026-06-29-2311-REPORT-current-state-agents]]
 - [[outputs/worklogs/2026-06-29-2320-REPORT-sync-readmes-adr-gitignore|2026-06-29-2320-REPORT-sync-readmes-adr-gitignore]]
 - [[outputs/worklogs/2026-06-29-2327-REPORT-docs-inconsistency-audit|2026-06-29-2327-REPORT-docs-inconsistency-audit]]

@@ -1,0 +1,81 @@
+scenario_id = "scale_40k_joints"
+seed = 2002
+tick_count = 100
+legacy_material_distribution = false
+
+[world]
+size = [1000.0, 1000.0]
+
+[space]
+spatial_grid_size = 10.0
+physics_solver_iterations = 2
+
+[resources]
+resource_type_ids = ["nutrient_A", "mineral_A", "energy_A", "waste_A"]
+initial_distribution = [10.0, 10.0, 10.0, 0.0]
+optional_decay_rate = 0.001
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 0
+max_uptake_per_tick = 1.0
+metabolism_resource_per_tick = 0.5
+energy_per_resource = 1.0
+heat_per_resource = 0.01
+waste_per_resource = 0.01
+
+[cell]
+initial_position = [500.0, 500.0]
+radius = 1.0
+initial_resources = { nutrient_A = 2.0, mineral_A = 1.0, energy_A = 2.0 }
+initial_materials = { boundary = 1.0, transport = 1.0, metabolic = 1.0, storage = 1.0, synthesis = 1.0, structural = 1.0, repair = 1.0, contractile = 0.0, sensory = 0.0 }
+initial_energy = 10.0
+energy_capacity = 20.0
+mandatory_cost_per_tick = 0.1
+capacity_limit = 20.0
+
+[cell.genome]
+template = "balanced"
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.1
+heat_warning_threshold = 20.0
+heat_death_threshold = 40.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.1
+waste_warning_threshold = 20.0
+waste_death_threshold = 40.0
+
+[lifecycle]
+stress_energy_threshold = 2.0
+dormancy_allowed = false
+critical_capacity_overrun = 30.0
+
+[synthesis]
+cost_resource = 1.0
+cost_energy = 1.0
+
+[growth]
+growth_cost_resource = 1.0
+growth_cost_energy = 1.0
+growth_target_radius = 1.5
+max_division_pressure = 0.5
+
+[genome_templates.balanced]
+variation_amplitude = 0.08
+runtime_interval_ticks = 1
+
+[genome_templates.balanced.carrier]
+material_id = "genome_carrier_A"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.balanced.outputs]
+resource_uptake_priority = 0.7
+energy_conversion_priority = 0.6
+material_synthesis_priority = 0.3
+repair_priority = 0.2
+division_preparation_priority = 0.1

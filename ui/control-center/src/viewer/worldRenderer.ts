@@ -41,7 +41,7 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
   ) => {
     root.removeChildren();
 
-    const bounds = drawBounds(width, height);
+    const bounds = drawBounds(width, height, frame, camera);
     root.addChild(bounds);
 
     const resourceLayer = drawResourceLayer(frame, width, height, camera, activeResourceLayers);
@@ -61,34 +61,26 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
       const strokeColor = cellStrokeColor(cell.lifecycleState, cell.selected);
       const isOverview = cell.semanticLevel === 'overview';
 
-      // 1. Selection & Stressed Halo (only when selected, or for stressed cells at detailed zoom levels)
-      if (cell.selected || (!isOverview && cell.lifecycleState === 'stressed')) {
-        const haloColor = cell.selected ? 0xffd166 : 0xe76f51;
-        const haloOffset = cell.selected ? 4 : 3;
-        cellGraphic.circle(cell.x, cell.y, cell.radius + haloOffset);
-        cellGraphic.stroke({
-          width: cell.selected ? 2.5 : 1.5,
-          color: haloColor,
-          alpha: cell.selected ? 0.85 : 0.35
-        });
-      }
-
-      // 2. Drop shadow / ambient glow (only at detailed zoom levels or when selected)
-      if (!isOverview || cell.selected) {
-        cellGraphic.circle(cell.x + cell.radius * 0.18, cell.y + cell.radius * 0.22, cell.radius * 0.92);
-        cellGraphic.fill({ color: 0x031216, alpha: cell.selected ? 0.38 : 0.18 });
-      }
-
-      // 3. Primary Cell Body (Outer Membrane & Cytoplasm)
+      // 1. Primary Cell Body (Outer Membrane & Cytoplasm)
       cellGraphic.circle(cell.x, cell.y, cell.radius);
-      cellGraphic.fill({ color: fillColor, alpha: cell.selected ? 0.95 : 0.82 });
+      cellGraphic.fill({ color: fillColor, alpha: cell.selected ? 0.95 : 0.85 });
       cellGraphic.stroke({
         width: cell.selected ? 2.5 : 1.5,
         color: strokeColor,
         alpha: membraneAlpha
       });
 
-      // 4. Inner Cell Wall (Double Layer Texture - only at structure/internal zoom levels)
+      // 2. Selection Ring (clean tight highlight centered directly on the cell)
+      if (cell.selected) {
+        cellGraphic.circle(cell.x, cell.y, cell.radius + 3);
+        cellGraphic.stroke({
+          width: 2,
+          color: 0xffd166,
+          alpha: 0.9
+        });
+      }
+
+      // 3. Inner Cell Wall (Double Layer Texture - only at structure/internal zoom levels)
       if (cell.semanticLevel === 'structure' || cell.semanticLevel === 'internal-detail') {
         cellGraphic.circle(cell.x, cell.y, Math.max(1, cell.radius * 0.88));
         cellGraphic.stroke({
@@ -98,13 +90,13 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
         });
       }
 
-      // 5. Internal Organelles & Nucleus (only when zoomed in beyond overview)
-      if (!isOverview || cell.selected) {
+      // 4. Internal Organelles & Nucleus (only when deeply zoomed in to structure/detail)
+      if (cell.semanticLevel === 'structure' || cell.semanticLevel === 'internal-detail') {
         drawCellOrganelles(cellGraphic, cell.x, cell.y, cell.radius, cell.energyRatio, cell.lifecycleState);
       }
 
-      // 6. Metric Rings & Integrity Arc
-      if (cell.showMetricRings) {
+      // 5. Metric Rings & Integrity Arc (only when selected)
+      if (cell.selected && cell.showMetricRings) {
         drawIntegrityArc(cellGraphic, cell.x, cell.y, cell.radius, cell.integrityRatio);
       }
 
@@ -231,12 +223,23 @@ export function drawIntegrityArc(
   graphic.stroke({ width: 2, color: 0x74ded2, alpha: 0.72 });
 }
 
-function drawBounds(width: number, height: number) {
-  const bounds = new Graphics();
-  bounds.rect(0, 0, width, height);
-  bounds.fill({ color: 0x0b1217, alpha: 1 });
-  bounds.stroke({ width: 2, color: 0x334756, alpha: 1 });
-  return bounds;
+function drawBounds(width: number, height: number, frame: WorldFrame, camera: ViewerCamera) {
+  const layer = new Graphics();
+  // 1. Dark outer stage background
+  layer.rect(0, 0, width, height);
+  layer.fill({ color: 0x070c10, alpha: 1 });
+
+  // 2. World simulation map box (aligned with camera and world size)
+  const scaleX = width / frame.world.width;
+  const scaleY = height / frame.world.height;
+  const worldWidthPx = frame.world.width * scaleX * camera.scale;
+  const worldHeightPx = frame.world.height * scaleY * camera.scale;
+
+  layer.rect(camera.x, camera.y, worldWidthPx, worldHeightPx);
+  layer.fill({ color: 0x0b141a, alpha: 1 });
+  layer.stroke({ width: 2, color: 0x2ec4b6, alpha: 0.4 });
+
+  return layer;
 }
 
 export interface ResourceCell {
@@ -320,21 +323,23 @@ function drawResourceLayer(
       const px = camera.x + gx * cellWidth;
       const py = camera.y + gy * cellHeight;
 
+      // Draw beautiful structured resource tile squares
       if (showOrganic && resource.organic > 0.01) {
         layer.rect(px, py, cellWidth, cellHeight);
-        layer.fill({ color: 0x27b582, alpha: Math.min(0.55, 0.08 + resource.organic * 0.45) });
+        layer.fill({ color: 0x27b582, alpha: Math.min(0.65, 0.15 + resource.organic * 0.50) });
       }
       if (showMineral && resource.mineral > 0.01) {
         layer.rect(px, py, cellWidth, cellHeight);
-        layer.fill({ color: 0x2f80ed, alpha: Math.min(0.55, 0.08 + resource.mineral * 0.45) });
+        layer.fill({ color: 0x2f80ed, alpha: Math.min(0.65, 0.15 + resource.mineral * 0.50) });
       }
       if (showEnergy && resource.energy > 0.01) {
         layer.rect(px, py, cellWidth, cellHeight);
-        layer.fill({ color: 0xffd166, alpha: Math.min(0.60, 0.10 + resource.energy * 0.50) });
+        layer.fill({ color: 0xffb703, alpha: Math.min(0.65, 0.15 + resource.energy * 0.50) });
       }
 
+      // Crisp tile mesh grid lines
       layer.rect(px, py, cellWidth, cellHeight);
-      layer.stroke({ width: 1, color: 0x1f2937, alpha: 0.12 });
+      layer.stroke({ width: 1, color: 0x1e2d3a, alpha: 0.35 });
     });
   });
 

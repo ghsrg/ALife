@@ -70,7 +70,6 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     if (!host) {
       return { width: frame.world.width, height: frame.world.height };
     }
-
     return {
       width: host.clientWidth || frame.world.width,
       height: host.clientHeight || frame.world.height
@@ -80,6 +79,13 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   useImperativeHandle(ref, () => ({
     exportPng: () => rendererRef.current?.exportPng() ?? null
   }), []);
+
+  // Fit camera whenever world dimensions change or mount occurs
+  useEffect(() => {
+    const measured = measureViewport();
+    setViewport(measured);
+    dispatchCamera({ type: 'fit', world: frame.world, viewport: measured });
+  }, [frame.world.width, frame.world.height]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -95,21 +101,36 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         return;
       }
 
-      const measuredViewport = measureViewport();
-      const fittedCamera = fitCameraToWorld(frame.world, measuredViewport);
-      setViewport(measuredViewport);
       rendererRef.current = renderer;
-      dispatchCamera({ type: 'fit', world: frame.world, viewport: measuredViewport });
-      if (activeResourceLayers !== undefined) {
-        renderer.renderFrame(frame, selectedCellId, fittedCamera, activeResourceLayers);
-      } else {
-        renderer.renderFrame(frame, selectedCellId, fittedCamera);
-      }
+
+      const updateViewportAndFit = () => {
+        const measuredViewport = measureViewport();
+        setViewport(measuredViewport);
+        renderer.resize(measuredViewport.width, measuredViewport.height);
+        dispatchCamera({ type: 'fit', world: frame.world, viewport: measuredViewport });
+      };
+
+      // Initial fit after mount
+      updateViewportAndFit();
       setIsReady(true);
+
+      // Track container resize continuously if browser supports ResizeObserver
+      if (typeof ResizeObserver !== 'undefined') {
+        const resizeObserver = new ResizeObserver(() => {
+          if (!cancelled) {
+            updateViewportAndFit();
+          }
+        });
+        resizeObserver.observe(host);
+        (host as any).__resizeObserver = resizeObserver;
+      }
     });
 
     return () => {
       cancelled = true;
+      if (hostRef.current && (hostRef.current as any).__resizeObserver) {
+        (hostRef.current as any).__resizeObserver.disconnect();
+      }
       rendererRef.current?.destroy();
       rendererRef.current = null;
     };
@@ -129,7 +150,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const fitView = () => {
-    dispatchCamera({ type: 'fit', world: frame.world, viewport });
+    dispatchCamera({ type: 'fit', world: frame.world, viewport: measureViewport() });
   };
 
   const resetView = () => {
@@ -147,6 +168,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const endDrag = (pointerId: number) => {
     dispatchCamera({ type: 'drag-end', pointerId });
   };
+
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 && event.button !== undefined) {

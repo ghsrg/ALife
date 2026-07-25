@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-002-S17` | in-progress | high | `docs/delivery/roadmap.md` | Phase 2 Debt Closure: material repair, boundary retention, max local temperature metric, and JointRepair disposition audit. |
+| `AL-002-S18` | in-progress | high | `docs/delivery/roadmap.md` | Core-Bootstrap-Runner Closure Matrix And Diverse World Setup: Config, spatial resource oases, varied initial cell genomes, and seed-driven UI diversity. |
 
 ## Operational Rules
 
@@ -39,14 +39,16 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-002-S18` | <kbd style="background-color: #cf222e; color: white; border: none;">blocked-dependency</kbd> | `AL-002-S17` | `docs/delivery/roadmap.md` | Final AL-002 closure matrix waits for AL-002 debt disposition. |
-| 2 | `AL-006-S01` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Benchmark harness can start now that `AL-003` is closed; downstream throughput work stays separate. |
-| 3 | `AL-005-S02` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Analytics export can plan over typed Observer payloads. |
+| 1 | `AL-006-S02` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Hot Path Optimization And Dirty Regions: SoA, dirty region tracking, spatial index optimization. |
+| 2 | `AL-005-S03` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Long-Run Evolution Scenario Suite: Replayable long-run evolution scenarios. |
 
 ## Recently Closed
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-005-S02` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-25-1125-REPORT-al-005-s02-analytics-export-foundation.md` | Analytics Export Foundation closed for AnalyticsExportManifest, Population, Balance, Lineage, Environment datasets, JSON/CSV formatting, and export_to_dir verification. |
+| `AL-006-S01` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-2305-REPORT-al-006-s01-benchmark-harness-target-scenarios.md` | Benchmark Harness And Target Scenarios closed for scale_20k_cells.toml, scale_40k_joints.toml, scale_scenarios_smoke, scale_benchmark_harness, and determinism verification. |
+| `AL-002-S17` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-1925-REPORT-al-002-s17-phase-2-debt-closure.md` | Phase 2 Debt Closure closed JointRepair canonical disposition, RepairBoundary & material damage execution, boundary retention, and observer environment heat metrics. |
 | `AL-007-S13` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-1238-REPORT-v3-ui-charts-docking-and-ecosystem-balance.md` | V3 Control Center layout alignment, charts docking under Map Viewer, live metric streams, and living ecosystem balance tuning. |
 | `AL-007-S13` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-24-1115-REPORT-living-ecosystem-scenario-finalization.md` | Unified production scenario `living_ecosystem.toml` created with 4 resource layers, environmental fields, balanced cell energy, genome execution, and dynamic UI streaming. |
 | `AL-007-S12` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-23-2150-REPORT-al-007-s12-balance-analytics.md` | UI-2D is closed for Matter Cycle accounting, Unaccounted difference badge, Energy utilization progress, Population lifecycle breakdown, Engineering Warnings list, searchable Raw Data grid, CSV export, and V3 Monitor tabs. |
