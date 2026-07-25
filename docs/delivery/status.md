@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-007-S17` | in-progress | high | `docs/delivery/roadmap.md` | Organism Observatory: OrganismView graph/detail/comparison over observer projections only. |
+| `AL-006-S02` | in-progress | high | `docs/delivery/roadmap.md` | Hot Path Optimization And Dirty Regions: SoA, dirty region tracking, spatial index optimization. |
 
 ## Operational Rules
 

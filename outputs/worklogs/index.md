@@ -92,8 +92,12 @@ tags:
 - [[outputs/worklogs/2026-07-25-1610-PLAN-al-007-s15-experiments-and-run-comparison|2026-07-25-1610-PLAN-al-007-s15-experiments-and-run-comparison]]
 - [[outputs/worklogs/2026-07-25-1635-PLAN-al-007-s16-evolution-observatory|2026-07-25-1635-PLAN-al-007-s16-evolution-observatory]]
 - [[outputs/worklogs/2026-07-25-1710-PLAN-al-007-s17-organism-observatory|2026-07-25-1710-PLAN-al-007-s17-organism-observatory]]
+- [[outputs/worklogs/2026-07-25-2005-PLAN-al-007-s18-specialization-analytics|2026-07-25-2005-PLAN-al-007-s18-specialization-analytics]]
+- [[outputs/worklogs/2026-07-25-2015-PLAN-al-007-s19-library-placement-reporting-research-export|2026-07-25-2015-PLAN-al-007-s19-library-placement-reporting-research-export]]
 
 ## Reports
+- [[outputs/worklogs/2026-07-25-2025-REPORT-al-007-s18-specialization-analytics|2026-07-25-2025-REPORT-al-007-s18-specialization-analytics]]
+- [[outputs/worklogs/2026-07-25-2040-REPORT-al-007-s19-library-placement-reporting-research-export|2026-07-25-2040-REPORT-al-007-s19-library-placement-reporting-research-export]]
 - [[outputs/worklogs/2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence|2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence]]
 - [[outputs/worklogs/2026-07-25-1630-REPORT-al-007-s15-experiments-and-run-comparison|2026-07-25-1630-REPORT-al-007-s15-experiments-and-run-comparison]]
 - [[outputs/worklogs/2026-07-25-1655-REPORT-al-007-s16-evolution-observatory|2026-07-25-1655-REPORT-al-007-s16-evolution-observatory]]

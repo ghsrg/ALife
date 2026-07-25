@@ -10,6 +10,8 @@ import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { ExperimentWorkspace } from './ExperimentWorkspace';
 import { EvolutionWorkspace } from './EvolutionWorkspace';
 import { OrganismWorkspace } from './OrganismWorkspace';
+import { SpecializationWorkspace } from './SpecializationWorkspace';
+import { LibraryWorkspace } from './LibraryWorkspace';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
@@ -43,7 +45,7 @@ export function AppShell() {
     );
   };
 
-  const [activeWorkspace, setActiveWorkspace] = useState<'monitor' | 'organism-view' | 'world-editor' | 'experiments' | 'evolution' | 'diagnostics'>('monitor');
+  const [activeWorkspace, setActiveWorkspace] = useState<'monitor' | 'organism-view' | 'world-editor' | 'experiments' | 'evolution' | 'specialization' | 'library' | 'diagnostics'>('monitor');
 
   return (
     <div className="app-shell">
@@ -93,6 +95,22 @@ export function AppShell() {
               onClick={() => setActiveWorkspace('evolution')}
             >
               Evolution Observatory
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWorkspace === 'specialization'}
+              onClick={() => setActiveWorkspace('specialization')}
+            >
+              Specialization Analytics
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWorkspace === 'library'}
+              onClick={() => setActiveWorkspace('library')}
+            >
+              Library & Placement
             </button>
             <button
               type="button"
@@ -165,6 +183,14 @@ export function AppShell() {
       ) : activeWorkspace === 'evolution' ? (
         <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
           <EvolutionWorkspace state={state} />
+        </div>
+      ) : activeWorkspace === 'specialization' ? (
+        <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+          <SpecializationWorkspace state={state} />
+        </div>
+      ) : activeWorkspace === 'library' ? (
+        <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+          <LibraryWorkspace state={state} />
         </div>
       ) : (
         <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
