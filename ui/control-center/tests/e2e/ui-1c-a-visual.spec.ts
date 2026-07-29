@@ -25,7 +25,8 @@ test.describe('UI-1C-A visual acceptance', () => {
 
     await assertWorldFirstLayout(page);
     await expect(page.getByRole('button', { name: 'Play live run' })).toBeVisible();
-    await expect(page.getByLabel('World stats')).toBeVisible();
+    await expect(page.getByTestId('monitor-data-track')).toBeVisible();
+    await expect(page.getByLabel('Debug Visualization Mode')).toHaveClass(/collapsed/);
     await page.screenshot({ path: join(screenshotDir, '1366x862-dark.png'), fullPage: true });
   });
 
@@ -130,26 +131,26 @@ async function assertWorldFirstLayout(page: Page) {
   const viewer = await page.getByLabel('Monitor workspace').boundingBox();
   const world = await page.getByLabel('World Viewer', { exact: true }).boundingBox();
   const inspector = await page.getByLabel('Cell Inspector').boundingBox();
-  const stats = await page.getByLabel('World stats').boundingBox();
+  const data = await page.getByTestId('monitor-data-track').boundingBox();
   const focus = await page.getByLabel('Selected entity focus').boundingBox();
 
   expect(layers).not.toBeNull();
   expect(viewer).not.toBeNull();
   expect(world).not.toBeNull();
   expect(inspector).not.toBeNull();
-  expect(stats).not.toBeNull();
+  expect(data).not.toBeNull();
   expect(focus).not.toBeNull();
 
   const l = layers!;
   const v = viewer!;
   const w = world!;
   const i = inspector!;
-  const s = stats!;
+  const d = data!;
   const f = focus!;
 
   expect(w.width).toBeGreaterThan(l.width);
   expect(w.width).toBeGreaterThan(i.width);
-  expect(w.height).toBeGreaterThan(240);
+  expect(w.height).toBeGreaterThan(380);
   expect(w.width * w.height).toBeGreaterThan(l.width * l.height);
   expect(w.width * w.height).toBeGreaterThan(i.width * i.height);
   expect(v.x).toBeGreaterThan(l.x + l.width - 1);
@@ -158,5 +159,6 @@ async function assertWorldFirstLayout(page: Page) {
   expect(f.x + f.width).toBeLessThanOrEqual(v.x + v.width + 1);
   expect(f.y).toBeGreaterThanOrEqual(v.y);
   expect(f.y).toBeLessThan(w.y + 80);
-  expect(s.y).toBeGreaterThan(w.y + w.height - 8);
+  expect(d.y).toBeGreaterThan(v.y + v.height - 1);
+  expect(d.height).toBe(220);
 }

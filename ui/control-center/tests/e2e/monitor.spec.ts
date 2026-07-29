@@ -47,11 +47,13 @@ test('AL-007-S22 keeps Monitor tracks stable at 1920x1080', async ({ page }) => 
   expect(Math.round(level!.width)).toBe(83);
   expect(Math.round(layers!.width)).toBe(262);
   expect(Math.round(inspector!.width)).toBe(335);
-  expect(Math.round(data!.height)).toBe(281);
+  expect(Math.round(data!.height)).toBe(220);
   expect(map!.width).toBeGreaterThan(0);
-  expect(map!.height).toBeGreaterThan(0);
+  expect(map!.height).toBeGreaterThan(600);
+  expect((await page.getByLabel('World Viewer', { exact: true }).boundingBox())!.height).toBeGreaterThan(560);
   await expect(page.getByTitle('Collapse Layers')).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Data panel tabs' })).toHaveCount(0);
+  await expect(page.getByTestId('bottom-stats-strip')).toHaveCount(0);
 });
 
 test('AL-007-S22 uses root scroll below 1366x862 without collapsing fixed tracks', async ({ page }) => {
@@ -70,5 +72,6 @@ test('AL-007-S22 uses root scroll below 1366x862 without collapsing fixed tracks
   expect(geometry.dataOverflowY).not.toBe('auto');
   expect((await page.getByTestId('monitor-inspector-track').boundingBox())!.width).toBeGreaterThan(300);
   expect((await page.getByTestId('monitor-map-track').boundingBox())!.width).toBeGreaterThan(0);
-  expect((await page.getByTestId('monitor-map-track').boundingBox())!.height).toBeGreaterThan(0);
+  expect((await page.getByTestId('monitor-map-track').boundingBox())!.height).toBeGreaterThan(430);
+  expect((await page.getByLabel('World Viewer', { exact: true }).boundingBox())!.height).toBeGreaterThan(380);
 });

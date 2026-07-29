@@ -4,14 +4,11 @@ import { buildMonitorViewModel } from '../app/monitorViewModel';
 import { describeProjectionContext } from '../projection/projectionContext';
 import type { CellId } from '../projection/types';
 import { uiText } from '../uiText';
-import { BottomStatsStrip } from './BottomStatsStrip';
 import { SelectedEntityFocusCard } from './SelectedEntityFocusCard';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
-import type { MonitorStat } from './monitorStats';
 
 interface MonitorWorkspaceProps {
   state: AppStore;
-  monitorStats: MonitorStat[];
   onScenarioChange: (scenarioId: string) => void;
   onReconnect: () => void;
   onSelectCell: (cellId: CellId | null) => void;
@@ -25,7 +22,6 @@ interface MonitorWorkspaceProps {
 
 export function MonitorWorkspace({
   state,
-  monitorStats,
   onScenarioChange,
   onReconnect,
   onSelectCell,
@@ -133,7 +129,6 @@ export function MonitorWorkspace({
             debugProjections={state.debugProjections}
             activeResourceLayers={state.activeResourceLayers}
           />
-          <BottomStatsStrip stats={monitorStats} />
         </div>
 
         {exportStatus ? <p className="export-status" role="status">{exportStatus}</p> : null}

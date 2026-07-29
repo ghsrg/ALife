@@ -233,7 +233,7 @@ describe('App', () => {
     });
   });
 
-  it('renders UI-1C-A world-first Monitor landmarks with bottom stats and focus card', async () => {
+  it('renders UI-1C-A world-first Monitor landmarks with dedicated Map and Data tracks', async () => {
     renderApp(<App />);
 
     await waitFor(() => {
@@ -244,11 +244,11 @@ describe('App', () => {
     expect(screen.getByLabelText('Layer controls')).toBeInTheDocument();
     expect(screen.getByLabelText('Monitor workspace')).toBeInTheDocument();
     expect(screen.getByLabelText('Cell Inspector')).toBeInTheDocument();
-    expect(screen.getByLabelText('World stats')).toBeInTheDocument();
     expect(screen.getByLabelText('Selected entity focus')).toHaveTextContent('Cell cell-a');
-    expect(screen.getByTestId('bottom-stats-strip')).toHaveClass('bottom-stats-strip');
+    expect(screen.queryByTestId('bottom-stats-strip')).not.toBeInTheDocument();
+    expect(screen.getByTestId('monitor-data-track')).toBeInTheDocument();
     expect(screen.getByTestId('selected-focus-card')).toHaveClass('selected-focus-card');
-    expect(screen.getByText('Projected Cell Energy')).toBeInTheDocument();
+    expect(screen.getByText(/resource cycle \(energy & matter\)/i)).toBeInTheDocument();
     expect(screen.getAllByText('Resources').length).toBeGreaterThan(0);
   });
 

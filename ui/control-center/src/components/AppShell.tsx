@@ -9,7 +9,6 @@ import { LevelPanel, type AnalysisLevel } from './LevelPanel';
 import { LayerPanel } from './LayerPanel';
 import { InspectorPanel } from './InspectorPanel';
 import { BottomDataPanel } from './BottomDataPanel';
-import { buildMonitorStats } from './monitorStats';
 import { uiText } from '../uiText';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { ExperimentWorkspace } from './ExperimentWorkspace';
@@ -46,7 +45,6 @@ export function AppShell() {
   };
 
   const monitorDataState = getMonitorDataState(state);
-  const monitorStats = buildMonitorStats(state.frame, monitorDataState);
   const monitorViewModel = buildMonitorViewModel(state);
 
   const exportScreenshot = (png: string | null) => {
@@ -90,7 +88,6 @@ export function AppShell() {
             />
             <MonitorWorkspace
               state={state}
-              monitorStats={monitorStats}
               onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
               onReconnect={controller.connectRunner}
               onSelectCell={(cellId) => store.getState().selectCell(cellId)}
@@ -144,7 +141,7 @@ export function AppShell() {
         )}
       </div>
       
-      {/* Row 4: Data Panel 281px */}
+      {/* Row 4: Data Panel 220px */}
       {activeWorkspace === 'monitor' && (
         <div className="cc-data-panel" data-testid="monitor-data-track">
           <BottomDataPanel state={state} />

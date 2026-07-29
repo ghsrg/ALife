@@ -365,19 +365,19 @@ button:disabled {
 
 .viewer-truth-overlay {
   position: absolute;
-  top: 22px;
-  right: 22px;
+  top: 12px;
+  right: 12px;
   z-index: 8;
   display: grid;
-  gap: 8px;
-  width: min(320px, calc(100% - 44px));
+  gap: 5px;
+  width: min(220px, calc(100% - 24px));
   pointer-events: auto;
 }
 
 .viewer-truth-close {
   justify-self: end;
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.07);
@@ -394,7 +394,7 @@ button:disabled {
 .viewer-truth-item {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 5px 7px;
   background: rgba(6, 13, 17, 0.74);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(8px);
@@ -405,13 +405,13 @@ button:disabled {
 .layer-option small {
   display: block;
   color: #9fadb9;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .viewer-truth-item strong {
   display: block;
-  margin-top: 2px;
-  font-size: 13px;
+  margin-top: 1px;
+  font-size: 11px;
 }
 
 .viewer-truth-missing,
@@ -1224,8 +1224,8 @@ button:disabled {
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;      /* Never grow into WorldViewer space */
-  height: 281px;
-  max-height: 281px;
+  height: var(--panel-data-height, 220px);
+  max-height: var(--panel-data-height, 220px);
   overflow: hidden;
 }
 
@@ -2149,9 +2149,9 @@ button:disabled {
 .cc-freeze-btn { padding:3px 10px; border-radius:4px; border:1px solid var(--color-separator); background:var(--color-bg-card); color:var(--color-text-dim, #7a8a9a); font-size:10px; cursor:pointer; }
 .cc-freeze-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
-/* ── Data Panel (281px static) ── */
+/* ── Data Panel (220px static) ── */
 .cc-data-panel {
-  height: var(--panel-data-height, 281px);
+  height: var(--panel-data-height, 220px);
   background: var(--color-bg-primary, #0a0e1a);
   border-top: 1px solid var(--color-separator);
   display:flex; flex-direction:column;

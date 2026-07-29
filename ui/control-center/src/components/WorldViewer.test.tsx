@@ -275,6 +275,9 @@ describe('WorldViewer', () => {
       expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
 
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveClass('collapsed');
+    await userEvent.click(screen.getByRole('button', { name: 'Expand debug overlay' }));
+
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Debug');
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Exact');
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('VisualWorldProjection');
@@ -318,6 +321,8 @@ describe('WorldViewer', () => {
       expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
 
+    await userEvent.click(screen.getByRole('button', { name: 'Expand debug overlay' }));
+
     const debugOverlay = screen.getByLabelText('Debug Visualization Mode');
     expect(debugOverlay).toHaveTextContent('Resource layers 8 of 27');
     expect(debugOverlay).toHaveTextContent('+19 resource layers hidden');
@@ -344,6 +349,8 @@ describe('WorldViewer', () => {
       expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
 
+    await userEvent.click(screen.getByRole('button', { name: 'Expand debug overlay' }));
+
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Loading projection');
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Waiting for Observer debug projection');
     expect(screen.queryByText('Missing live projection')).not.toBeInTheDocument();
@@ -362,6 +369,8 @@ describe('WorldViewer', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Expand debug overlay' }));
 
     fireEvent.change(screen.getByLabelText('Search cells or resource layers'), {
       target: { value: 'cell-c' }

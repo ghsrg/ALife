@@ -53,7 +53,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const { camera } = cameraState;
   const [truthOverlayVisible, setTruthOverlayVisible] = useState(true);
   const [debugLayerMode, setDebugLayerMode] = useState<DebugLayerMode>('exact');
-  const [isDebugOverlayCollapsed, setIsDebugOverlayCollapsed] = useState(false);
+  const [isDebugOverlayCollapsed, setIsDebugOverlayCollapsed] = useState(true);
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [viewport, setViewport] = useState(() => ({ width: frame.world.width, height: frame.world.height }));
   const normalizedMapSearchQuery = mapSearchQuery.trim().toLowerCase();
