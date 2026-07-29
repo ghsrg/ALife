@@ -7,6 +7,7 @@
   --panel-layers-collapsed-width: 48px;
   --panel-inspector-width: 335px;
   --panel-data-height: 281px;
+  --monitor-min-viewport-height: 862px;
   
   /* Dark Theme Colors */
   --color-bg-primary: #0a0e1a;
@@ -47,8 +48,9 @@ html, body, #root {
   margin: 0;
   padding: 0;
   width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  height: auto;
+  overflow: auto;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
 }

@@ -24,9 +24,9 @@ export function LayerPanel({
 }: LayerPanelProps) {
   const frame = state.frame;
 
-  if (isCollapsed) {
+  if (isCollapsed && onToggleCollapse) {
     return (
-      <div className="cc-layers-panel collapsed">
+      <div className="cc-layers-panel collapsed" data-testid="monitor-layers-track">
         <div className="cc-layers-collapse-strip">
           <button className="cc-layers-strip-btn" onClick={onToggleCollapse} title="Expand Layers">»</button>
         </div>
@@ -35,10 +35,12 @@ export function LayerPanel({
   }
 
   return (
-    <div className="cc-layers-panel" aria-label={uiText.layers.ariaLabel}>
+    <div className="cc-layers-panel" aria-label={uiText.layers.ariaLabel} data-testid="monitor-layers-track">
       <div className="cc-layers-header">
         <div className="cc-layers-title">LAYERS & FILTERS</div>
-        <button className="cc-layers-collapse-btn" onClick={onToggleCollapse} title="Collapse Layers">«</button>
+        {onToggleCollapse ? (
+          <button className="cc-layers-collapse-btn" onClick={onToggleCollapse} title="Collapse Layers">«</button>
+        ) : null}
       </div>
 
       <details className="cc-connection-details" style={{ margin: '6px 12px', fontSize: '11px' }}>

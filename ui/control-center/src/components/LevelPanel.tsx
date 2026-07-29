@@ -16,7 +16,7 @@ export interface LevelPanelProps {
 
 export function LevelPanel({ activeLevel, onLevelChange }: LevelPanelProps) {
   return (
-    <div className="cc-level-panel">
+    <div className="cc-level-panel" data-testid="monitor-level-track">
       <div className="cc-level-label">LEVEL</div>
       {LEVELS.map(level => (
         <div

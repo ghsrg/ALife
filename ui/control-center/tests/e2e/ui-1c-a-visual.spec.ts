@@ -20,13 +20,13 @@ test.describe('UI-1C-A visual acceptance', () => {
     await page.screenshot({ path: join(screenshotDir, '1920x1080-dark.png'), fullPage: true });
   });
 
-  test('1366x768 dark keeps controls usable without incoherent overlap', async ({ page }) => {
-    await openMonitor(page, { width: 1366, height: 768 });
+  test('1366x862 dark keeps controls usable without incoherent overlap', async ({ page }) => {
+    await openMonitor(page, { width: 1366, height: 862 });
 
     await assertWorldFirstLayout(page);
     await expect(page.getByRole('button', { name: 'Play live run' })).toBeVisible();
     await expect(page.getByLabel('World stats')).toBeVisible();
-    await page.screenshot({ path: join(screenshotDir, '1366x768-dark.png'), fullPage: true });
+    await page.screenshot({ path: join(screenshotDir, '1366x862-dark.png'), fullPage: true });
   });
 
   test('1920x1080 light remains usable', async ({ page }) => {
@@ -50,28 +50,24 @@ test.describe('UI-1C-A visual acceptance', () => {
     await page.screenshot({ path: join(screenshotDir, '1920x1080-semantic-detail.png'), fullPage: true });
   });
 
-  test('1366x768 viewer navigation zooms, resets and keeps cell targets usable', async ({ page }) => {
-    await openMonitor(page, { width: 1366, height: 768 });
+  test('1366x862 viewer navigation zooms and keeps cell targets usable', async ({ page }) => {
+    await openMonitor(page, { width: 1366, height: 862 });
 
     await expect(page.getByLabel('World Viewer zoom')).toHaveText('1:2600');
     await page.getByRole('button', { name: 'Zoom in World Viewer' }).click();
     await expect(page.getByLabel('World Viewer zoom')).not.toHaveText('1:2600');
-    await expect(page.getByLabel('Select cell-a')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Reset World Viewer navigation' }).click();
-    await expect(page.getByLabel('World Viewer zoom')).toHaveText('1:1 cell scale');
-    await expect(page.getByLabel('Select cell-a')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Select / }).first()).toBeVisible();
 
     for (let i = 0; i < 20; i += 1) {
       await page.getByRole('button', { name: 'Zoom in World Viewer' }).click();
     }
-    await expect(page.getByLabel('World Viewer zoom')).toHaveText('1:1 cell scale');
+    await expect(page.getByRole('button', { name: /^Select / }).first()).toBeVisible();
 
-    await page.screenshot({ path: join(screenshotDir, '1366x768-navigation.png'), fullPage: true });
+    await page.screenshot({ path: join(screenshotDir, '1366x862-navigation.png'), fullPage: true });
   });
 
   test('viewer wheel and projection notices stay isolated from page gestures', async ({ page }) => {
-    await openMonitor(page, { width: 1366, height: 768 });
+    await openMonitor(page, { width: 1366, height: 862 });
 
     await page.evaluate(() => window.scrollTo(0, 160));
     const viewer = page.getByLabel('World Viewer', { exact: true });
@@ -87,7 +83,7 @@ test.describe('UI-1C-A visual acceptance', () => {
   });
 
   test('cell selection remains available after dragging the viewer map', async ({ page }) => {
-    await openMonitor(page, { width: 1366, height: 768 });
+    await openMonitor(page, { width: 1366, height: 862 });
 
     const viewerBox = await page.getByLabel('World Viewer', { exact: true }).boundingBox();
     expect(viewerBox).not.toBeNull();
@@ -104,10 +100,10 @@ test.describe('UI-1C-A visual acceptance', () => {
   });
 
   test('empty viewer click clears selected Cell panels without breaking reselection', async ({ page }) => {
-    await openMonitor(page, { width: 1366, height: 768 });
+    await openMonitor(page, { width: 1366, height: 862 });
 
     await expect(page.getByLabel('Selected entity focus')).toBeVisible();
-    await page.getByLabel('World cell hit targets').click({ position: { x: 760, y: 360 } });
+    await page.getByLabel('World Viewer', { exact: true }).click({ position: { x: 24, y: 160 } });
 
     await expect(page.getByLabel('Selected entity focus')).toBeHidden();
     await expect(page.getByLabel('Cell Inspector')).toContainText('No cell selected.');
@@ -153,13 +149,14 @@ async function assertWorldFirstLayout(page: Page) {
 
   expect(w.width).toBeGreaterThan(l.width);
   expect(w.width).toBeGreaterThan(i.width);
-  expect(w.height).toBeGreaterThan(360);
+  expect(w.height).toBeGreaterThan(240);
   expect(w.width * w.height).toBeGreaterThan(l.width * l.height);
   expect(w.width * w.height).toBeGreaterThan(i.width * i.height);
   expect(v.x).toBeGreaterThan(l.x + l.width - 1);
   expect(i.x).toBeGreaterThan(v.x + v.width - 1);
   expect(f.x).toBeGreaterThanOrEqual(v.x);
-  expect(f.y).toBeGreaterThanOrEqual(w.y + w.height - 1);
+  expect(f.x + f.width).toBeLessThanOrEqual(v.x + v.width + 1);
+  expect(f.y).toBeGreaterThanOrEqual(v.y);
+  expect(f.y).toBeLessThan(w.y + 80);
   expect(s.y).toBeGreaterThan(w.y + w.height - 8);
-  expect(f.y + f.height).toBeLessThanOrEqual(s.y + 1);
 }

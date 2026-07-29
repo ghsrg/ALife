@@ -25,7 +25,6 @@ export function AppShell() {
   const [state, setState] = useState(store.getState());
   const [exportStatus, setExportStatus] = useState<string | null>(null);
 
-  const [layersPanelCollapsed, setLayersPanelCollapsed] = useState(false);
   const [activeLevel, setActiveLevel] = useState<AnalysisLevel>('world');
   const [activeWorkspace, setActiveWorkspace] = useState<string>('monitor');
 
@@ -78,7 +77,7 @@ export function AppShell() {
       />
       
       {/* Row 3: Workspace area (flex) */}
-      <div className={`cc-workspace ${layersPanelCollapsed ? 'cc-layers-collapsed' : ''}`}>
+      <div className="cc-workspace">
         {activeWorkspace === 'monitor' ? (
           <>
             <LevelPanel activeLevel={activeLevel} onLevelChange={setActiveLevel} />
@@ -88,8 +87,6 @@ export function AppShell() {
               monitorViewModel={monitorViewModel}
               onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
               onReconnect={controller.connectRunner}
-              isCollapsed={layersPanelCollapsed}
-              onToggleCollapse={() => setLayersPanelCollapsed(!layersPanelCollapsed)}
             />
             <MonitorWorkspace
               state={state}
@@ -102,8 +99,6 @@ export function AppShell() {
               onJumpToLive={() => store.getState().jumpToLive()}
               onSelectHistoryTick={(tick) => store.getState().selectHistoryTick(tick)}
               exportStatus={exportStatus}
-              layersPanelCollapsed={layersPanelCollapsed}
-              onToggleLayers={() => setLayersPanelCollapsed(!layersPanelCollapsed)}
             />
             <InspectorPanel
               selectedCell={state.selectedCell}
@@ -151,7 +146,7 @@ export function AppShell() {
       
       {/* Row 4: Data Panel 281px */}
       {activeWorkspace === 'monitor' && (
-        <div className="cc-data-panel">
+        <div className="cc-data-panel" data-testid="monitor-data-track">
           <BottomDataPanel state={state} />
         </div>
       )}

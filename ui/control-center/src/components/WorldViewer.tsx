@@ -156,10 +156,6 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     dispatchCamera({ type: 'fit', world: frame.world, viewport: measureViewport() });
   };
 
-  const resetView = () => {
-    dispatchCamera({ type: 'reset' });
-  };
-
   const startDrag = (pointerId: number, x: number, y: number) => {
     dispatchCamera({ type: 'drag-start', pointerId, point: { x, y } });
   };
@@ -298,7 +294,6 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         <button type="button" onClick={() => zoomAtCenter(1.2)} aria-label={uiText.viewer.zoomIn}>+</button>
         <button type="button" onClick={() => zoomAtCenter(1 / 1.2)} aria-label={uiText.viewer.zoomOut}>-</button>
         <button type="button" onClick={fitView} aria-label={uiText.viewer.fit}>{uiText.viewer.fitButton}</button>
-        <button type="button" onClick={resetView} aria-label={uiText.viewer.reset}>{uiText.viewer.resetButton}</button>
         {onExportScreenshot ? (
           <button type="button" onClick={onExportScreenshot} aria-label={uiText.controls.exportViewerPng}>
             PNG

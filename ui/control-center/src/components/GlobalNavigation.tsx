@@ -28,7 +28,7 @@ export function GlobalNavigation({
   ];
 
   return (
-    <div className="cc-nav" data-testid="monitor-top-context">
+    <div className="cc-nav" data-testid="monitor-navigation-track">
       <div className="cc-nav-logo">
         <div className="cc-nav-logo-icon">🔷</div>
         <h1 className="cc-nav-logo-title">ALIFE CONTROL CENTER</h1>

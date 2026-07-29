@@ -373,9 +373,7 @@ describe('WorldViewer', () => {
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Unsupported: process/contact/history search');
   });
 
-  it('resets navigation to the default camera', async () => {
-    const user = userEvent.setup();
-
+  it('offers Fit World without a separate Reset navigation control', async () => {
     render(
       <WorldViewer
         frame={ui1aFixture.frame}
@@ -384,16 +382,12 @@ describe('WorldViewer', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
-    await user.click(screen.getByRole('button', { name: 'Reset World Viewer navigation' }));
-
     await waitFor(() => {
-      expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
-        x: 0,
-        y: 0,
-        scale: 1
-      });
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
+
+    expect(screen.getByRole('button', { name: 'Fit World Viewer' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Reset World Viewer navigation' })).not.toBeInTheDocument();
   });
 
   it('keeps hit targets aligned with the navigation camera', async () => {

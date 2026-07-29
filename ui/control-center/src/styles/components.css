@@ -312,13 +312,15 @@ button:disabled {
   position: absolute;
   inset: 10px;
   cursor: default;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .viewer-navigation-controls {
   position: absolute;
   top: 22px;
   left: 22px;
-  z-index: 4;
+  z-index: 8;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -365,7 +367,7 @@ button:disabled {
   position: absolute;
   top: 22px;
   right: 22px;
-  z-index: 3;
+  z-index: 8;
   display: grid;
   gap: 8px;
   width: min(320px, calc(100% - 44px));
@@ -420,11 +422,13 @@ button:disabled {
 
 .cell-hotspot {
   position: absolute;
+  z-index: 2;
   transform: translate(-50%, -50%);
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .cell-hotspot:focus-visible {
@@ -480,8 +484,12 @@ button:disabled {
   padding: 6px 12px;
   background: var(--color-bg-panel, rgba(8, 19, 24, 0.92));
   backdrop-filter: blur(10px);
-  pointer-events: auto;
+  pointer-events: none;
   flex-shrink: 0;
+}
+
+.selected-focus-card * {
+  pointer-events: none;
 }
 
 .selected-focus-card span,
@@ -578,7 +586,7 @@ button:disabled {
   position: absolute;
   right: 22px;
   bottom: 22px;
-  z-index: 4;
+  z-index: 7;
   display: grid;
   gap: 6px;
   width: min(340px, calc(100% - 44px));
@@ -1218,69 +1226,30 @@ button:disabled {
   flex-shrink: 0;      /* Never grow into WorldViewer space */
   height: 281px;
   max-height: 281px;
-  overflow-y: auto;
-  transition: max-height 0.2s ease, padding 0.2s ease;
-}
-
-.v3-bottom-panel.collapsed {
-  max-height: 36px;
   overflow: hidden;
-  padding: 4px 14px;
 }
 
-.v3-panel-tabs {
+.v3-panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 4px;
+  min-height: 24px;
+  flex-shrink: 0;
 }
 
-.v3-panel-tabs-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.v3-panel-kicker {
+  color: #74ded2;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
 }
 
-.v3-panel-collapse-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #9fadb9;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.v3-panel-collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-
-.v3-panel-tab {
-  background: transparent;
-  border: none;
-  color: #7d8e9c;
+.v3-panel-header strong {
+  color: #c5d3e0;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
-.v3-panel-tab:hover {
-  color: #c5d3e0;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.v3-panel-tab.active {
-  color: #74ded2;
-  background: rgba(74, 222, 210, 0.12);
 }
 
 .warning-count {
@@ -1291,6 +1260,8 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .v3-chart-card {

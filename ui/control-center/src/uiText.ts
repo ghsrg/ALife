@@ -57,9 +57,7 @@ export const uiText = {
     zoomIn: 'Zoom in World Viewer',
     zoomOut: 'Zoom out World Viewer',
     fit: 'Fit World Viewer',
-    fitButton: 'Fit',
-    reset: 'Reset World Viewer navigation',
-    resetButton: 'Reset'
+    fitButton: 'Fit'
   },
   inspector: {
     title: 'Cell Inspector',

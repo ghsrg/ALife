@@ -23,7 +23,7 @@ export function RunBar({ state, onStart, onPause, onResume, onStep, onStop }: Ru
   const scenarioName = scenario ? (scenario as any).title || scenario.id : 'Unknown Scenario';
 
   return (
-    <div className="cc-run-bar">
+    <div className="cc-run-bar" data-testid="monitor-run-track">
       {/* 1. DataContext */}
       <div className="cc-run-section" style={{ width: 200 }}>
         <div>

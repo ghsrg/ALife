@@ -9,7 +9,7 @@ export interface InspectorPanelProps {
 
 export function InspectorPanel({ selectedCell, displayedTick, onSelectCell }: InspectorPanelProps) {
   return (
-    <div className="cc-inspector">
+    <div className="cc-inspector" data-testid="monitor-inspector-track">
       <CellInspector selectedCell={selectedCell} />
 
       <div className="cc-inspector-footer">

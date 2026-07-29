@@ -240,7 +240,7 @@ describe('App', () => {
       expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
     });
 
-    expect(screen.getByTestId('monitor-top-context')).toBeInTheDocument();
+    expect(screen.getByTestId('monitor-navigation-track')).toBeInTheDocument();
     expect(screen.getByLabelText('Layer controls')).toBeInTheDocument();
     expect(screen.getByLabelText('Monitor workspace')).toBeInTheDocument();
     expect(screen.getByLabelText('Cell Inspector')).toBeInTheDocument();
@@ -250,6 +250,24 @@ describe('App', () => {
     expect(screen.getByTestId('selected-focus-card')).toHaveClass('selected-focus-card');
     expect(screen.getByText('Projected Cell Energy')).toBeInTheDocument();
     expect(screen.getAllByText('Resources').length).toBeGreaterThan(0);
+  });
+
+  it('renders stable Monitor shell tracks without collapsible layout controls', async () => {
+    renderApp(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    expect(screen.getByTestId('monitor-navigation-track')).toBeVisible();
+    expect(screen.getByTestId('monitor-run-track')).toBeVisible();
+    expect(screen.getByTestId('monitor-level-track')).toBeVisible();
+    expect(screen.getByTestId('monitor-layers-track')).toBeVisible();
+    expect(screen.getByTestId('monitor-map-track')).toBeVisible();
+    expect(screen.getByTestId('monitor-inspector-track')).toBeVisible();
+    expect(screen.getByTestId('monitor-data-track')).toBeVisible();
+    expect(screen.queryByTitle('Collapse Layers')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Data panel tabs' })).not.toBeInTheDocument();
   });
 
   it('clears selected Cell panels after clicking empty World Viewer space', async () => {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { renderApp } from '../test/render';
 import { createAppStore } from '../app/appState';
 import { buildMonitorStats } from './monitorStats';
@@ -49,7 +49,7 @@ describe('MonitorWorkspace', () => {
     expect(screen.getByLabelText('World stats')).toBeVisible();
   });
 
-  it('switches between Map Viewer, Analytics, and Raw Data tabs', () => {
+  it('exposes the stable monitor map track without workspace tabs', async () => {
     const store = createAppStore();
     const state = store.getState();
 
@@ -60,19 +60,17 @@ describe('MonitorWorkspace', () => {
         onScenarioChange={vi.fn()}
         onReconnect={vi.fn()}
         onSelectCell={vi.fn()}
-        onToggleTheme={vi.fn()}
         onExportScreenshot={vi.fn()}
         exportStatus={null}
       />
     );
 
-    const analyticsTab = screen.getByRole('button', { name: 'Analytics' });
-    fireEvent.click(analyticsTab);
-    expect(screen.getByText('Matter Cycle Accounting')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+    });
 
-    const rawDataTab = screen.getByRole('button', { name: 'Raw Data' });
-    fireEvent.click(rawDataTab);
-    expect(screen.getByPlaceholderText('Filter entities...')).toBeInTheDocument();
+    expect(screen.getByTestId('monitor-map-track')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Analytics' })).not.toBeInTheDocument();
   });
 
   it('reports screenshot export as unavailable when the viewer cannot provide a PNG', async () => {

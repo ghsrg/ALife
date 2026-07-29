@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { getMonitorDataState, type AppStore } from '../app/appState';
-import { buildBalanceViewModel } from '../app/balanceViewModel';
+import { type AppStore } from '../app/appState';
 import { buildMonitorViewModel } from '../app/monitorViewModel';
 import { describeProjectionContext } from '../projection/projectionContext';
 import type { CellId } from '../projection/types';
 import { uiText } from '../uiText';
-import { BalanceAnalyticsPanel } from './BalanceAnalyticsPanel';
 import { BottomStatsStrip } from './BottomStatsStrip';
-import { RawDataGridPanel } from './RawDataGridPanel';
 import { SelectedEntityFocusCard } from './SelectedEntityFocusCard';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
 import type { MonitorStat } from './monitorStats';
@@ -24,8 +21,6 @@ interface MonitorWorkspaceProps {
   onJumpToLive?: () => void;
   onSelectHistoryTick?: (tick: number) => void;
   exportStatus: string | null;
-  layersPanelCollapsed?: boolean;
-  onToggleLayers?: () => void;
 }
 
 export function MonitorWorkspace({
@@ -38,14 +33,11 @@ export function MonitorWorkspace({
   onFreezeFrame,
   onJumpToLive,
   onSelectHistoryTick,
-  exportStatus,
-  layersPanelCollapsed,
-  onToggleLayers
+  exportStatus
 }: MonitorWorkspaceProps) {
   const viewerRef = useRef<WorldViewerHandle | null>(null);
   const workspaceRef = useRef<HTMLElement | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'viewer' | 'analytics' | 'rawdata'>('viewer');
   const monitorViewModel = buildMonitorViewModel(state);
 
   useEffect(() => {
@@ -128,57 +120,21 @@ export function MonitorWorkspace({
           </div>
         </section>
 
-        <nav className="workspace-tab-nav" aria-label="Workspace View Mode">
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'viewer' ? 'active' : ''}`}
-            onClick={() => setActiveTab('viewer')}
-          >
-            Map Viewer
-          </button>
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            Analytics
-          </button>
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'rawdata' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rawdata')}
-          >
-            Raw Data
-          </button>
-        </nav>
-
-        {activeTab === 'viewer' && (
-          <div className="viewer-tab-content">
-            <SelectedEntityFocusCard selectedCell={state.selectedCell} />
-            <WorldViewer
-              ref={viewerRef}
-              frame={state.frame}
-              selectedCellId={state.selectedCellId}
-              onSelectCell={onSelectCell}
-              onExportScreenshot={exportScreenshot}
-              onToggleFullScreen={toggleFullScreen}
-              isFullScreen={isFullScreen}
-              debugProjections={state.debugProjections}
-              activeResourceLayers={state.activeResourceLayers}
-            />
-            <BottomStatsStrip stats={monitorStats} />
-          </div>
-        )}
-        {activeTab === 'analytics' && (
-          <div className="viewer-tab-content">
-            <BalanceAnalyticsPanel viewModel={buildBalanceViewModel(state)} />
-          </div>
-        )}
-        {activeTab === 'rawdata' && (
-          <div className="viewer-tab-content">
-            <RawDataGridPanel frame={state.latestLiveFrame ?? state.frame} onSelectCell={(id) => onSelectCell(id)} />
-          </div>
-        )}
+        <div className="viewer-tab-content" data-testid="monitor-map-track">
+          <SelectedEntityFocusCard selectedCell={state.selectedCell} />
+          <WorldViewer
+            ref={viewerRef}
+            frame={state.frame}
+            selectedCellId={state.selectedCellId}
+            onSelectCell={onSelectCell}
+            onExportScreenshot={exportScreenshot}
+            onToggleFullScreen={toggleFullScreen}
+            isFullScreen={isFullScreen}
+            debugProjections={state.debugProjections}
+            activeResourceLayers={state.activeResourceLayers}
+          />
+          <BottomStatsStrip stats={monitorStats} />
+        </div>
 
         {exportStatus ? <p className="export-status" role="status">{exportStatus}</p> : null}
       </section>

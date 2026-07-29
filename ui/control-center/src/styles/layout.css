@@ -1,9 +1,21 @@
 .app-shell {
+  --monitor-workspace-min-height: calc(
+    var(--monitor-min-viewport-height, 862px)
+    - var(--panel-nav-height, 62px)
+    - var(--panel-run-bar-height, 82px)
+    - var(--panel-data-height, 281px)
+  );
   display: grid;
-  grid-template-rows: var(--panel-nav-height, 62px) var(--panel-run-bar-height, 82px) 1fr var(--panel-data-height, 281px);
+  grid-template-rows:
+    var(--panel-nav-height, 62px)
+    var(--panel-run-bar-height, 82px)
+    minmax(var(--monitor-workspace-min-height), 1fr)
+    var(--panel-data-height, 281px);
   height: 100vh;
+  min-height: var(--monitor-min-viewport-height, 862px);
   width: 100vw;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--color-bg-primary, #0a0e1a);
   color: var(--color-text-primary, #e8edf5);
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
@@ -30,13 +42,14 @@
 }
 
 .cc-workspace.cc-layers-collapsed {
-  grid-template-columns: var(--panel-level-width, 83px) var(--panel-layers-collapsed-width, 48px) 1fr var(--panel-inspector-width, 335px);
+  grid-template-columns: var(--panel-level-width, 83px) var(--panel-layers-width, 262px) 1fr var(--panel-inspector-width, 335px);
 }
 
 .cc-data-panel {
   height: var(--panel-data-height, 281px);
   background: var(--color-bg-primary, #0a0e1a);
   border-top: 1px solid var(--color-separator);
+  overflow: hidden;
 }
 
 /* Flex layout chain for MonitorWorkspace center column */
