@@ -1,18 +1,18 @@
 .app-shell {
   --monitor-workspace-min-height: calc(
-    var(--monitor-min-viewport-height, 862px)
+    var(--monitor-min-viewport-height, 720px)
     - var(--panel-nav-height, 62px)
     - var(--panel-run-bar-height, 82px)
-    - var(--panel-data-height, 220px)
+    - var(--panel-data-height, 187px)
   );
   display: grid;
   grid-template-rows:
     var(--panel-nav-height, 62px)
     var(--panel-run-bar-height, 82px)
     minmax(var(--monitor-workspace-min-height), 1fr)
-    var(--panel-data-height, 220px);
+    var(--panel-data-height, 187px);
   height: 100vh;
-  min-height: var(--monitor-min-viewport-height, 862px);
+  min-height: var(--monitor-min-viewport-height, 720px);
   width: 100vw;
   overflow-x: hidden;
   overflow-y: auto;
@@ -46,7 +46,7 @@
 }
 
 .cc-data-panel {
-  height: var(--panel-data-height, 220px);
+  height: var(--panel-data-height, 187px);
   background: var(--color-bg-primary, #0a0e1a);
   border-top: 1px solid var(--color-separator);
   overflow: hidden;

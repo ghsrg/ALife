@@ -141,7 +141,7 @@ export function AppShell() {
         )}
       </div>
       
-      {/* Row 4: Data Panel 220px */}
+      {/* Row 4: adaptive Data Panel reference track */}
       {activeWorkspace === 'monitor' && (
         <div className="cc-data-panel" data-testid="monitor-data-track">
           <BottomDataPanel state={state} />

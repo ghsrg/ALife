@@ -1,13 +1,18 @@
 :root {
-  /* Canon panel dimensions from control-center-block.md (PNG measurements) */
-  --panel-nav-height: 62px;
-  --panel-run-bar-height: 82px;
-  --panel-level-width: 83px;
-  --panel-layers-width: 262px;
+  /*
+   * Reference shell dimensions are measured from the 1920x1080 physical PNG.
+   * Windows laptop display scale at 150% exposes that surface as a 1280x720
+   * CSS viewport, so each major track uses:
+   *   min = reference / 1.5, preferred = viewport ratio, max = reference.
+   */
+  --panel-nav-height: clamp(41px, 5.7407vh, 62px);
+  --panel-run-bar-height: clamp(55px, 7.5926vh, 82px);
+  --panel-level-width: clamp(55px, 4.3229vw, 83px);
+  --panel-layers-width: clamp(175px, 13.6458vw, 262px);
   --panel-layers-collapsed-width: 48px;
-  --panel-inspector-width: 335px;
-  --panel-data-height: 220px;
-  --monitor-min-viewport-height: 862px;
+  --panel-inspector-width: clamp(223px, 17.4479vw, 335px);
+  --panel-data-height: clamp(187px, 26.0185vh, 281px);
+  --monitor-min-viewport-height: 720px;
   
   /* Dark Theme Colors */
   --color-bg-primary: #0a0e1a;

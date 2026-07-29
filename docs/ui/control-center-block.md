@@ -18,10 +18,13 @@ tags:
 
 ## Reference and baseline
 
-Baseline viewport: **1920 × 1080 CSS px**.
-Minimum supported full Monitor layout: **1366 × 862 CSS px**. Below this,
-retain minimum Grid tracks and use root/page vertical scroll; full-grid fidelity
-is not an acceptance target.
+Physical reference viewport: **1920 × 1080 px** from the supplied PNG.
+Primary supported laptop/fullscreen CSS baseline: **1280 × 720 CSS px**,
+matching common Windows display scale `150%` on a physical `1920 × 1080`
+panel. Track tokens scale from `reference / 1.5` at `1280 × 720` up to the
+full reference dimensions at `1920 × 1080` CSS px. Below `1280 × 720`, retain
+minimum Grid tracks and use root/page vertical scroll; full-grid fidelity is
+not an acceptance target.
 
 | Block | Asset | Width | Height | Role |
 |---|---|---:|---:|---|
@@ -65,9 +68,10 @@ content can be raised on demand as a bottom overlay at its normal Monitor track
 height, without resizing Map. Fullscreen is view-only: Run commands and all
 other controls require returning to normal Monitor.
 
-Between `862` and `1080` CSS px viewport height, vertical tracks use bounded
-responsive sizing; extra height grows mainly Map/Data area. This is not global
-UI scaling: text and interaction targets keep a readable minimum.
+Between `720` and `1080` CSS px viewport height, vertical tracks use bounded
+responsive sizing from the 150%-scale laptop baseline to the full reference
+desktop target. This is not global UI scaling: text and interaction targets
+keep a readable minimum.
 
 ## 1. Global Navigation
 

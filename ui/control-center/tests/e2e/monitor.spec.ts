@@ -47,7 +47,7 @@ test('AL-007-S22 keeps Monitor tracks stable at 1920x1080', async ({ page }) => 
   expect(Math.round(level!.width)).toBe(83);
   expect(Math.round(layers!.width)).toBe(262);
   expect(Math.round(inspector!.width)).toBe(335);
-  expect(Math.round(data!.height)).toBe(220);
+  expect(Math.round(data!.height)).toBe(281);
   expect(map!.width).toBeGreaterThan(0);
   expect(map!.height).toBeGreaterThan(600);
   expect((await page.getByLabel('World Viewer', { exact: true }).boundingBox())!.height).toBeGreaterThan(560);
@@ -56,8 +56,51 @@ test('AL-007-S22 keeps Monitor tracks stable at 1920x1080', async ({ page }) => 
   await expect(page.getByTestId('bottom-stats-strip')).toHaveCount(0);
 });
 
-test('AL-007-S22 uses root scroll below 1366x862 without collapsing fixed tracks', async ({ page }) => {
-  await page.setViewportSize({ width: 1366, height: 861 });
+test('AL-007-S22 supports 1280x720 CSS viewport for 150 percent display scale', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+
+  const navigation = await page.getByTestId('monitor-navigation-track').boundingBox();
+  const run = await page.getByTestId('monitor-run-track').boundingBox();
+  const level = await page.getByTestId('monitor-level-track').boundingBox();
+  const layers = await page.getByTestId('monitor-layers-track').boundingBox();
+  const map = await page.getByTestId('monitor-map-track').boundingBox();
+  const world = await page.getByLabel('World Viewer', { exact: true }).boundingBox();
+  const inspector = await page.getByTestId('monitor-inspector-track').boundingBox();
+  const data = await page.getByTestId('monitor-data-track').boundingBox();
+
+  expect(navigation).not.toBeNull();
+  expect(run).not.toBeNull();
+  expect(level).not.toBeNull();
+  expect(layers).not.toBeNull();
+  expect(map).not.toBeNull();
+  expect(world).not.toBeNull();
+  expect(inspector).not.toBeNull();
+  expect(data).not.toBeNull();
+
+  expect(Math.round(navigation!.height)).toBe(41);
+  expect(Math.round(run!.height)).toBe(55);
+  expect(Math.round(level!.width)).toBe(55);
+  expect(Math.round(layers!.width)).toBe(175);
+  expect(Math.round(inspector!.width)).toBe(223);
+  expect(Math.round(data!.height)).toBe(187);
+  expect(map!.width).toBeGreaterThan(820);
+  expect(world!.height).toBeGreaterThan(400);
+
+  const pageGeometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    clientHeight: document.documentElement.clientHeight,
+    scrollHeight: document.documentElement.scrollHeight
+  }));
+  expect(pageGeometry.scrollWidth).toBe(pageGeometry.clientWidth);
+  expect(pageGeometry.scrollHeight).toBe(pageGeometry.clientHeight);
+});
+
+test('AL-007-S22 uses root scroll below 1280x720 without collapsing fixed tracks', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 719 });
   await page.goto('/');
 
   await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
@@ -70,8 +113,8 @@ test('AL-007-S22 uses root scroll below 1366x862 without collapsing fixed tracks
 
   expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
   expect(geometry.dataOverflowY).not.toBe('auto');
-  expect((await page.getByTestId('monitor-inspector-track').boundingBox())!.width).toBeGreaterThan(300);
+  expect((await page.getByTestId('monitor-inspector-track').boundingBox())!.width).toBeGreaterThan(220);
   expect((await page.getByTestId('monitor-map-track').boundingBox())!.width).toBeGreaterThan(0);
-  expect((await page.getByTestId('monitor-map-track').boundingBox())!.height).toBeGreaterThan(430);
+  expect((await page.getByTestId('monitor-map-track').boundingBox())!.height).toBeGreaterThan(400);
   expect((await page.getByLabel('World Viewer', { exact: true }).boundingBox())!.height).toBeGreaterThan(380);
 });

@@ -13,21 +13,21 @@ test.describe('UI-1C-A visual acceptance', () => {
     await openMonitor(page, { width: 1920, height: 1080 });
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await assertWorldFirstLayout(page);
+    await assertWorldFirstLayout(page, { width: 1920, height: 1080 });
     await expect(page.getByLabel('Viewer projection truth')).toContainText('Resources');
     await expect(page.getByLabel('Viewer projection truth')).toContainText('Fixture grid');
     await expect(page.getByLabel('Viewer projection truth')).toContainText('Cell size');
     await page.screenshot({ path: join(screenshotDir, '1920x1080-dark.png'), fullPage: true });
   });
 
-  test('1366x862 dark keeps controls usable without incoherent overlap', async ({ page }) => {
-    await openMonitor(page, { width: 1366, height: 862 });
+  test('1280x720 dark keeps controls usable at 150 percent display scale baseline', async ({ page }) => {
+    await openMonitor(page, { width: 1280, height: 720 });
 
-    await assertWorldFirstLayout(page);
+    await assertWorldFirstLayout(page, { width: 1280, height: 720 });
     await expect(page.getByRole('button', { name: 'Play live run' })).toBeVisible();
     await expect(page.getByTestId('monitor-data-track')).toBeVisible();
     await expect(page.getByLabel('Debug Visualization Mode')).toHaveClass(/collapsed/);
-    await page.screenshot({ path: join(screenshotDir, '1366x862-dark.png'), fullPage: true });
+    await page.screenshot({ path: join(screenshotDir, '1280x720-dark.png'), fullPage: true });
   });
 
   test('1920x1080 light remains usable', async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe('UI-1C-A visual acceptance', () => {
     await page.getByRole('button', { name: 'Switch to light theme' }).click();
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    await assertWorldFirstLayout(page);
+    await assertWorldFirstLayout(page, { width: 1920, height: 1080 });
     await expect(page.getByLabel('Cell Inspector')).toBeVisible();
     await page.screenshot({ path: join(screenshotDir, '1920x1080-light.png'), fullPage: true });
   });
@@ -126,7 +126,7 @@ async function openMonitor(page: Page, viewport: { width: number; height: number
   await expect(page.getByLabel('World Viewer navigation', { exact: true })).toBeVisible();
 }
 
-async function assertWorldFirstLayout(page: Page) {
+async function assertWorldFirstLayout(page: Page, viewport: { width: number; height: number }) {
   const layers = await page.getByLabel('Layer controls').boundingBox();
   const viewer = await page.getByLabel('Monitor workspace').boundingBox();
   const world = await page.getByLabel('World Viewer', { exact: true }).boundingBox();
@@ -160,5 +160,9 @@ async function assertWorldFirstLayout(page: Page) {
   expect(f.y).toBeGreaterThanOrEqual(v.y);
   expect(f.y).toBeLessThan(w.y + 80);
   expect(d.y).toBeGreaterThan(v.y + v.height - 1);
-  expect(d.height).toBe(220);
+  expect(Math.round(d.height)).toBe(expectedDataPanelHeight(viewport.height));
+}
+
+function expectedDataPanelHeight(viewportHeight: number) {
+  return Math.round(Math.min(281, Math.max(187, viewportHeight * (281 / 1080))));
 }

@@ -265,8 +265,14 @@ Resizable panels повинні мати:
 Canonical minimum supported application viewport для повноцінного desktop UI:
 
 ```text
-1366 × 862
+1280 × 720 CSS px
 ```
+
+This is the primary laptop/fullscreen CSS baseline for common Windows display
+scale `150%` on physical `1920 × 1080` panels. The supplied `1920 × 1080`
+reference PNG remains the physical visual target; Monitor track tokens scale
+from `reference / 1.5` at `1280 × 720` up to the full reference dimensions at
+`1920 × 1080` CSS px.
 
 Layout повинен адаптуватися за пріоритетами, а не лише масштабувати всі елементи.
 
@@ -305,7 +311,7 @@ overlay/drawer or collapses it.
 - уникати горизонтального overflow для основних application controls;
 - не обіцяти повний Research workflow.
 
-For Monitor below `1366 × 862` CSS px, retain minimum Grid tracks and use
+For Monitor below `1280 × 720` CSS px, retain minimum Grid tracks and use
 root/page vertical scroll instead of shrinking panels further or introducing
 Data Panel-only scroll for layout fit.
 
@@ -486,7 +492,8 @@ Motion не може:
 
 ### Stable layout
 
-На baseline viewport `1920 × 1080` Monitor має стабільні Grid tracks. Зміна
+На primary laptop baseline viewport `1280 × 720` CSS px Monitor має стабільні Grid tracks,
+scaled from the physical `1920 × 1080` reference at `150%` display scale. Зміна
 Level, layer/filter, selection, Inspector content, Data Panel content або
 Focus Panel **не** змінює розмір Map чи інших blocks.
 
@@ -504,8 +511,9 @@ a bottom overlay at its normal Monitor track height; opening it never resizes
 Map. Fullscreen is view-only: Run commands and every other control surface
 require return to normal Monitor.
 
-Between `862` and `1080` CSS px of viewport height, vertical Grid tracks adapt
-with bounded CSS sizing; additional height grows primarily Map/Data area. This
+Between `720` and `1080` CSS px of viewport height, vertical Grid tracks adapt
+with bounded CSS sizing from the 150%-scale laptop baseline to the full
+reference desktop target; additional height grows primarily Map/Data area. This
 is not global UI scaling: text and interaction targets retain their minimum
 readable size.
 
