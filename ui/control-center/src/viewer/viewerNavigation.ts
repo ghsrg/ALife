@@ -22,7 +22,6 @@ export interface Size {
 export const MIN_VIEWER_ZOOM = 0.5;
 export const MAX_VIEWER_ZOOM = 24;
 export const DEFAULT_VIEWER_CAMERA: ViewerCamera = { x: 0, y: 0, scale: 1 };
-export const VIEWER_FIT_MARGIN_PX = 24;
 export const CELL_DETAIL_DIAMETER_PX = 20;
 export const REFERENCE_CELL_RADIUS_WORLD_UNITS = 2;
 export const FULL_WORLD_SCALE_DENOMINATOR = 2600;
@@ -56,15 +55,9 @@ export function zoomCameraAtPoint(
 }
 
 export function fitCameraToWorld(world: Size, viewport: Size): ViewerCamera {
-  const usableWidth = Math.max(1, viewport.width - VIEWER_FIT_MARGIN_PX * 2);
-  const usableHeight = Math.max(1, viewport.height - VIEWER_FIT_MARGIN_PX * 2);
-  const scale = Number(Math.min(usableWidth / world.width, usableHeight / world.height, MAX_VIEWER_ZOOM).toFixed(3));
-
-  return {
-    scale,
-    x: Math.round((viewport.width - world.width * scale) / 2),
-    y: Math.round((viewport.height - world.height * scale) / 2)
-  };
+  void world;
+  void viewport;
+  return DEFAULT_VIEWER_CAMERA;
 }
 
 export function formatMapScaleLabel(world: Size, viewport: Size, scale: number) {

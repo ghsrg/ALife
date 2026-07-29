@@ -103,7 +103,7 @@ describe('WorldViewer', () => {
     );
 
     await waitFor(() => {
-      expect(renderFrame).toHaveBeenCalledWith(ui1aFixture.frame, 'cell-a', { x: 36, y: 24, scale: 0.94 });
+      expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', { x: 0, y: 0, scale: 1 });
     });
     expect(screen.getByLabelText('Select cell-a')).toBeInTheDocument();
     expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
@@ -204,7 +204,7 @@ describe('WorldViewer', () => {
     );
 
     await waitFor(() => {
-      expect(renderFrame).toHaveBeenCalledWith(tinyLiveFrame, 'tiny', { x: 36, y: 24, scale: 0.94 });
+      expect(renderFrame).toHaveBeenLastCalledWith(tinyLiveFrame, 'tiny', { x: 0, y: 0, scale: 1 });
     });
 
     expect(screen.getByLabelText('Select tiny')).toHaveStyle({ width: '36px', height: '36px' });
@@ -227,9 +227,9 @@ describe('WorldViewer', () => {
 
     await waitFor(() => {
       expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
-        x: -76.79999999999995,
-        y: -51.19999999999993,
-        scale: 1.128
+        x: -120,
+        y: -80,
+        scale: 1.2
       });
     });
     expect(screen.getByLabelText('World Viewer zoom')).toHaveTextContent(/^1:\d+$/);
@@ -413,10 +413,10 @@ describe('WorldViewer', () => {
     await user.click(screen.getByRole('button', { name: 'Zoom in World Viewer' }));
 
     expect(screen.getByLabelText('Select cell-a')).toHaveStyle({
-      left: '295.44px',
-      top: '309.76000000000005px',
-      width: '54.14399999999999px',
-      height: '54.14399999999999px'
+      left: '276px',
+      top: '304px',
+      width: '57.599999999999994px',
+      height: '57.599999999999994px'
     });
   });
 
@@ -440,9 +440,9 @@ describe('WorldViewer', () => {
 
     await waitFor(() => {
       expect(renderFrame).toHaveBeenLastCalledWith(ui1aFixture.frame, 'cell-a', {
-        x: 66,
-        y: 4,
-        scale: 0.94
+        x: 30,
+        y: -20,
+        scale: 1
       });
     });
   });
@@ -469,8 +469,8 @@ describe('WorldViewer', () => {
       });
 
       expect(screen.getByLabelText('Select cell-a')).toHaveStyle({
-        left: '224.4px',
-        top: '167.36px',
+        left: '247.5px',
+        top: '224px',
         width: '36px',
         height: '36px'
       });
