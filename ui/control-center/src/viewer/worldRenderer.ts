@@ -18,8 +18,8 @@ export interface WorldRenderer {
 
 export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRenderer> {
   const app = new Application();
-  const width = host.clientWidth || 900;
-  const height = host.clientHeight || 560;
+  let width = host.clientWidth || 900;
+  let height = host.clientHeight || 560;
 
   await app.init({
     width,
@@ -59,7 +59,6 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
       const fillColor = cellFillColor(cell.lifecycleState, cell.energyRatio);
       const membraneAlpha = 0.52 + cell.integrityRatio * 0.35;
       const strokeColor = cellStrokeColor(cell.lifecycleState, cell.selected);
-      const isOverview = cell.semanticLevel === 'overview';
 
       // 1. Primary Cell Body (Outer Membrane & Cytoplasm)
       cellGraphic.circle(cell.x, cell.y, cell.radius);
@@ -107,6 +106,8 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
   return {
     renderFrame,
     resize: (nextWidth, nextHeight) => {
+      width = nextWidth;
+      height = nextHeight;
       app.renderer.resize(nextWidth, nextHeight);
     },
     exportPng: () => app.canvas.toDataURL('image/png'),

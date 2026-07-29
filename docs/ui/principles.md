@@ -494,10 +494,10 @@ UI є desktop-first.
 Мінімальний підтримуваний viewport:
 
 ```text
-1024x768
+1366x862
 ```
 
-UI повинен автоматично масштабувати layout від `1024x768` до більших desktop resolutions та full-screen режиму.
+UI повинен автоматично масштабувати layout від `1366x862` до більших desktop resolutions та full-screen режиму. `1920x1080` є primary visual target.
 
 Desktop-first означає:
 

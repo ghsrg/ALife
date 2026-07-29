@@ -9,6 +9,8 @@ interface LayerPanelProps {
   monitorViewModel: MonitorViewModel;
   onScenarioChange: (scenarioId: string) => void;
   onReconnect: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function LayerPanel({
@@ -16,99 +18,163 @@ export function LayerPanel({
   monitorDataState,
   monitorViewModel,
   onScenarioChange,
-  onReconnect
+  onReconnect,
+  isCollapsed,
+  onToggleCollapse
 }: LayerPanelProps) {
   const frame = state.frame;
 
+  if (isCollapsed) {
+    return (
+      <div className="cc-layers-panel collapsed">
+        <div className="cc-layers-collapse-strip">
+          <button className="cc-layers-strip-btn" onClick={onToggleCollapse} title="Expand Layers">»</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <aside className="side-panel" aria-label={uiText.layers.ariaLabel}>
-      <h2>{uiText.layers.title}</h2>
-      <ConnectionPanel
-        endpoint={state.runnerEndpoint}
-        connectionState={state.connectionState}
-        monitorDataState={monitorDataState}
-        serverInfo={state.serverInfo}
-        scenarios={state.scenarios}
-        selectedScenarioId={state.selectedScenarioId}
-        lastError={state.lastError}
-        onScenarioChange={onScenarioChange}
-        onReconnect={onReconnect}
-      />
-      <label className="layer-option">
-        <input type="checkbox" checked readOnly />
-        <span>{uiText.layers.cells}</span>
-      </label>
-      <label className={monitorViewModel.hasResourceLayer ? 'layer-option' : 'layer-option layer-option-missing'}>
-        <input
-          type="checkbox"
-          checked={monitorViewModel.hasResourceLayer && (state.activeResourceLayers?.length ?? 0) > 0}
-          readOnly
-          disabled={!monitorViewModel.hasResourceLayer}
+    <div className="cc-layers-panel" aria-label={uiText.layers.ariaLabel}>
+      <div className="cc-layers-header">
+        <div className="cc-layers-title">LAYERS & FILTERS</div>
+        <button className="cc-layers-collapse-btn" onClick={onToggleCollapse} title="Collapse Layers">«</button>
+      </div>
+
+      <details className="cc-connection-details" style={{ margin: '6px 12px', fontSize: '11px' }}>
+        <summary style={{ cursor: 'pointer', color: 'var(--color-text-dim)', fontWeight: 600, padding: '4px 0' }}>
+          Runner: <span style={{ color: state.connectionState === 'connected' ? '#4ade80' : '#fde68a' }}>{state.connectionState}</span>
+        </summary>
+        <ConnectionPanel
+          endpoint={state.runnerEndpoint}
+          connectionState={state.connectionState}
+          monitorDataState={monitorDataState}
+          serverInfo={state.serverInfo}
+          scenarios={state.scenarios}
+          selectedScenarioId={state.selectedScenarioId}
+          lastError={state.lastError}
+          onScenarioChange={onScenarioChange}
+          onReconnect={onReconnect}
         />
-        <span>
-          {uiText.layers.resources}
-          <small>{monitorViewModel.resourceLayerState}</small>
-        </span>
-      </label>
+      </details>
 
-      {/* Field Layers & Dynamic Resource Toggles */}
-      {(() => {
-        const debugLayers =
-          state.debugProjections?.status === 'available'
-            ? state.debugProjections.visualWorld.resourceLayers
-            : [];
-        const colors = ['#2ec4b6', '#3a86ff', '#ffb703', '#8338ec'];
+      <div className="cc-layers-tabs">
+        <button className="cc-layers-tab active">SCENE</button>
+        <button className="cc-layers-tab">DATA</button>
+      </div>
 
-        let layerItems: { index: number; name: string; color: string }[] = [];
+      <div className="cc-layers-section">
+        <span className="cc-layers-section-label">COLOR MODE</span>
+        <select className="cc-color-mode-select">
+          <option>Organism ID (Ancestry)</option>
+          <option>Energy Level</option>
+          <option>Age</option>
+        </select>
+      </div>
 
-        if (debugLayers.length > 0) {
-          layerItems = debugLayers.map((l) => ({
-            index: l.layerIndex,
-            name: `Layer ${l.layerIndex} (${l.totalAmount > 0 ? l.totalAmount.toFixed(1) + ' total' : 'empty'})`,
-            color: colors[l.layerIndex % colors.length]
-          }));
-        } else if (monitorViewModel.hasResourceLayer) {
-          layerItems = [
-            { index: 0, name: 'Nutrient / Organic', color: '#2ec4b6' },
-            { index: 1, name: 'Mineral', color: '#3a86ff' },
-            { index: 2, name: 'Energy', color: '#ffb703' }
-          ];
-        }
+      <div className="cc-layers-section">
+        <span className="cc-layers-section-label">FIELD LAYERS</span>
+        <label className={`cc-resource-layer-row ${monitorViewModel.hasResourceLayer ? '' : 'layer-option-missing'}`}>
+          <input
+            type="checkbox"
+            checked={monitorViewModel.hasResourceLayer}
+            readOnly
+            disabled={!monitorViewModel.hasResourceLayer}
+          />
+          <span>
+            {uiText.layers.resources}
+            {monitorViewModel.resourceLayerState ? (
+              <small className="cc-layer-state">{monitorViewModel.resourceLayerState}</small>
+            ) : null}
+          </span>
+        </label>
+        {(() => {
+          const debugLayers =
+            state.debugProjections?.status === 'available'
+              ? state.debugProjections.visualWorld.resourceLayers
+              : [];
+          const colors = ['#00c896', '#3a86ff', '#ffb703', '#8338ec'];
 
-        if (layerItems.length === 0) return null;
+          let layerItems: { index: number; name: string; color: string }[] = [];
 
-        return (
-          <div className="field-layers-selector" aria-label="Field layers selection">
-            <span className="field-layers-title">FIELD LAYERS ({layerItems.length})</span>
-            {layerItems.map((layer) => {
-              const isActive = state.activeResourceLayers?.includes(layer.index) ?? true;
-              return (
-                <label key={layer.index} className="resource-layer-item">
+          if (debugLayers.length > 0) {
+            layerItems = debugLayers.map((l) => ({
+              index: l.layerIndex,
+              name: `Layer ${l.layerIndex} (${l.totalAmount > 0 ? l.totalAmount.toFixed(1) + ' total' : 'empty'})`,
+              color: colors[l.layerIndex % colors.length]
+            }));
+          } else if (monitorViewModel.hasResourceLayer) {
+            layerItems = [
+              { index: 0, name: 'Nutrient / Organic', color: '#00c896' },
+              { index: 1, name: 'Mineral', color: '#3a86ff' },
+              { index: 2, name: 'Energy', color: '#ffb703' }
+            ];
+          }
+
+          if (layerItems.length === 0) return null;
+
+          return layerItems.map((layer) => {
+            const isActive = state.activeResourceLayers?.includes(layer.index) ?? true;
+            return (
+              <label key={layer.index} className="cc-field-layer">
+                <span className="cc-field-dot" style={{ backgroundColor: layer.color }} />
+                <span className="cc-field-name">{layer.name}</span>
+                <div className="cc-toggle">
                   <input
                     type="checkbox"
                     checked={isActive}
                     disabled={!monitorViewModel.hasResourceLayer}
                     onChange={() => state.toggleResourceLayer?.(layer.index)}
                   />
-                  <span className="resource-dot" style={{ backgroundColor: layer.color }} />
-                  <span className="resource-name">{layer.name}</span>
-                </label>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      <label className="layer-option muted">
-        <input type="checkbox" disabled />
-        <span>{uiText.layers.joints}</span>
-      </label>
-      <div className="metric-list">
-        <div><span>{uiText.layers.run}</span><strong>{frame.runId}</strong></div>
-        <div><span>{uiText.layers.cells}</span><strong>{frame.cells.length}</strong></div>
-        <div><span>{uiText.layers.world}</span><strong>{frame.world.width} x {frame.world.height}</strong></div>
-        <div><span>{uiText.layers.projection}</span><strong>{monitorViewModel.projectionLabel}</strong></div>
+                  <span className="cc-toggle-slider" />
+                </div>
+              </label>
+            );
+          });
+        })()}
       </div>
-    </aside>
+
+      <div className="cc-layers-section">
+        <span className="cc-layers-section-label">OVERLAYS</span>
+        <label className="cc-overlay-item">
+          <div className="cc-toggle">
+            <input type="checkbox" defaultChecked />
+            <span className="cc-toggle-slider" />
+          </div>
+          Cell outlines
+        </label>
+        <label className="cc-overlay-item">
+          <div className="cc-toggle">
+            <input type="checkbox" />
+            <span className="cc-toggle-slider" />
+          </div>
+          Organism view outline
+        </label>
+        <label className="cc-overlay-item">
+          <div className="cc-toggle">
+            <input type="checkbox" defaultChecked />
+            <span className="cc-toggle-slider" />
+          </div>
+          Dead matter
+        </label>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      <div className="cc-layers-section" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }}>
+        <span className="cc-layers-section-label" style={{ marginTop: '8px' }}>RENDERING</span>
+        <div className="cc-rendering-row">
+          <span className="cc-rendering-label">Semantic zoom</span>
+          <span className="cc-rendering-val">Overview</span>
+        </div>
+        <div className="cc-rendering-row">
+          <span className="cc-rendering-label">Quality</span>
+          <div className="cc-quality-btns">
+            <button className="cc-quality-btn active">AUTO</button>
+            <button className="cc-quality-btn">HIGH</button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

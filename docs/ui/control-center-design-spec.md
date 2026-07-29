@@ -200,7 +200,7 @@ Inspector є contextual panel, пов'язаною з selection.
 
 - відкриватися після selection або explicit action;
 - залишати Viewer достатньо простору;
-- підтримувати collapse або close;
+- у Monitor займати сталий правий track без collapse або close;
 - не показувати вигадані значення для unavailable fields;
 - відрізняти raw, derived, approximate та presentation-only values;
 - зберігати selection context під час допустимих layout transitions.
@@ -236,6 +236,11 @@ focus / full-screen
 
 Але кожна panel повинна мати одну canonical default role.
 
+For Monitor, this flexibility is constrained by the final layout contract:
+Contextual Inspector always occupies its fixed right track, while only Focus is
+an overlay. Inspector is neither collapsed nor converted into a drawer at a
+supported viewport.
+
 ### Default Rules
 
 - Primary Viewer не є dismissible panel у `Monitor`.
@@ -260,7 +265,7 @@ Resizable panels повинні мати:
 Canonical minimum supported application viewport для повноцінного desktop UI:
 
 ```text
-1024 × 768
+1366 × 862
 ```
 
 Layout повинен адаптуватися за пріоритетами, а не лише масштабувати всі елементи.
@@ -286,6 +291,10 @@ Viewer отримує основну площу.
 - auxiliary panels за замовчуванням collapse;
 - run state і критичні warnings залишаються видимими.
 
+Monitor exception: Contextual Inspector remains the fixed right track; compact
+layout may reduce nonessential density, but never converts Inspector into an
+overlay/drawer or collapses it.
+
 ### Below Minimum Viewport
 
 Нижче canonical minimum допускається degraded layout, але UI повинен:
@@ -295,6 +304,10 @@ Viewer отримує основну площу.
 - явно пріоритезувати Viewer або active task;
 - уникати горизонтального overflow для основних application controls;
 - не обіцяти повний Research workflow.
+
+For Monitor below `1366 × 862` CSS px, retain minimum Grid tracks and use
+root/page vertical scroll instead of shrinking panels further or introducing
+Data Panel-only scroll for layout fit.
 
 ## Visual Hierarchy
 
@@ -464,6 +477,285 @@ Motion не може:
 - ігнорувати reduced-motion preference.
 
 Декоративні effects повинні бути optional і відокремлені від data encodings.
+
+## Final Monitor Alignment Decisions
+
+> Цей розділ фіксує узгоджений final contract для `Monitor`. Він уточнює
+> загальні правила panel behavior саме для `Monitor`, але не скасовує
+> тематичні UI Canon, Core/Observer authority або command boundary.
+
+### Stable layout
+
+На baseline viewport `1920 × 1080` Monitor має стабільні Grid tracks. Зміна
+Level, layer/filter, selection, Inspector content, Data Panel content або
+Focus Panel **не** змінює розмір Map чи інших blocks.
+
+Map може змінити розмір лише через resize application viewport або explicit
+full-screen mode. Кожен track має minimum useful size; жоден UI switch не може
+звести canvas або panel до нульового розміру чи приховати його.
+Users cannot drag-resize Monitor tracks; this prevents layout drift and
+zero-size panels.
+
+`Map fullscreen` is a distinct mode: only Map and its eligible Focus overlay
+remain on screen. It preserves current viewport, layers, selection, Pin, and
+Data Context. Contextual Inspector, Level, Layers, and application chrome do
+not consume Map space. The same Data Panel content may be raised on demand as
+a bottom overlay at its normal Monitor track height; opening it never resizes
+Map. Fullscreen is view-only: Run commands and every other control surface
+require return to normal Monitor.
+
+Between `862` and `1080` CSS px of viewport height, vertical Grid tracks adapt
+with bounded CSS sizing; additional height grows primarily Map/Data area. This
+is not global UI scaling: text and interaction targets retain their minimum
+readable size.
+
+Під час bootstrap, scenario change або World initialization camera автоматично
+виконує `Fit World`: увесь World займає максимум доступної Map area зі
+збереженням aspect ratio. Після ручного pan/zoom live frames і panel switches
+не скидають camera. При resize viewport зберігаються world-space center і zoom;
+допускається лише clamp до World bounds. Окремий `Reset view` не існує.
+
+### Global Navigation and application actions
+
+Усі canonical workspaces завжди видимі та clickable у фіксованому порядку:
+
+```text
+Monitor | World Editor | Experiments | Evolution | Library | Analysis
+```
+
+Disabled decorative placeholders заборонені. Global actions:
+
+| Action | Purpose and source | Result |
+|---|---|---|
+| Warnings | source-backed Core/Observer diagnostics with severity/count | opens `Diagnostics` filtered to warnings |
+| Theme | local `Dark` / `Light` UI preference | never changes run, config hash, or Data Context |
+| Locale | local `uk-UA` / `en-US` preference | technical canonical terms may remain English |
+| Help | current workspace and active Level | opens non-blocking in-app Canon/docs help |
+| Settings | UI scale, density, accessibility, shortcuts, connection target | simulation configuration remains in World Editor/run flows |
+
+### Run and Data Context Bar
+
+The persistent bar shows data source/state, run/scenario identity, displayed
+Tick, simulation rate, visualization FPS, effective seed, Frame Age, and run
+controls.
+
+| Item | Source | Rule |
+|---|---|---|
+| `SEED` | Runner `effective_seed` after any override | read-only; changed only before launch through World Editor/launch flow; Bootstrap uses it as root seed |
+| `FRAME AGE` | Runner latest committed Tick from independently refreshed live status minus displayed projection Tick; optional secondary delivery duration from local receive time minus `wall_clock_generated_at_ms` | primary indication of distance from live, not RTT/latency; shown as `N ticks · M ms` while Runner advances; Core `Paused` is explicit and does not accumulate Tick lag; unavailable status is `stale/disconnected`, never fake `0` |
+| `VISUAL FPS` | UI renderer telemetry | independent from simulation rate |
+| `Play/Pause` | approved run command/state | Pause freezes Core execution; Play resumes it |
+| `Step` | approved run command | compatible paused state only |
+| `Stop` | approved run command | standard confirmation includes run id, displayed Tick, and end-of-run warning |
+| `Speed` | approved target simulation rate command | controls Core life/execution rate, separate from visualization FPS; default is contract real-time TPS; finite range is `1…10,000 ticks/s`; logarithmic slider plus editable TPS input; adjacent `Unlimited` is a distinct explicit command/state, not a slider value; disabling it restores previous finite TPS; separate `Real-time` resets finite rate to contract default and disables `Unlimited` |
+
+`Jump to Live` and RTT/`Latency` are not Monitor controls. Normal Monitor
+renders the latest received committed projection; missed live frames are not
+replayed. Debug buffer return to the latest sample uses its `LIVE` marker, not
+a Core command.
+
+### Analysis Level and selection
+
+`World`, `Cells`, `Organisms`, `Lineages`, `Evolution`, and `Analytics` are
+active research lenses, not global workspace navigation. They retain Data
+Context and change Map interpretation, permitted Layers/Filters, Inspector
+schema, and Data Panel content. The Map viewport itself remains unchanged.
+
+| Level | Selection | Map/Focus result |
+|---|---|---|
+| World | one canonical `World block` (one Resource/Field grid cell) | aggregates Resources, Fields, Cells, and remains in that grid cell; double click opens World Focus. Multi-selection stays in Inspector and never opens Focus |
+| Cells | Cell | Cell Inspector and Cell Focus |
+| Organisms | observer-side `OrganismView` at displayed Tick | Organism Inspector and Focus; never Core authority |
+| Lineages | Cell selects its `lineage_id` | highlights carriers of that lineage in current run/displayed Tick; OrganismView is not a lineage selector |
+| Evolution | Cell selects its Genome | highlights currently available Genome carriers; Focus shows Genome provenance/graph |
+| Analytics | chart/bar/segment selects an analytical subset | Map uses `Highlight` by default; `Hide` and `Isolate` are explicit alternatives; no Focus by default |
+
+Incompatible selection is cleared with an explicit reason when Level changes.
+
+Clicking and dragging without a modifier pans Map; wheel/scroll zooms it.
+`Shift + click` adds or removes one compatible Map target from the current
+selection set. `Shift + drag-select` draws a selection frame and adds every
+compatible target it intersects to the set. A multi-selection is rendered and
+analysed through Inspector/Data Panel only; it never opens Focus. Clicking
+empty Map clears the selection and returns Inspector to `World total`.
+
+On a live projection, an unpinned selection follows the same entity or set and
+refreshes Inspector/Data Panel on every displayed Tick. `Pause` freezes the
+displayed context; `Pin` is a separate read-only comparison baseline.
+`Dead` is still a valid lifecycle state of the selected entity, so the
+selection remains and shows its final data. If an entity genuinely disappears
+from the projection, its selection is cleared, Focus closes, and a temporary
+reason is shown.
+
+### Layers and filters
+
+`Cells` are the structural foreground and are never visually covered by
+Resource/Field layers. Resource and Field layers are data-bound background
+layers; multiple active layers composite with their own semantic colours. There
+is no `Primary Color Mode`.
+
+The panel is one vertical list with groups `Fields`, `Resources`, `Cell Energy`,
+`Structure`, and `Selection`. Only the dynamic Fields/Resources rows scroll.
+Each active dynamic layer has a compact row (swatch, name, toggle, gradient).
+Expanding it reveals unit, min/max, normalization, and full legend.
+Those values affect colour normalization only: they never hide or exclude Map
+values.
+
+Layers and Filters are Map presentation state only: they neither change Data
+Context nor remove data from Inspector/Data Panel or selection. The sole
+cross-surface exception is an explicit `Analytics` interaction: a selected
+metric segment/series may highlight its source-backed subset on Map according
+to the Analytics rule. It is a presentation highlight only and leaves current
+selection and Inspector unchanged.
+
+`Cell Energy` is mutually exclusive:
+
+```text
+Cells     direct per-Cell Energy encoding
+Heatmap   observer-side aggregate by the same `World block` grid
+```
+
+Heatmap must state its unit, bin size, sampling, and aggregate provenance. It
+is not a physical World Energy field. `Joints` are initially one neutral
+structural layer; future channel/type colours require source-backed projection.
+Trail is a polyline for one explicitly selected target only, from retained
+samples after selection; it never interpolates missing points.
+
+`Cell Energy`, `Joints`, and `Trail` are available only at `Cells` and
+`Organisms` Level. At every other Level they are absent and not rendered; their
+user state is retained and restored on return to a compatible Level. Their
+shared state also persists when switching directly between `Cells` and
+`Organisms`.
+
+`Fields` and `Resources` remain available at every Level. They are enabled by
+default at `World`, `Cells`, and `Organisms` to preserve environmental context;
+at `Lineages`, `Evolution`, and `Analytics` they are initially disabled but
+available on demand, so they do not obscure carrier or analytical highlights.
+Once the user changes a common layer, that state persists across Level changes;
+the defaults apply only until a user override exists.
+`Lineages`, `Evolution`, and `Analytics` add no separate Layer by default:
+their carrier/metric highlighting is presentation state, not a duplicated
+layer. A contextual Level-specific layer may be added only for a distinct
+source-backed raster or geometry.
+
+### Inspector, Pin, and Focus
+
+Contextual Inspector is a fixed right track. Without selection it shows
+`World total`: lifecycle counts, total Cell Energy, source-backed Resource
+totals, Joint count, displayed Tick, run state, projection completeness, and
+warnings. With selection it shows the compatible entity or selection-set
+aggregate.
+
+`Pin` stores one read-only baseline snapshot:
+
+```text
+entity or selection set + Data Context + displayed Tick + completeness
+```
+
+New selection becomes the current comparison target. Data Panel compares only
+`Pinned baseline` and `Current selection`; incompatible entity types never get
+a fake delta table. If the current live target disappears, its selection clears
+but the pinned baseline remains until `Unpin` removes it.
+`Stop` followed by a new run clears Pin, current selection, and Focus because
+their identities belong to the prior run.
+For a compatible Data Panel comparison, current data remains the primary chart
+encoding; `Pinned baseline` overlays it as a labelled outline/dashed contour on
+the same scale. This is a separate selection-comparison surface for the pinned
+and current targets, not a recalculation of Level baseline distributions or
+histograms. UI does not create a second duplicate chart card.
+
+Focus is a `413 × 399` stable overlay in the upper-right of Map. It never
+resizes Map or moves with the selected entity. Single click selects; double
+click on the selected compatible target opens/closes Focus; `Escape` or close
+closes it. Multi-selection uses Inspector only.
+
+Focus is Level-bound and procedural/data-bound: geometry, Materials, Joints,
+Processes, Genome and other supported projection data define its pseudo-3D
+presentation. Behavior Profile/role may add a provenance-marked accent with
+confidence, interval, and classifier version; it must not generate fake
+anatomy or create biological types.
+At `Analytics` Level, Focus is absent by default: metric provenance,
+aggregation, interval, and detail belong to Data Panel instead.
+
+### Data Panel and analytical truthfulness
+
+Data Panel has no tabs. Its content changes only from:
+
+```text
+active Analysis Level + analysis scope + optional Pin
+```
+
+`analysis scope` is `World total` without a World selection, one selected
+`World block` at World Level, or the current multi-selection at any compatible
+Level. A single Cell/Organism selection does not rebuild distribution charts or
+histograms; its detail belongs to Inspector/Focus. With a compatible `Pin`, it
+also supplies the current side of the separate selection-comparison surface.
+
+Vertical overflow of Data Panel content belongs to root/page scrolling, never a
+Data Panel-only layout scrollbar. The only local vertical scrolling in Monitor
+is the dynamic `Fields`/`Resources` list.
+
+`Raw Data` belongs to Diagnostics. At `World` level Data Panel includes a
+`Population Lifecycle` stacked bar sourced from counts of canonical
+`Alive/Stressed/Dormant/Dead` states in the same displayed projection; labels
+and exact counts remain visible.
+
+With one selected `World block`, every World-level aggregate in Data Panel is
+scoped to that block. With no selection, it is scoped to `World total`.
+The same rule applies at every Level: a compatible entity or selection set
+scopes all Data Panel aggregates, distributions, and histograms to itself;
+without selection, the Level baseline context is used.
+
+World accounting has an explicit `Accounting target` selector:
+
+```text
+Resource | Material | Energy
+```
+
+`Energy` is the default accounting target for a new run. After an explicit user
+choice, the target is retained for the rest of that run.
+Selecting `Resource` or `Material` requires a second explicit selector for one
+registry type. UI does not combine all types into one Cycle without a separate
+validated accounting contract; `Energy` requires no second selector.
+
+`Matter Cycle` shows source-backed Resource/Material locations and flows. It
+keeps Resources, Materials, MaterialFragments, decomposing Cells, and explicit
+sinks distinct. `Energy Flow` is separate: Core/Observer must supply produced,
+stored Cell Energy Buffer, spending by registered category, Heat, explicit loss,
+and unaccounted difference. Until that contract exists, it is `unavailable`;
+UI must not estimate it from resource energy values.
+
+Cycle shows location shares together with absolute target total. Its companion
+time chart is a stacked `100%` distribution across those locations; absolute
+target amount is shown separately, so distribution and total change are not
+confused.
+
+Every time series uses one UI RRD history, not `Recent`/`Since start` modes.
+It stores at most 1,000 compact metric/trajectory samples: 100 newest
+consecutive samples, then successively decimated 10× tiers. It is not a store
+of full World frames. Its time axis uses actual Tick/time positions and visibly
+communicates the changing sampling density; it must not imply equal intervals
+between decimated samples. For numeric time series, a collapsed RRD interval
+stores its mean value; the chart joins those aggregated samples with a line as
+a trend, not as a claim of continuous observation. Trail stores only `(Tick,
+x, y)` for the selected target after selection; a collapsed Trail interval
+stores mean `(x, y)`, making older trajectory smooth but approximate. Chart and
+Trail tooltips identify the represented Tick/time interval and aggregation.
+
+Data Panel per-level baseline:
+
+| Level | Required content |
+|---|---|
+| World | Population Lifecycle; selected Matter Cycle/Energy Flow; paired time evolution |
+| Cells | Observed primary-role distribution as bars; Potential-role share as labelled markers; Cell radius distribution |
+| Organisms | primary observed Behavior Profile distribution; organism-size bins by Cell count |
+| Lineages | current population, history, compact genealogy, spatial footprint |
+| Evolution | Genome provenance, mutation history, diversity, carrier history |
+| Analytics | selected metric plus definition, unit, aggregation, interval, sampling/completeness, and applicable classifier/source version |
+
+Potential and Observed roles use the same Data Context, interval, and classifier
+version but are distinct encodings. Potential markers may total above 100%
+because a Cell may have several capabilities.
 
 ## Visual Reference Policy
 

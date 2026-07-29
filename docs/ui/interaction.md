@@ -98,6 +98,13 @@ Step доступний лише у compatible paused state.
 Ticks per second
 ```
 
+Default є contract real-time TPS. Finite range: `1…10,000 ticks/s`.
+`Unlimited` є окремим explicit command/state, а не значенням finite Speed
+control; його вимкнення відновлює попередній finite TPS. Окрема дія
+`Real-time` явно повертає finite rate до contract default і вимикає `Unlimited`.
+UI використовує logarithmic slider разом з editable точним полем TPS. Speed
+керує темпом execution Core, а не visualization FPS.
+
 ### Stop
 
 Завершує active run відповідно до lifecycle rules Core.

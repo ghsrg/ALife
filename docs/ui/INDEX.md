@@ -16,6 +16,7 @@ tags:
 - [[docs/ui/principles|UI Principles]] `#principles`
 - [[docs/ui/architecture|UI Architecture]] `#architecture`
 - [[docs/ui/control-center-design-spec|Control Center Design Specification]] `#control-center` `#layout` `#visual-system`
+- [[docs/ui/control-center-block|Control Center Block Specification]] `#control-center` `#blocks` `#layout` `#canon-instructions`
 - [[docs/ui/navigation|UI Navigation]] `#navigation`
 - [[docs/ui/visualization|UI Visualization]] `#viewer`
 - [[docs/ui/interaction|UI Interaction]] `#commands`

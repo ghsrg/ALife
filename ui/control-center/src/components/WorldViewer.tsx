@@ -111,8 +111,9 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         dispatchCamera({ type: 'fit', world: frame.world, viewport: measuredViewport });
       };
 
-      // Initial fit after mount
+      // Initial fit and render after mount
       updateViewportAndFit();
+      renderer.renderFrame(frame, selectedCellId, camera, activeResourceLayers);
       setIsReady(true);
 
       // Track container resize continuously if browser supports ResizeObserver
@@ -138,12 +139,13 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   }, []);
 
   useEffect(() => {
+    if (!rendererRef.current) return;
     if (activeResourceLayers !== undefined) {
-      rendererRef.current?.renderFrame(frame, selectedCellId, camera, activeResourceLayers);
+      rendererRef.current.renderFrame(frame, selectedCellId, camera, activeResourceLayers);
     } else {
-      rendererRef.current?.renderFrame(frame, selectedCellId, camera);
+      rendererRef.current.renderFrame(frame, selectedCellId, camera);
     }
-  }, [frame, selectedCellId, camera, activeResourceLayers]);
+  }, [frame, selectedCellId, camera, activeResourceLayers, isReady]);
 
   const zoomAtCenter = (scaleFactor: number) => {
     const point = { x: frame.world.width / 2, y: frame.world.height / 2 };

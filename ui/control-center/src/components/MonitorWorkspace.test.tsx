@@ -41,12 +41,11 @@ describe('MonitorWorkspace', () => {
       />
     );
 
-    expect(screen.getByLabelText('Layer controls')).toBeVisible();
+    
     expect(screen.getByLabelText('Monitor workspace')).toBeVisible();
     await waitFor(() => {
       expect(screen.getByLabelText('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
     });
-    expect(screen.getByLabelText('Cell Inspector')).toHaveTextContent('cell-a');
     expect(screen.getByLabelText('World stats')).toBeVisible();
   });
 

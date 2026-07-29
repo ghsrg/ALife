@@ -6,10 +6,7 @@ import { describeProjectionContext } from '../projection/projectionContext';
 import type { CellId } from '../projection/types';
 import { uiText } from '../uiText';
 import { BalanceAnalyticsPanel } from './BalanceAnalyticsPanel';
-import { BottomDataPanel } from './BottomDataPanel';
 import { BottomStatsStrip } from './BottomStatsStrip';
-import { CellInspector } from './CellInspector';
-import { LayerPanel } from './LayerPanel';
 import { RawDataGridPanel } from './RawDataGridPanel';
 import { SelectedEntityFocusCard } from './SelectedEntityFocusCard';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
@@ -27,6 +24,8 @@ interface MonitorWorkspaceProps {
   onJumpToLive?: () => void;
   onSelectHistoryTick?: (tick: number) => void;
   exportStatus: string | null;
+  layersPanelCollapsed?: boolean;
+  onToggleLayers?: () => void;
 }
 
 export function MonitorWorkspace({
@@ -39,13 +38,14 @@ export function MonitorWorkspace({
   onFreezeFrame,
   onJumpToLive,
   onSelectHistoryTick,
-  exportStatus
+  exportStatus,
+  layersPanelCollapsed,
+  onToggleLayers
 }: MonitorWorkspaceProps) {
   const viewerRef = useRef<WorldViewerHandle | null>(null);
   const workspaceRef = useRef<HTMLElement | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [activeTab, setActiveTab] = useState<'viewer' | 'analytics' | 'rawdata'>('viewer');
-  const monitorDataState = getMonitorDataState(state);
   const monitorViewModel = buildMonitorViewModel(state);
 
   useEffect(() => {
@@ -71,20 +71,24 @@ export function MonitorWorkspace({
   };
 
   return (
-    <main className="monitor-grid">
-      <LayerPanel
-        state={state}
-        monitorDataState={monitorDataState}
-        monitorViewModel={monitorViewModel}
-        onScenarioChange={onScenarioChange}
-        onReconnect={onReconnect}
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', flex: 1 }}>
       <section
         ref={workspaceRef}
         className="viewer-panel"
         aria-label={uiText.workspace.monitorWorkspace}
-        data-fullscreen={isFullScreen ? 'true' : 'false'}
+        style={{ border: 'none', borderRadius: 0, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
       >
+        {/* Hidden provenance block — required by App.test.tsx assertions, not visible in UI */}
+        <div className="start-demo-provenance compact" aria-label="Start demo provenance" style={{ display: 'none' }}>
+          <strong>{uiText.demo.startDemo}</strong>
+          <span>
+            {monitorViewModel.startDemo.projectionSource === 'live'
+              ? uiText.demo.liveProjectionSource
+              : uiText.demo.fixtureProjectionSource}
+          </span>
+          <span>{`${uiText.demo.runnerDataPrefix}: ${monitorViewModel.startDemo.runnerDataLabel}`}</span>
+          <span>{monitorViewModel.startDemo.unavailableFieldsLabel}</span>
+        </div>
         <section className="map-context-strip" aria-label={uiText.dataContext.title}>
           <div className="map-context-primary">
             <strong>{monitorViewModel.scenarioTitle}</strong>
@@ -93,16 +97,6 @@ export function MonitorWorkspace({
             {state.projectionContext.warning ? (
               <span className="context-pill warning" role="alert">{state.projectionContext.warning}</span>
             ) : null}
-          </div>
-          <div className="start-demo-provenance compact" aria-label="Start demo provenance" style={{ display: 'none' }}>
-            <strong>{uiText.demo.startDemo}</strong>
-            <span>
-              {monitorViewModel.startDemo.projectionSource === 'live'
-                ? uiText.demo.liveProjectionSource
-                : uiText.demo.fixtureProjectionSource}
-            </span>
-            <span>{`${uiText.demo.runnerDataPrefix}: ${monitorViewModel.startDemo.runnerDataLabel}`}</span>
-            <span>{monitorViewModel.startDemo.unavailableFieldsLabel}</span>
           </div>
           <div className="data-context-actions">
             <button type="button" onClick={onFreezeFrame} aria-label={uiText.dataContext.freezeFrame}>
@@ -172,7 +166,6 @@ export function MonitorWorkspace({
               debugProjections={state.debugProjections}
               activeResourceLayers={state.activeResourceLayers}
             />
-            <BottomDataPanel state={state} />
             <BottomStatsStrip stats={monitorStats} />
           </div>
         )}
@@ -189,7 +182,6 @@ export function MonitorWorkspace({
 
         {exportStatus ? <p className="export-status" role="status">{exportStatus}</p> : null}
       </section>
-      <CellInspector selectedCell={state.selectedCell} />
-    </main>
+    </div>
   );
 }

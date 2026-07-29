@@ -8,6 +8,7 @@ interface BottomDataPanelProps {
 
 export function BottomDataPanel({ state }: BottomDataPanelProps) {
   const [activeTab, setActiveTab] = useState<'timeline' | 'events' | 'metrics' | 'warnings'>('timeline');
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const viewModel = buildBalanceViewModel(state);
   const history = state.frameHistory ?? [];
 
@@ -23,39 +24,61 @@ export function BottomDataPanel({ state }: BottomDataPanelProps) {
   );
 
   return (
-    <section className="v3-bottom-panel" aria-label="Simulation Data & Analytics Panel">
+    <section className={`v3-bottom-panel ${isCollapsed ? 'collapsed' : ''}`} aria-label="Simulation Data & Analytics Panel">
       <nav className="v3-panel-tabs" aria-label="Data panel tabs">
+        <div className="v3-panel-tabs-left">
+          <button
+            type="button"
+            className={`v3-panel-tab ${activeTab === 'timeline' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('timeline');
+              if (isCollapsed) setIsCollapsed(false);
+            }}
+          >
+            TIMELINE
+          </button>
+          <button
+            type="button"
+            className={`v3-panel-tab ${activeTab === 'events' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('events');
+              if (isCollapsed) setIsCollapsed(false);
+            }}
+          >
+            EVENTS
+          </button>
+          <button
+            type="button"
+            className={`v3-panel-tab ${activeTab === 'metrics' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('metrics');
+              if (isCollapsed) setIsCollapsed(false);
+            }}
+          >
+            METRICS
+          </button>
+          <button
+            type="button"
+            className={`v3-panel-tab ${activeTab === 'warnings' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('warnings');
+              if (isCollapsed) setIsCollapsed(false);
+            }}
+          >
+            WARNINGS {viewModel.warnings.length > 0 && <span className="warning-count">({viewModel.warnings.length})</span>}
+          </button>
+        </div>
         <button
           type="button"
-          className={`v3-panel-tab ${activeTab === 'timeline' ? 'active' : ''}`}
-          onClick={() => setActiveTab('timeline')}
+          className="v3-panel-collapse-btn"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label={isCollapsed ? 'Expand analytics panel' : 'Minimize analytics panel'}
         >
-          TIMELINE
-        </button>
-        <button
-          type="button"
-          className={`v3-panel-tab ${activeTab === 'events' ? 'active' : ''}`}
-          onClick={() => setActiveTab('events')}
-        >
-          EVENTS
-        </button>
-        <button
-          type="button"
-          className={`v3-panel-tab ${activeTab === 'metrics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('metrics')}
-        >
-          METRICS
-        </button>
-        <button
-          type="button"
-          className={`v3-panel-tab ${activeTab === 'warnings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('warnings')}
-        >
-          WARNINGS {viewModel.warnings.length > 0 && <span className="warning-count">({viewModel.warnings.length})</span>}
+          {isCollapsed ? '▲ Expand' : '▼ Minimize'}
         </button>
       </nav>
 
-      {activeTab === 'timeline' && (
+      {!isCollapsed && activeTab === 'timeline' && (
         <div className="v3-cards-grid">
           {/* Card 1: Resource & Matter Cycle */}
           <div className="v3-chart-card">
@@ -238,19 +261,19 @@ export function BottomDataPanel({ state }: BottomDataPanelProps) {
         </div>
       )}
 
-      {activeTab === 'events' && (
+      {!isCollapsed && activeTab === 'events' && (
         <div className="v3-tab-placeholder">
           <p>No recent division or mutation events recorded in current tick window.</p>
         </div>
       )}
 
-      {activeTab === 'metrics' && (
+      {!isCollapsed && activeTab === 'metrics' && (
         <div className="v3-tab-placeholder">
           <p>Observer Engine Metrics stream: 120 FPS target | Physics solver: 2 iterations | Diffusion: 2 ticks.</p>
         </div>
       )}
 
-      {activeTab === 'warnings' && (
+      {!isCollapsed && activeTab === 'warnings' && (
         <div className="v3-tab-placeholder">
           {viewModel.warnings.length > 0 ? (
             <ul>

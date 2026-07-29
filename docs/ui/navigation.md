@@ -291,7 +291,7 @@ Internal navigation:
 Мінімальний підтримуваний viewport:
 
 ```text
-1024x768
+1366x862
 ```
 
 При обмеженому просторі UI деградує в такому порядку:
@@ -305,6 +305,11 @@ Internal navigation:
 ```
 
 `Viewer` або primary chart не повинні стискатися до непридатного стану лише заради постійної видимості всіх panels.
+
+Monitor exception: at or above `1366x862` CSS px, Contextual Inspector remains
+the fixed right track and Data Panel remains in the Grid. Below that threshold,
+the full Monitor grid is not an acceptance target; root/page vertical scroll is
+preferred over shrinking Monitor tracks to zero.
 
 Panels, відкриті як overlay:
 

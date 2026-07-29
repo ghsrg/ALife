@@ -192,8 +192,8 @@ Placeholder panel дозволений тільки як explicitly unavailable 
 1920x1080 dark
   primary WOW target
 
-1366x768 dark
-  usability minimum, no incoherent overlap, controls usable, World View dominant
+1366x862 dark
+  minimum supported full Monitor layout; no incoherent overlap, controls usable, World View dominant
 
 1920x1080 light
   basic usable state, not full WOW parity

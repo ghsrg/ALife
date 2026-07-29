@@ -59,7 +59,7 @@ UI є desktop-first.
 Мінімальний supported viewport:
 
 ```text
-1024×768
+1366×862
 ```
 
 Recommended viewport:
@@ -76,7 +76,7 @@ UI повинен масштабуватися на більші екрани б
 
 ```text
 Viewport:
-  1024×768
+  1366×862
 
 GPU class:
   integrated GPU рівня Intel UHD 620
@@ -237,7 +237,7 @@ Dark
 Comfortable
 Compact
 
-1024×768
+1366×862
 1920×1080
 
 pseudo-3D Viewer
