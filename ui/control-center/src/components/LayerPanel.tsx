@@ -1,24 +1,17 @@
-import { getMonitorDataState, type AppStore } from '../app/appState';
+import { type AppStore } from '../app/appState';
 import type { MonitorViewModel } from '../app/monitorViewModel';
 import { uiText } from '../uiText';
-import { ConnectionPanel } from './ConnectionPanel';
 
 interface LayerPanelProps {
   state: AppStore;
-  monitorDataState: ReturnType<typeof getMonitorDataState>;
   monitorViewModel: MonitorViewModel;
-  onScenarioChange: (scenarioId: string) => void;
-  onReconnect: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
 export function LayerPanel({
   state,
-  monitorDataState,
   monitorViewModel,
-  onScenarioChange,
-  onReconnect,
   isCollapsed,
   onToggleCollapse
 }: LayerPanelProps) {
@@ -42,23 +35,6 @@ export function LayerPanel({
           <button className="cc-layers-collapse-btn" onClick={onToggleCollapse} title="Collapse Layers">«</button>
         ) : null}
       </div>
-
-      <details className="cc-connection-details" style={{ margin: '6px 12px', fontSize: '11px' }}>
-        <summary style={{ cursor: 'pointer', color: 'var(--color-text-dim)', fontWeight: 600, padding: '4px 0' }}>
-          Runner: <span style={{ color: state.connectionState === 'connected' ? '#4ade80' : '#fde68a' }}>{state.connectionState}</span>
-        </summary>
-        <ConnectionPanel
-          endpoint={state.runnerEndpoint}
-          connectionState={state.connectionState}
-          monitorDataState={monitorDataState}
-          serverInfo={state.serverInfo}
-          scenarios={state.scenarios}
-          selectedScenarioId={state.selectedScenarioId}
-          lastError={state.lastError}
-          onScenarioChange={onScenarioChange}
-          onReconnect={onReconnect}
-        />
-      </details>
 
       <div className="cc-layers-tabs">
         <button className="cc-layers-tab active">SCENE</button>

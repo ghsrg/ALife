@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { type AppStore } from '../app/appState';
 import { buildMonitorViewModel } from '../app/monitorViewModel';
 import { describeProjectionContext } from '../projection/projectionContext';
@@ -17,6 +17,8 @@ interface MonitorWorkspaceProps {
   onFreezeFrame?: () => void;
   onJumpToLive?: () => void;
   onSelectHistoryTick?: (tick: number) => void;
+  isMapFullScreen?: boolean;
+  onMapFullScreenChange?: (isFullScreen: boolean) => void;
   exportStatus: string | null;
 }
 
@@ -29,32 +31,35 @@ export function MonitorWorkspace({
   onFreezeFrame,
   onJumpToLive,
   onSelectHistoryTick,
+  isMapFullScreen = false,
+  onMapFullScreenChange,
   exportStatus
 }: MonitorWorkspaceProps) {
   const viewerRef = useRef<WorldViewerHandle | null>(null);
   const workspaceRef = useRef<HTMLElement | null>(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
   const monitorViewModel = buildMonitorViewModel(state);
 
   useEffect(() => {
     const handleFullScreenChange = () => {
-      setIsFullScreen(document.fullscreenElement === workspaceRef.current);
+      onMapFullScreenChange?.(document.fullscreenElement === workspaceRef.current);
     };
 
     document.addEventListener('fullscreenchange', handleFullScreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-  }, []);
+  }, [onMapFullScreenChange]);
 
   const exportScreenshot = () => {
     onExportScreenshot(viewerRef.current?.exportPng() ?? null);
   };
 
   const toggleFullScreen = () => {
-    if (document.fullscreenElement === workspaceRef.current) {
+    if (isMapFullScreen) {
+      onMapFullScreenChange?.(false);
       void document.exitFullscreen?.();
       return;
     }
 
+    onMapFullScreenChange?.(true);
     void workspaceRef.current?.requestFullscreen?.();
   };
 
@@ -62,7 +67,7 @@ export function MonitorWorkspace({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', flex: 1 }}>
       <section
         ref={workspaceRef}
-        className="viewer-panel"
+        className={isMapFullScreen ? 'viewer-panel map-fullscreen' : 'viewer-panel'}
         aria-label={uiText.workspace.monitorWorkspace}
         style={{ border: 'none', borderRadius: 0, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
       >
@@ -125,7 +130,7 @@ export function MonitorWorkspace({
             onSelectCell={onSelectCell}
             onExportScreenshot={exportScreenshot}
             onToggleFullScreen={toggleFullScreen}
-            isFullScreen={isFullScreen}
+            isFullScreen={isMapFullScreen}
             debugProjections={state.debugProjections}
             activeResourceLayers={state.activeResourceLayers}
           />

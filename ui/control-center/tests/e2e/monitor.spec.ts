@@ -99,6 +99,119 @@ test('AL-007-S22 supports 1280x720 CSS viewport for 150 percent display scale', 
   expect(pageGeometry.scrollHeight).toBe(pageGeometry.clientHeight);
 });
 
+test('AL-007-S23 keeps Data Panel compact at 1280x720', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+
+  const dataTrack = page.getByTestId('monitor-data-track');
+  const dataBox = await dataTrack.boundingBox();
+  expect(dataBox).not.toBeNull();
+  expect(Math.round(dataBox!.height)).toBe(187);
+
+  const cards = page.locator('.v3-chart-card');
+  await expect(cards).toHaveCount(4);
+
+  const dataGeometry = await dataTrack.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    overflowY: getComputedStyle(element).overflowY
+  }));
+  expect(dataGeometry.scrollHeight).toBeLessThanOrEqual(dataGeometry.clientHeight);
+  expect(dataGeometry.overflowY).not.toBe('auto');
+
+  for (let index = 0; index < 4; index++) {
+    const cardBox = await cards.nth(index).boundingBox();
+    expect(cardBox).not.toBeNull();
+    expect(cardBox!.y).toBeGreaterThanOrEqual(dataBox!.y);
+    expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(dataBox!.y + dataBox!.height);
+  }
+
+  const pageGeometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth
+  }));
+  expect(pageGeometry.scrollWidth).toBeLessThanOrEqual(pageGeometry.clientWidth);
+});
+
+test('AL-007-S23 places runner status in Run Data Context instead of Layers', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+
+  await expect(page.getByTestId('monitor-run-track')).toContainText('Runner:');
+  await expect(page.getByTestId('monitor-run-track').getByRole('button', { name: 'Reconnect to Runner' })).toBeVisible();
+  await expect(page.getByTestId('monitor-layers-track')).not.toContainText('Runner:');
+  await expect(page.getByTestId('monitor-layers-track')).not.toContainText('Reconnect');
+});
+
+test('AL-007-S23 layer toggles keep monitor geometry and selection stable', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByTestId('monitor-inspector-track')).not.toContainText('No cell selected.');
+
+  const mapBefore = await page.getByTestId('monitor-map-track').boundingBox();
+  const inspectorBefore = await page.getByTestId('monitor-inspector-track').boundingBox();
+  expect(mapBefore).not.toBeNull();
+  expect(inspectorBefore).not.toBeNull();
+
+  await page.getByText('Nutrient / Organic').click();
+
+  const mapAfter = await page.getByTestId('monitor-map-track').boundingBox();
+  const inspectorAfter = await page.getByTestId('monitor-inspector-track').boundingBox();
+  expect(mapAfter).not.toBeNull();
+  expect(inspectorAfter).not.toBeNull();
+
+  expect(Math.round(mapAfter!.x)).toBe(Math.round(mapBefore!.x));
+  expect(Math.round(mapAfter!.y)).toBe(Math.round(mapBefore!.y));
+  expect(Math.round(mapAfter!.width)).toBe(Math.round(mapBefore!.width));
+  expect(Math.round(mapAfter!.height)).toBe(Math.round(mapBefore!.height));
+  expect(Math.round(inspectorAfter!.x)).toBe(Math.round(inspectorBefore!.x));
+  await expect(page.getByTestId('monitor-inspector-track')).not.toContainText('No cell selected.');
+});
+
+test('AL-007-S23 Map-only fullscreen is view-only and restores shell', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+  const mapBefore = await page.getByTestId('monitor-map-track').boundingBox();
+  expect(mapBefore).not.toBeNull();
+
+  await page.getByRole('button', { name: 'Enter Start full screen' }).click();
+
+  await expect(page.getByTestId('monitor-navigation-track')).not.toBeVisible();
+  await expect(page.getByTestId('monitor-run-track')).not.toBeVisible();
+  await expect(page.getByTestId('monitor-level-track')).not.toBeVisible();
+  await expect(page.getByTestId('monitor-layers-track')).not.toBeVisible();
+  await expect(page.getByTestId('monitor-inspector-track')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play live run' })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Show Data Panel' })).toBeVisible();
+
+  const fullscreenMap = await page.getByTestId('monitor-map-track').boundingBox();
+  expect(fullscreenMap).not.toBeNull();
+  expect(fullscreenMap!.width).toBeGreaterThan(1200);
+  expect(fullscreenMap!.height).toBeGreaterThan(660);
+
+  await page.getByRole('button', { name: 'Show Data Panel' }).click();
+  await expect(page.getByTestId('monitor-fullscreen-data-panel')).toBeVisible();
+  expect(Math.round((await page.getByTestId('monitor-fullscreen-data-panel').boundingBox())!.height)).toBe(187);
+
+  await page.getByRole('button', { name: 'Exit full screen' }).click();
+  await expect(page.getByTestId('monitor-navigation-track')).toBeVisible();
+  await expect(page.getByTestId('monitor-run-track')).toBeVisible();
+  await expect(page.getByTestId('monitor-layers-track')).toBeVisible();
+  await expect(page.getByTestId('monitor-inspector-track')).toBeVisible();
+
+  const mapAfter = await page.getByTestId('monitor-map-track').boundingBox();
+  expect(mapAfter).not.toBeNull();
+  expect(Math.round(mapAfter!.width)).toBe(Math.round(mapBefore!.width));
+});
+
 test('AL-007-S22 uses root scroll below 1280x720 without collapsing fixed tracks', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 719 });
   await page.goto('/');

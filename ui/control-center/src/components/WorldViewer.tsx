@@ -300,7 +300,11 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
           </button>
         ) : null}
         {onToggleFullScreen ? (
-          <button type="button" onClick={onToggleFullScreen} aria-label={uiText.controls.enterStartFullScreen}>
+          <button
+            type="button"
+            onClick={onToggleFullScreen}
+            aria-label={isFullScreen ? uiText.controls.exitFullScreen : uiText.controls.enterStartFullScreen}
+          >
             {isFullScreen ? 'Exit' : 'Full'}
           </button>
         ) : null}

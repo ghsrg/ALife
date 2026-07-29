@@ -1,4 +1,13 @@
-import { AppState, canPauseRun, canResumeRun, canStartRun, canStepRun, canStopRun } from '../app/appState';
+import {
+  AppState,
+  canPauseRun,
+  canResumeRun,
+  canStartRun,
+  canStepRun,
+  canStopRun,
+  getMonitorDataState,
+  type MonitorDataState
+} from '../app/appState';
 import { uiText } from '../uiText';
 
 export interface RunBarProps {
@@ -8,9 +17,34 @@ export interface RunBarProps {
   onResume: () => void;
   onStep: () => void;
   onStop: () => void;
+  onScenarioChange?: (scenarioId: string) => void;
+  onReconnect?: () => void;
 }
 
-export function RunBar({ state, onStart, onPause, onResume, onStep, onStop }: RunBarProps) {
+const connectionLabels = {
+  connected: 'Connected',
+  connecting: 'Connecting',
+  disconnected: 'Disconnected'
+} as const;
+
+const dataStateLabels: Record<MonitorDataState, string> = {
+  'fixture-offline': 'Fixture fallback - Runner offline',
+  'fixture-idle': 'Fixture fallback - idle Runner',
+  'live-waiting': 'Waiting for first live frame',
+  live: 'Live stream',
+  'stale-live': 'Stale live frame - disconnected'
+};
+
+export function RunBar({
+  state,
+  onStart,
+  onPause,
+  onResume,
+  onStep,
+  onStop,
+  onScenarioChange,
+  onReconnect
+}: RunBarProps) {
   const isRunning = state.runStatus?.activeRunState === 'running';
   const isLive = isRunning;
   const simRate = state.runStatus?.ticksPerSecond || 0;
@@ -21,12 +55,15 @@ export function RunBar({ state, onStart, onPause, onResume, onStep, onStop }: Ru
   const currentScenarioId = state.selectedScenarioId || 'default';
   const scenario = state.scenarios.find(s => s.id === currentScenarioId);
   const scenarioName = scenario ? (scenario as any).title || scenario.id : 'Unknown Scenario';
+  const monitorDataState = getMonitorDataState(state);
+  const apiVersion = state.serverInfo?.apiVersion ? `API ${state.serverInfo.apiVersion}` : 'API unavailable';
+  const hasScenarios = state.scenarios.length > 0;
 
   return (
     <div className="cc-run-bar" data-testid="monitor-run-track">
-      {/* 1. DataContext */}
-      <div className="cc-run-section" style={{ width: 200 }}>
-        <div>
+      {/* 1. Run identity + Runner connection */}
+      <div className="cc-run-section cc-run-context-section">
+        <div className="cc-run-context-line">
           {isLive ? (
             <span className="cc-live-badge">LIVE</span>
           ) : (
@@ -35,13 +72,42 @@ export function RunBar({ state, onStart, onPause, onResume, onStep, onStop }: Ru
           <span className="cc-run-id">{runId}</span>
         </div>
         <div className="cc-run-scenario">{scenarioName} Context</div>
+        <div className="cc-runner-summary" aria-label="Runner connection summary">
+          <span className={`status-dot status-dot-${state.connectionState}`} aria-hidden="true" />
+          <strong>{`Runner: ${connectionLabels[state.connectionState]}`}</strong>
+          <span>{state.runnerEndpoint}</span>
+          <span>{apiVersion}</span>
+          <span>{`Data: ${dataStateLabels[monitorDataState]}`}</span>
+          <button type="button" onClick={onReconnect} aria-label="Reconnect to Runner">
+            Reconnect
+          </button>
+          {state.lastError ? (
+            <span className="cc-runner-error" role="alert">
+              {state.lastError}
+            </span>
+          ) : null}
+        </div>
       </div>
       
       {/* 2. Scenario */}
-      <div className="cc-run-section" style={{ width: 200 }}>
+      <div className="cc-run-section cc-run-scenario-section">
         <div className="cc-run-label">SCENARIO</div>
         <div className="cc-scenario-name">{scenarioName}</div>
         <div className="cc-config-hash">CONFIG: {seed.substring(0,8)}</div>
+        <select
+          className="cc-run-scenario-select"
+          aria-label="Scenario"
+          disabled={!hasScenarios}
+          value={state.selectedScenarioId ?? ''}
+          onChange={(event) => onScenarioChange?.(event.currentTarget.value)}
+        >
+          {hasScenarios ? null : <option value="">No scenarios</option>}
+          {state.scenarios.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.id}
+            </option>
+          ))}
+        </select>
       </div>
       
       {/* 3. RunControls */}
@@ -54,7 +120,7 @@ export function RunBar({ state, onStart, onPause, onResume, onStep, onStop }: Ru
             disabled={!canStopRun(state)}
             aria-label="Stop live run"
             title="Stop"
-          >◄|</button>
+          >■</button>
           {!isRunning ? (
             <button
               className="cc-ctrl-btn primary"

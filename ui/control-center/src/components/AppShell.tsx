@@ -26,6 +26,8 @@ export function AppShell() {
 
   const [activeLevel, setActiveLevel] = useState<AnalysisLevel>('world');
   const [activeWorkspace, setActiveWorkspace] = useState<string>('monitor');
+  const [isMapFullScreen, setIsMapFullScreen] = useState(false);
+  const [isFullScreenDataVisible, setIsFullScreenDataVisible] = useState(false);
 
   useEffect(() => store.subscribe(setState), [store]);
 
@@ -53,6 +55,44 @@ export function AppShell() {
     );
   };
 
+  if (activeWorkspace === 'monitor' && isMapFullScreen) {
+    return (
+      <div className="app-shell cc-map-fullscreen-shell">
+        <div className="cc-map-fullscreen-stage">
+          <MonitorWorkspace
+            state={state}
+            onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
+            onReconnect={controller.connectRunner}
+            onSelectCell={(cellId) => store.getState().selectCell(cellId)}
+            onExportScreenshot={exportScreenshot}
+            onFreezeFrame={() => store.getState().freezeCurrentFrame()}
+            onJumpToLive={() => store.getState().jumpToLive()}
+            onSelectHistoryTick={(tick) => store.getState().selectHistoryTick(tick)}
+            isMapFullScreen={isMapFullScreen}
+            onMapFullScreenChange={(next) => {
+              setIsMapFullScreen(next);
+              if (!next) setIsFullScreenDataVisible(false);
+            }}
+            exportStatus={exportStatus}
+          />
+          <button
+            type="button"
+            className="cc-map-fullscreen-data-toggle"
+            onClick={() => setIsFullScreenDataVisible((visible) => !visible)}
+            aria-label={isFullScreenDataVisible ? 'Hide Data Panel' : 'Show Data Panel'}
+          >
+            {isFullScreenDataVisible ? 'Hide Data Panel' : 'Show Data Panel'}
+          </button>
+          {isFullScreenDataVisible ? (
+            <div className="cc-map-fullscreen-data-panel" data-testid="monitor-fullscreen-data-panel">
+              <BottomDataPanel state={state} />
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       {/* Row 1: Global Navigation 62px */}
@@ -72,6 +112,8 @@ export function AppShell() {
         onResume={controller.resumeRun}
         onStep={controller.stepRun}
         onStop={controller.stopRun}
+        onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
+        onReconnect={controller.connectRunner}
       />
       
       {/* Row 3: Workspace area (flex) */}
@@ -81,10 +123,7 @@ export function AppShell() {
             <LevelPanel activeLevel={activeLevel} onLevelChange={setActiveLevel} />
             <LayerPanel
               state={state}
-              monitorDataState={monitorDataState}
               monitorViewModel={monitorViewModel}
-              onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
-              onReconnect={controller.connectRunner}
             />
             <MonitorWorkspace
               state={state}
@@ -95,6 +134,11 @@ export function AppShell() {
               onFreezeFrame={() => store.getState().freezeCurrentFrame()}
               onJumpToLive={() => store.getState().jumpToLive()}
               onSelectHistoryTick={(tick) => store.getState().selectHistoryTick(tick)}
+              isMapFullScreen={isMapFullScreen}
+              onMapFullScreenChange={(next) => {
+                setIsMapFullScreen(next);
+                if (!next) setIsFullScreenDataVisible(false);
+              }}
               exportStatus={exportStatus}
             />
             <InspectorPanel
