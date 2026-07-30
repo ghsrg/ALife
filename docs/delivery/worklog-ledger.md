@@ -403,3 +403,9 @@ These rows are historical data reconstructed from `REPORT` worklogs in chronolog
 | [[outputs/worklogs/2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration|2026-07-22-2112-REPORT-al-002-s12-bootstrap-preview-reports-calibration]] | REPORT | Bootstrap | AL-002-S12 | done |
 | [[outputs/worklogs/2026-07-29-1507-PLAN-al-007-s23-monitor-interaction-state|2026-07-29-1507-PLAN-al-007-s23-monitor-interaction-state]] | PLAN | UI | AL-007-S23 | TDD plan |
 | [[outputs/worklogs/2026-07-29-1545-REPORT-al-007-s23-monitor-interaction-state|2026-07-29-1545-REPORT-al-007-s23-monitor-interaction-state]] | REPORT | UI | AL-007-S23 | done |
+| [[outputs/worklogs/2026-07-29-1729-PLAN-al-007-s24-source-backed-monitor-surfaces|2026-07-29-1729-PLAN-al-007-s24-source-backed-monitor-surfaces]] | PLAN | UI | AL-007-S24 | TDD plan |
+| [[outputs/worklogs/2026-07-29-1835-REPORT-al-007-s24-source-backed-monitor-surfaces|2026-07-29-1835-REPORT-al-007-s24-source-backed-monitor-surfaces]] | REPORT | UI | AL-007-S24 | done |
+| [[outputs/worklogs/2026-07-30-1025-PLAN-al-007-s24-fix-monitor-visual-regression-hotfix|2026-07-30-1025-PLAN-al-007-s24-fix-monitor-visual-regression-hotfix]] | PLAN | UI | AL-007-S24-Fix | TDD plan |
+| [[outputs/worklogs/2026-07-30-1304-REPORT-al-007-s24-fix-monitor-visual-regression-hotfix|2026-07-30-1304-REPORT-al-007-s24-fix-monitor-visual-regression-hotfix]] | REPORT | UI | AL-007-S24-Fix | done |
+| [[outputs/worklogs/2026-07-30-1824-PLAN-al-007-s25-runner-core-monitor-contracts|2026-07-30-1824-PLAN-al-007-s25-runner-core-monitor-contracts]] | PLAN | UI/Observer/Runner | AL-007-S25 | TDD plan |
+| [[outputs/worklogs/2026-07-30-1916-REPORT-al-007-s25-runner-core-monitor-contracts|2026-07-30-1916-REPORT-al-007-s25-runner-core-monitor-contracts]] | REPORT | UI/Observer/Runner | AL-007-S25 | in-progress |

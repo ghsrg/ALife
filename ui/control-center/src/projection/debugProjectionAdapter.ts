@@ -8,6 +8,7 @@ import type {
   DebugVisualWorldProjection,
   DebugWarningProjection
 } from './types';
+import { normalizeMonitorProjection } from './monitorProjectionAdapter';
 
 interface WireCompleteness {
   state: DebugProjectionCompleteness['state'];
@@ -44,6 +45,7 @@ export function normalizeDebugProjectionBundle(value: any): DebugProjectionState
     status: 'available',
     runId: value.run_id,
     tick: value.tick,
+    ...(value.monitor ? { monitor: normalizeMonitorProjection(value.monitor) } : {}),
     visualWorld,
     coverage: normalizeCoverage(value.coverage),
     warnings: normalizeWarnings(value.warnings),

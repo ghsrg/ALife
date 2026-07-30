@@ -158,6 +158,33 @@ describe('WorldViewer', () => {
     expect(screen.getByLabelText('Select cell-a')).not.toHaveClass('selected');
   });
 
+  it('exposes explicit foreground affordances for selected and search-matched map elements', async () => {
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+        debugProjections={debugProjections}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
+    });
+
+    const selectedLabel = screen.getByLabelText('Selected cell detail label');
+    expect(selectedLabel).toHaveAttribute('data-map-affordance', 'selected-foreground');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Expand debug overlay' }));
+    fireEvent.change(screen.getByLabelText('Search cells or resource layers'), {
+      target: { value: 'cell-c' }
+    });
+
+    const searchMatch = screen.getByLabelText('Select cell-c');
+    expect(searchMatch).toHaveClass('search-match');
+    expect(searchMatch).toHaveAttribute('data-map-affordance', 'search-match');
+  });
+
   it('exposes PNG export through its imperative handle', async () => {
     const ref = createRef<WorldViewerHandle>();
 

@@ -1,7 +1,9 @@
 use crate::observer::projection::{
     build_coverage_projection, build_visual_world_projection_sampled, build_warning_projection,
 };
+use crate::observer::monitor_payloads::build_monitor_data_panel_projection;
 use crate::observer::projection_envelope::{ProjectionCompleteness, ProjectionCompletenessState};
+use crate::core::snapshot::CommittedSnapshot;
 use crate::viewer_server::state::AppState;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
 use serde_json::{Value, json};
@@ -34,10 +36,10 @@ fn completeness_json(completeness: &ProjectionCompleteness) -> Value {
 }
 
 fn visual_world_json(
-    state: &mut crate::viewer_server::state::SharedState,
+    state: &crate::viewer_server::state::SharedState,
+    snapshot: &CommittedSnapshot,
     stride: usize,
 ) -> Option<Value> {
-    let snapshot = state.engine.as_mut()?.latest_committed_snapshot();
     let projection = build_visual_world_projection_sampled(&snapshot, stride);
 
     Some(json!({
@@ -99,6 +101,13 @@ fn visual_world_json(
     }))
 }
 
+fn monitor_json(state: &crate::viewer_server::state::SharedState, snapshot: &CommittedSnapshot) -> Value {
+    json!(build_monitor_data_panel_projection(
+        snapshot,
+        state.run_id.as_deref().unwrap_or("unavailable"),
+    ))
+}
+
 fn empty_section_json(projection_kind: &str, payload_key: &str, payload: Value) -> Value {
     json!({
         "schema_version": format!("{projection_kind}/v1"),
@@ -119,7 +128,11 @@ async fn handle_latest_projections(
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     let mut locked = state.lock().unwrap();
     let stride = params.stride.unwrap_or(1);
-    let Some(visual_world) = visual_world_json(&mut locked, stride) else {
+    let Some(snapshot) = locked
+        .engine
+        .as_mut()
+        .map(|engine| engine.latest_committed_snapshot())
+    else {
         return Err((
             StatusCode::NOT_FOUND,
             Json(json!({
@@ -130,6 +143,18 @@ async fn handle_latest_projections(
             })),
         ));
     };
+    let Some(visual_world) = visual_world_json(&locked, &snapshot, stride) else {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({
+                "ok": false,
+                "category": "projection_unavailable",
+                "projection_status": "unavailable",
+                "message": "No active committed snapshot is available for Observer projections.",
+            })),
+        ));
+    };
+    let monitor = monitor_json(&locked, &snapshot);
 
     let coverage = build_coverage_projection(Vec::new()).unwrap();
     let warnings = build_warning_projection(
@@ -150,6 +175,7 @@ async fn handle_latest_projections(
         "config_hash": locked.scenario_hash,
         "engine_version": env!("CARGO_PKG_VERSION"),
         "visual_world": visual_world,
+        "monitor": monitor,
         "coverage": empty_section_json(
             "CoverageProjection",
             "mechanisms",

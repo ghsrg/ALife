@@ -248,7 +248,8 @@ describe('App', () => {
     expect(screen.queryByTestId('bottom-stats-strip')).not.toBeInTheDocument();
     expect(screen.getByTestId('monitor-data-track')).toBeInTheDocument();
     expect(screen.getByTestId('selected-focus-card')).toHaveClass('selected-focus-card');
-    expect(screen.getByText(/resource cycle \(energy & matter\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Energy Flow')).toBeInTheDocument();
+    expect(screen.getByText('Energy Distribution Over Time')).toBeInTheDocument();
     expect(screen.getAllByText('Resources').length).toBeGreaterThan(0);
   });
 
@@ -479,8 +480,10 @@ describe('App', () => {
     expect(within(inspector).getByText('77')).toBeInTheDocument();
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Resources');
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
-    expect(screen.getByText('Composite Resource Concentration')).toBeInTheDocument();
-    expect(within(screen.getByLabelText('Layer controls')).getByText('Missing live projection')).toBeInTheDocument();
+    const layerControls = screen.getByLabelText('Layer controls');
+    expect(within(layerControls).getByText('Resource layers unavailable')).toBeInTheDocument();
+    expect(within(layerControls).queryByText('No source-backed Resource layer projection loaded')).not.toBeInTheDocument();
+    expect(layerControls.querySelector('[title="No source-backed Resource layer projection loaded"]')).toBeInTheDocument();
   });
 
   it('ignores late stream callbacks after unmount', async () => {

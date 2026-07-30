@@ -85,7 +85,7 @@ export function AppShell() {
           </button>
           {isFullScreenDataVisible ? (
             <div className="cc-map-fullscreen-data-panel" data-testid="monitor-fullscreen-data-panel">
-              <BottomDataPanel state={state} />
+              <BottomDataPanel state={state} activeLevel={activeLevel} />
             </div>
           ) : null}
         </div>
@@ -124,6 +124,7 @@ export function AppShell() {
             <LayerPanel
               state={state}
               monitorViewModel={monitorViewModel}
+              activeLevel={activeLevel}
             />
             <MonitorWorkspace
               state={state}
@@ -188,7 +189,7 @@ export function AppShell() {
       {/* Row 4: adaptive Data Panel reference track */}
       {activeWorkspace === 'monitor' && (
         <div className="cc-data-panel" data-testid="monitor-data-track">
-          <BottomDataPanel state={state} />
+          <BottomDataPanel state={state} activeLevel={activeLevel} />
         </div>
       )}
     </div>

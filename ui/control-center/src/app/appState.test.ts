@@ -422,6 +422,140 @@ describe('createAppStore', () => {
     expect(store.getState().projectionContext.mode).toBe('live');
   });
 
+  it('stores UI RRD metric history separately from bounded full frame history', () => {
+    const store = createAppStore(liveFrame);
+
+    for (let tick = 7; tick <= 30; tick++) {
+      store.getState().setFrame({
+        ...liveFrame,
+        tick,
+        cells: Array.from({ length: tick % 5 }, (_, index) => ({
+          ...liveFrame.cells[0],
+          id: `cell-${tick}-${index}`
+        }))
+      });
+    }
+
+    expect(store.getState().frameHistory.length).toBeLessThanOrEqual(12);
+    expect(store.getState().monitorMetricHistory.visibleCellCount.length).toBeGreaterThan(12);
+    expect(store.getState().monitorMetricHistory.visibleCellCount.at(-1)).toMatchObject({
+      tick: 30,
+      value: 0,
+      kind: 'raw'
+    });
+  });
+
+  it('records source-backed Monitor resource accounting samples into RRD history', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().setDebugProjections({
+      status: 'available',
+      runId: 'run-1',
+      tick: 6,
+      monitor: {
+        projectionKind: 'MonitorDataPanelProjection',
+        runId: 'run-1',
+        tick: 6,
+        source: 'live',
+        completeness: { state: 'partial', missingFields: [], reason: null },
+        payload: {
+          world: {
+            populationLifecycle: {
+              state: 'available',
+              source: 'VisualWorldProjection.cells.lifecycleState',
+              total: 1,
+              alive: 1,
+              stressed: 0,
+              dormant: 0,
+              dead: 0
+            },
+            resourceCycle: {
+              state: 'available',
+              source: 'MonitorAccountingProjection.resource',
+              totalAmount: 12,
+              locations: {
+                environment: 9,
+                cells: 3,
+                materials: 0,
+                fragments: 0,
+                explicitSinks: 0
+              },
+              accounting: {
+                explicitDecayOrSink: 1,
+                metabolismOrCellUptake: 2,
+                materialConversion: 0,
+                unclassifiedLoss: 0
+              }
+            },
+            materialCycle: { state: 'unavailable', source: 'MaterialAccountingProjection', reason: 'missing' },
+            energyFlow: { state: 'unavailable', source: 'EnergyAccountingProjection', reason: 'missing' },
+            accountingTime: { state: 'unavailable', source: 'UI RRD metric history', reason: 'missing' }
+          },
+          cells: {
+            populationLifecycle: {
+              state: 'available',
+              source: 'VisualWorldProjection.cells.lifecycleState',
+              total: 1,
+              alive: 1,
+              stressed: 0,
+              dormant: 0,
+              dead: 0
+            },
+            observedPrimaryRoles: { state: 'unavailable', source: 'ClassificationProjection', reason: 'missing' },
+            potentialRoles: { state: 'unavailable', source: 'ClassificationProjection', reason: 'missing' },
+            radiusDistribution: { state: 'unavailable', source: 'WorldFrameProjection.cells.radius', reason: 'missing' }
+          },
+          organisms: {
+            behaviorProfiles: { state: 'unavailable', source: 'BehaviorProfileProjection', reason: 'missing' },
+            sizeBins: { state: 'unavailable', source: 'OrganismViewProjection', reason: 'missing' }
+          },
+          lineages: { state: 'unavailable', source: 'LineageProjection', reason: 'missing' },
+          evolution: { state: 'unavailable', source: 'GenomeProjection', reason: 'missing' },
+          analytics: { state: 'unavailable', source: 'MetricsProjection', reason: 'missing' }
+        }
+      },
+      visualWorld: {
+        projectionKind: 'VisualWorldProjection',
+        completeness: { state: 'bounded', missingFields: [], reason: null },
+        cells: [],
+        resourceLayers: [],
+        fields: [],
+        sourceMetrics: []
+      },
+      coverage: { projectionKind: 'CoverageProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, mechanisms: [] },
+      warnings: { projectionKind: 'WarningProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, warnings: [] },
+      classifications: { projectionKind: 'ClassificationProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, classifications: [] },
+      balanceFindings: { projectionKind: 'BalanceFindingProjection', completeness: { state: 'bounded', missingFields: [], reason: null }, findings: [] }
+    });
+
+    expect(store.getState().monitorMetricHistory['world.resource.environment'].at(-1)).toMatchObject({
+      tick: 6,
+      value: 9
+    });
+    expect(store.getState().monitorMetricHistory['world.resource.cells'].at(-1)).toMatchObject({
+      tick: 6,
+      value: 3
+    });
+    expect(store.getState().monitorMetricHistory['world.resource.unclassifiedLoss'].at(-1)).toMatchObject({
+      tick: 6,
+      value: 0
+    });
+  });
+
+  it('keeps Monitor accounting target as UI-only state', () => {
+    const store = createAppStore(liveFrame);
+    const selectedBefore = store.getState().selectedCellId;
+    const tickBefore = store.getState().frame.tick;
+
+    expect(store.getState().monitorAccountingTarget).toBe('Energy');
+
+    store.getState().setMonitorAccountingTarget('Resource');
+
+    expect(store.getState().monitorAccountingTarget).toBe('Resource');
+    expect(store.getState().selectedCellId).toBe(selectedBefore);
+    expect(store.getState().frame.tick).toBe(tickBefore);
+  });
+
   it('does not substitute a nearby frame when a requested history tick is unavailable', () => {
     const store = createAppStore(liveFrame);
 

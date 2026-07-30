@@ -1,22 +1,25 @@
 import { type AppStore } from '../app/appState';
+import { buildFieldLayerDisplay, buildResourceLayerDisplay } from '../app/layerDisplayModel';
 import type { MonitorViewModel } from '../app/monitorViewModel';
 import { uiText } from '../uiText';
+import { type AnalysisLevel } from './LevelPanel';
 
 interface LayerPanelProps {
   state: AppStore;
   monitorViewModel: MonitorViewModel;
+  activeLevel?: AnalysisLevel;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
+const RESOURCE_COLORS = ['#00c896', '#3a86ff', '#ffb703', '#8338ec', '#2dd4bf', '#a78bfa'];
+
 export function LayerPanel({
   state,
-  monitorViewModel,
+  activeLevel = 'world',
   isCollapsed,
   onToggleCollapse
 }: LayerPanelProps) {
-  const frame = state.frame;
-
   if (isCollapsed && onToggleCollapse) {
     return (
       <div className="cc-layers-panel collapsed" data-testid="monitor-layers-track">
@@ -27,6 +30,13 @@ export function LayerPanel({
     );
   }
 
+  const visualWorld = state.debugProjections.status === 'available'
+    ? state.debugProjections.visualWorld
+    : null;
+  const fields = visualWorld?.fields ?? [];
+  const resourceLayers = visualWorld?.resourceLayers ?? [];
+  const showCellSpecificControls = activeLevel === 'cells' || activeLevel === 'organisms';
+
   return (
     <div className="cc-layers-panel" aria-label={uiText.layers.ariaLabel} data-testid="monitor-layers-track">
       <div className="cc-layers-header">
@@ -36,123 +46,117 @@ export function LayerPanel({
         ) : null}
       </div>
 
-      <div className="cc-layers-tabs">
-        <button className="cc-layers-tab active">SCENE</button>
-        <button className="cc-layers-tab">DATA</button>
-      </div>
-
-      <div className="cc-layers-section">
-        <span className="cc-layers-section-label">COLOR MODE</span>
-        <select className="cc-color-mode-select">
-          <option>Organism ID (Ancestry)</option>
-          <option>Energy Level</option>
-          <option>Age</option>
-        </select>
-      </div>
-
-      <div className="cc-layers-section">
-        <span className="cc-layers-section-label">FIELD LAYERS</span>
-        <label className={`cc-resource-layer-row ${monitorViewModel.hasResourceLayer ? '' : 'layer-option-missing'}`}>
-          <input
-            type="checkbox"
-            checked={monitorViewModel.hasResourceLayer}
-            readOnly
-            disabled={!monitorViewModel.hasResourceLayer}
-          />
-          <span>
-            {uiText.layers.resources}
-            {monitorViewModel.resourceLayerState ? (
-              <small className="cc-layer-state">{monitorViewModel.resourceLayerState}</small>
-            ) : null}
-          </span>
-        </label>
-        {(() => {
-          const debugLayers =
-            state.debugProjections?.status === 'available'
-              ? state.debugProjections.visualWorld.resourceLayers
-              : [];
-          const colors = ['#00c896', '#3a86ff', '#ffb703', '#8338ec'];
-
-          let layerItems: { index: number; name: string; color: string }[] = [];
-
-          if (debugLayers.length > 0) {
-            layerItems = debugLayers.map((l) => ({
-              index: l.layerIndex,
-              name: `Layer ${l.layerIndex} (${l.totalAmount > 0 ? l.totalAmount.toFixed(1) + ' total' : 'empty'})`,
-              color: colors[l.layerIndex % colors.length]
-            }));
-          } else if (monitorViewModel.hasResourceLayer) {
-            layerItems = [
-              { index: 0, name: 'Nutrient / Organic', color: '#00c896' },
-              { index: 1, name: 'Mineral', color: '#3a86ff' },
-              { index: 2, name: 'Energy', color: '#ffb703' }
-            ];
-          }
-
-          if (layerItems.length === 0) return null;
-
-          return layerItems.map((layer) => {
-            const isActive = state.activeResourceLayers?.includes(layer.index) ?? true;
-            return (
-              <label key={layer.index} className="cc-field-layer">
-                <span className="cc-field-dot" style={{ backgroundColor: layer.color }} />
-                <span className="cc-field-name">{layer.name}</span>
-                <div className="cc-toggle">
-                  <input
-                    type="checkbox"
-                    checked={isActive}
-                    disabled={!monitorViewModel.hasResourceLayer}
-                    onChange={() => state.toggleResourceLayer?.(layer.index)}
-                  />
-                  <span className="cc-toggle-slider" />
+      <div className="cc-layers-dynamic-scroll" data-testid="layers-dynamic-scroll">
+        <section className="cc-layers-section">
+          <span className="cc-layers-section-label">Fields</span>
+          {fields.length > 0 ? (
+            fields.map((field) => {
+              const display = buildFieldLayerDisplay(field);
+              return (
+                <div
+                  key={field.fieldId}
+                  className="cc-field-layer"
+                  aria-label={`Field layer ${display.primaryLabel}`}
+                  title={display.provenance}
+                >
+                  <span className="cc-field-dot" style={{ backgroundColor: '#22d3ee' }} />
+                  <span className="cc-field-name">{display.primaryLabel}</span>
+                  <small className="cc-layer-state">{display.secondaryLabel}</small>
                 </div>
-              </label>
-            );
-          });
-        })()}
+              );
+            })
+          ) : (
+            <UnavailableLayerRow label="Field layers unavailable" reason="No source-backed spatial Field projection loaded" />
+          )}
+        </section>
+
+        <section className="cc-layers-section">
+          <span className="cc-layers-section-label">Resources</span>
+          {resourceLayers.length > 0 ? (
+            resourceLayers.map((layer) => {
+              const isActive = state.activeResourceLayers?.includes(layer.layerIndex) ?? true;
+              const color = RESOURCE_COLORS[layer.layerIndex % RESOURCE_COLORS.length];
+              const display = buildResourceLayerDisplay(layer);
+              return (
+                <label
+                  key={layer.layerIndex}
+                  className="cc-field-layer"
+                  aria-label={display.primaryLabel}
+                  title={display.provenance}
+                >
+                  <span className="cc-field-dot" style={{ backgroundColor: color }} />
+                  <span className="cc-field-name">{display.primaryLabel}</span>
+                  <span
+                    className="cc-layer-gradient"
+                    aria-hidden="true"
+                    style={{ background: `linear-gradient(90deg, transparent, ${color})` }}
+                  />
+                  <small className="cc-layer-state">{display.secondaryLabel}</small>
+                  <div className="cc-toggle">
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={() => state.toggleResourceLayer?.(layer.layerIndex)}
+                    />
+                    <span className="cc-toggle-slider" />
+                  </div>
+                </label>
+              );
+            })
+          ) : (
+            <UnavailableLayerRow label="Resource layers unavailable" reason="No source-backed Resource layer projection loaded" />
+          )}
+        </section>
       </div>
 
-      <div className="cc-layers-section">
-        <span className="cc-layers-section-label">OVERLAYS</span>
-        <label className="cc-overlay-item">
-          <div className="cc-toggle">
-            <input type="checkbox" defaultChecked />
-            <span className="cc-toggle-slider" />
-          </div>
-          Cell outlines
-        </label>
-        <label className="cc-overlay-item">
-          <div className="cc-toggle">
-            <input type="checkbox" />
-            <span className="cc-toggle-slider" />
-          </div>
-          Organism view outline
-        </label>
-        <label className="cc-overlay-item">
-          <div className="cc-toggle">
-            <input type="checkbox" defaultChecked />
-            <span className="cc-toggle-slider" />
-          </div>
-          Dead matter
-        </label>
-      </div>
+      {showCellSpecificControls ? (
+        <>
+          <section className="cc-layers-section">
+            <span className="cc-layers-section-label">Cell Energy</span>
+            <label className="cc-overlay-item">
+              <span className="cc-layer-state">Cells encoding unavailable until source-backed Cell energy projection is present</span>
+            </label>
+            <label className="cc-overlay-item">
+              <span className="cc-layer-state">Heatmap unavailable until aggregate provenance is present</span>
+            </label>
+          </section>
 
-      <div style={{ flex: 1 }} />
+          <section className="cc-layers-section">
+            <span className="cc-layers-section-label">Structure</span>
+            <label className="cc-overlay-item">
+              <div className="cc-toggle">
+                <input type="checkbox" defaultChecked />
+                <span className="cc-toggle-slider" />
+              </div>
+              Cell outlines
+            </label>
+            <label className="cc-overlay-item">
+              <div className="cc-toggle">
+                <input type="checkbox" />
+                <span className="cc-toggle-slider" />
+              </div>
+              Joints
+            </label>
+          </section>
 
-      <div className="cc-layers-section" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }}>
-        <span className="cc-layers-section-label" style={{ marginTop: '8px' }}>RENDERING</span>
-        <div className="cc-rendering-row">
-          <span className="cc-rendering-label">Semantic zoom</span>
-          <span className="cc-rendering-val">Overview</span>
-        </div>
-        <div className="cc-rendering-row">
-          <span className="cc-rendering-label">Quality</span>
-          <div className="cc-quality-btns">
-            <button className="cc-quality-btn active">AUTO</button>
-            <button className="cc-quality-btn">HIGH</button>
-          </div>
-        </div>
-      </div>
+          <section className="cc-layers-section">
+            <span className="cc-layers-section-label">Selection</span>
+            <label className="cc-overlay-item">
+              <span className="cc-layer-state">Trail requires one selected Cell or Organism and retained RRD samples</span>
+            </label>
+          </section>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function UnavailableLayerRow({ label, reason }: { label: string; reason: string }) {
+  return (
+    <div className="cc-field-layer layer-option-missing" title={reason}>
+      <span className="cc-field-dot" style={{ backgroundColor: '#475569' }} />
+      <span className="cc-field-name">{label}</span>
+      <small className="cc-layer-state">unavailable</small>
     </div>
   );
 }

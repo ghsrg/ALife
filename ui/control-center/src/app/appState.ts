@@ -9,6 +9,8 @@ import {
 import type { CellId, CellProjection, DebugProjectionState, ResourceConcentration, WorldFrame } from '../projection/types';
 import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClient';
 import type { RunnerStreamConnectionState as ConnectionState } from '../runner/streamClient';
+import { appendRrdSample, type RrdMetricHistory } from './rrdMetricHistory';
+import type { AccountingTarget } from './monitorSurfaceModel';
 
 export type { RunStatus, ScenarioListItem, ServerInfo };
 export type { ConnectionState };
@@ -41,6 +43,8 @@ export interface AppState {
   lastError: string | null;
   selectionCleared: boolean;
   activeResourceLayers: number[];
+  monitorMetricHistory: Record<string, RrdMetricHistory>;
+  monitorAccountingTarget: AccountingTarget;
 }
 
 export interface AppActions {
@@ -51,6 +55,7 @@ export interface AppActions {
   setDebugProjections: (debugProjections: DebugProjectionState) => void;
   selectCell: (cellId: CellId | null) => void;
   toggleResourceLayer: (layerIndex: number) => void;
+  setMonitorAccountingTarget: (target: AccountingTarget) => void;
   setTheme: (theme: ThemeMode) => void;
   setRunnerEndpoint: (endpoint: string) => void;
   setConnectionState: (connectionState: ConnectionState) => void;
@@ -115,6 +120,8 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     lastError: null,
     selectionCleared: false,
     activeResourceLayers: [0, 1, 2, 3],
+    monitorMetricHistory: {},
+    monitorAccountingTarget: 'Energy',
     toggleResourceLayer: (layerIndex) => {
       const current = get().activeResourceLayers;
       const next = current.includes(layerIndex)
@@ -122,6 +129,7 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         : [...current, layerIndex];
       set({ activeResourceLayers: next });
     },
+    setMonitorAccountingTarget: (monitorAccountingTarget) => set({ monitorAccountingTarget }),
     setFrame: (frame) => {
       const state = get();
       const isLiveFrame = frame.source === 'live';
@@ -129,11 +137,16 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
       const frameHistory = isLiveFrame
         ? appendFrameHistory(state.frameHistory, visibleFrame)
         : state.frameHistory;
+      const monitorMetricHistory = appendMonitorMetricHistory(
+        state.monitorMetricHistory,
+        visibleFrame
+      );
 
       if (state.projectionContext.mode === 'frozen' && isLiveFrame) {
         set({
           latestLiveFrame: visibleFrame,
-          frameHistory
+          frameHistory,
+          monitorMetricHistory
         });
         return;
       }
@@ -143,6 +156,7 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         frame: visibleFrame,
         latestLiveFrame: isLiveFrame ? visibleFrame : state.latestLiveFrame,
         frameHistory,
+        monitorMetricHistory,
         projectionContext: buildProjectionContext(visibleFrame, isLiveFrame ? 'live' : 'fixture'),
         selectedCellId: selectedCell?.id ?? null,
         selectedCell
@@ -206,6 +220,10 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         state.latestLiveFrame === null
           ? null
           : enrichFrameWithDebugProjection(state.latestLiveFrame, debugProjections);
+      const monitorMetricHistory = appendMonitorProjectionMetricHistory(
+        state.monitorMetricHistory,
+        debugProjections
+      );
       const selectedCell = selectCellForFrame(
         enrichedFrame,
         state.selectedCellId,
@@ -215,6 +233,7 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         debugProjections,
         frame: enrichedFrame,
         latestLiveFrame: enrichedLatestLiveFrame,
+        monitorMetricHistory,
         selectedCellId: selectedCell?.id ?? null,
         selectedCell
       });
@@ -364,6 +383,54 @@ function resourceLayersToGrid(
 function appendFrameHistory(history: WorldFrame[], frame: WorldFrame) {
   const nextHistory = [...history.filter((historyFrame) => historyFrame.tick !== frame.tick), frame];
   return nextHistory.slice(-FRAME_HISTORY_LIMIT);
+}
+
+function appendMonitorMetricHistory(
+  history: Record<string, RrdMetricHistory>,
+  frame: WorldFrame
+): Record<string, RrdMetricHistory> {
+  return {
+    ...history,
+    visibleCellCount: appendRrdSample(history.visibleCellCount ?? [], {
+      tick: frame.tick,
+      value: frame.cells.length
+    })
+  };
+}
+
+function appendMonitorProjectionMetricHistory(
+  history: Record<string, RrdMetricHistory>,
+  debugProjections: DebugProjectionState
+): Record<string, RrdMetricHistory> {
+  if (debugProjections.status !== 'available') {
+    return history;
+  }
+
+  const resourceCycle = debugProjections.monitor?.payload.world.resourceCycle;
+  if (!resourceCycle || resourceCycle.state !== 'available') {
+    return history;
+  }
+
+  const tick = debugProjections.monitor?.tick ?? debugProjections.tick;
+  const samples = {
+    'world.resource.environment': resourceCycle.locations.environment,
+    'world.resource.cells': resourceCycle.locations.cells,
+    'world.resource.materials': resourceCycle.locations.materials,
+    'world.resource.fragments': resourceCycle.locations.fragments,
+    'world.resource.explicitSinks': resourceCycle.locations.explicitSinks,
+    'world.resource.explicitDecayOrSink': resourceCycle.accounting.explicitDecayOrSink,
+    'world.resource.metabolismOrCellUptake': resourceCycle.accounting.metabolismOrCellUptake,
+    'world.resource.materialConversion': resourceCycle.accounting.materialConversion,
+    'world.resource.unclassifiedLoss': resourceCycle.accounting.unclassifiedLoss
+  };
+
+  return Object.entries(samples).reduce<Record<string, RrdMetricHistory>>(
+    (nextHistory, [metric, value]) => ({
+      ...nextHistory,
+      [metric]: appendRrdSample(nextHistory[metric] ?? [], { tick, value })
+    }),
+    { ...history }
+  );
 }
 
 export function getMonitorDataState(

@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-006-S03` | planned | high | `docs/delivery/roadmap.md` | Deterministic Parallelism: parallel execution preserving stable state hashes. |
+| `AL-007-S25` | in-progress | medium | `docs/delivery/roadmap.md` | Runner/Core Monitor contracts execution started: typed Monitor projection, World lifecycle/resource accounting, UI adapter, and RRD ingestion are source-backed; roles, organisms, lineages, evolution, analytics, Material, and Energy remain explicit unavailable contracts. |
 
 ## Operational Rules
 
@@ -39,13 +39,15 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-007-S24` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Source-Backed Monitor Surfaces: Data Panel, charts, legends, selectors, and unavailable states follow available projections only. |
-| 2 | `AL-007-S25` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">blocked-dependency</kbd> | `AL-007-S24`, `AL-004-S05` | `docs/delivery/roadmap.md` | Runner And Core Monitor Contracts: final Frame Age, speed, accounting, and research surfaces without UI-owned truth. |
+| 1 | `AL-006-S03` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Deterministic parallelism after Monitor stabilization no longer blocks visual inspection. |
+| 2 | `AL-006-S04` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Projection and Viewer Throughput if Monitor UI remains visually heavy under live streams. |
 
 ## Recently Closed
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-007-S24-Fix` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-30-1304-REPORT-al-007-s24-fix-monitor-visual-regression-hotfix.md` | Monitor Visual Regression Hotfix closed for dark custom scenario picker, compact source-backed Layers rows, compact Data Panel provenance, Level icons, explicit Map affordances, full Vitest, production build, and selected Playwright Monitor/UI visual acceptance. |
+| `AL-007-S24` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-29-1835-REPORT-al-007-s24-source-backed-monitor-surfaces.md` | Source-Backed Monitor Surfaces closed for model-driven Data Panel cards, explicit unavailable contract states, UI RRD metric history, canonical Layers & Filters groups, presentation-only layer toggles, full Vitest, production build, and selected Playwright Monitor/UI visual acceptance. |
 | `AL-007-S23` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-29-1545-REPORT-al-007-s23-monitor-interaction-state.md` | Monitor Interaction State closed for compact Data Panel at `1280x720`, square Stop command, Runner status in Run/Data Context, Layers-only presentation controls, Map-only fullscreen shell, and camera/selection stability without Core/Runner contract changes. |
 | `AL-007-S22` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-29-1147-REPORT-al-007-s22-monitor-layout-stabilization.md` | Monitor Layout Stabilization closed for fixed reference tracks, no Monitor/Data tabs, root scroll below `1280x720`, stable Map geometry, overlay click regression coverage, and the follow-up adaptive laptop CSS baseline. Complete Map-only fullscreen shell was closed by `AL-007-S23`. |
 | `AL-007-S14` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-25-1555-REPORT-al-007-s14-debug-diagnostics-recovery-and-projection-cadence.md` | Debug Experiments, Diagnostics, Recovery, And Projection Cadence Optimization closed for adaptive grid stride streaming, lightweight HTTP debug payloads, and smooth real-time projection updates. |

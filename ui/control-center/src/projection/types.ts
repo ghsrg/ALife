@@ -159,11 +159,79 @@ export interface DebugBalanceFindingProjection {
   findings: unknown[];
 }
 
+export type MonitorDataState = 'available' | 'partial' | 'unavailable';
+
+export interface MonitorUnavailableSection {
+  state: 'unavailable';
+  source: string;
+  reason: string;
+}
+
+export interface MonitorPopulationLifecycle {
+  state: 'available';
+  source: string;
+  total: number;
+  alive: number;
+  stressed: number;
+  dormant: number;
+  dead: number;
+}
+
+export interface MonitorResourceCycle {
+  state: 'available';
+  source: string;
+  totalAmount: number;
+  locations: {
+    environment: number;
+    cells: number;
+    materials: number;
+    fragments: number;
+    explicitSinks: number;
+  };
+  accounting: {
+    explicitDecayOrSink: number;
+    metabolismOrCellUptake: number;
+    materialConversion: number;
+    unclassifiedLoss: number;
+  };
+}
+
+export interface MonitorProjection {
+  projectionKind: 'MonitorDataPanelProjection';
+  runId: string;
+  tick: number;
+  source: string;
+  completeness: DebugProjectionCompleteness;
+  payload: {
+    world: {
+      populationLifecycle: MonitorPopulationLifecycle;
+      resourceCycle: MonitorResourceCycle | MonitorUnavailableSection;
+      materialCycle: MonitorUnavailableSection;
+      energyFlow: MonitorUnavailableSection;
+      accountingTime: MonitorUnavailableSection;
+    };
+    cells: {
+      populationLifecycle: MonitorPopulationLifecycle;
+      observedPrimaryRoles: MonitorUnavailableSection;
+      potentialRoles: MonitorUnavailableSection;
+      radiusDistribution: MonitorUnavailableSection;
+    };
+    organisms: {
+      behaviorProfiles: MonitorUnavailableSection;
+      sizeBins: MonitorUnavailableSection;
+    };
+    lineages: MonitorUnavailableSection;
+    evolution: MonitorUnavailableSection;
+    analytics: MonitorUnavailableSection;
+  };
+}
+
 export type DebugProjectionState =
   | {
       status: 'available';
       runId: string;
       tick: number;
+      monitor?: MonitorProjection;
       visualWorld: DebugVisualWorldProjection;
       coverage: DebugCoverageProjection;
       warnings: DebugWarningProjection;

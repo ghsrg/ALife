@@ -154,6 +154,75 @@ describe('normalizeDebugProjectionBundle', () => {
     expect(normalized.classifications.classifications).toEqual([]);
     expect(normalized.balanceFindings.findings).toEqual([]);
   });
+
+  it('attaches optional Monitor Data Panel projection when the bundle provides it', () => {
+    const normalized = normalizeDebugProjectionBundle({
+      ...bundle,
+      monitor: {
+        schema_version: 'MonitorDataPanelProjection/v1',
+        projection_kind: 'MonitorDataPanelProjection',
+        run_id: 'run-1',
+        tick: 42,
+        source: 'live',
+        completeness: { state: 'partial', missing_fields: ['world.energy_flow'], reason: 'partial' },
+        payload: {
+          world: {
+            population_lifecycle: {
+              state: 'available',
+              source: 'VisualWorldProjection.cells.lifecycleState',
+              total: 1,
+              alive: 1,
+              stressed: 0,
+              dormant: 0,
+              dead: 0
+            },
+            resource_cycle: {
+              state: 'available',
+              source: 'MonitorAccountingProjection.resource',
+              total_amount: 4,
+              locations: { environment: 4, cells: 0, materials: 0, fragments: 0, explicit_sinks: 0 },
+              accounting: {
+                explicit_decay_or_sink: 0,
+                metabolism_or_cell_uptake: 0,
+                material_conversion: 0,
+                unclassified_loss: 0
+              }
+            },
+            material_cycle: { state: 'unavailable', source: 'MaterialAccountingProjection', reason: 'missing' },
+            energy_flow: { state: 'unavailable', source: 'EnergyAccountingProjection', reason: 'missing' },
+            accounting_time: { state: 'unavailable', source: 'UI RRD metric history', reason: 'missing' }
+          },
+          cells: {
+            population_lifecycle: {
+              state: 'available',
+              source: 'VisualWorldProjection.cells.lifecycleState',
+              total: 1,
+              alive: 1,
+              stressed: 0,
+              dormant: 0,
+              dead: 0
+            },
+            observed_primary_roles: { state: 'unavailable', source: 'ClassificationProjection', reason: 'missing' },
+            potential_roles: { state: 'unavailable', source: 'ClassificationProjection', reason: 'missing' },
+            radius_distribution: { state: 'unavailable', source: 'WorldFrameProjection.cells.radius', reason: 'missing' }
+          },
+          organisms: {
+            behavior_profiles: { state: 'unavailable', source: 'BehaviorProfileProjection', reason: 'missing' },
+            size_bins: { state: 'unavailable', source: 'OrganismViewProjection', reason: 'missing' }
+          },
+          lineages: { state: 'unavailable', source: 'LineageProjection', reason: 'missing' },
+          evolution: { state: 'unavailable', source: 'GenomeProjection', reason: 'missing' },
+          analytics: { state: 'unavailable', source: 'MetricsProjection', reason: 'missing' }
+        }
+      }
+    });
+
+    expectAvailable(normalized);
+    expect(normalized.monitor?.payload.world.resourceCycle).toMatchObject({
+      state: 'available',
+      totalAmount: 4
+    });
+  });
 });
 
 describe('normalizeUnavailableDebugProjection', () => {

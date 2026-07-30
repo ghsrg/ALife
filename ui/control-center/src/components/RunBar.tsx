@@ -8,7 +8,7 @@ import {
   getMonitorDataState,
   type MonitorDataState
 } from '../app/appState';
-import { uiText } from '../uiText';
+import { ScenarioPicker } from './ScenarioPicker';
 
 export interface RunBarProps {
   state: AppState;
@@ -94,20 +94,12 @@ export function RunBar({
         <div className="cc-run-label">SCENARIO</div>
         <div className="cc-scenario-name">{scenarioName}</div>
         <div className="cc-config-hash">CONFIG: {seed.substring(0,8)}</div>
-        <select
-          className="cc-run-scenario-select"
-          aria-label="Scenario"
+        <ScenarioPicker
+          scenarios={state.scenarios}
+          selectedScenarioId={state.selectedScenarioId}
           disabled={!hasScenarios}
-          value={state.selectedScenarioId ?? ''}
-          onChange={(event) => onScenarioChange?.(event.currentTarget.value)}
-        >
-          {hasScenarios ? null : <option value="">No scenarios</option>}
-          {state.scenarios.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.id}
-            </option>
-          ))}
-        </select>
+          onScenarioChange={onScenarioChange}
+        />
       </div>
       
       {/* 3. RunControls */}
@@ -200,7 +192,7 @@ export function RunBar({
             <div className="cc-metric-sub">disabled</div>
           </div>
           <div className="cc-metric unavailable">
-            <div className="cc-metric-label">LATENCY</div>
+            <div className="cc-metric-label">FRAME AGE</div>
             <div className="cc-metric-value">—</div>
             <div className="cc-metric-sub">disabled</div>
           </div>

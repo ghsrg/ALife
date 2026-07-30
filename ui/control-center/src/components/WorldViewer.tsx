@@ -436,6 +436,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
               <button
                 type="button"
                 className={isSearchMatch ? 'cell-hotspot search-match' : 'cell-hotspot'}
+                data-map-affordance={normalizedMapSearchQuery && isSearchMatch ? 'search-match' : undefined}
                 data-semantic-level={target.detail.level}
                 data-lifecycle-state={target.detail.lifecycleState}
                 style={target.style}
@@ -451,6 +452,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
               {target.detail.showLabel ? (
                 <span
                   className={target.selected ? 'cell-detail-label selected' : 'cell-detail-label'}
+                  data-map-affordance={target.selected ? 'selected-foreground' : undefined}
                   style={target.labelStyle}
                   aria-label={target.selected ? 'Selected cell detail label' : `Cell detail label ${target.id}`}
                 >

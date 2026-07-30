@@ -111,7 +111,7 @@ test('AL-007-S23 keeps Data Panel compact at 1280x720', async ({ page }) => {
   expect(Math.round(dataBox!.height)).toBe(187);
 
   const cards = page.locator('.v3-chart-card');
-  await expect(cards).toHaveCount(4);
+  await expect(cards).toHaveCount(3);
 
   const dataGeometry = await dataTrack.evaluate((element) => ({
     clientHeight: element.clientHeight,
@@ -121,7 +121,7 @@ test('AL-007-S23 keeps Data Panel compact at 1280x720', async ({ page }) => {
   expect(dataGeometry.scrollHeight).toBeLessThanOrEqual(dataGeometry.clientHeight);
   expect(dataGeometry.overflowY).not.toBe('auto');
 
-  for (let index = 0; index < 4; index++) {
+  for (let index = 0; index < 3; index++) {
     const cardBox = await cards.nth(index).boundingBox();
     expect(cardBox).not.toBeNull();
     expect(cardBox!.y).toBeGreaterThanOrEqual(dataBox!.y);
@@ -159,7 +159,9 @@ test('AL-007-S23 layer toggles keep monitor geometry and selection stable', asyn
   expect(mapBefore).not.toBeNull();
   expect(inspectorBefore).not.toBeNull();
 
-  await page.getByText('Nutrient / Organic').click();
+  await expect(page.getByTestId('monitor-layers-track')).not.toContainText('Nutrient / Organic');
+  await page.getByRole('button', { name: 'Cells level' }).click();
+  await page.getByText('Cell outlines').click();
 
   const mapAfter = await page.getByTestId('monitor-map-track').boundingBox();
   const inspectorAfter = await page.getByTestId('monitor-inspector-track').boundingBox();
@@ -172,6 +174,40 @@ test('AL-007-S23 layer toggles keep monitor geometry and selection stable', asyn
   expect(Math.round(mapAfter!.height)).toBe(Math.round(mapBefore!.height));
   expect(Math.round(inspectorAfter!.x)).toBe(Math.round(inspectorBefore!.x));
   await expect(page.getByTestId('monitor-inspector-track')).not.toContainText('No cell selected.');
+});
+
+test('AL-007-S24-Fix keeps dense Monitor surfaces readable at 1280x720', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  await expect(page.getByLabel('World Viewer', { exact: true })).toHaveAttribute('data-ready', 'true');
+
+  const geometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    clientHeight: document.documentElement.clientHeight,
+    scrollHeight: document.documentElement.scrollHeight
+  }));
+  expect(geometry.scrollWidth).toBe(geometry.clientWidth);
+  expect(geometry.scrollHeight).toBe(geometry.clientHeight);
+
+  await expect(page.getByTestId('monitor-run-track')).toContainText('FRAME AGE');
+  await expect(page.getByTestId('monitor-run-track')).not.toContainText('LATENCY');
+  await page.getByRole('button', { name: 'Scenario' }).click();
+  await expect(page.getByRole('listbox', { name: 'Scenario' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Scenario' })).toHaveCount(0);
+  await page.getByRole('option', { name: 'world_stress_regression' }).click();
+  await expect(page.getByRole('button', { name: 'Scenario' })).toContainText('world_stress_regression');
+
+  await expect(page.getByTestId('monitor-layers-track')).not.toContainText('CommittedSnapshot exposes resource grid cells');
+  await expect(page.getByTestId('monitor-layers-track')).not.toContainText('Cell Energy');
+  await expect(page.locator('.monitor-card-provenance-chip').first()).toBeVisible();
+  await expect(page.locator('dl.monitor-card-provenance')).toHaveCount(0);
+  await expect(page.locator('.monitor-card-placeholder').first()).toBeVisible();
+
+  const selectedLabel = page.getByLabel('Selected cell detail label');
+  await expect(selectedLabel).toHaveAttribute('data-map-affordance', 'selected-foreground');
+  await expect(page.getByTestId('monitor-level-track').getByTestId('level-icon-world')).toBeVisible();
 });
 
 test('AL-007-S23 Map-only fullscreen is view-only and restores shell', async ({ page }) => {

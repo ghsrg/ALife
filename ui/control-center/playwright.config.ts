@@ -7,6 +7,8 @@ const browserExecutablePath = [
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
 ].find((candidate): candidate is string => Boolean(candidate && existsSync(candidate)));
 
+const browserLaunchOptions = browserExecutablePath ? { executablePath: browserExecutablePath } : undefined;
+
 export default defineConfig({
   testDir: './tests/e2e',
   testIgnore: ['live-runner.spec.ts'],
@@ -14,7 +16,7 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: 'http://127.0.0.1:5173',
-    launchOptions: browserExecutablePath ? { executablePath: browserExecutablePath } : undefined,
+    launchOptions: browserLaunchOptions,
     trace: 'on-first-retry'
   },
   webServer: {
@@ -26,7 +28,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] }
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: browserLaunchOptions
+      }
     }
   ]
 });

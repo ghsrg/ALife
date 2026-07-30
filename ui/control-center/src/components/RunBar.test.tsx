@@ -76,6 +76,25 @@ describe('RunBar', () => {
     expect(runTrack).toHaveTextContent('API runner-test');
     expect(runTrack).toHaveTextContent('Data:');
     expect(screen.getByRole('button', { name: 'Reconnect to Runner' })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Scenario' })).toHaveValue('living_patchy_world');
+    expect(screen.queryByRole('combobox', { name: 'Scenario' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /scenario/i })).toHaveTextContent('living_patchy_world');
+  });
+
+  it('uses Frame Age instead of Latency in the monitor metrics', () => {
+    render(
+      <RunBar
+        state={appState()}
+        onStart={vi.fn()}
+        onPause={vi.fn()}
+        onResume={vi.fn()}
+        onStep={vi.fn()}
+        onStop={vi.fn()}
+      />
+    );
+
+    const runTrack = screen.getByTestId('monitor-run-track');
+
+    expect(runTrack).toHaveTextContent('FRAME AGE');
+    expect(runTrack).not.toHaveTextContent('LATENCY');
   });
 });
