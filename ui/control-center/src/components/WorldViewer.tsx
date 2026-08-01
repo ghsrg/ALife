@@ -7,7 +7,7 @@ import type {
 import type { CellId, WorldFrame } from '../projection/types';
 import type { DebugProjectionState } from '../projection/types';
 import { uiText } from '../uiText';
-import { buildViewerHitTargets } from '../viewer/viewerHitTargets';
+import { buildViewerHitTargets, type ViewerHitTarget } from '../viewer/viewerHitTargets';
 import { useViewerCamera } from '../viewer/useViewerCamera';
 import { buildDebugLayerPlan, type DebugLayerMode } from '../viewer/debugLayers';
 import { mountWorldRenderer, type WorldRenderer } from '../viewer/worldRenderer';
@@ -15,17 +15,32 @@ import { fitCameraToWorld, formatMapScaleLabel } from '../viewer/viewerNavigatio
 import { ViewerTruthOverlay } from './ViewerTruthOverlay';
 import { buildViewerTruthState } from './viewerTruth';
 
+import {
+  createCellSelection,
+  createNoneSelection,
+  createSelectionSet,
+  deriveWorldBlockAtPoint,
+  toggleSelectionSetMember,
+  type AnalysisLevel,
+  type MonitorSelection
+} from '../app/selectionModel';
+import type { VisualEffectsConfig } from '../app/appState';
+
 const MOUSE_DRAG_POINTER_ID = -1;
 
 interface WorldViewerProps {
   frame: WorldFrame;
   selectedCellId: CellId | null;
   onSelectCell: (cellId: CellId | null) => void;
+  activeLevel?: AnalysisLevel;
+  currentSelection?: MonitorSelection;
+  onSelectTarget?: (selection: MonitorSelection) => void;
   onExportScreenshot?: () => void;
   onToggleFullScreen?: () => void;
   isFullScreen?: boolean;
   debugProjections?: DebugProjectionState;
   activeResourceLayers?: number[];
+  visualEffects?: VisualEffectsConfig;
 }
 
 export interface WorldViewerHandle {
@@ -37,11 +52,15 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     frame,
     selectedCellId,
     onSelectCell,
+    activeLevel = 'cells',
+    currentSelection,
+    onSelectTarget,
     onExportScreenshot,
     onToggleFullScreen,
     isFullScreen = false,
     debugProjections,
-    activeResourceLayers
+    activeResourceLayers,
+    visualEffects
   },
   ref
 ) {
@@ -65,6 +84,9 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         showFieldLayer: true
       })
     : null;
+
+  const resourceRows = frame.resources.length;
+  const resourceColumns = Math.max(...frame.resources.map((row) => row.length), 0);
 
   const measureViewport = () => {
     const host = hostRef.current;
@@ -169,6 +191,40 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
 
+  const selectionRectangleRef = useRef<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+
+  const completeSelectionRectangle = (clientX: number, clientY: number) => {
+    const activeSelectionRectangle = selectionRectangleRef.current;
+    if (activeSelectionRectangle === null) {
+      return false;
+    }
+
+    const targets = buildViewerHitTargets(frame, selectedCellId, viewport, camera);
+    const selectedTargets = targets
+      .filter((target) => isHitTargetInsideRectangle(target, {
+        startX: activeSelectionRectangle.startX,
+        startY: activeSelectionRectangle.startY,
+        currentX: clientX,
+        currentY: clientY
+      }))
+      .map((target) => createCellSelection({
+        cellId: target.id,
+        runId: frame.runId,
+        tick: frame.tick
+      }));
+
+    if (selectedTargets.length > 0) {
+      onSelectTarget?.(createSelectionSet({
+        targets: selectedTargets,
+        runId: frame.runId,
+        tick: frame.tick
+      }));
+    }
+
+    selectionRectangleRef.current = null;
+    return true;
+  };
+
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 && event.button !== undefined) {
       return;
@@ -176,6 +232,17 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     event.preventDefault();
     event.stopPropagation();
     const pointerId = event.pointerId ?? MOUSE_DRAG_POINTER_ID;
+
+    if (event.shiftKey && activeLevel === 'cells') {
+      selectionRectangleRef.current = {
+        startX: event.clientX,
+        startY: event.clientY,
+        currentX: event.clientX,
+        currentY: event.clientY
+      };
+      return;
+    }
+
     startDrag(pointerId, event.clientX, event.clientY);
     if (event.currentTarget.hasPointerCapture?.(event.pointerId) === false) {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -183,6 +250,11 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (selectionRectangleRef.current !== null) {
+      selectionRectangleRef.current.currentX = event.clientX;
+      selectionRectangleRef.current.currentY = event.clientY;
+      return;
+    }
     if (cameraState.dragStart !== null) {
       event.preventDefault();
       event.stopPropagation();
@@ -208,6 +280,9 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    if (completeSelectionRectangle(event.clientX, event.clientY)) {
+      return;
+    }
     endDrag(event.pointerId ?? MOUSE_DRAG_POINTER_ID);
     if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -220,10 +295,26 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     }
     event.preventDefault();
     event.stopPropagation();
+
+    if (event.shiftKey && activeLevel === 'cells') {
+      selectionRectangleRef.current = {
+        startX: event.clientX,
+        startY: event.clientY,
+        currentX: event.clientX,
+        currentY: event.clientY
+      };
+      return;
+    }
+
     startDrag(MOUSE_DRAG_POINTER_ID, event.clientX, event.clientY);
   };
 
   const handleMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (selectionRectangleRef.current !== null) {
+      selectionRectangleRef.current.currentX = event.clientX;
+      selectionRectangleRef.current.currentY = event.clientY;
+      return;
+    }
     if (cameraState.dragStart !== null) {
       event.preventDefault();
       event.stopPropagation();
@@ -232,11 +323,44 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
   };
 
   const handleMouseUp = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (completeSelectionRectangle(event.clientX, event.clientY)) {
+      return;
+    }
     if (cameraState.dragStart !== null) {
       event.preventDefault();
       event.stopPropagation();
     }
     endDrag(MOUSE_DRAG_POINTER_ID);
+  };
+
+  const handleCellHotspotClick = (target: ViewerHitTarget, event: ReactMouseEvent) => {
+    if (activeLevel === 'world') {
+      const blockSelection = deriveWorldBlockAtPoint({
+        runId: frame.runId,
+        tick: frame.tick,
+        world: frame.world,
+        resourceRows,
+        resourceColumns,
+        point: { x: parseFloat(target.style.left), y: parseFloat(target.style.top) }
+      });
+      onSelectTarget?.(blockSelection);
+      return;
+    }
+
+    const targetCellSelection = createCellSelection({
+      cellId: target.id,
+      runId: frame.runId,
+      tick: frame.tick
+    });
+
+    if (event.shiftKey && onSelectTarget && currentSelection) {
+      const nextSelection = toggleSelectionSetMember(currentSelection, targetCellSelection);
+      onSelectTarget(nextSelection);
+      return;
+    }
+
+    onSelectCell(target.id);
+    onSelectTarget?.(targetCellSelection);
   };
 
   const handleViewerClick = (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -255,7 +379,24 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     }
 
     setTruthOverlayVisible(false);
+
+    if (activeLevel === 'world') {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const blockSelection = deriveWorldBlockAtPoint({
+        runId: frame.runId,
+        tick: frame.tick,
+        world: frame.world,
+        resourceRows,
+        resourceColumns,
+        point
+      });
+      onSelectTarget?.(blockSelection);
+      return;
+    }
+
     onSelectCell(null);
+    onSelectTarget?.(createNoneSelection());
   };
 
   return (
@@ -445,7 +586,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onSelectCell(target.id);
+                  handleCellHotspotClick(target, event);
                 }}
                 aria-label={target.ariaLabel}
               />
@@ -502,4 +643,18 @@ function matchesResourceLayerSearch(
     layer.availability,
     layer.legendLabel
   ].some((value) => value.toLowerCase().includes(query));
+}
+
+function isHitTargetInsideRectangle(
+  target: ViewerHitTarget,
+  rect: { startX: number; startY: number; currentX: number; currentY: number }
+) {
+  const x = parseFloat(target.style.left);
+  const y = parseFloat(target.style.top);
+  const minX = Math.min(rect.startX, rect.currentX);
+  const maxX = Math.max(rect.startX, rect.currentX);
+  const minY = Math.min(rect.startY, rect.currentY);
+  const maxY = Math.max(rect.startY, rect.currentY);
+
+  return x >= minX && x <= maxX && y >= minY && y <= maxY;
 }

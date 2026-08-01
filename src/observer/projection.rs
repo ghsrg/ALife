@@ -11,7 +11,8 @@ use crate::observer::payloads::{
     ClassificationProjectionPayload, CoverageMechanismPayload, CoverageProjectionPayload,
     FieldSummaryPayload, ObserverProjectionPayloadError, ProjectionSourceMetricRef,
     ResourceAmountPayload, ResourceLayerCellPayload, ResourceLayerSummaryPayload,
-    VisualCellPayload, VisualWorldProjection, WarningProjectionPayload,
+    VisualCellPayload, VisualJointPayload, VisualOrganismPayload, VisualWorldProjection,
+    WarningProjectionPayload,
 };
 use crate::observer::projection_envelope::ProjectionCompleteness;
 
@@ -274,6 +275,21 @@ pub fn build_visual_world_projection_sampled(
                     amount: amount.raw(),
                 })
                 .collect(),
+            phenotype_traits: {
+                let id_raw = cell.id.raw();
+                let lineage_hue = ((id_raw * 137) % 360) as u16;
+                let flagella_count = if cell.radius.raw() > 8.0 && cell.energy.raw() > 20.0 { 2 } else if cell.radius.raw() > 5.0 { 1 } else { 0 };
+                let spike_count = if cell.materials.iter().any(|m| *m > 5.0) { 4 } else if cell.radius.raw() > 10.0 { 3 } else { 0 };
+                let receptor_halo_intensity = (cell.energy.raw() / cell.energy_capacity.raw().max(1.0)).min(1.0);
+                let division_flash_intensity = if cell.energy.raw() > cell.energy_capacity.raw() * 0.85 { 0.8 } else { 0.0 };
+                crate::observer::payloads::PhenotypeTraitPayload {
+                    flagella_count,
+                    spike_count,
+                    receptor_halo_intensity,
+                    lineage_hue,
+                    division_flash_intensity,
+                }
+            },
         })
         .collect();
 
@@ -345,9 +361,35 @@ pub fn build_visual_world_projection_sampled(
         source_metric("waste", "CommittedSnapshot.waste"),
     ];
 
+    let joints = snapshot
+        .joints
+        .iter()
+        .map(|j| VisualJointPayload {
+            id: j.id,
+            cell1_id: j.cell1_id.raw(),
+            cell2_id: j.cell2_id.raw(),
+            rest_length: j.rest_length,
+            pulse_intensity: j.pulse_intensity,
+            signal_speed: j.signal_speed,
+        })
+        .collect();
+
+    let organisms = snapshot
+        .organisms
+        .iter()
+        .map(|o| VisualOrganismPayload {
+            id: o.id,
+            cell_ids: o.cell_ids.iter().map(|id| id.raw()).collect(),
+            hull_color_hue: o.hull_color_hue,
+            organic_membrane_tension: o.organic_membrane_tension,
+        })
+        .collect();
+
     VisualWorldProjection {
         tick: snapshot.tick.raw(),
         cells,
+        joints,
+        organisms,
         resource_layers,
         fields,
         completeness,

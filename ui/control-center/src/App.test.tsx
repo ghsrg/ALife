@@ -477,7 +477,7 @@ describe('App', () => {
     expect(within(workspace).getByText('demo-scenario')).toBeInTheDocument();
     expect(within(workspace).getAllByText(/Live Tick 9/i)[0]).toBeInTheDocument();
     const inspector = screen.getByLabelText(/cell inspector/i);
-    expect(within(inspector).getByText('77')).toBeInTheDocument();
+    expect(within(inspector).getByText('No cell selected.')).toBeInTheDocument();
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Resources');
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
     const layerControls = screen.getByLabelText('Layer controls');
@@ -528,11 +528,9 @@ describe('App', () => {
     const workspace = screen.getByLabelText(/monitor workspace/i);
     expect(within(workspace).getAllByText(/Live Tick 12/i)[0]).toBeInTheDocument();
     const inspector = screen.getByLabelText(/cell inspector/i);
-    expect(within(inspector).getByText('1204')).toBeInTheDocument();
-    expect(within(inspector).queryByText('1199')).not.toBeInTheDocument();
-    expect(within(inspector).queryByText('1203')).not.toBeInTheDocument();
-    expect(within(inspector).queryByText('1202')).not.toBeInTheDocument();
+    expect(within(inspector).getByText('No cell selected.')).toBeInTheDocument();
   });
+
 
   it('does not start an overlapping command while another command is pending', async () => {
     const user = userEvent.setup();

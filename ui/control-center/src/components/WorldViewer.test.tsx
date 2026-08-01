@@ -1,11 +1,12 @@
 import { createRef } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ui1aFixture } from '../fixtures/ui1aFixture';
 import type { WorldFrame } from '../projection/types';
 import type { DebugProjectionState } from '../projection/types';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
+import { createCellSelection } from '../app/selectionModel';
 
 const renderFrame = vi.fn();
 const destroy = vi.fn();
@@ -140,6 +141,111 @@ describe('WorldViewer', () => {
     await user.click(screen.getByLabelText('Select cell-c'));
 
     expect(onSelectCell).toHaveBeenCalledWith('cell-c');
+  });
+
+  it('selects a World block instead of a Cell when active Level is World', async () => {
+    const onSelectCell = vi.fn();
+    const onSelectTarget = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <WorldViewer
+        frame={{
+          ...ui1aFixture.frame,
+          resources: [
+            [{ organic: 1, mineral: 0, energy: 0 }, { organic: 2, mineral: 0, energy: 0 }],
+            [{ organic: 3, mineral: 0, energy: 0 }, { organic: 4, mineral: 0, energy: 0 }]
+          ]
+        }}
+        selectedCellId="cell-a"
+        activeLevel="world"
+        onSelectCell={onSelectCell}
+        onSelectTarget={onSelectTarget}
+      />
+    );
+
+    await user.click(screen.getByLabelText('Select cell-a'));
+
+    expect(onSelectCell).not.toHaveBeenCalled();
+    expect(onSelectTarget).toHaveBeenCalledWith(expect.objectContaining({ kind: 'world-block' }));
+  });
+
+  it('selects a World block from empty Map clicks at World Level', () => {
+    const onSelectCell = vi.fn();
+    const onSelectTarget = vi.fn();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        activeLevel="world"
+        onSelectCell={onSelectCell}
+        onSelectTarget={onSelectTarget}
+      />
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByLabelText('World Viewer'), { clientX: 100, clientY: 120 });
+    });
+
+    expect(onSelectCell).not.toHaveBeenCalled();
+    expect(onSelectTarget).toHaveBeenCalledWith(expect.objectContaining({ kind: 'world-block' }));
+  });
+
+  it('uses Shift click to emit a compatible Cell selection set instead of replacing selection', async () => {
+    const onSelectTarget = vi.fn();
+    const user = userEvent.setup();
+    const currentSelection = createCellSelection({
+      cellId: 'cell-a',
+      runId: ui1aFixture.frame.runId,
+      tick: ui1aFixture.frame.tick
+    });
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        activeLevel="cells"
+        currentSelection={currentSelection}
+        onSelectCell={vi.fn()}
+        onSelectTarget={onSelectTarget}
+      />
+    );
+
+    await user.keyboard('{Shift>}');
+    await user.click(screen.getByLabelText('Select cell-b'));
+    await user.keyboard('{/Shift}');
+
+    expect(onSelectTarget).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'selection-set',
+      targetKind: 'cell'
+    }));
+  });
+
+  it('uses Shift drag to emit a Cell selection set instead of replacing selection', async () => {
+    const onSelectTarget = vi.fn();
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId={null}
+        activeLevel="cells"
+        onSelectCell={vi.fn()}
+        onSelectTarget={onSelectTarget}
+      />
+    );
+
+    const viewer = screen.getByLabelText('World Viewer');
+    act(() => {
+      fireEvent.mouseDown(viewer, { button: 0, shiftKey: true, clientX: -1000, clientY: -1000 });
+      fireEvent.mouseMove(viewer, { shiftKey: true, clientX: 2000, clientY: 2000 });
+      fireEvent.mouseUp(viewer, { shiftKey: true, clientX: 2000, clientY: 2000 });
+    });
+
+    expect(onSelectTarget).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'selection-set',
+      targetKind: 'cell'
+    }));
   });
 
   it('does not draw a second selected ring from the DOM hit target', async () => {

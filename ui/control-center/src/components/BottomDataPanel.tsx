@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { AppStore } from '../app/appState';
 import {
   buildMonitorSurfaceModel,
@@ -5,6 +6,9 @@ import {
   type AnalysisLevel,
   type MonitorSurfaceCard
 } from '../app/monitorSurfaceModel';
+import { DonutDiagram } from './charts/DonutDiagram';
+import { SparklineChart } from './charts/SparklineChart';
+import { HistogramChart } from './charts/HistogramChart';
 
 interface BottomDataPanelProps {
   state: AppStore;
@@ -13,6 +17,31 @@ interface BottomDataPanelProps {
 
 export function BottomDataPanel({ state, activeLevel = 'world' }: BottomDataPanelProps) {
   const viewModel = buildMonitorSurfaceModel(state, { activeLevel });
+
+  const resourceHistory = useMemo(() => {
+    const env = state.monitorMetricHistory['world.resource.environment'] ?? [];
+    const cells = state.monitorMetricHistory['world.resource.cells'] ?? [];
+    const materials = state.monitorMetricHistory['world.resource.materials'] ?? [];
+    const fragments = state.monitorMetricHistory['world.resource.fragments'] ?? [];
+    const sinks = state.monitorMetricHistory['world.resource.explicitSinks'] ?? [];
+
+    if (env.length === 0) return [];
+
+    return env.map((sample, idx) => ({
+      tick: sample.tick,
+      startTick: sample.startTick,
+      endTick: sample.endTick,
+      count: sample.count,
+      kind: sample.kind,
+      values: {
+        env: sample.value,
+        cells: cells[idx]?.value ?? 0,
+        materials: materials[idx]?.value ?? 0,
+        fragments: fragments[idx]?.value ?? 0,
+        sinks: sinks[idx]?.value ?? 0
+      }
+    }));
+  }, [state.monitorMetricHistory]);
 
   return (
     <section className="v3-bottom-panel" aria-label="Simulation Data & Analytics Panel">
@@ -47,14 +76,24 @@ export function BottomDataPanel({ state, activeLevel = 'world' }: BottomDataPane
 
       <div className="v3-cards-grid">
         {viewModel.cards.map((card, index) => (
-          <SurfaceCard key={card.id} card={card} index={index} />
+          <SurfaceCard key={card.id} card={card} index={index} state={state} resourceHistory={resourceHistory} />
         ))}
       </div>
     </section>
   );
 }
 
-function SurfaceCard({ card, index }: { card: MonitorSurfaceCard; index: number }) {
+function SurfaceCard({
+  card,
+  index,
+  state,
+  resourceHistory
+}: {
+  card: MonitorSurfaceCard;
+  index: number;
+  state: AppStore;
+  resourceHistory: any[];
+}) {
   return (
     <div className={`v3-chart-card monitor-surface-card is-${card.state}`} data-card-id={card.id}>
       <header className="card-header-v3">
@@ -73,7 +112,7 @@ function SurfaceCard({ card, index }: { card: MonitorSurfaceCard; index: number 
           <>
             {card.subtitle ? <p className="monitor-card-subtitle">{card.subtitle}</p> : null}
 
-            {card.rows.length > 0 && !isPopulationLifecycleCard(card) ? (
+            {card.rows.length > 0 && !isPopulationLifecycleCard(card) && card.id !== 'cells-radius-distribution' ? (
               <div className="monitor-card-rows">
                 {card.rows.map((row) => (
                   <div key={row.label} className="monitor-card-row">
@@ -86,7 +125,46 @@ function SurfaceCard({ card, index }: { card: MonitorSurfaceCard; index: number 
 
             {isPopulationLifecycleCard(card) && card.series.length > 0 ? <LifecycleDistribution card={card} /> : null}
 
-            {card.series.length > 0 && !isPopulationLifecycleCard(card) ? (
+            {card.id === 'cells-role-distribution' && card.state === 'available' ? (
+              <DonutDiagram
+                segments={[
+                  { label: 'Motile', value: parseInt(rowValue(card, 'Motile') ?? '0', 10), color: '#38bdf8' },
+                  { label: 'Defender', value: parseInt(rowValue(card, 'Defender') ?? '0', 10), color: '#ef4444' },
+                  { label: 'Sensory', value: parseInt(rowValue(card, 'Sensory') ?? '0', 10), color: '#a855f7' },
+                  { label: 'Storage', value: parseInt(rowValue(card, 'Storage') ?? '0', 10), color: '#eab308' },
+                  { label: 'Generalist', value: parseInt(rowValue(card, 'Generalist') ?? '0', 10), color: '#00c896' }
+                ].filter((s) => s.value > 0)}
+                size={75}
+              />
+            ) : null}
+
+            {card.id === 'cells-radius-distribution' ? (
+              <HistogramChart
+                bins={[
+                  { label: 'Small (<15)', count: state.frame.cells.filter((c) => c.radius < 15).length, color: '#00c896' },
+                  { label: 'Medium (15-25)', count: state.frame.cells.filter((c) => c.radius >= 15 && c.radius <= 25).length, color: '#38bdf8' },
+                  { label: 'Large (>25)', count: state.frame.cells.filter((c) => c.radius > 25).length, color: '#a855f7' }
+                ]}
+                height={75}
+              />
+            ) : null}
+
+            {card.id === 'world-accounting-time' && resourceHistory.length > 0 ? (
+              <SparklineChart
+                history={resourceHistory}
+                series={[
+                  { key: 'env', label: 'Env', color: '#00c896' },
+                  { key: 'cells', label: 'Cells', color: '#38bdf8' },
+                  { key: 'materials', label: 'Materials', color: '#fbbf24' },
+                  { key: 'fragments', label: 'Fragments', color: '#fb7185' },
+                  { key: 'sinks', label: 'Sinks', color: '#a78bfa' }
+                ]}
+                height={75}
+                unit="res"
+              />
+            ) : null}
+
+            {card.series.length > 0 && !isPopulationLifecycleCard(card) && card.id !== 'world-accounting-time' ? (
               <div className="trend-legend">
                 {card.series.map((series) => (
                   <span key={series.label} className={`legend-item ${seriesClassName(series.label)}`}>
@@ -125,17 +203,29 @@ function SurfaceCard({ card, index }: { card: MonitorSurfaceCard; index: number 
 }
 
 function LifecycleDistribution({ card }: { card: MonitorSurfaceCard }) {
+  const donutSegments = card.series.map((s) => {
+    const rawVal = parseFloat(s.value ?? '0');
+    return {
+      label: s.label,
+      value: isNaN(rawVal) ? 0 : rawVal,
+      color: s.color ?? '#00c896'
+    };
+  });
+
   return (
     <>
-      <div className="lifecycle-bar" aria-label="Population lifecycle distribution">
-        {card.series.map((series) => (
-          <span
-            key={series.label}
-            className={`segment ${seriesClassName(series.label)}`}
-            style={{ width: series.value ?? '0.0%' }}
-            title={`${series.label}: ${series.value ?? '0.0%'}`}
-          />
-        ))}
+      <div className="lifecycle-visual-container" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+        <DonutDiagram segments={donutSegments} size={70} thickness={10} showLegend={false} />
+        <div className="lifecycle-bar" aria-label="Population lifecycle distribution" style={{ flex: 1 }}>
+          {card.series.map((series) => (
+            <span
+              key={series.label}
+              className={`segment ${seriesClassName(series.label)}`}
+              style={{ width: series.value ?? '0.0%' }}
+              title={`${series.label}: ${series.value ?? '0.0%'}`}
+            />
+          ))}
+        </div>
       </div>
       <div className="lifecycle-legend compact" aria-label="Population lifecycle counts">
         {card.series.map((series) => (
@@ -147,6 +237,7 @@ function LifecycleDistribution({ card }: { card: MonitorSurfaceCard }) {
     </>
   );
 }
+
 
 function isPopulationLifecycleCard(card: MonitorSurfaceCard) {
   return card.id.endsWith('-population-lifecycle');

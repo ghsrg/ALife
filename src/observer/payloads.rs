@@ -40,6 +40,27 @@ pub struct ResourceAmountPayload {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct PhenotypeTraitPayload {
+    pub flagella_count: u8,
+    pub spike_count: u8,
+    pub receptor_halo_intensity: f32,
+    pub lineage_hue: u16,
+    pub division_flash_intensity: f32,
+}
+
+impl Default for PhenotypeTraitPayload {
+    fn default() -> Self {
+        Self {
+            flagella_count: 0,
+            spike_count: 0,
+            receptor_halo_intensity: 0.0,
+            lineage_hue: 180,
+            division_flash_intensity: 0.0,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct VisualCellPayload {
     pub id: u32,
     pub x: f32,
@@ -51,6 +72,7 @@ pub struct VisualCellPayload {
     pub materials: Vec<MaterialAmountPayload>,
     pub internal_resources: Vec<ResourceAmountPayload>,
     pub local_external_resources: Vec<ResourceAmountPayload>,
+    pub phenotype_traits: PhenotypeTraitPayload,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -78,9 +100,29 @@ pub struct FieldSummaryPayload {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct VisualJointPayload {
+    pub id: u32,
+    pub cell1_id: u32,
+    pub cell2_id: u32,
+    pub rest_length: f32,
+    pub pulse_intensity: f32,
+    pub signal_speed: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VisualOrganismPayload {
+    pub id: u32,
+    pub cell_ids: Vec<u32>,
+    pub hull_color_hue: u16,
+    pub organic_membrane_tension: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct VisualWorldProjection {
     pub tick: u64,
     pub cells: Vec<VisualCellPayload>,
+    pub joints: Vec<VisualJointPayload>,
+    pub organisms: Vec<VisualOrganismPayload>,
     pub resource_layers: Vec<ResourceLayerSummaryPayload>,
     pub fields: Vec<FieldSummaryPayload>,
     pub completeness: ProjectionCompleteness,

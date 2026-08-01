@@ -409,3 +409,14 @@ These rows are historical data reconstructed from `REPORT` worklogs in chronolog
 | [[outputs/worklogs/2026-07-30-1304-REPORT-al-007-s24-fix-monitor-visual-regression-hotfix|2026-07-30-1304-REPORT-al-007-s24-fix-monitor-visual-regression-hotfix]] | REPORT | UI | AL-007-S24-Fix | done |
 | [[outputs/worklogs/2026-07-30-1824-PLAN-al-007-s25-runner-core-monitor-contracts|2026-07-30-1824-PLAN-al-007-s25-runner-core-monitor-contracts]] | PLAN | UI/Observer/Runner | AL-007-S25 | TDD plan |
 | [[outputs/worklogs/2026-07-30-1916-REPORT-al-007-s25-runner-core-monitor-contracts|2026-07-30-1916-REPORT-al-007-s25-runner-core-monitor-contracts]] | REPORT | UI/Observer/Runner | AL-007-S25 | in-progress |
+| [[outputs/worklogs/2026-07-30-2027-PLAN-al-007-s26-monitor-selection-model-and-map-interactions|2026-07-30-2027-PLAN-al-007-s26-monitor-selection-model-and-map-interactions]] | PLAN | UI | AL-007-S26 | TDD plan |
+| [[outputs/worklogs/2026-07-31-0924-REPORT-al-007-s26-monitor-selection-model-and-map-interactions|2026-07-31-0924-REPORT-al-007-s26-monitor-selection-model-and-map-interactions]] | REPORT | UI | AL-007-S26 | verification-blocked |
+| [[outputs/worklogs/2026-07-31-1205-REPORT-al-007-visual-wow-slices|2026-07-31-1205-REPORT-al-007-visual-wow-slices]] | REPORT | UI | AL-007-S27..S35 | roadmap definition report |
+| [[outputs/worklogs/2026-07-31-1206-REPORT-al-007-s27-s28-visual-atmosphere-implementation|2026-07-31-1206-REPORT-al-007-s27-s28-visual-atmosphere-implementation]] | REPORT | UI | AL-007-S27/S28 | closure report |
+| [[outputs/worklogs/2026-07-31-1240-REPORT-al-007-s32-quantitative-charts-implementation|2026-07-31-1240-REPORT-al-007-s32-quantitative-charts-implementation]] | REPORT | UI | AL-007-S32 | closure report |
+| [[outputs/worklogs/2026-07-31-1935-REPORT-al-007-s29-genome-to-phenotype-visual-traits|2026-07-31-1935-REPORT-al-007-s29-genome-to-phenotype-visual-traits]] | REPORT | UI/Observer | AL-007-S29 | closure report |
+| [[outputs/worklogs/2026-07-31-2146-REPORT-al-007-s30-organism-organic-hulls-and-animated-joint-pulses|2026-07-31-2146-REPORT-al-007-s30-organism-organic-hulls-and-animated-joint-pulses]] | REPORT | UI/Observer | AL-007-S30 | closure report |
+
+
+
+

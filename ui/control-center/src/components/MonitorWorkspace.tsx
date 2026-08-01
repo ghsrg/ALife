@@ -1,17 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { type AppStore } from '../app/appState';
 import { buildMonitorViewModel } from '../app/monitorViewModel';
+import type { AnalysisLevel, MonitorSelection } from '../app/selectionModel';
 import { describeProjectionContext } from '../projection/projectionContext';
 import type { CellId } from '../projection/types';
 import { uiText } from '../uiText';
-import { SelectedEntityFocusCard } from './SelectedEntityFocusCard';
 import { WorldViewer, type WorldViewerHandle } from './WorldViewer';
+import { SelectedEntityFocusCard } from './SelectedEntityFocusCard';
+
 
 interface MonitorWorkspaceProps {
   state: AppStore;
   onScenarioChange: (scenarioId: string) => void;
   onReconnect: () => void;
   onSelectCell: (cellId: CellId | null) => void;
+  onSelectTarget?: (selection: MonitorSelection) => void;
+  activeLevel?: AnalysisLevel;
   onToggleTheme?: () => void;
   onExportScreenshot: (png: string | null) => void;
   onFreezeFrame?: () => void;
@@ -27,6 +31,10 @@ export function MonitorWorkspace({
   onScenarioChange,
   onReconnect,
   onSelectCell,
+  onSelectTarget,
+  activeLevel = 'cells',
+
+
   onExportScreenshot,
   onFreezeFrame,
   onJumpToLive,
@@ -122,19 +130,24 @@ export function MonitorWorkspace({
         </section>
 
         <div className="viewer-tab-content" data-testid="monitor-map-track">
-          <SelectedEntityFocusCard selectedCell={state.selectedCell} />
           <WorldViewer
             ref={viewerRef}
             frame={state.frame}
             selectedCellId={state.selectedCellId}
             onSelectCell={onSelectCell}
+            activeLevel={activeLevel}
+            currentSelection={state.currentSelection}
+            onSelectTarget={onSelectTarget}
             onExportScreenshot={exportScreenshot}
             onToggleFullScreen={toggleFullScreen}
             isFullScreen={isMapFullScreen}
             debugProjections={state.debugProjections}
             activeResourceLayers={state.activeResourceLayers}
+            visualEffects={state.visualEffects}
           />
+          {state.selectedCell ? <SelectedEntityFocusCard selectedCell={state.selectedCell} /> : null}
         </div>
+
 
         {exportStatus ? <p className="export-status" role="status">{exportStatus}</p> : null}
       </section>

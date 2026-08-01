@@ -4,9 +4,10 @@ import { uiText } from '../uiText';
 
 interface CellInspectorProps {
   selectedCell: CellProjection | null;
+  selectionNotice?: string | null;
 }
 
-export function CellInspector({ selectedCell }: CellInspectorProps) {
+export function CellInspector({ selectedCell, selectionNotice }: CellInspectorProps) {
   const [pinnedCell, setPinnedCell] = useState<CellProjection | null>(null);
 
   return (
@@ -50,10 +51,21 @@ export function CellInspector({ selectedCell }: CellInspectorProps) {
             items={selectedCell.localExternalResources}
             label={(item) => `Local external resource ${item.resourceTypeId}`}
           />
+          <PhenotypeTraitSection
+            traits={selectedCell.phenotypeTraits}
+            radius={selectedCell.radius}
+            energy={selectedCell.energy}
+            cellId={selectedCell.id}
+          />
         </div>
       ) : (
-        <p className="empty-state">{uiText.inspector.emptyCell}</p>
+        <>
+          <p className="empty-state">{uiText.inspector.emptyCell}</p>
+          {selectionNotice ? <p className="selection-notice">{selectionNotice}</p> : null}
+        </>
       )}
+
+
     </aside>
   );
 }
@@ -169,3 +181,53 @@ function materialOverlapLabel(pinnedCell: CellProjection, selectedCell: CellProj
 
   return `${overlap} shared`;
 }
+
+function PhenotypeTraitSection({
+  traits,
+  radius,
+  energy,
+  cellId
+}: {
+  traits?: import('../projection/types').PhenotypeTraitProjection;
+  radius: number;
+  energy: number;
+  cellId: string;
+}) {
+  const flagellaCount = traits?.flagellaCount ?? (radius > 8 && energy > 20 ? 2 : radius > 5 ? 1 : 0);
+  const spikeCount = traits?.spikeCount ?? (radius > 10 ? 3 : 0);
+  const receptorHalo = traits?.receptorHaloIntensity ?? 0.5;
+  const lineageHue = traits?.lineageHue ?? ((parseInt(cellId.replace(/\D/g, ''), 10) * 137) % 360 || 180);
+  const divisionFlash = traits?.divisionFlashIntensity ?? 0;
+
+  return (
+    <div className="phenotype-trait-card" style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+      <span className="cc-inspector-section-label">GENOME-TO-PHENOTYPE MAPPING</span>
+      <div className="cc-inspector-grid" style={{ gap: '6px' }}>
+        <div className="cc-inspector-metric">
+          <span className="cc-inspector-metric-label">🚩 Motility (Flagella)</span>
+          <span className="cc-inspector-metric-value">{flagellaCount > 0 ? `${flagellaCount} tail filaments` : 'None'}</span>
+        </div>
+        <div className="cc-inspector-metric">
+          <span className="cc-inspector-metric-label">⚡ Defense (Spikes)</span>
+          <span className="cc-inspector-metric-value">{spikeCount > 0 ? `${spikeCount} radial spikes` : 'Smooth membrane'}</span>
+        </div>
+        <div className="cc-inspector-metric">
+          <span className="cc-inspector-metric-label">📡 Uptake (Receptor Halo)</span>
+          <span className="cc-inspector-metric-value">{Math.round(receptorHalo * 100)}% aura intensity</span>
+        </div>
+        <div className="cc-inspector-metric">
+          <span className="cc-inspector-metric-label">🧬 Lineage Color Coat</span>
+          <span className="cc-inspector-metric-value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: `hsl(${lineageHue}, 75%, 55%)` }} />
+            Hue {lineageHue}°
+          </span>
+        </div>
+        <div className="cc-inspector-metric" style={{ gridColumn: 'span 2' }}>
+          <span className="cc-inspector-metric-label">✨ Division Readiness / Flash</span>
+          <span className="cc-inspector-metric-value">{divisionFlash > 0 ? `${Math.round(divisionFlash * 100)}% copying flash` : 'Stable'}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+

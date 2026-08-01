@@ -79,7 +79,7 @@ async fn latest_projections_include_monitor_data_panel_contract() {
     );
     assert_eq!(
         json["monitor"]["payload"]["world"]["energy_flow"]["state"],
-        "unavailable"
+        "available"
     );
     assert_eq!(
         json["monitor"]["payload"]["cells"]["observed_primary_roles"]["state"],

@@ -10,6 +10,7 @@ import {
 } from './appState';
 import type { WorldFrame } from '../projection/types';
 import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClient';
+import { createWorldBlockSelection } from './selectionModel';
 
 const connectedInfo: ServerInfo = {
   engineVersion: '0.1.0',
@@ -69,9 +70,21 @@ describe('createAppStore', () => {
 
     expect(store.getState().frame.runId).toBe('fixture-ui-1a');
     expect(store.getState().selectedCellId).toBe('cell-a');
+    expect(store.getState().currentSelection).toEqual({
+      kind: 'cell',
+      cellId: 'cell-a',
+      runId: 'fixture-ui-1a',
+      tick: store.getState().frame.tick
+    });
     expect(store.getState().theme).toBe('dark');
 
     store.getState().selectCell('cell-c');
+    expect(store.getState().currentSelection).toEqual({
+      kind: 'cell',
+      cellId: 'cell-c',
+      runId: 'fixture-ui-1a',
+      tick: store.getState().frame.tick
+    });
     expect(store.getState().selectedCell?.roleHint).toBe('resource-rich region');
 
     store.getState().setTheme('light');
@@ -101,7 +114,8 @@ describe('createAppStore', () => {
     expect(store.getState().selectedScenarioId).toBe('demo_living_world');
     expect(store.getState().runStatus).toEqual(runningStatus);
     expect(store.getState().frame.source).toBe('live');
-    expect(store.getState().selectedCellId).toBe('live-cell-a');
+    expect(store.getState().selectedCellId).toBeNull();
+    expect(store.getState().selectionNotice).toBe('Selection target cell-a is unavailable');
   });
 
   it('stores debug projection state separately from the current world frame', () => {
@@ -274,7 +288,7 @@ describe('createAppStore', () => {
     });
   });
 
-  it('preserves selected cell across frame updates when present and selects the first available cell otherwise', () => {
+  it('preserves selected cell across frame updates when present and clears selection otherwise', () => {
     const store = createAppStore(liveFrame);
 
     store.getState().setFrame({
@@ -304,7 +318,9 @@ describe('createAppStore', () => {
         }
       ]
     });
-    expect(store.getState().selectedCellId).toBe('live-cell-c');
+    expect(store.getState().selectedCellId).toBeNull();
+    expect(store.getState().selectedCell).toBeNull();
+    expect(store.getState().selectionNotice).toBe('Selection target live-cell-a is unavailable');
 
     store.getState().setFrame({
       ...liveFrame,
@@ -348,7 +364,10 @@ describe('createAppStore', () => {
       ]
     });
 
-    expect(store.getState().selectedCellId).toBe('live-cell-c');
+    expect(store.getState().selectedCellId).toBeNull();
+    expect(store.getState().selectedCell).toBeNull();
+    expect(store.getState().currentSelection).toEqual({ kind: 'none' });
+    expect(store.getState().selectionNotice).toBe('Selection target live-cell-a is unavailable');
   });
 
   it('keeps current selected scenario only when refreshed scenarios still contain it', () => {
@@ -554,6 +573,37 @@ describe('createAppStore', () => {
     expect(store.getState().monitorAccountingTarget).toBe('Resource');
     expect(store.getState().selectedCellId).toBe(selectedBefore);
     expect(store.getState().frame.tick).toBe(tickBefore);
+  });
+
+  it('stores non-Cell monitor target selection without pretending a Cell is selected', () => {
+    const store = createAppStore(liveFrame);
+    const worldBlock = createWorldBlockSelection({
+      blockX: 0,
+      blockY: 1,
+      bounds: { x: 0, y: 40, width: 50, height: 40 },
+      completeness: 'bounded',
+      runId: liveFrame.runId,
+      tick: liveFrame.tick
+    });
+
+    store.getState().selectMonitorTarget(worldBlock);
+
+    expect(store.getState().currentSelection).toEqual(worldBlock);
+    expect(store.getState().selectedCellId).toBeNull();
+    expect(store.getState().selectedCell).toBeNull();
+    expect(store.getState().selectionCleared).toBe(false);
+  });
+
+  it('clears monitor selection with a visible notice', () => {
+    const store = createAppStore(liveFrame);
+
+    store.getState().clearSelection('Selection cleared: incompatible with World level');
+
+    expect(store.getState().currentSelection).toEqual({ kind: 'none' });
+    expect(store.getState().selectedCellId).toBeNull();
+    expect(store.getState().selectedCell).toBeNull();
+    expect(store.getState().selectionNotice).toBe('Selection cleared: incompatible with World level');
+    expect(store.getState().selectionCleared).toBe(true);
   });
 
   it('does not substitute a nearby frame when a requested history tick is unavailable', () => {

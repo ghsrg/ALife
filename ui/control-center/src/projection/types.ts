@@ -11,6 +11,14 @@ export interface ResourceConcentration {
   layers?: Record<number, number>;
 }
 
+export interface PhenotypeTraitProjection {
+  flagellaCount: number;
+  spikeCount: number;
+  receptorHaloIntensity: number;
+  lineageHue: number;
+  divisionFlashIntensity: number;
+}
+
 export interface CellProjection {
   id: CellId;
   x: number;
@@ -26,6 +34,7 @@ export interface CellProjection {
   materials?: Array<{ materialTypeId: number; amount: number }>;
   internalResources?: Array<{ resourceTypeId: number; amount: number }>;
   localExternalResources?: Array<{ resourceTypeId: number; amount: number }>;
+  phenotypeTraits?: PhenotypeTraitProjection;
 }
 
 export interface JointProjection {
@@ -35,6 +44,13 @@ export interface JointProjection {
   channelType: 'mechanical' | 'resource' | 'signal' | 'heat';
   tension?: number;
   activeSignal?: boolean;
+}
+
+export interface OrganismHullProjection {
+  id: string;
+  cellIds: CellId[];
+  hullColorHue: number;
+  organicMembraneTension: number;
 }
 
 export interface WorldFrame {
@@ -50,6 +66,7 @@ export interface WorldFrame {
   resources: ResourceConcentration[][];
   cells: CellProjection[];
   joints?: JointProjection[];
+  organismHulls?: OrganismHullProjection[];
   summary?: {
     heat: number;
     waste: number;
@@ -86,6 +103,22 @@ export interface DebugProjectionSourceMetric {
   sourcePath: string;
 }
 
+export interface DebugVisualJoint {
+  id: number;
+  cell1Id: number;
+  cell2Id: number;
+  restLength: number;
+  pulseIntensity: number;
+  signalSpeed: number;
+}
+
+export interface DebugVisualOrganism {
+  id: number;
+  cellIds: number[];
+  hullColorHue: number;
+  organicMembraneTension: number;
+}
+
 export interface DebugVisualCell {
   id: CellId;
   x: number;
@@ -97,6 +130,7 @@ export interface DebugVisualCell {
   materials: Array<{ materialTypeId: number; amount: number }>;
   internalResources: Array<{ resourceTypeId: number; amount: number }>;
   localExternalResources: Array<{ resourceTypeId: number; amount: number }>;
+  phenotypeTraits?: PhenotypeTraitProjection;
 }
 
 export interface DebugResourceCell {
@@ -124,6 +158,8 @@ export interface DebugVisualWorldProjection {
   projectionKind: 'VisualWorldProjection';
   completeness: DebugProjectionCompleteness;
   cells: DebugVisualCell[];
+  joints?: DebugVisualJoint[];
+  organisms?: DebugVisualOrganism[];
   resourceLayers: DebugResourceLayer[];
   fields: DebugField[];
   sourceMetrics: DebugProjectionSourceMetric[];
@@ -196,6 +232,77 @@ export interface MonitorResourceCycle {
   };
 }
 
+export interface MonitorMaterialCycle {
+  state: 'available';
+  source: string;
+  totalAmount: number;
+  boundary: number;
+  transport: number;
+  metabolic: number;
+  storage: number;
+  synthesis: number;
+  structural: number;
+  repair: number;
+  contractile: number;
+  sensory: number;
+}
+
+export interface MonitorEnergyFlow {
+  state: 'available';
+  source: string;
+  totalEnergy: number;
+  energyCapacity: number;
+  heat: number;
+  waste: number;
+  utilizationRate: number;
+}
+
+export interface MonitorOrganismBehaviorProfiles {
+  state: 'available';
+  source: string;
+  totalOrganisms: number;
+  motile: number;
+  sessile: number;
+  highEnergy: number;
+  generalist: number;
+}
+
+export interface MonitorOrganismSizeBins {
+  state: 'available';
+  source: string;
+  singleCell: number;
+  small: number;
+  medium: number;
+  large: number;
+}
+
+export interface MonitorLineagesPayload {
+  state: 'available';
+  source: string;
+  activeLineagesCount: number;
+  maxGeneration: number;
+  dominantHue: number;
+  meanSpan: number;
+}
+
+export interface MonitorEvolutionPayload {
+  state: 'available';
+  source: string;
+  totalGenerations: number;
+  traitDiversityIndex: number;
+  mutationEventsEstimate: number;
+  activeCarriersCount: number;
+}
+
+export interface MonitorAnalyticsPayload {
+  state: 'available';
+  source: string;
+  biomass: number;
+  energyDensity: number;
+  metabolicEfficiency: number;
+  connectivityIndex: number;
+}
+
 export interface MonitorProjection {
   projectionKind: 'MonitorDataPanelProjection';
   runId: string;
@@ -206,8 +313,8 @@ export interface MonitorProjection {
     world: {
       populationLifecycle: MonitorPopulationLifecycle;
       resourceCycle: MonitorResourceCycle | MonitorUnavailableSection;
-      materialCycle: MonitorUnavailableSection;
-      energyFlow: MonitorUnavailableSection;
+      materialCycle: MonitorMaterialCycle | MonitorUnavailableSection;
+      energyFlow: MonitorEnergyFlow | MonitorUnavailableSection;
       accountingTime: MonitorUnavailableSection;
     };
     cells: {
@@ -217,12 +324,12 @@ export interface MonitorProjection {
       radiusDistribution: MonitorUnavailableSection;
     };
     organisms: {
-      behaviorProfiles: MonitorUnavailableSection;
-      sizeBins: MonitorUnavailableSection;
+      behaviorProfiles: MonitorOrganismBehaviorProfiles | MonitorUnavailableSection;
+      sizeBins: MonitorOrganismSizeBins | MonitorUnavailableSection;
     };
-    lineages: MonitorUnavailableSection;
-    evolution: MonitorUnavailableSection;
-    analytics: MonitorUnavailableSection;
+    lineages: MonitorLineagesPayload | MonitorUnavailableSection;
+    evolution: MonitorEvolutionPayload | MonitorUnavailableSection;
+    analytics: MonitorAnalyticsPayload | MonitorUnavailableSection;
   };
 }
 

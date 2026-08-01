@@ -5,9 +5,10 @@ export function loadFixtureFrame(fixture: UiFixture): WorldFrame {
 }
 
 export function selectCell(frame: WorldFrame, cellId: CellId | null): CellProjection | null {
-  if (!cellId) {
+  if (cellId === null || cellId === undefined) {
     return null;
   }
 
-  return frame.cells.find((cell) => cell.id === cellId) ?? null;
+  return frame.cells.find((cell) => String(cell.id) === String(cellId)) ?? null;
 }
+

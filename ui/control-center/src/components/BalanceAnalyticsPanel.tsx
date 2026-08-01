@@ -1,4 +1,5 @@
 import type { BalanceViewModel } from '../app/balanceViewModel';
+import { DonutDiagram } from './charts/DonutDiagram';
 
 interface BalanceAnalyticsPanelProps {
   viewModel: BalanceViewModel;
@@ -15,6 +16,13 @@ export function BalanceAnalyticsPanel({ viewModel }: BalanceAnalyticsPanelProps)
 
   const { matterCycle, energyFlow, population, warnings } = viewModel;
 
+  const matterSegments = [
+    { label: 'Env Organic', value: matterCycle.environmentOrganic, color: '#00c896' },
+    { label: 'Env Mineral', value: matterCycle.environmentMineral, color: '#38bdf8' },
+    { label: 'Cell Internal', value: matterCycle.cellInternalOrganic + matterCycle.cellInternalMineral, color: '#a855f7' },
+    { label: 'Bound Materials', value: matterCycle.cellBoundMaterials, color: '#fbbf24' }
+  ];
+
   return (
     <div className="balance-analytics-grid" data-testid="balance-analytics-panel">
       {/* Matter Cycle Accounting */}
@@ -25,27 +33,32 @@ export function BalanceAnalyticsPanel({ viewModel }: BalanceAnalyticsPanelProps)
             Unaccounted: {matterCycle.unaccountedDiffLabel}
           </span>
         </header>
-        <div className="metrics-row">
-          <div className="metric-box">
-            <span className="label">Env Organic</span>
-            <strong className="value organic">{matterCycle.environmentOrganic.toFixed(2)}</strong>
-          </div>
-          <div className="metric-box">
-            <span className="label">Env Mineral</span>
-            <strong className="value mineral">{matterCycle.environmentMineral.toFixed(2)}</strong>
-          </div>
-          <div className="metric-box">
-            <span className="label">Internal Matter</span>
-            <strong className="value internal">
-              {(matterCycle.cellInternalOrganic + matterCycle.cellInternalMineral).toFixed(2)}
-            </strong>
-          </div>
-          <div className="metric-box">
-            <span className="label">Bound Materials</span>
-            <strong className="value bound">{matterCycle.cellBoundMaterials.toFixed(2)}</strong>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '10px' }}>
+          <DonutDiagram segments={matterSegments} size={85} thickness={12} showLegend={false} />
+          <div className="metrics-row" style={{ flex: 1 }}>
+            <div className="metric-box">
+              <span className="label">Env Organic</span>
+              <strong className="value organic">{matterCycle.environmentOrganic.toFixed(2)}</strong>
+            </div>
+            <div className="metric-box">
+              <span className="label">Env Mineral</span>
+              <strong className="value mineral">{matterCycle.environmentMineral.toFixed(2)}</strong>
+            </div>
+            <div className="metric-box">
+              <span className="label">Internal Matter</span>
+              <strong className="value internal">
+                {(matterCycle.cellInternalOrganic + matterCycle.cellInternalMineral).toFixed(2)}
+              </strong>
+            </div>
+            <div className="metric-box">
+              <span className="label">Bound Materials</span>
+              <strong className="value bound">{matterCycle.cellBoundMaterials.toFixed(2)}</strong>
+            </div>
           </div>
         </div>
       </section>
+
 
       {/* Energy Flow & Capacity */}
       <section className="analytics-card" aria-label="Energy Utilization">

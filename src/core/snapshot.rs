@@ -46,9 +46,29 @@ pub struct ResourceLayerSnapshot {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct JointSnapshot {
+    pub id: u32,
+    pub cell1_id: CellId,
+    pub cell2_id: CellId,
+    pub rest_length: f32,
+    pub pulse_intensity: f32,
+    pub signal_speed: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct OrganismSnapshot {
+    pub id: u32,
+    pub cell_ids: Vec<CellId>,
+    pub hull_color_hue: u16,
+    pub organic_membrane_tension: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct CommittedSnapshot {
     pub tick: Tick,
     pub cells: Vec<CellSnapshot>,
+    pub joints: Vec<JointSnapshot>,
+    pub organisms: Vec<OrganismSnapshot>,
     pub heat: f32,
     pub waste: f32,
     pub resource_layer_totals: Vec<ResourceAmount>,
@@ -57,7 +77,7 @@ pub struct CommittedSnapshot {
 
 impl CommittedSnapshot {
     pub fn from_world(world: &WorldState) -> Self {
-        let cells = world
+        let cells: Vec<CellSnapshot> = world
             .cells()
             .iter_indices()
             .map(|index| {
@@ -134,9 +154,79 @@ impl CommittedSnapshot {
             })
             .collect();
 
+        let joints: Vec<JointSnapshot> = world
+            .joints()
+            .active_ids()
+            .filter_map(|joint_id| {
+                let endpoints = world.joints().endpoints(joint_id)?;
+                let c1_id = world.cells().id_at(endpoints.a);
+                let c2_id = world.cells().id_at(endpoints.b);
+                let c1_pos = world.cells().position(endpoints.a);
+                let c2_pos = world.cells().position(endpoints.b);
+                let dx = c1_pos.x() - c2_pos.x();
+                let dy = c1_pos.y() - c2_pos.y();
+                let dist = (dx * dx + dy * dy).sqrt();
+                let pulse_intensity = world.joints().readable_signal(joint_id, world.tick()).unwrap_or(0.0);
+                Some(JointSnapshot {
+                    id: joint_id.raw(),
+                    cell1_id: c1_id,
+                    cell2_id: c2_id,
+                    rest_length: dist,
+                    pulse_intensity: 0.5 + pulse_intensity * 0.5,
+                    signal_speed: 1.0,
+                })
+            })
+            .collect();
+
+        let mut visited = std::collections::HashSet::new();
+        let mut organisms = Vec::new();
+        let mut organism_id_counter = 1u32;
+
+        for cell in &cells {
+            if visited.contains(&cell.id.raw()) {
+                continue;
+            }
+            let mut component = Vec::new();
+            let mut queue = std::collections::VecDeque::new();
+            queue.push_back(cell.id);
+            visited.insert(cell.id.raw());
+
+            while let Some(current_id) = queue.pop_front() {
+                component.push(current_id);
+                for joint in &joints {
+                    let neighbor_id = if joint.cell1_id == current_id {
+                        Some(joint.cell2_id)
+                    } else if joint.cell2_id == current_id {
+                        Some(joint.cell1_id)
+                    } else {
+                        None
+                    };
+                    if let Some(nid) = neighbor_id {
+                        if !visited.contains(&nid.raw()) {
+                            visited.insert(nid.raw());
+                            queue.push_back(nid);
+                        }
+                    }
+                }
+            }
+
+            if component.len() >= 2 {
+                let hull_hue = ((component.first().map(|c| c.raw()).unwrap_or(1) * 149) % 360) as u16;
+                organisms.push(OrganismSnapshot {
+                    id: organism_id_counter,
+                    cell_ids: component,
+                    hull_color_hue: hull_hue,
+                    organic_membrane_tension: 0.75,
+                });
+                organism_id_counter += 1;
+            }
+        }
+
         Self {
             tick: world.tick(),
             cells,
+            joints,
+            organisms,
             heat: world.environment().heat().raw(),
             waste: world.environment().waste().raw(),
             resource_layer_totals,

@@ -107,6 +107,50 @@ export function LayerPanel({
             <UnavailableLayerRow label="Resource layers unavailable" reason="No source-backed Resource layer projection loaded" />
           )}
         </section>
+
+        <section className="cc-layers-section">
+          <span className="cc-layers-section-label">Visual Effects</span>
+          <VisualEffectRow
+            label="🌌 Nebula Resource Glow"
+            checked={state.visualEffects?.showNebula ?? false}
+            onChange={() => state.toggleVisualEffect?.('showNebula')}
+          />
+          <VisualEffectRow
+            label="💫 Stardust Particles"
+            checked={state.visualEffects?.showParticles ?? false}
+            onChange={() => state.toggleVisualEffect?.('showParticles')}
+          />
+          <VisualEffectRow
+            label="🕸️ Resource Filaments"
+            checked={state.visualEffects?.showFilaments ?? false}
+            onChange={() => state.toggleVisualEffect?.('showFilaments')}
+          />
+          <VisualEffectRow
+            label="🚩 Phenotype Traits"
+            checked={state.visualEffects?.showPhenotypeTraits ?? false}
+            onChange={() => state.toggleVisualEffect?.('showPhenotypeTraits')}
+          />
+          <VisualEffectRow
+            label="✨ Division Flash FX"
+            checked={state.visualEffects?.showDivisionFlash ?? false}
+            onChange={() => state.toggleVisualEffect?.('showDivisionFlash')}
+          />
+          <VisualEffectRow
+            label="🔬 Organelle Structure"
+            checked={state.visualEffects?.showOrganelles ?? true}
+            onChange={() => state.toggleVisualEffect?.('showOrganelles')}
+          />
+          <VisualEffectRow
+            label="🧬 Organism Organic Hulls"
+            checked={state.visualEffects?.showOrganismHulls ?? true}
+            onChange={() => state.toggleVisualEffect?.('showOrganismHulls')}
+          />
+          <VisualEffectRow
+            label="⚡ Animated Joint Pulses"
+            checked={state.visualEffects?.showJointPulses ?? true}
+            onChange={() => state.toggleVisualEffect?.('showJointPulses')}
+          />
+        </section>
       </div>
 
       {showCellSpecificControls ? (
@@ -158,5 +202,17 @@ function UnavailableLayerRow({ label, reason }: { label: string; reason: string 
       <span className="cc-field-name">{label}</span>
       <small className="cc-layer-state">unavailable</small>
     </div>
+  );
+}
+
+function VisualEffectRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+  return (
+    <label className="cc-field-layer">
+      <span className="cc-field-name">{label}</span>
+      <div className="cc-toggle">
+        <input type="checkbox" checked={checked} onChange={onChange} />
+        <span className="cc-toggle-slider" />
+      </div>
+    </label>
   );
 }

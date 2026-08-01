@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-007-S25` | in-progress | medium | `docs/delivery/roadmap.md` | Runner/Core Monitor contracts execution started: typed Monitor projection, World lifecycle/resource accounting, UI adapter, and RRD ingestion are source-backed; roles, organisms, lineages, evolution, analytics, Material, and Energy remain explicit unavailable contracts. |
+| `AL-007-S31` | planned | high | `docs/delivery/roadmap.md` | Cinematic Map FX & Spatial Event Animations: Motion trails for active cells, cell division expansion particle bursts, dissolving decomposition aura on death, integrity damage sparks. |
 
 ## Operational Rules
 
@@ -39,13 +39,21 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-006-S03` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Deterministic parallelism after Monitor stabilization no longer blocks visual inspection. |
-| 2 | `AL-006-S04` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Projection and Viewer Throughput if Monitor UI remains visually heavy under live streams. |
+| 1 | `AL-007-S33` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Visual Lineage Tree & Evolutionary Diversity Observatory. |
+| 2 | `AL-006-S03` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Deterministic parallelism after Monitor stabilization no longer blocks visual inspection. |
+| 3 | `AL-006-S04` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Projection and Viewer Throughput if Monitor UI remains visually heavy under live streams. |
 
 ## Recently Closed
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-007-S30` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-31-2146-REPORT-al-007-s30-organism-organic-hulls-and-animated-joint-pulses.md` | Organism Organic Hulls & Animated Joint Pulses closed for VisualJointPayload, VisualOrganismPayload, metaball organic hull rendering, moving joint pulse dot vectors, Layers panel visual effect toggles, Rust integration test, Vitest 46/46 pass (276 tests), and production build. |
+| `AL-007-S29` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-31-1935-REPORT-al-007-s29-genome-to-phenotype-visual-traits.md` | Genome-to-Phenotype Visual Trait Expression closed for Rust PhenotypeTraitPayload, flagella motion filaments, contact spikes, receptor halos, lineage color coats, division mutation flash FX, Genome-to-Behavior card, Rust integration tests, Vitest 44/44 pass, and production build. |
+| `AL-007-S32` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-31-1240-REPORT-al-007-s32-quantitative-charts-implementation.md` | Real-Time Interactive Quantitative SVG Charts & Live Diagrams closed for SparklineChart, DonutDiagram, HistogramChart, BottomDataPanel integration, full Vitest, and production build. |
+| `AL-007-S27/S28` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-31-1206-REPORT-al-007-s27-s28-visual-atmosphere-implementation.md` | Bioluminescent Field Atmosphere & Deep Semantic Zoom closed for organic fluid nebula rendering, smooth radial glows, micro-stardust atmosphere, concentric cytoplasm rings, nucleus cores, and membrane receptor nodes. |
+| `AL-007-S26` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-31-0924-REPORT-al-007-s26-monitor-selection-model-and-map-interactions.md` | Monitor Selection Model And Map Interactions closed for typed Level-aware selection, World block selection, compatible multi-selection, full Vitest, and production build. |
+| `AL-007-S25` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-31-1310-REPORT-al-007-s25-runner-core-monitor-contracts.md` | Runner And Core Monitor Contracts closed for MonitorDataPanelProjection/v1 payload, source-backed resource accounting, UI RRD metric ingestion with 100 raw + 10x decimation, full Vitest 43/43 files (269 tests), and clean production build. |
+
 | `AL-007-S24-Fix` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-30-1304-REPORT-al-007-s24-fix-monitor-visual-regression-hotfix.md` | Monitor Visual Regression Hotfix closed for dark custom scenario picker, compact source-backed Layers rows, compact Data Panel provenance, Level icons, explicit Map affordances, full Vitest, production build, and selected Playwright Monitor/UI visual acceptance. |
 | `AL-007-S24` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-29-1835-REPORT-al-007-s24-source-backed-monitor-surfaces.md` | Source-Backed Monitor Surfaces closed for model-driven Data Panel cards, explicit unavailable contract states, UI RRD metric history, canonical Layers & Filters groups, presentation-only layer toggles, full Vitest, production build, and selected Playwright Monitor/UI visual acceptance. |
 | `AL-007-S23` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-29-1545-REPORT-al-007-s23-monitor-interaction-state.md` | Monitor Interaction State closed for compact Data Panel at `1280x720`, square Stop command, Runner status in Run/Data Context, Layers-only presentation controls, Map-only fullscreen shell, and camera/selection stability without Core/Runner contract changes. |

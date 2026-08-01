@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { createAppStore, getMonitorDataState } from '../app/appState';
 import { createRunnerController } from '../app/runnerController';
 import { MonitorWorkspace } from './MonitorWorkspace';
@@ -17,6 +18,7 @@ import { OrganismWorkspace } from './OrganismWorkspace';
 import { SpecializationWorkspace } from './SpecializationWorkspace';
 import { LibraryWorkspace } from './LibraryWorkspace';
 import { buildMonitorViewModel } from '../app/monitorViewModel';
+import { isSelectionCompatibleWithLevel } from '../app/selectionModel';
 
 export function AppShell() {
   const store = useMemo(() => createAppStore(), []);
@@ -28,6 +30,7 @@ export function AppShell() {
   const [activeWorkspace, setActiveWorkspace] = useState<string>('monitor');
   const [isMapFullScreen, setIsMapFullScreen] = useState(false);
   const [isFullScreenDataVisible, setIsFullScreenDataVisible] = useState(false);
+  const prevLevelRef = useRef(activeLevel);
 
   useEffect(() => store.subscribe(setState), [store]);
 
@@ -41,6 +44,16 @@ export function AppShell() {
   useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
   }, [state.theme]);
+
+  useEffect(() => {
+    if (prevLevelRef.current !== activeLevel) {
+      prevLevelRef.current = activeLevel;
+      if (!isSelectionCompatibleWithLevel(state.currentSelection, activeLevel)) {
+        store.getState().clearSelection(`Selection cleared: incompatible with ${activeLevel} level`);
+      }
+    }
+  }, [activeLevel, state.currentSelection, store]);
+
 
   const toggleTheme = () => {
     store.getState().setTheme(state.theme === 'dark' ? 'light' : 'dark');
@@ -64,6 +77,8 @@ export function AppShell() {
             onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
             onReconnect={controller.connectRunner}
             onSelectCell={(cellId) => store.getState().selectCell(cellId)}
+            onSelectTarget={(selection) => store.getState().selectMonitorTarget(selection)}
+            activeLevel={activeLevel}
             onExportScreenshot={exportScreenshot}
             onFreezeFrame={() => store.getState().freezeCurrentFrame()}
             onJumpToLive={() => store.getState().jumpToLive()}
@@ -131,6 +146,8 @@ export function AppShell() {
               onScenarioChange={(scenarioId) => store.getState().setSelectedScenarioId(scenarioId)}
               onReconnect={controller.connectRunner}
               onSelectCell={(cellId) => store.getState().selectCell(cellId)}
+              onSelectTarget={(selection) => store.getState().selectMonitorTarget(selection)}
+              activeLevel={activeLevel}
               onExportScreenshot={exportScreenshot}
               onFreezeFrame={() => store.getState().freezeCurrentFrame()}
               onJumpToLive={() => store.getState().jumpToLive()}
@@ -144,6 +161,7 @@ export function AppShell() {
             />
             <InspectorPanel
               selectedCell={state.selectedCell}
+              selectionNotice={state.selectionNotice}
               displayedTick={state.frame?.tick || 0}
               onSelectCell={(cellId) => store.getState().selectCell(cellId)}
             />

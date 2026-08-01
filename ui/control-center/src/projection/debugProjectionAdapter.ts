@@ -84,7 +84,32 @@ function normalizeVisualWorld(value: any): DebugVisualWorldProjection {
       localExternalResources: (cell.local_external_resources ?? []).map((resource: any) => ({
         resourceTypeId: resource.resource_type_id,
         amount: resource.amount
-      }))
+      })),
+      ...(cell.phenotype_traits
+        ? {
+            phenotypeTraits: {
+              flagellaCount: cell.phenotype_traits.flagella_count ?? 0,
+              spikeCount: cell.phenotype_traits.spike_count ?? 0,
+              receptorHaloIntensity: cell.phenotype_traits.receptor_halo_intensity ?? 0,
+              lineageHue: cell.phenotype_traits.lineage_hue ?? 180,
+              divisionFlashIntensity: cell.phenotype_traits.division_flash_intensity ?? 0
+            }
+          }
+        : {})
+    })),
+    joints: (value.payload?.joints ?? []).map((joint: any) => ({
+      id: joint.id,
+      cell1Id: joint.cell1_id,
+      cell2Id: joint.cell2_id,
+      restLength: joint.rest_length,
+      pulseIntensity: joint.pulse_intensity,
+      signalSpeed: joint.signal_speed
+    })),
+    organisms: (value.payload?.organisms ?? []).map((organism: any) => ({
+      id: organism.id,
+      cellIds: organism.cell_ids ?? [],
+      hullColorHue: organism.hull_color_hue ?? 180,
+      organicMembraneTension: organism.organic_membrane_tension ?? 1.0
     })),
     resourceLayers: (value.payload?.resource_layers ?? []).map((layer: any) => ({
       layerIndex: layer.layer_index,

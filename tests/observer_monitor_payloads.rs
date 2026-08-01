@@ -7,6 +7,8 @@ fn resource_snapshot(total: f32) -> CommittedSnapshot {
     CommittedSnapshot {
         tick: Tick::from_raw(7),
         cells: Vec::new(),
+        joints: Vec::new(),
+        organisms: Vec::new(),
         heat: 0.0,
         waste: 0.0,
         resource_layer_totals: vec![ResourceAmount::new(total).unwrap()],

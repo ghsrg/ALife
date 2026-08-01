@@ -65,6 +65,98 @@ function resourceCycle(value: any): MonitorResourceCycle | MonitorUnavailableSec
   };
 }
 
+function materialCycle(value: any) {
+  if (value?.state !== 'available') return unavailable(value);
+  return {
+    state: 'available' as const,
+    source: String(value.source),
+    totalAmount: Number(value.total_amount ?? 0),
+    boundary: Number(value.boundary ?? 0),
+    transport: Number(value.transport ?? 0),
+    metabolic: Number(value.metabolic ?? 0),
+    storage: Number(value.storage ?? 0),
+    synthesis: Number(value.synthesis ?? 0),
+    structural: Number(value.structural ?? 0),
+    repair: Number(value.repair ?? 0),
+    contractile: Number(value.contractile ?? 0),
+    sensory: Number(value.sensory ?? 0)
+  };
+}
+
+function energyFlow(value: any) {
+  if (value?.state !== 'available') return unavailable(value);
+  return {
+    state: 'available' as const,
+    source: String(value.source),
+    totalEnergy: Number(value.total_energy ?? 0),
+    energyCapacity: Number(value.energy_capacity ?? 0),
+    heat: Number(value.heat ?? 0),
+    waste: Number(value.waste ?? 0),
+    utilizationRate: Number(value.utilization_rate ?? 0)
+  };
+}
+
+function organismBehaviorProfiles(value: any) {
+  if (value?.state !== 'available') return unavailable(value);
+  return {
+    state: 'available' as const,
+    source: String(value.source),
+    totalOrganisms: Number(value.total_organisms ?? 0),
+    motile: Number(value.motile ?? 0),
+    sessile: Number(value.sessile ?? 0),
+    highEnergy: Number(value.high_energy ?? 0),
+    generalist: Number(value.generalist ?? 0)
+  };
+}
+
+function organismSizeBins(value: any) {
+  if (value?.state !== 'available') return unavailable(value);
+  return {
+    state: 'available' as const,
+    source: String(value.source),
+    singleCell: Number(value.single_cell ?? 0),
+    small: Number(value.small ?? 0),
+    medium: Number(value.medium ?? 0),
+    large: Number(value.large ?? 0)
+  };
+}
+
+function lineagesSummary(value: any) {
+  if (value?.state !== 'available') return unavailable(value);
+  return {
+    state: 'available' as const,
+    source: String(value.source),
+    activeLineagesCount: Number(value.active_lineages_count ?? 0),
+    maxGeneration: Number(value.max_generation ?? 0),
+    dominantHue: Number(value.dominant_hue ?? 180),
+    meanSpan: Number(value.mean_span ?? 1)
+  };
+}
+
+function evolutionSummary(value: any) {
+  if (value?.state !== 'available') return unavailable(value);
+  return {
+    state: 'available' as const,
+    source: String(value.source),
+    totalGenerations: Number(value.total_generations ?? 0),
+    traitDiversityIndex: Number(value.trait_diversity_index ?? 0),
+    mutationEventsEstimate: Number(value.mutation_events_estimate ?? 0),
+    activeCarriersCount: Number(value.active_carriers_count ?? 0)
+  };
+}
+
+function analyticsSummary(value: any) {
+  if (value?.state !== 'available') return unavailable(value);
+  return {
+    state: 'available' as const,
+    source: String(value.source),
+    biomass: Number(value.biomass ?? 0),
+    energyDensity: Number(value.energy_density ?? 0),
+    metabolicEfficiency: Number(value.metabolic_efficiency ?? 0),
+    connectivityIndex: Number(value.connectivity_index ?? 0)
+  };
+}
+
 export function normalizeMonitorProjection(value: any): MonitorProjection {
   return {
     projectionKind: 'MonitorDataPanelProjection',
@@ -76,8 +168,8 @@ export function normalizeMonitorProjection(value: any): MonitorProjection {
       world: {
         populationLifecycle: populationLifecycle(value.payload?.world?.population_lifecycle),
         resourceCycle: resourceCycle(value.payload?.world?.resource_cycle),
-        materialCycle: unavailable(value.payload?.world?.material_cycle),
-        energyFlow: unavailable(value.payload?.world?.energy_flow),
+        materialCycle: materialCycle(value.payload?.world?.material_cycle),
+        energyFlow: energyFlow(value.payload?.world?.energy_flow),
         accountingTime: unavailable(value.payload?.world?.accounting_time)
       },
       cells: {
@@ -87,12 +179,12 @@ export function normalizeMonitorProjection(value: any): MonitorProjection {
         radiusDistribution: unavailable(value.payload?.cells?.radius_distribution)
       },
       organisms: {
-        behaviorProfiles: unavailable(value.payload?.organisms?.behavior_profiles),
-        sizeBins: unavailable(value.payload?.organisms?.size_bins)
+        behaviorProfiles: organismBehaviorProfiles(value.payload?.organisms?.behavior_profiles),
+        sizeBins: organismSizeBins(value.payload?.organisms?.size_bins)
       },
-      lineages: unavailable(value.payload?.lineages),
-      evolution: unavailable(value.payload?.evolution),
-      analytics: unavailable(value.payload?.analytics)
+      lineages: lineagesSummary(value.payload?.lineages),
+      evolution: evolutionSummary(value.payload?.evolution),
+      analytics: analyticsSummary(value.payload?.analytics)
     }
   };
 }

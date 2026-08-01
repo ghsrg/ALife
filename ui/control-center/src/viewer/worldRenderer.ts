@@ -1,15 +1,17 @@
 import { Application, Container, Graphics } from 'pixi.js';
-import type { CellId, JointProjection, WorldFrame } from '../projection/types';
+import type { VisualEffectsConfig } from '../app/appState';
+import type { CellId, WorldFrame } from '../projection/types';
 import type { LifecycleVisualState } from './semanticDetail';
 import { DEFAULT_VIEWER_CAMERA, type ViewerCamera } from './viewerNavigation';
-import { createWorldRenderPlan } from './worldRenderPlan';
+import { createWorldRenderPlan, type WorldRenderPlan } from './worldRenderPlan';
 
 export interface WorldRenderer {
   renderFrame: (
     frame: WorldFrame,
-    selectedCellId: CellId | null,
+    selectedCellId?: CellId | null,
     camera?: ViewerCamera,
-    activeResourceLayers?: number[]
+    activeResourceLayers?: number[],
+    visualEffects?: VisualEffectsConfig
   ) => void;
   resize: (width: number, height: number) => void;
   exportPng: () => string;
@@ -35,30 +37,49 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
 
   const renderFrame = (
     frame: WorldFrame,
-    selectedCellId: CellId | null,
+    selectedCellId: CellId | null = null,
     camera: ViewerCamera = DEFAULT_VIEWER_CAMERA,
-    activeResourceLayers?: number[]
+    activeResourceLayers?: number[],
+    visualEffects?: VisualEffectsConfig
   ) => {
     root.removeChildren();
 
     const bounds = drawBounds(width, height, frame, camera);
     root.addChild(bounds);
 
-    const resourceLayer = drawResourceLayer(frame, width, height, camera, activeResourceLayers);
+    const resourceLayer = drawResourceLayer(frame, width, height, camera, activeResourceLayers, visualEffects);
     root.addChild(resourceLayer);
 
-    const renderPlan = createWorldRenderPlan(frame, selectedCellId, { width, height }, camera);
-    const cellPositions = new Map<string, { x: number; y: number }>();
-    renderPlan.cells.forEach((cell) => cellPositions.set(cell.id, { x: cell.x, y: cell.y }));
+    const renderPlan = createWorldRenderPlan(frame, selectedCellId, { width, height }, camera, visualEffects);
 
-    const jointsLayer = drawJointsLayer(frame, cellPositions);
+    const organismHullsLayer = drawOrganismHullsLayer(renderPlan, frame.tick);
+    root.addChild(organismHullsLayer);
+
+    const jointsLayer = drawAnimatedJointsLayer(renderPlan, frame.tick);
     root.addChild(jointsLayer);
+
+    const showPhenotypeTraits = visualEffects?.showPhenotypeTraits ?? true;
+    const showDivisionFlash = visualEffects?.showDivisionFlash ?? true;
+    const showOrganelles = visualEffects?.showOrganelles ?? true;
 
     for (const cell of renderPlan.cells) {
       const cellGraphic = new Graphics();
       const fillColor = cellFillColor(cell.lifecycleState, cell.energyRatio);
       const membraneAlpha = 0.52 + cell.integrityRatio * 0.35;
       const strokeColor = cellStrokeColor(cell.lifecycleState, cell.selected);
+
+      // 0. Receptor Halo Aura (Resource Uptake Trait)
+      if (showPhenotypeTraits && cell.receptorHaloIntensity > 0.05) {
+        cellGraphic.circle(cell.x, cell.y, cell.radius * 1.35);
+        cellGraphic.fill({ color: 0x00c896, alpha: cell.receptorHaloIntensity * 0.22 });
+      }
+
+      // 0.5. Lineage Color Coat (Lineage Provenance)
+      if (showPhenotypeTraits) {
+        const lineageColor = hslToHex(cell.lineageHue, 0.75, 0.55);
+        cellGraphic.circle(cell.x, cell.y, cell.radius + 1.2);
+        cellGraphic.stroke({ width: 1.2, color: lineageColor, alpha: 0.7 });
+      }
 
       // 1. Primary Cell Body (Outer Membrane & Cytoplasm)
       cellGraphic.circle(cell.x, cell.y, cell.radius);
@@ -68,6 +89,54 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
         color: strokeColor,
         alpha: membraneAlpha
       });
+
+      // 1.5. Contact Spikes (Defense / Boundary Trait)
+      if (showPhenotypeTraits && cell.spikeCount > 0) {
+        for (let i = 0; i < cell.spikeCount; i++) {
+          const angle = (i * Math.PI * 2) / cell.spikeCount;
+          const sx1 = cell.x + Math.cos(angle) * cell.radius;
+          const sy1 = cell.y + Math.sin(angle) * cell.radius;
+          const sx2 = cell.x + Math.cos(angle) * (cell.radius + 4);
+          const sy2 = cell.y + Math.sin(angle) * (cell.radius + 4);
+          cellGraphic.moveTo(sx1, sy1);
+          cellGraphic.lineTo(sx2, sy2);
+          cellGraphic.stroke({ width: 1.5, color: 0xffb703, alpha: 0.85 });
+        }
+      }
+
+      // 1.8. Flagella Motion Filaments (Motility Trait)
+      if (showPhenotypeTraits && cell.flagellaCount > 0 && cell.lifecycleState !== 'dead') {
+        const tickTime = frame.tick * 0.15;
+        for (let i = 0; i < cell.flagellaCount; i++) {
+          const baseAngle = Math.PI * 0.75 + (i - (cell.flagellaCount - 1) / 2) * 0.4;
+          let prevX = cell.x + Math.cos(baseAngle) * cell.radius;
+          let prevY = cell.y + Math.sin(baseAngle) * cell.radius;
+          const tailLength = cell.radius * 1.8;
+          const segments = 5;
+
+          for (let s = 1; s <= segments; s++) {
+            const progress = s / segments;
+            const wave = Math.sin(tickTime + s * 0.8 + i) * (4 * progress);
+            const segDist = cell.radius + progress * tailLength;
+            const segAngle = baseAngle + wave * 0.05;
+            const currX = cell.x + Math.cos(segAngle) * segDist;
+            const currY = cell.y + Math.sin(segAngle) * segDist;
+
+            cellGraphic.moveTo(prevX, prevY);
+            cellGraphic.lineTo(currX, currY);
+            cellGraphic.stroke({ width: 1.2, color: 0x74ded2, alpha: 0.7 });
+            prevX = currX;
+            prevY = currY;
+          }
+        }
+      }
+
+      // 1.9. Division Mutation Flash FX
+      if (showDivisionFlash && cell.divisionFlashIntensity > 0) {
+        const flashRadius = cell.radius + 4 + Math.sin(frame.tick * 0.3) * 2;
+        cellGraphic.circle(cell.x, cell.y, flashRadius);
+        cellGraphic.stroke({ width: 2, color: 0xffd166, alpha: cell.divisionFlashIntensity * 0.8 });
+      }
 
       // 2. Selection Ring (clean tight highlight centered directly on the cell)
       if (cell.selected) {
@@ -80,7 +149,7 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
       }
 
       // 3. Inner Cell Wall (Double Layer Texture - only at structure/internal zoom levels)
-      if (cell.semanticLevel === 'structure' || cell.semanticLevel === 'internal-detail') {
+      if (showOrganelles && (cell.semanticLevel === 'structure' || cell.semanticLevel === 'internal-detail')) {
         cellGraphic.circle(cell.x, cell.y, Math.max(1, cell.radius * 0.88));
         cellGraphic.stroke({
           width: 1,
@@ -90,7 +159,7 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
       }
 
       // 4. Internal Organelles & Nucleus (only when deeply zoomed in to structure/detail)
-      if (cell.semanticLevel === 'structure' || cell.semanticLevel === 'internal-detail') {
+      if (showOrganelles && (cell.semanticLevel === 'structure' || cell.semanticLevel === 'internal-detail')) {
         drawCellOrganelles(cellGraphic, cell.x, cell.y, cell.radius, cell.energyRatio, cell.lifecycleState);
       }
 
@@ -137,7 +206,13 @@ export function drawCellOrganelles(
     return;
   }
 
-  // 1. Central glowing nucleus / energy core
+  // 1. Concentric cytoplasm material ring (internal detail zoom)
+  if (radius > 16) {
+    graphic.circle(cx, cy, radius * 0.65);
+    graphic.stroke({ width: 1, color: 0x00c896, alpha: 0.25 });
+  }
+
+  // 2. Central glowing nucleus / energy core with energy-dependent radiance
   const nucleusRadius = Math.max(2.5, radius * (0.22 + energyRatio * 0.32));
   const nucleusColor = lifecycleState === 'stressed' ? 0xe76f51 : 0xffd166;
 
@@ -145,7 +220,7 @@ export function drawCellOrganelles(
   graphic.fill({ color: nucleusColor, alpha: 0.45 + energyRatio * 0.4 });
   graphic.stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 });
 
-  // 2. Cytoplasm organelle granules (mitochondria/ribosomes visual dots)
+  // 3. Cytoplasm organelle granules (mitochondria/ribosomes visual dots)
   const granuleOffsets = [
     { dx: 0.42, dy: -0.28, r: 0.14 },
     { dx: -0.38, dy: 0.35, r: 0.12 },
@@ -160,6 +235,96 @@ export function drawCellOrganelles(
     graphic.circle(gx, gy, gr);
     graphic.fill({ color: 0xbef7cf, alpha: 0.42 });
   });
+
+  // 4. Outer membrane receptor nodes (Genome phenotype visual trait representation)
+  if (radius > 12) {
+    const receptorAngles = [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5];
+    receptorAngles.forEach((angle) => {
+      const rx = cx + Math.cos(angle) * (radius * 0.96);
+      const ry = cy + Math.sin(angle) * (radius * 0.96);
+      graphic.circle(rx, ry, Math.max(1.2, radius * 0.08));
+      graphic.fill({ color: 0x74ded2, alpha: 0.75 });
+    });
+  }
+}
+
+
+export function drawOrganismHullsLayer(renderPlan: WorldRenderPlan, tick: number) {
+  const layer = new Graphics();
+  const showHulls = renderPlan.visualEffects?.showOrganismHulls ?? true;
+  if (!showHulls || !renderPlan.organismHulls || renderPlan.organismHulls.length === 0) {
+    return layer;
+  }
+
+  renderPlan.organismHulls.forEach((hull) => {
+    if (hull.points.length === 0) return;
+
+    const colorHex = hslToHex(hull.hullColorHue, 0.75, 0.45);
+    const glowColorHex = hslToHex(hull.hullColorHue, 0.85, 0.65);
+    const pulseAlpha = 0.14 + Math.sin(tick * 0.08) * 0.04;
+
+    if (hull.points.length === 1) {
+      const p = hull.points[0];
+      const r = p.radius * 1.5;
+      layer.circle(p.x, p.y, r);
+      layer.fill({ color: colorHex, alpha: pulseAlpha });
+      layer.stroke({ width: 1.5, color: glowColorHex, alpha: 0.35 });
+    } else {
+      hull.points.forEach((p) => {
+        layer.circle(p.x, p.y, p.radius * 1.55);
+        layer.fill({ color: colorHex, alpha: pulseAlpha });
+      });
+
+      for (let i = 0; i < hull.points.length; i++) {
+        const p1 = hull.points[i];
+        const p2 = hull.points[(i + 1) % hull.points.length];
+        layer.moveTo(p1.x, p1.y);
+        layer.lineTo(p2.x, p2.y);
+        layer.stroke({ width: Math.max(p1.radius, p2.radius) * 2.2, color: colorHex, alpha: pulseAlpha });
+      }
+
+      hull.points.forEach((p) => {
+        layer.circle(p.x, p.y, p.radius * 1.55);
+        layer.stroke({ width: 1.5, color: glowColorHex, alpha: 0.45 });
+      });
+    }
+  });
+
+  return layer;
+}
+
+export function drawAnimatedJointsLayer(renderPlan: WorldRenderPlan, tick: number) {
+  const layer = new Graphics();
+  const showPulses = renderPlan.visualEffects?.showJointPulses ?? true;
+  if (!renderPlan.joints || renderPlan.joints.length === 0) {
+    return layer;
+  }
+
+  renderPlan.joints.forEach((joint) => {
+    const { x1, y1, x2, y2, pulseIntensity } = joint;
+    if (x1 === 0 && y1 === 0 && x2 === 0 && y2 === 0) return;
+
+    layer.moveTo(x1, y1);
+    layer.lineTo(x2, y2);
+    layer.stroke({ width: 2, color: 0x27b582, alpha: 0.55 });
+
+    if (showPulses) {
+      const speed = 0.05;
+      const seed = parseInt(joint.id.replace(/\D/g, '') || '0', 10);
+      const progress = ((tick * speed + seed * 0.3) % 1.0);
+      const pulseX = x1 + (x2 - x1) * progress;
+      const pulseY = y1 + (y2 - y1) * progress;
+
+      layer.circle(pulseX, pulseY, 5.5 * pulseIntensity);
+      layer.fill({ color: 0x00c896, alpha: 0.35 });
+
+      layer.circle(pulseX, pulseY, 2.5);
+      layer.fill({ color: 0xffffff, alpha: 0.9 });
+      layer.stroke({ width: 1, color: 0x86efac, alpha: 0.85 });
+    }
+  });
+
+  return layer;
 }
 
 export function drawJointsLayer(
@@ -313,7 +478,8 @@ function drawResourceLayer(
   width: number,
   height: number,
   camera: ViewerCamera,
-  activeResourceLayers: number[] = [0, 1, 2, 3]
+  activeResourceLayers: number[] = [0, 1],
+  visualEffects?: VisualEffectsConfig
 ) {
   const layer = new Graphics();
   if (!activeResourceLayers || activeResourceLayers.length === 0) {
@@ -327,14 +493,23 @@ function drawResourceLayer(
     return layer;
   }
 
+  const showNebula = visualEffects?.showNebula ?? false;
+  const showFilaments = visualEffects?.showFilaments ?? false;
+  const showParticles = visualEffects?.showParticles ?? false;
+
   const cellWidth = (width / cols) * camera.scale;
   const cellHeight = (height / rows) * camera.scale;
+  const tickTime = frame.tick * 0.04;
 
+  const highDensityNodes: Array<{ x: number; y: number; color: number; amount: number }> = [];
+
+  // Pass 1: Smooth Organic Bioluminescent Hub Glows (Nebula Field)
   frame.resources.forEach((row, gy) => {
     row.forEach((resource, gx) => {
-      const px = camera.x + gx * cellWidth;
-      const py = camera.y + gy * cellHeight;
-      let drawnTile = false;
+      const cx = camera.x + (gx + 0.5) * cellWidth;
+      const cy = camera.y + (gy + 0.5) * cellHeight;
+      let maxAmount = 0;
+      let primaryColor = DYNAMIC_LAYER_COLORS[0];
 
       activeResourceLayers.forEach((layerIndex) => {
         const amount = resource.layers?.[layerIndex] ?? (
@@ -344,22 +519,73 @@ function drawResourceLayer(
         );
 
         if (amount > 0.01) {
-          const color = DYNAMIC_LAYER_COLORS[layerIndex % DYNAMIC_LAYER_COLORS.length];
-          layer.rect(px, py, cellWidth, cellHeight);
-          layer.fill({ color, alpha: Math.min(0.65, 0.15 + amount * 0.50) });
-          drawnTile = true;
+          if (amount > maxAmount) {
+            maxAmount = amount;
+            primaryColor = DYNAMIC_LAYER_COLORS[layerIndex % DYNAMIC_LAYER_COLORS.length];
+          }
+
+          // Base resource grid cell (filled rectangle matching the grid)
+          const baseAlpha = Math.min(0.55, 0.08 + amount * 0.35);
+          layer.rect(cx - cellWidth * 0.5, cy - cellHeight * 0.5, cellWidth, cellHeight);
+          layer.fill({ color: DYNAMIC_LAYER_COLORS[layerIndex % DYNAMIC_LAYER_COLORS.length], alpha: baseAlpha });
+
+          if (showNebula) {
+            // Soft organic radial glow hub (extends beyond grid cell)
+            const glowRadius = Math.max(cellWidth, cellHeight) * (1.2 + amount * 1.5);
+            const alpha = Math.min(0.22, 0.03 + amount * 0.16);
+
+            layer.circle(cx, cy, glowRadius);
+            layer.fill({ color: DYNAMIC_LAYER_COLORS[layerIndex % DYNAMIC_LAYER_COLORS.length], alpha });
+          }
         }
       });
 
-      if (drawnTile) {
-        layer.rect(px, py, cellWidth, cellHeight);
-        layer.stroke({ width: 1, color: 0x1e2d3a, alpha: 0.35 });
+      if (maxAmount > 0.35) {
+        highDensityNodes.push({ x: cx, y: cy, color: primaryColor, amount: maxAmount });
       }
     });
   });
 
+  // Pass 2: Organic Interconnecting Web Filaments (Neural / Mycelium Network lines)
+  if (showFilaments) {
+    for (let i = 0; i < highDensityNodes.length; i++) {
+      for (let j = i + 1; j < highDensityNodes.length; j++) {
+        const n1 = highDensityNodes[i];
+        const n2 = highDensityNodes[j];
+        const dx = n1.x - n2.x;
+        const dy = n1.y - n2.y;
+        const distSq = dx * dx + dy * dy;
+        const maxDist = Math.max(cellWidth, cellHeight) * 3.5;
+
+        if (distSq < maxDist * maxDist) {
+          const alpha = (1 - Math.sqrt(distSq) / maxDist) * 0.14 * Math.min(n1.amount, n2.amount);
+          layer.moveTo(n1.x, n1.y);
+          layer.lineTo(n2.x, n2.y);
+          layer.stroke({ width: 1, color: n1.color, alpha });
+        }
+      }
+    }
+  }
+
+  // Pass 3: Subtle Micro Stardust Particles (Very fine, sparse bioluminescent sparkles)
+  if (showParticles) {
+    highDensityNodes.forEach((node, idx) => {
+      if (idx % 3 === 0) {
+        const seed = (node.x * 13 + node.y * 29 + frame.tick) % 100;
+        const particleOffsetX = (Math.sin(tickTime + seed) * 0.4) * cellWidth;
+        const particleOffsetY = (Math.cos(tickTime * 0.7 + seed * 1.5) * 0.4) * cellHeight;
+        const particleRadius = 0.8 + (seed % 3) * 0.4;
+
+        layer.circle(node.x + particleOffsetX, node.y + particleOffsetY, particleRadius);
+        layer.fill({ color: 0x99f6e4, alpha: 0.25 });
+      }
+    });
+  }
+
   return layer;
 }
+
+
 
 function cellFillColor(lifecycleState: LifecycleVisualState, energyRatio: number) {
   if (lifecycleState === 'dead') {
@@ -379,16 +605,32 @@ function cellFillColor(lifecycleState: LifecycleVisualState, energyRatio: number
 
 function cellStrokeColor(lifecycleState: LifecycleVisualState, selected: boolean) {
   if (selected) {
-    return 0xffffff;
+    return 0xffd166;
   }
   if (lifecycleState === 'dead') {
     return 0x4a5568;
   }
-  if (lifecycleState === 'dormant') {
-    return 0xd69e2e;
-  }
   if (lifecycleState === 'stressed') {
-    return 0xe76f51;
+    return 0xf97316;
   }
-  return 0xbef7cf;
+  return 0x2ec4b6;
+}
+
+function hslToHex(h: number, s: number, l: number): number {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+  else if (300 <= h && h <= 360) { r = c; g = 0; b = x; }
+  const red = Math.round((r + m) * 255);
+  const green = Math.round((g + m) * 255);
+  const blue = Math.round((b + m) * 255);
+  return (red << 16) | (green << 8) | blue;
 }

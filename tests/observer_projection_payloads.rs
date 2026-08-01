@@ -63,6 +63,8 @@ fn visual_world_projection_is_bounded_and_source_backed() {
                 }],
             },
         ],
+        joints: vec![],
+        organisms: vec![],
     };
 
     let payload = build_visual_world_projection(&snapshot);

@@ -43,7 +43,12 @@ describe('createWorldRenderPlan', () => {
         integrityRatio: 1,
         semanticLevel: 'structure',
         showMetricRings: true,
-        label: 'cell-a · E50 · I100'
+        label: 'cell-a · E50 · I100',
+        flagellaCount: 1,
+        spikeCount: 3,
+        receptorHaloIntensity: 0.005,
+        lineageHue: 180,
+        divisionFlashIntensity: 0
       }
     ]);
     expect(plan.hasResourceField).toBe(true);
@@ -67,22 +72,15 @@ describe('createWorldRenderPlan', () => {
         cells: [
           {
             ...frame.cells[0],
-            id: 'cell-a'
-          },
-          {
-            ...frame.cells[0],
-            id: 'cell-b',
-            x: 124
+            radius: 80
           }
         ]
       },
-      'cell-a',
-      { width: 1200, height: 800 },
-      { x: 0, y: 0, scale: 12 }
+      null,
+      { width: 1200, height: 800 }
     );
 
-    expect(plan.cells[0].showMetricRings).toBe(true);
-    expect(plan.cells[1].semanticLevel).toBe('internal-detail');
-    expect(plan.cells[1].showMetricRings).toBe(false);
+    expect(plan.cells[0].semanticLevel).toBe('internal-detail');
+    expect(plan.cells[0].showMetricRings).toBe(false);
   });
 });

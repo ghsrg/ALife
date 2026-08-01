@@ -299,5 +299,7 @@ tags:
 - [[outputs/worklogs/2026-07-24-1238-REPORT-v3-ui-charts-docking-and-ecosystem-balance|2026-07-24-1238-REPORT-v3-ui-charts-docking-and-ecosystem-balance]]
 - [[outputs/worklogs/2026-07-24-1905-PLAN-al-002-s17-phase-2-debt-closure|2026-07-24-1905-PLAN-al-002-s17-phase-2-debt-closure]]
 - [[outputs/worklogs/2026-07-23-2100-REPORT-visual-rendering-upgrade|2026-07-23-2100-REPORT-visual-rendering-upgrade]]
+- [[outputs/worklogs/2026-07-31-1310-REPORT-al-007-s25-runner-core-monitor-contracts|2026-07-31-1310-REPORT-al-007-s25-runner-core-monitor-contracts]]
+
 
 

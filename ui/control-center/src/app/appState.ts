@@ -11,6 +11,12 @@ import type { RunStatus, ScenarioListItem, ServerInfo } from '../runner/apiClien
 import type { RunnerStreamConnectionState as ConnectionState } from '../runner/streamClient';
 import { appendRrdSample, type RrdMetricHistory } from './rrdMetricHistory';
 import type { AccountingTarget } from './monitorSurfaceModel';
+import {
+  createCellSelection,
+  createNoneSelection,
+  createSelectionSet,
+  type MonitorSelection
+} from './selectionModel';
 
 export type { RunStatus, ScenarioListItem, ServerInfo };
 export type { ConnectionState };
@@ -24,6 +30,28 @@ export type MonitorDataState =
   | 'live'
   | 'stale-live';
 
+export interface VisualEffectsConfig {
+  showNebula: boolean;
+  showParticles: boolean;
+  showFilaments: boolean;
+  showPhenotypeTraits: boolean;
+  showDivisionFlash: boolean;
+  showOrganelles: boolean;
+  showOrganismHulls: boolean;
+  showJointPulses: boolean;
+}
+
+export const DEFAULT_VISUAL_EFFECTS: VisualEffectsConfig = {
+  showNebula: true,
+  showParticles: true,
+  showFilaments: true,
+  showPhenotypeTraits: true,
+  showDivisionFlash: true,
+  showOrganelles: true,
+  showOrganismHulls: true,
+  showJointPulses: true,
+};
+
 export interface AppState {
   frame: WorldFrame;
   latestLiveFrame: WorldFrame | null;
@@ -32,6 +60,8 @@ export interface AppState {
   debugProjections: DebugProjectionState;
   selectedCellId: CellId | null;
   selectedCell: CellProjection | null;
+  currentSelection: MonitorSelection;
+  selectionNotice: string | null;
   theme: ThemeMode;
   runnerEndpoint: string;
   connectionState: ConnectionState;
@@ -43,6 +73,7 @@ export interface AppState {
   lastError: string | null;
   selectionCleared: boolean;
   activeResourceLayers: number[];
+  visualEffects: VisualEffectsConfig;
   monitorMetricHistory: Record<string, RrdMetricHistory>;
   monitorAccountingTarget: AccountingTarget;
 }
@@ -54,7 +85,10 @@ export interface AppActions {
   jumpToLive: () => void;
   setDebugProjections: (debugProjections: DebugProjectionState) => void;
   selectCell: (cellId: CellId | null) => void;
+  selectMonitorTarget: (selection: MonitorSelection) => void;
+  clearSelection: (notice?: string | null) => void;
   toggleResourceLayer: (layerIndex: number) => void;
+  toggleVisualEffect: (key: keyof VisualEffectsConfig) => void;
   setMonitorAccountingTarget: (target: AccountingTarget) => void;
   setTheme: (theme: ThemeMode) => void;
   setRunnerEndpoint: (endpoint: string) => void;
@@ -76,19 +110,109 @@ function selectInitialCell(frame: WorldFrame) {
   return frame.cells[0] ?? null;
 }
 
-function selectCellForFrame(frame: WorldFrame, currentCellId: CellId | null, selectionCleared: boolean) {
+function resolveCellSelectionForFrame(
+  frame: WorldFrame,
+  currentCellId: CellId | null,
+  currentSelection: MonitorSelection,
+  selectionCleared: boolean
+) {
   if (selectionCleared) {
-    return null;
+    return {
+      selectedCell: null,
+      currentSelection: createNoneSelection(),
+      selectionNotice: null
+    };
+  }
+
+  if (currentSelection.kind === 'cell') {
+    const selectedCell = selectCell(frame, currentSelection.cellId);
+    if (selectedCell !== null) {
+      return {
+        selectedCell,
+        currentSelection: createCellSelection({
+          cellId: selectedCell.id,
+          runId: frame.runId,
+          tick: frame.tick
+        }),
+        selectionNotice: null
+      };
+    }
+
+    return {
+      selectedCell: null,
+      currentSelection: createNoneSelection(),
+      selectionNotice: `Selection target ${currentSelection.cellId} is unavailable`
+    };
+  }
+
+
+
+
+  if (currentSelection.kind === 'selection-set' && currentSelection.targetKind === 'cell') {
+    const liveTargets = currentSelection.targets
+      .filter((target) => target.kind === 'cell')
+      .map((target) => selectCell(frame, target.cellId))
+      .filter((cell): cell is CellProjection => cell !== null)
+      .map((cell) => createCellSelection({ cellId: cell.id, runId: frame.runId, tick: frame.tick }));
+
+    if (liveTargets.length === 0) {
+      return {
+        selectedCell: null,
+        currentSelection: createNoneSelection(),
+        selectionNotice: 'Selection targets are unavailable'
+      };
+    }
+
+    if (liveTargets.length === 1) {
+      const selectedCell = selectCell(frame, liveTargets[0].cellId);
+      return {
+        selectedCell,
+        currentSelection: liveTargets[0],
+        selectionNotice: null
+      };
+    }
+
+    return {
+      selectedCell: null,
+      currentSelection: createSelectionSet({ targets: liveTargets, runId: frame.runId, tick: frame.tick }),
+      selectionNotice: null
+    };
+  }
+
+  if (currentSelection.kind === 'world-block') {
+    return {
+      selectedCell: null,
+      currentSelection: {
+        ...currentSelection,
+        runId: frame.runId,
+        tick: frame.tick
+      },
+      selectionNotice: null
+    };
   }
 
   if (currentCellId !== null) {
     const selectedCell = selectCell(frame, currentCellId);
     if (selectedCell !== null) {
-      return selectedCell;
+      return {
+        selectedCell,
+        currentSelection: createCellSelection({
+          cellId: selectedCell.id,
+          runId: frame.runId,
+          tick: frame.tick
+        }),
+        selectionNotice: null
+      };
     }
   }
 
-  return selectInitialCell(frame);
+  return {
+    selectedCell: null,
+    currentSelection: createNoneSelection(),
+    selectionNotice: null
+  };
+
+
 }
 
 export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
@@ -109,6 +233,14 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     },
     selectedCellId: initialCell?.id ?? null,
     selectedCell: initialCell,
+    currentSelection: initialCell
+      ? createCellSelection({
+          cellId: initialCell.id,
+          runId: initialFrame.runId,
+          tick: initialFrame.tick
+        })
+      : createNoneSelection(),
+    selectionNotice: null,
     theme: 'dark',
     runnerEndpoint: 'http://127.0.0.1:8080',
     connectionState: 'disconnected',
@@ -119,7 +251,8 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     pendingCommand: null,
     lastError: null,
     selectionCleared: false,
-    activeResourceLayers: [0, 1, 2, 3],
+    activeResourceLayers: [0, 1],
+    visualEffects: DEFAULT_VISUAL_EFFECTS,
     monitorMetricHistory: {},
     monitorAccountingTarget: 'Energy',
     toggleResourceLayer: (layerIndex) => {
@@ -129,6 +262,13 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         : [...current, layerIndex];
       set({ activeResourceLayers: next });
     },
+    toggleVisualEffect: (key) =>
+      set((state) => ({
+        visualEffects: {
+          ...state.visualEffects,
+          [key]: !state.visualEffects[key]
+        }
+      })),
     setMonitorAccountingTarget: (monitorAccountingTarget) => set({ monitorAccountingTarget }),
     setFrame: (frame) => {
       const state = get();
@@ -151,15 +291,22 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         return;
       }
 
-      const selectedCell = selectCellForFrame(visibleFrame, state.selectedCellId, state.selectionCleared);
+      const selectionState = resolveCellSelectionForFrame(
+        visibleFrame,
+        state.selectedCellId,
+        state.currentSelection,
+        state.selectionCleared
+      );
       set({
         frame: visibleFrame,
         latestLiveFrame: isLiveFrame ? visibleFrame : state.latestLiveFrame,
         frameHistory,
         monitorMetricHistory,
         projectionContext: buildProjectionContext(visibleFrame, isLiveFrame ? 'live' : 'fixture'),
-        selectedCellId: selectedCell?.id ?? null,
-        selectedCell
+        selectedCellId: selectionState.selectedCell?.id ?? null,
+        selectedCell: selectionState.selectedCell,
+        currentSelection: selectionState.currentSelection,
+        selectionNotice: selectionState.selectionNotice
       });
     },
     freezeCurrentFrame: () => {
@@ -183,16 +330,19 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         return;
       }
 
-      const selectedCell = selectCellForFrame(
+      const selectionState = resolveCellSelectionForFrame(
         historicalFrame,
         state.selectedCellId,
+        state.currentSelection,
         state.selectionCleared
       );
       set({
         frame: historicalFrame,
         projectionContext: buildProjectionContext(historicalFrame, 'frozen'),
-        selectedCellId: selectedCell?.id ?? null,
-        selectedCell
+        selectedCellId: selectionState.selectedCell?.id ?? null,
+        selectedCell: selectionState.selectedCell,
+        currentSelection: selectionState.currentSelection,
+        selectionNotice: selectionState.selectionNotice
       });
     },
     jumpToLive: () => {
@@ -201,16 +351,19 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         return;
       }
 
-      const selectedCell = selectCellForFrame(
+      const selectionState = resolveCellSelectionForFrame(
         state.latestLiveFrame,
         state.selectedCellId,
+        state.currentSelection,
         state.selectionCleared
       );
       set({
         frame: state.latestLiveFrame,
         projectionContext: buildProjectionContext(state.latestLiveFrame, 'live'),
-        selectedCellId: selectedCell?.id ?? null,
-        selectedCell
+        selectedCellId: selectionState.selectedCell?.id ?? null,
+        selectedCell: selectionState.selectedCell,
+        currentSelection: selectionState.currentSelection,
+        selectionNotice: selectionState.selectionNotice
       });
     },
     setDebugProjections: (debugProjections) => {
@@ -224,9 +377,10 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         state.monitorMetricHistory,
         debugProjections
       );
-      const selectedCell = selectCellForFrame(
+      const selectionState = resolveCellSelectionForFrame(
         enrichedFrame,
         state.selectedCellId,
+        state.currentSelection,
         state.selectionCleared
       );
       set({
@@ -234,16 +388,46 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         frame: enrichedFrame,
         latestLiveFrame: enrichedLatestLiveFrame,
         monitorMetricHistory,
-        selectedCellId: selectedCell?.id ?? null,
-        selectedCell
+        selectedCellId: selectionState.selectedCell?.id ?? null,
+        selectedCell: selectionState.selectedCell,
+        currentSelection: selectionState.currentSelection,
+        selectionNotice: selectionState.selectionNotice
       });
     },
     selectCell: (cellId) => {
       const selectedCell = selectCell(get().frame, cellId);
+      const frame = get().frame;
       set({
         selectedCellId: selectedCell?.id ?? null,
         selectedCell,
+        currentSelection: selectedCell
+          ? createCellSelection({ cellId: selectedCell.id, runId: frame.runId, tick: frame.tick })
+          : createNoneSelection(),
+        selectionNotice: cellId !== null && selectedCell === null ? `Selection target ${cellId} is unavailable` : null,
         selectionCleared: cellId === null
+      });
+    },
+    selectMonitorTarget: (selection) => {
+      if (selection.kind === 'cell') {
+        get().selectCell(selection.cellId);
+        return;
+      }
+
+      set({
+        selectedCellId: null,
+        selectedCell: null,
+        currentSelection: selection,
+        selectionNotice: null,
+        selectionCleared: selection.kind === 'none'
+      });
+    },
+    clearSelection: (notice = null) => {
+      set({
+        selectedCellId: null,
+        selectedCell: null,
+        currentSelection: createNoneSelection(),
+        selectionNotice: notice,
+        selectionCleared: true
       });
     },
     setTheme: (theme) => set({ theme }),
