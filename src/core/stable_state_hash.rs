@@ -213,7 +213,6 @@ impl StableHasher {
         self.add_f32(position.x());
         self.add_f32(position.y());
     }
-
     fn add_joint_id(&mut self, id: JointId) {
         self.add_u32(id.raw());
     }
@@ -249,6 +248,7 @@ impl StableHasher {
             ProcessId::GenomeCopying => 9,
             ProcessId::JointCreate => 10,
             ProcessId::JointRepair => 11,
+            ProcessId::GenomeRecombination => 12,
         });
     }
 
@@ -261,6 +261,7 @@ impl StableHasher {
             GenomeOutputId::MovementPriority => 4,
             GenomeOutputId::DivisionPreparationPriority => 5,
             GenomeOutputId::GenomeCopyingPriority => 6,
+            GenomeOutputId::GenomeRecombinationPriority => 7,
         });
     }
 

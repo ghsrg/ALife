@@ -463,6 +463,8 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         scenarios,
         selectedScenarioId:
           scenarios.find((scenario) => scenario.id === get().selectedScenarioId)?.id ??
+          scenarios.find((scenario) => scenario.id === 'canonical_living_world')?.id ??
+          scenarios.find((scenario) => scenario.id === 'demo_living_world')?.id ??
           scenarios[0]?.id ??
           null
       }),

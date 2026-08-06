@@ -689,6 +689,24 @@ impl TickExecutor {
                             let _ = self.world.execute_genome_copying(index, &candidate);
                         }
                     }
+                    ProcessId::GenomeRecombination => {
+                        let (feasible, _) = run_process(
+                            &self.world,
+                            index,
+                            ProcessId::GenomeRecombination,
+                            1.0,
+                            &mut diagnostics,
+                            &mut process_attempts,
+                            &mut process_rejections,
+                        );
+                        if feasible {
+                            let candidate = ActionCandidate {
+                                process_id: ProcessId::GenomeRecombination,
+                                requested_amount: 1.0,
+                            };
+                            let _ = self.world.execute_genome_recombination(index, &candidate);
+                        }
+                    }
                     ProcessId::GrowthResourceAllocation => {
                         if !(config.growth_enabled && config.resource_interaction.enabled) {
                             continue;

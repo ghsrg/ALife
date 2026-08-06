@@ -1,4 +1,4 @@
-﻿---
+---
 tags:
   - alife
   - canon
@@ -65,6 +65,7 @@ Only entries with `status: now` are executable. `status: future` entries may exi
 | `division_partition` | planned_action | now | atomic | `division_partition_priority` | division-capable Materials | completed prep, copied genome carrier | partition cost | partitioned Materials/Resources | two daughter cells | prep complete; carrier exists; space/capacity valid | `rejected_no_effect`, `material_degraded`, `cell_stressed` |
 | `dormancy_shift` | planned_action | now | atomic | `dormancy_bias` | lifecycle regulation capability | lifecycle state | transition cost if configured | none | activity mode changes | lifecycle allows transition | `rejected_no_effect` |
 | `internal_rebalance` | planned_action | now | atomic | `internal_rebalance_priority` | internal transport capability | internal Resources/Materials | rebalance cost if active | none | local internal redistribution | no hidden creation; capacity valid | `rejected_no_effect`, `heat_generated` |
+| `genome_recombination` | planned_action | now | atomic | `genome_recombination_priority` | genome-capable Material, contact/Joint | physical genome carrier, partner cell | recombination cost | carrier precursors if configured | recombined Genome profile | local contact/Joint exists; carrier intact | `rejected_no_effect`, `heat_generated`, `cell_stressed` |
 
 Long-running synthesis or repair variants require separate registry entries with separate `process_id` values.
 

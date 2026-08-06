@@ -10,7 +10,7 @@ const PHASE3A_BASELINE: [ProcessId; 6] = [
     ProcessId::RepairBoundary,
 ];
 
-const PHASE3C_GENOME_BASELINE: [ProcessId; 7] = [
+const PHASE3C_GENOME_BASELINE: [ProcessId; 8] = [
     ProcessId::LocalResourceUptake,
     ProcessId::MetabolismEnergyConversion,
     ProcessId::MaterialSynthesis,
@@ -18,6 +18,7 @@ const PHASE3C_GENOME_BASELINE: [ProcessId; 7] = [
     ProcessId::ContractileDisplacement,
     ProcessId::RepairBoundary,
     ProcessId::GenomeCopying,
+    ProcessId::GenomeRecombination,
 ];
 
 #[derive(Clone, Debug, PartialEq)]

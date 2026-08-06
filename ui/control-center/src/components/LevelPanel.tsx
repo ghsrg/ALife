@@ -4,8 +4,8 @@ const LEVELS: Array<{ id: AnalysisLevel; name: string; available: boolean }> = [
   { id: 'world', name: 'World', available: true },
   { id: 'cells', name: 'Cells', available: true },
   { id: 'organisms', name: 'Organisms', available: false },
-  { id: 'lineages', name: 'Lineages', available: false },
-  { id: 'evolution', name: 'Evolution', available: false },
+  { id: 'lineages', name: 'Lineages', available: true },
+  { id: 'evolution', name: 'Evolution', available: true },
   { id: 'analytics', name: 'Analytics', available: false }
 ];
 

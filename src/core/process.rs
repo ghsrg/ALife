@@ -62,6 +62,7 @@ pub enum ProcessId {
     GenomeCopying,
     JointCreate,
     JointRepair,
+    GenomeRecombination,
 }
 
 impl ProcessId {
@@ -74,6 +75,7 @@ impl ProcessId {
             ProcessId::ContractileDisplacement => Some(4),
             ProcessId::RepairBoundary => Some(5),
             ProcessId::GenomeCopying => Some(6),
+            ProcessId::GenomeRecombination => Some(7),
             _ => None,
         }
     }
@@ -103,6 +105,7 @@ pub enum RejectionReason {
     JointEndpointLimitReached,
     JointAlreadyExists,
     InsufficientMaterial,
+    MissingContactOrJoint,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -230,5 +233,11 @@ static PROCESS_REGISTRY: &[ProcessSpec] = &[
         status: ProcessStatus::Now,
         required_capabilities: &[],
         description: "Splits one living cell into two accounted daughter cells.",
+    },
+    ProcessSpec {
+        process_id: ProcessId::GenomeRecombination,
+        status: ProcessStatus::Now,
+        required_capabilities: &[MaterialCapability::GenomeCopying],
+        description: "Recombines genetic fragments with a contacting or joint-connected cell.",
     },
 ];

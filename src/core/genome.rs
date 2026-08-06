@@ -42,6 +42,7 @@ pub enum GenomeOutputId {
     MovementPriority,
     DivisionPreparationPriority,
     GenomeCopyingPriority,
+    GenomeRecombinationPriority,
 }
 
 impl GenomeOutputId {
@@ -74,6 +75,9 @@ impl GenomeOutputId {
             "genome_copying_priority" => GenomeOutputDisposition::EnabledNow {
                 process_id: ProcessId::GenomeCopying,
             },
+            "genome_recombination_priority" => GenomeOutputDisposition::EnabledNow {
+                process_id: ProcessId::GenomeRecombination,
+            },
             "division_partition_priority" => GenomeOutputDisposition::Deferred {
                 reason: "division partition execution is not yet integrated into ActionPlan",
             },
@@ -100,6 +104,7 @@ impl GenomeOutputId {
             "movement_priority" => Ok(Self::MovementPriority),
             "division_preparation_priority" => Ok(Self::DivisionPreparationPriority),
             "genome_copying_priority" => Ok(Self::GenomeCopyingPriority),
+            "genome_recombination_priority" => Ok(Self::GenomeRecombinationPriority),
             "resource_export_priority"
             | "signal_emit_priority"
             | "division_partition_priority"
@@ -120,6 +125,7 @@ impl GenomeOutputId {
             Self::MovementPriority => "movement_priority",
             Self::DivisionPreparationPriority => "division_preparation_priority",
             Self::GenomeCopyingPriority => "genome_copying_priority",
+            Self::GenomeRecombinationPriority => "genome_recombination_priority",
         }
     }
 
@@ -132,6 +138,7 @@ impl GenomeOutputId {
             Self::MovementPriority => ProcessId::ContractileDisplacement,
             Self::DivisionPreparationPriority => ProcessId::GrowthResourceAllocation,
             Self::GenomeCopyingPriority => ProcessId::GenomeCopying,
+            Self::GenomeRecombinationPriority => ProcessId::GenomeRecombination,
         }
     }
 }
@@ -428,6 +435,39 @@ impl GenomeState {
             .iter()
             .find(|(candidate, _)| *candidate == id)
             .map(|(_, value)| *value)
+    }
+
+    pub fn recombine(&self, partner: &GenomeState, next_id: GenomeId, crossover_mask: u32) -> GenomeState {
+        let mut new_outputs = Vec::new();
+        let all_outputs = [
+            GenomeOutputId::ResourceUptakePriority,
+            GenomeOutputId::EnergyConversionPriority,
+            GenomeOutputId::MaterialSynthesisPriority,
+            GenomeOutputId::RepairPriority,
+            GenomeOutputId::MovementPriority,
+            GenomeOutputId::DivisionPreparationPriority,
+            GenomeOutputId::GenomeCopyingPriority,
+            GenomeOutputId::GenomeRecombinationPriority,
+        ];
+
+        for (idx, &out_id) in all_outputs.iter().enumerate() {
+            let use_partner = ((crossover_mask >> idx) & 1) == 1;
+            let val = if use_partner {
+                partner.output(out_id).or_else(|| self.output(out_id))
+            } else {
+                self.output(out_id).or_else(|| partner.output(out_id))
+            };
+            if let Some(output_val) = val {
+                new_outputs.push((out_id, output_val));
+            }
+        }
+
+        GenomeState {
+            id: next_id,
+            template_id: self.template_id.clone(),
+            carrier: self.carrier.clone(),
+            outputs: new_outputs,
+        }
     }
 }
 

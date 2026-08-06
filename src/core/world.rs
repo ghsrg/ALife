@@ -690,6 +690,41 @@ impl WorldState {
                     resource_cost: requested,
                 }
             }
+            ProcessId::GenomeRecombination => {
+                if !self
+                    .cells
+                    .has_capability(cell_idx, MaterialCapability::GenomeCopying)
+                {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingCapability(
+                        MaterialCapability::GenomeCopying,
+                    ));
+                }
+                let energy_cost = 4.0;
+                if self.cells.energy(cell_idx).current().raw() < energy_cost {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
+                }
+                let pos_a = self.cells.position(cell_idx);
+                let rad_a = self.cells.radius(cell_idx).raw();
+                let has_partner = self.cells.iter_indices().any(|partner_idx| {
+                    if partner_idx == cell_idx {
+                        return false;
+                    }
+                    let pos_b = self.cells.position(partner_idx);
+                    let rad_b = self.cells.radius(partner_idx).raw();
+                    let dx = pos_a.x() - pos_b.x();
+                    let dy = pos_a.y() - pos_b.y();
+                    let dist = (dx * dx + dy * dy).sqrt();
+                    dist <= (rad_a + rad_b + 2.0)
+                });
+                if !has_partner {
+                    return FeasibilityResult::Rejected(RejectionReason::MissingContactOrJoint);
+                }
+                FeasibilityResult::Allowed {
+                    accepted_amount: 1.0,
+                    energy_cost,
+                    resource_cost: 0.0,
+                }
+            }
         }
     }
 
@@ -790,6 +825,55 @@ impl WorldState {
         Ok(())
     }
 
+    pub fn execute_genome_recombination(
+        &mut self,
+        cell_idx: CellIndex,
+        _action: &crate::core::process::ActionCandidate,
+    ) -> Result<(), String> {
+        let energy_cost = 4.0;
+        let current_eng = self.cells.energy(cell_idx).current().raw();
+        if current_eng < energy_cost {
+            return Err("InsufficientEnergy".to_string());
+        }
+
+        let next_energy = EnergyAmount::new(current_eng - energy_cost).unwrap();
+        self.cells.set_energy(
+            cell_idx,
+            EnergyBuffer::new(next_energy, self.cells.energy(cell_idx).capacity()),
+        );
+
+        let pos_a = self.cells.position(cell_idx);
+        let rad_a = self.cells.radius(cell_idx).raw();
+        let partner_opt = self.cells.iter_indices().find(|&p_idx| {
+            if p_idx == cell_idx {
+                return false;
+            }
+            let pos_b = self.cells.position(p_idx);
+            let rad_b = self.cells.radius(p_idx).raw();
+            let dx = pos_a.x() - pos_b.x();
+            let dy = pos_a.y() - pos_b.y();
+            let dist = (dx * dx + dy * dy).sqrt();
+            dist <= (rad_a + rad_b + 2.0)
+        });
+
+        if let Some(partner_idx) = partner_opt {
+            let genome_a_id = self.cells.genome_id(cell_idx);
+            let genome_b_id = self.cells.genome_id(partner_idx);
+            if let (Some(g_a_id), Some(g_b_id)) = (genome_a_id, genome_b_id) {
+                let genome_a = self.genomes.iter().find(|g| g.id == g_a_id).cloned();
+                let genome_b = self.genomes.iter().find(|g| g.id == g_b_id).cloned();
+                if let (Some(g_a), Some(g_b)) = (genome_a, genome_b) {
+                    let next_raw_id = (self.tick.raw() as u32 % 99999) + 1000;
+                    let recombined = g_a.recombine(&g_b, GenomeId::from_raw(next_raw_id), 0b01010101);
+                    self.genomes.push(recombined.clone());
+                    self.cells.set_genome_id(cell_idx, Some(recombined.id));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn execute_growth(
         &mut self,
         cell_idx: CellIndex,
@@ -822,25 +906,57 @@ impl WorldState {
             EnergyBuffer::new(next_energy, self.cells.energy(cell_idx).capacity()),
         );
 
-        // Only structural material increases — capability derives from material amount only
-        let old_structural = self.cells.structural_material(cell_idx).raw();
-        let growth_output = (baseline_process_level(old_structural)
-            * config.material_effects.structural_growth_per_unit)
-            .max(0.0);
-        let new_structural = old_structural + growth_output;
-        self.cells
-            .set_structural_material(cell_idx, MaterialAmount::new(new_structural).unwrap());
+        // Grow the cell's dominant material to reinforce its specialized biological role
+        let boundary = self.cells.boundary_material(cell_idx).raw();
+        let transport = self.cells.transport_material(cell_idx).raw();
+        let metabolic = self.cells.metabolic_material(cell_idx).raw();
+        let storage = self.cells.storage_material(cell_idx).raw();
+        let synthesis = self.cells.synthesis_material(cell_idx).raw();
+        let structural = self.cells.structural_material(cell_idx).raw();
+        let repair = self.cells.repair_material(cell_idx).raw();
+        let contractile = self.cells.contractile_material(cell_idx).raw();
+        let sensory = self.cells.sensory_material(cell_idx).raw();
 
-        // Radius follows absolute accepted structural output so higher structural capacity
-        // produces a measurable directional effect instead of only preserving ratios.
+        let materials = [
+            (0, boundary),
+            (1, transport),
+            (2, metabolic),
+            (3, storage),
+            (4, synthesis),
+            (5, structural),
+            (6, repair),
+            (7, contractile),
+            (8, sensory),
+        ];
+        let mut dom_idx = 5usize; // default structural
+        let mut max_val = -1.0f32;
+        for (idx, val) in materials {
+            if val > max_val {
+                max_val = val;
+                dom_idx = idx;
+            }
+        }
+
+        let growth_mult = config.material_effects.structural_growth_per_unit;
+        let growth_output = (baseline_process_level(max_val) * growth_mult).max(0.01);
+
+        match dom_idx {
+            0 => self.cells.set_boundary_material(cell_idx, MaterialAmount::new(boundary + growth_output).unwrap()),
+            1 => self.cells.set_transport_material(cell_idx, MaterialAmount::new(transport + growth_output).unwrap()),
+            2 => self.cells.set_metabolic_material(cell_idx, MaterialAmount::new(metabolic + growth_output).unwrap()),
+            3 => self.cells.set_storage_material(cell_idx, MaterialAmount::new(storage + growth_output).unwrap()),
+            4 => self.cells.set_synthesis_material(cell_idx, MaterialAmount::new(synthesis + growth_output).unwrap()),
+            5 => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + growth_output).unwrap()),
+            6 => self.cells.set_repair_material(cell_idx, MaterialAmount::new(repair + growth_output).unwrap()),
+            7 => self.cells.set_contractile_material(cell_idx, MaterialAmount::new(contractile + growth_output).unwrap()),
+            8 => self.cells.set_sensory_material(cell_idx, MaterialAmount::new(sensory + growth_output).unwrap()),
+            _ => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + growth_output).unwrap()),
+        }
+
         let old_radius = self.cells.radius(cell_idx).raw();
-        let computed_radius_val = if old_structural > 0.0 {
-            old_radius * (1.0 + growth_output).sqrt()
-        } else {
-            old_radius
-        };
+        let computed_radius_val = old_radius * (1.0 + growth_output * 0.05);
         let target_radius = config.growth.growth_target_radius.raw();
-        let new_radius_val = computed_radius_val.min(target_radius).max(old_radius);
+        let new_radius_val = computed_radius_val.min(target_radius).max(old_radius + 0.001);
         let new_radius = Radius::new(new_radius_val).unwrap();
         self.cells.set_radius(cell_idx, new_radius);
 
@@ -1081,10 +1197,49 @@ impl WorldState {
             EnergyBuffer::new(next_energy, self.cells.energy(cell_idx).capacity()),
         );
 
-        // Synthesize structural material by default
-        let old_structural = self.cells.structural_material(cell_idx).raw();
-        self.cells
-            .set_structural_material(cell_idx, MaterialAmount::new(old_structural + 1.0).unwrap());
+        // Synthesize dominant material to reinforce biological specialization
+        let boundary = self.cells.boundary_material(cell_idx).raw();
+        let transport = self.cells.transport_material(cell_idx).raw();
+        let metabolic = self.cells.metabolic_material(cell_idx).raw();
+        let storage = self.cells.storage_material(cell_idx).raw();
+        let synthesis = self.cells.synthesis_material(cell_idx).raw();
+        let structural = self.cells.structural_material(cell_idx).raw();
+        let repair = self.cells.repair_material(cell_idx).raw();
+        let contractile = self.cells.contractile_material(cell_idx).raw();
+        let sensory = self.cells.sensory_material(cell_idx).raw();
+
+        let materials = [
+            (0, boundary),
+            (1, transport),
+            (2, metabolic),
+            (3, storage),
+            (4, synthesis),
+            (5, structural),
+            (6, repair),
+            (7, contractile),
+            (8, sensory),
+        ];
+        let mut dom_idx = 5usize;
+        let mut max_val = -1.0f32;
+        for (idx, val) in materials {
+            if val > max_val {
+                max_val = val;
+                dom_idx = idx;
+            }
+        }
+
+        match dom_idx {
+            0 => self.cells.set_boundary_material(cell_idx, MaterialAmount::new(boundary + 1.0).unwrap()),
+            1 => self.cells.set_transport_material(cell_idx, MaterialAmount::new(transport + 1.0).unwrap()),
+            2 => self.cells.set_metabolic_material(cell_idx, MaterialAmount::new(metabolic + 1.0).unwrap()),
+            3 => self.cells.set_storage_material(cell_idx, MaterialAmount::new(storage + 1.0).unwrap()),
+            4 => self.cells.set_synthesis_material(cell_idx, MaterialAmount::new(synthesis + 1.0).unwrap()),
+            5 => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + 1.0).unwrap()),
+            6 => self.cells.set_repair_material(cell_idx, MaterialAmount::new(repair + 1.0).unwrap()),
+            7 => self.cells.set_contractile_material(cell_idx, MaterialAmount::new(contractile + 1.0).unwrap()),
+            8 => self.cells.set_sensory_material(cell_idx, MaterialAmount::new(sensory + 1.0).unwrap()),
+            _ => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + 1.0).unwrap()),
+        }
 
         Ok(())
     }

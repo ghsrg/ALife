@@ -1,20 +1,25 @@
 import type { AppState } from '../app/appState';
-import { extractEvolutionSummary } from '../app/evolutionModel';
+import { extractEvolutionSummary, extractLineageTree, computeGenomeSimilarityMatrix } from '../app/evolutionModel';
+import { LineageTreeDiagram } from './LineageTreeDiagram';
+import { GenomeSimilarityMatrix } from './GenomeSimilarityMatrix';
 
 export interface EvolutionWorkspaceProps {
   state: AppState;
+  onSelectNode?: (nodeId: string) => void;
 }
 
-export function EvolutionWorkspace({ state }: EvolutionWorkspaceProps) {
+export function EvolutionWorkspace({ state, onSelectNode }: EvolutionWorkspaceProps) {
   const summary = extractEvolutionSummary(state.frame);
+  const lineageTree = extractLineageTree(state.frame);
+  const similarityMatrix = computeGenomeSimilarityMatrix(state.frame);
 
   return (
-    <section className="evolution-workspace" aria-label="Evolution Observatory" style={{ color: '#dce6f1' }}>
+    <section className="evolution-workspace" aria-label="Evolution Observatory" style={{ color: '#dce6f1', padding: '16px' }}>
       <header style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Evolution Observatory (AL-007-S16)</h2>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Evolution Observatory & Lineage Tree (AL-007-S33)</h2>
           <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#9bb0c1' }}>
-            Observer-only lineage, generation distribution, mutation load, and diversity analytics.
+            Source-backed lineage hierarchy, speciation branches, material divergence, and diversity analytics.
           </p>
         </div>
         <span
@@ -27,10 +32,11 @@ export function EvolutionWorkspace({ state }: EvolutionWorkspaceProps) {
             borderRadius: '4px'
           }}
         >
-          Observer-Only (No Selection/Genome Authority)
+          Observer-Only (No Biological Shortcuts)
         </span>
       </header>
 
+      {/* Diversity Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: '#1a1e24', borderRadius: '8px', padding: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
           <span style={{ fontSize: '12px', color: '#9bb0c1' }}>Total Population</span>
@@ -43,9 +49,9 @@ export function EvolutionWorkspace({ state }: EvolutionWorkspaceProps) {
           </div>
         </div>
         <div style={{ background: '#1a1e24', borderRadius: '8px', padding: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <span style={{ fontSize: '12px', color: '#9bb0c1' }}>Avg Generation</span>
-          <div style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px' }}>
-            {summary.avgGeneration.toFixed(1)}
+          <span style={{ fontSize: '12px', color: '#9bb0c1' }}>Speciation Events</span>
+          <div style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px', color: '#00c896' }}>
+            {lineageTree.speciationEventsCount}
           </div>
         </div>
         <div style={{ background: '#1a1e24', borderRadius: '8px', padding: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -56,6 +62,16 @@ export function EvolutionWorkspace({ state }: EvolutionWorkspaceProps) {
         </div>
       </div>
 
+      {/* Main Interactive Diagrams Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        {/* Interactive Lineage Tree */}
+        <LineageTreeDiagram tree={lineageTree} onSelectNode={onSelectNode} />
+
+        {/* Pairwise Genome Similarity Matrix */}
+        <GenomeSimilarityMatrix data={similarityMatrix} />
+      </div>
+
+      {/* Generation Breakdown Table */}
       <div style={{ background: '#1a1e24', borderRadius: '8px', padding: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
         <h3 style={{ margin: '0 0 12px 0', fontSize: '15px' }}>Lineage & Generation Distribution</h3>
         {summary.generationGroups.length === 0 ? (
