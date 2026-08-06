@@ -32,5 +32,20 @@ fn canonical_test_world_resolves_resource_derived_material_synthesis_surface() {
             && reaction.mode == "passive"
             && reaction.outputs.iter().any(|(id, _)| id == "phosphate")
     }));
+    let copying = config
+        .genome_physical_accounting
+        .copying
+        .as_ref()
+        .expect("canonical copying precursor accounting");
+    assert_eq!(copying.carrier_material_id, "genome_carrier_matrix");
+    assert_eq!(copying.precursor_requirements.len(), 4);
+    assert!(config
+        .genome_physical_accounting
+        .recombination
+        .as_ref()
+        .is_some_and(|rule| rule.precursor_requirements.len() == 4));
+    assert!(document
+        .canonical_source
+        .contains("[canonical_manifests.genome_precursors]"));
     assert_ne!(document.scenario_hash.raw(), 0);
 }

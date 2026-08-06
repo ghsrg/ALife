@@ -1,6 +1,8 @@
 use crate::core::ids::MaterialTypeId;
 use crate::core::units::MaterialAmount;
 
+pub const GENOME_CARRIER_FRAGMENT_MATERIAL_TYPE_ID: MaterialTypeId = MaterialTypeId::from_raw(9);
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MaterialSlot {
     Boundary,

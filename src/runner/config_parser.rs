@@ -3,8 +3,9 @@ use crate::core::config::{
     CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryHeatConfig,
     ChemistryMaterialConfig, ChemistryMaterialOutputConfig, ChemistryReactionConfig,
     ChemistryRepairConfig, ChemistryResourceConfig, ConfigError, ContractilityConfig,
-    DecompositionConfig, DivisionConfig, EnvironmentConfig, GenomeCopyingConfig, GrowthConfig,
-    LifecycleConfig, MaterialEffectConfig, ResourceConfig, ResourceInteractionConfig,
+    DecompositionConfig, DivisionConfig, EnvironmentConfig, GenomeCopyingAccountingRule,
+    GenomeCopyingConfig, GenomePhysicalAccountingConfig, GenomeRecombinationAccountingRule,
+    GrowthConfig, LifecycleConfig, MaterialEffectConfig, ResourceConfig, ResourceInteractionConfig,
     RuntimeConfig, SchedulerCellConfig, SchedulerConfig, SchedulerObserverConfig,
     SchedulerWorldConfig, SimulationTimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
 };
@@ -137,6 +138,31 @@ pub struct RawGenomeCopying {
     pub progress_per_step: Option<f32>,
     pub mutation_rate: Option<f32>,
     pub mutation_step: Option<f32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawGenomePhysicalAccounting {
+    pub copying: Option<RawGenomeCopyingAccounting>,
+    pub recombination: Option<RawGenomeRecombinationAccounting>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawGenomeCopyingAccounting {
+    pub carrier_material_id: String,
+    pub carrier_output_amount_per_step: f32,
+    #[serde(default)]
+    pub precursor_requirements: HashMap<String, f32>,
+    #[serde(default)]
+    pub waste_outputs: HashMap<String, f32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawGenomeRecombinationAccounting {
+    pub energy_cost: f32,
+    #[serde(default)]
+    pub precursor_requirements: HashMap<String, f32>,
+    #[serde(default)]
+    pub waste_outputs: HashMap<String, f32>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -369,6 +395,7 @@ pub struct RawScenarioConfig {
     pub contractility: Option<RawContractility>,
     pub division: Option<RawDivision>,
     pub genome_copying: Option<RawGenomeCopying>,
+    pub genome_physical_accounting: Option<RawGenomePhysicalAccounting>,
     pub decomposition: Option<RawDecomposition>,
     pub material_effects: Option<RawMaterialEffects>,
     pub joints: Option<RawJointConfig>,
@@ -905,6 +932,13 @@ impl RawScenarioConfig {
             runtime_config
                 .validate_genome_copying_options()
                 .map_err(ParseError::ConfigValidationError)?;
+        }
+
+        if let Some(ref raw_accounting) = self.genome_physical_accounting {
+            runtime_config.genome_physical_accounting = parse_genome_physical_accounting(
+                raw_accounting,
+                &self.resources.resource_type_ids,
+            )?;
         }
 
         if let Some(ref raw_dec) = self.decomposition {
@@ -1745,6 +1779,115 @@ fn normalize_amounts(
             Ok((id.clone(), non_negative(values[&id], label)?))
         })
         .collect()
+}
+
+fn parse_genome_physical_accounting(
+    raw: &RawGenomePhysicalAccounting,
+    declared_resource_ids: &[String],
+) -> Result<GenomePhysicalAccountingConfig, ParseError> {
+    let copying = raw
+        .copying
+        .as_ref()
+        .map(|copying| {
+            if copying.carrier_material_id.trim().is_empty() {
+                return Err(ParseError::ValidationError(
+                    "Genome copying carrier_material_id cannot be empty".to_string(),
+                ));
+            }
+            Ok(GenomeCopyingAccountingRule {
+                carrier_material_id: copying.carrier_material_id.clone(),
+                carrier_output_amount_per_step: MaterialAmount::new(
+                    copying.carrier_output_amount_per_step,
+                )
+                .map_err(|error| {
+                    ParseError::ValidationError(format!(
+                        "Invalid genome copying carrier_output_amount_per_step: {error:?}"
+                    ))
+                })?,
+                precursor_requirements: normalize_genome_resource_amounts(
+                    &copying.precursor_requirements,
+                    declared_resource_ids,
+                    "genome precursor requirement",
+                    true,
+                )?,
+                waste_outputs: normalize_genome_resource_amounts(
+                    &copying.waste_outputs,
+                    declared_resource_ids,
+                    "genome waste output",
+                    false,
+                )?,
+            })
+        })
+        .transpose()?;
+    let recombination = raw
+        .recombination
+        .as_ref()
+        .map(|recombination| {
+            Ok(GenomeRecombinationAccountingRule {
+                energy_cost: EnergyAmount::new(recombination.energy_cost).map_err(|error| {
+                    ParseError::ValidationError(format!(
+                        "Invalid genome recombination energy_cost: {error:?}"
+                    ))
+                })?,
+                precursor_requirements: normalize_genome_resource_amounts(
+                    &recombination.precursor_requirements,
+                    declared_resource_ids,
+                    "genome precursor requirement",
+                    true,
+                )?,
+                waste_outputs: normalize_genome_resource_amounts(
+                    &recombination.waste_outputs,
+                    declared_resource_ids,
+                    "genome waste output",
+                    false,
+                )?,
+            })
+        })
+        .transpose()?;
+    Ok(GenomePhysicalAccountingConfig {
+        copying,
+        recombination,
+    })
+}
+
+fn normalize_genome_resource_amounts(
+    values: &HashMap<String, f32>,
+    declared_resource_ids: &[String],
+    label: &str,
+    require_positive: bool,
+) -> Result<Vec<(ResourceTypeId, ResourceAmount)>, ParseError> {
+    let mut normalized = Vec::new();
+    for resource_id in declared_resource_ids {
+        let Some(amount) = values.get(resource_id) else {
+            continue;
+        };
+        if !amount.is_finite() || *amount < 0.0 || (require_positive && *amount <= 0.0) {
+            return Err(ParseError::ValidationError(format!(
+                "Invalid {label}: {resource_id}={amount}"
+            )));
+        }
+        let type_index = declared_resource_ids
+            .iter()
+            .position(|known| known == resource_id)
+            .expect("iterating declared resources");
+        normalized.push((
+            ResourceTypeId::from_raw(type_index as u32),
+            ResourceAmount::new(*amount).map_err(|error| {
+                ParseError::ValidationError(format!("Invalid {label}: {error:?}"))
+            })?,
+        ));
+    }
+    for resource_id in values.keys() {
+        if !declared_resource_ids
+            .iter()
+            .any(|known| known == resource_id)
+        {
+            return Err(ParseError::ValidationError(format!(
+                "Unknown genome precursor resource: {resource_id}"
+            )));
+        }
+    }
+    Ok(normalized)
 }
 
 fn parse_material_profile(raw: RawMaterialProfile) -> Result<MaterialProfile, ParseError> {

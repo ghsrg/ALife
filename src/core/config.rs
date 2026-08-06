@@ -400,6 +400,27 @@ impl Default for GenomeCopyingConfig {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct GenomePhysicalAccountingConfig {
+    pub copying: Option<GenomeCopyingAccountingRule>,
+    pub recombination: Option<GenomeRecombinationAccountingRule>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GenomeCopyingAccountingRule {
+    pub carrier_material_id: String,
+    pub carrier_output_amount_per_step: MaterialAmount,
+    pub precursor_requirements: Vec<(ResourceTypeId, ResourceAmount)>,
+    pub waste_outputs: Vec<(ResourceTypeId, ResourceAmount)>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GenomeRecombinationAccountingRule {
+    pub energy_cost: EnergyAmount,
+    pub precursor_requirements: Vec<(ResourceTypeId, ResourceAmount)>,
+    pub waste_outputs: Vec<(ResourceTypeId, ResourceAmount)>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DecompositionConfig {
     pub enabled: bool,
@@ -469,6 +490,7 @@ pub struct RuntimeConfig {
     pub contractility: ContractilityConfig,
     pub division: DivisionConfig,
     pub genome_copying: GenomeCopyingConfig,
+    pub genome_physical_accounting: GenomePhysicalAccountingConfig,
     pub decomposition: DecompositionConfig,
     pub material_effects: MaterialEffectConfig,
     pub local_interaction: LocalInteractionConfig,
@@ -654,6 +676,7 @@ impl RuntimeConfig {
             contractility: ContractilityConfig::default(),
             division: DivisionConfig::default(),
             genome_copying: GenomeCopyingConfig::default(),
+            genome_physical_accounting: GenomePhysicalAccountingConfig::default(),
             decomposition: DecompositionConfig::default(),
             material_effects: MaterialEffectConfig::default(),
             local_interaction: LocalInteractionConfig::default(),
@@ -976,6 +999,35 @@ impl RuntimeConfig {
                 add(hash, *byte as u64);
             }
             add(hash, 0);
+        }
+        fn add_resource_amounts(hash: &mut u64, values: &[(ResourceTypeId, ResourceAmount)]) {
+            for (resource_type, amount) in values {
+                add(hash, resource_type.raw() as u64);
+                add(hash, amount.raw().to_bits() as u64);
+            }
+            add(hash, 0xff);
+        }
+        match &self.genome_physical_accounting.copying {
+            Some(rule) => {
+                add(&mut hash, 1);
+                add_text(&mut hash, &rule.carrier_material_id);
+                add(
+                    &mut hash,
+                    rule.carrier_output_amount_per_step.raw().to_bits() as u64,
+                );
+                add_resource_amounts(&mut hash, &rule.precursor_requirements);
+                add_resource_amounts(&mut hash, &rule.waste_outputs);
+            }
+            None => add(&mut hash, 0),
+        }
+        match &self.genome_physical_accounting.recombination {
+            Some(rule) => {
+                add(&mut hash, 1);
+                add(&mut hash, rule.energy_cost.raw().to_bits() as u64);
+                add_resource_amounts(&mut hash, &rule.precursor_requirements);
+                add_resource_amounts(&mut hash, &rule.waste_outputs);
+            }
+            None => add(&mut hash, 0),
         }
         for resource in &self.chemistry.resources {
             add_text(&mut hash, &resource.id);

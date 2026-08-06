@@ -59,6 +59,34 @@ seed_domain = "fields.layers.temperature"
 min_value = 18.0
 max_value = 32.0
 
+[canonical_manifests]
+schema = "canonical_test_world_manifest_v1"
+purpose = "Forward contract for resource-derived material synthesis, physical Genome precursor accounting, and local Field runtime."
+runtime_status = "partially_supported"
+unsupported_until = ["AL-003-S09"]
+
+[canonical_manifests.genome_precursors]
+carrier_material_id = "genome_carrier_matrix"
+carrier_synthesis_reaction = "genome_carrier_matrix_synthesis"
+copy_process_id = "genome_copying"
+recombination_process_id = "genome_recombination"
+copy_requires = { nucleotide_precursor = 1.0, phosphate = 0.5, short_peptide = 0.25, catalyst_mineral = 0.1 }
+recombination_requires = { nucleotide_precursor = 0.6, phosphate = 0.4, short_peptide = 0.4, catalyst_mineral = 0.2 }
+degradation_outputs = { phosphate = 0.2, mineral_salt = 0.2, inert_waste = 0.4 }
+failed_attempt_rule = "No resource, energy, genome, progress, carrier, or lineage mutation on rejection."
+
+[canonical_manifests.material_fragments]
+source = "degraded cell MaterialInstance or genome carrier material"
+inactive_outside_cell = true
+conversion_reaction = "spent_material_fragment_conversion"
+silent_resource_uptake_allowed = false
+
+[canonical_manifests.fields.temperature]
+field_id = "temperature"
+runtime_owner_slice = "AL-003-S09"
+local_effects = ["resource_decay_rate", "material_degradation_rate", "heat_dissipation"]
+forbidden_effects = ["direct_energy_credit", "direct_genome_output", "global_behavior_command"]
+
 [environment]
 heat_current = 0.0
 heat_generated_per_tick = 0.0
@@ -120,6 +148,17 @@ carrier_resource_cost_per_step = 0.1
 progress_per_step = 0.2
 mutation_rate = 0.02
 mutation_step = 0.05
+
+[genome_physical_accounting.copying]
+carrier_material_id = "genome_carrier_matrix"
+carrier_output_amount_per_step = 0.2
+precursor_requirements = { nucleotide_precursor = 1.0, phosphate = 0.5, short_peptide = 0.25, catalyst_mineral = 0.1 }
+waste_outputs = { inert_waste = 0.2 }
+
+[genome_physical_accounting.recombination]
+energy_cost = 4.0
+precursor_requirements = { nucleotide_precursor = 0.6, phosphate = 0.4, short_peptide = 0.4, catalyst_mineral = 0.2 }
+waste_outputs = { inert_waste = 0.3 }
 
 [decomposition]
 enabled = true

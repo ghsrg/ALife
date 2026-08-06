@@ -34,6 +34,7 @@ fn action_plan_sorts_processes_by_descending_genome_priority() {
             ProcessId::MetabolismEnergyConversion,
             ProcessId::MaterialSynthesis,
             ProcessId::LocalResourceUptake,
+            ProcessId::GenomeRecombination,
             ProcessId::GenomeCopying,
             ProcessId::RepairBoundary,
             ProcessId::ContractileDisplacement,

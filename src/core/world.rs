@@ -617,25 +617,58 @@ impl WorldState {
                 if self.cells.energy(cell_idx).current().raw() < energy_cost {
                     return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
                 }
-                let resource_cost = self
-                    .config
-                    .genome_copying
-                    .carrier_resource_cost_per_step
-                    .raw();
-                if self.cells.generic_resource_amount(cell_idx).raw() < resource_cost {
-                    return FeasibilityResult::Rejected(RejectionReason::InsufficientResources);
-                }
-                if self
-                    .cells
-                    .effective_free_capacity(
-                        cell_idx,
-                        self.config.material_effects.storage_capacity_per_unit,
-                    )
-                    .raw()
-                    < resource_cost
+                let resource_cost = if let Some(rule) =
+                    &self.config.genome_physical_accounting.copying
                 {
-                    return FeasibilityResult::Rejected(RejectionReason::InsufficientCapacity);
-                }
+                    let scale = self.genome_copying_step_scale(progress);
+                    for (resource_type, amount) in &rule.precursor_requirements {
+                        let required = amount.raw() * scale;
+                        let available = self
+                            .cells
+                            .typed_resource_amount(cell_idx, *resource_type)
+                            .map(|amount| amount.raw())
+                            .unwrap_or(0.0);
+                        if available < required {
+                            return FeasibilityResult::Rejected(
+                                RejectionReason::InsufficientResources,
+                            );
+                        }
+                    }
+                    let carrier_output = rule.carrier_output_amount_per_step.raw() * scale;
+                    if self
+                        .cells
+                        .effective_free_capacity(
+                            cell_idx,
+                            self.config.material_effects.storage_capacity_per_unit,
+                        )
+                        .raw()
+                        < carrier_output
+                    {
+                        return FeasibilityResult::Rejected(RejectionReason::InsufficientCapacity);
+                    }
+                    0.0
+                } else {
+                    let resource_cost = self
+                        .config
+                        .genome_copying
+                        .carrier_resource_cost_per_step
+                        .raw();
+                    if self.cells.generic_resource_amount(cell_idx).raw() < resource_cost {
+                        return FeasibilityResult::Rejected(RejectionReason::InsufficientResources);
+                    }
+                    if self
+                        .cells
+                        .effective_free_capacity(
+                            cell_idx,
+                            self.config.material_effects.storage_capacity_per_unit,
+                        )
+                        .raw()
+                        < resource_cost
+                    {
+                        return FeasibilityResult::Rejected(RejectionReason::InsufficientCapacity);
+                    }
+                    resource_cost
+                };
                 FeasibilityResult::Allowed {
                     accepted_amount: progress,
                     energy_cost,
@@ -702,9 +735,29 @@ impl WorldState {
                         MaterialCapability::GenomeCopying,
                     ));
                 }
-                let energy_cost = 4.0;
+                let energy_cost = self
+                    .config
+                    .genome_physical_accounting
+                    .recombination
+                    .as_ref()
+                    .map(|rule| rule.energy_cost.raw())
+                    .unwrap_or(4.0);
                 if self.cells.energy(cell_idx).current().raw() < energy_cost {
                     return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
+                }
+                if let Some(rule) = &self.config.genome_physical_accounting.recombination {
+                    for (resource_type, amount) in &rule.precursor_requirements {
+                        let available = self
+                            .cells
+                            .typed_resource_amount(cell_idx, *resource_type)
+                            .map(|amount| amount.raw())
+                            .unwrap_or(0.0);
+                        if available < amount.raw() {
+                            return FeasibilityResult::Rejected(
+                                RejectionReason::InsufficientResources,
+                            );
+                        }
+                    }
                 }
                 let pos_a = self.cells.position(cell_idx);
                 let rad_a = self.cells.radius(cell_idx).raw();
@@ -753,10 +806,13 @@ impl WorldState {
             .expect("genome copying energy cost is feasibility-checked");
         self.cells
             .set_energy(cell_idx, EnergyBuffer::new(next_energy, energy.capacity()));
-        let copied_carrier_delta = self
-            .cells
-            .consume_resources(cell_idx, ResourceAmount::new(resource_cost).unwrap())
-            .raw();
+        let copied_carrier_delta = if self.config.genome_physical_accounting.copying.is_some() {
+            self.apply_genome_copying_physical_accounting(cell_idx, accepted_amount)?
+        } else {
+            self.cells
+                .consume_resources(cell_idx, ResourceAmount::new(resource_cost).unwrap())
+                .raw()
+        };
         let next_carrier_amount =
             self.cells.copied_genome_carrier_amount(cell_idx) + copied_carrier_delta;
         self.cells
@@ -829,22 +885,78 @@ impl WorldState {
         Ok(())
     }
 
+    fn genome_copying_step_scale(&self, accepted_amount: f32) -> f32 {
+        let configured_step = self.config.genome_copying.progress_per_step;
+        if configured_step > 0.0 {
+            (accepted_amount / configured_step).clamp(0.0, 1.0)
+        } else {
+            0.0
+        }
+    }
+
+    fn apply_genome_copying_physical_accounting(
+        &mut self,
+        cell_idx: CellIndex,
+        accepted_amount: f32,
+    ) -> Result<f32, String> {
+        let rule = self
+            .config
+            .genome_physical_accounting
+            .copying
+            .as_ref()
+            .ok_or_else(|| "MissingGenomeCopyingAccounting".to_string())?;
+        let scale = self.genome_copying_step_scale(accepted_amount);
+        for (resource_type, amount) in &rule.precursor_requirements {
+            let requested = ResourceAmount::new(amount.raw() * scale)
+                .map_err(|_| "InvalidGenomeCopyingAccounting".to_string())?;
+            let consumed = self
+                .cells
+                .consume_typed_resource(cell_idx, *resource_type, requested)
+                .map_err(|_| "MissingGenomeCopyingAccounting".to_string())?;
+            if consumed.raw() + f32::EPSILON < requested.raw() {
+                return Err("InsufficientResources".to_string());
+            }
+        }
+        for (resource_type, amount) in &rule.waste_outputs {
+            let current = self
+                .cells
+                .typed_resource_amount(cell_idx, *resource_type)
+                .map_err(|_| "MissingGenomeCopyingAccounting".to_string())?;
+            let next = ResourceAmount::new(current.raw() + amount.raw() * scale)
+                .map_err(|_| "InvalidGenomeCopyingAccounting".to_string())?;
+            self.cells
+                .set_typed_resource_amount(cell_idx, *resource_type, next)
+                .map_err(|_| "MissingGenomeCopyingAccounting".to_string())?;
+        }
+        Ok(rule.carrier_output_amount_per_step.raw() * scale)
+    }
+
     pub fn execute_genome_recombination(
         &mut self,
         cell_idx: CellIndex,
-        _action: &crate::core::process::ActionCandidate,
+        action: &crate::core::process::ActionCandidate,
     ) -> Result<(), String> {
-        let energy_cost = 4.0;
+        let energy_cost = match self.validate_feasibility(cell_idx, action) {
+            crate::core::process::FeasibilityResult::Allowed { energy_cost, .. } => energy_cost,
+            crate::core::process::FeasibilityResult::Rejected(reason) => {
+                return Err(format!("{:?}", reason));
+            }
+        };
         let current_eng = self.cells.energy(cell_idx).current().raw();
-        if current_eng < energy_cost {
-            return Err("InsufficientEnergy".to_string());
-        }
 
         let next_energy = EnergyAmount::new(current_eng - energy_cost).unwrap();
         self.cells.set_energy(
             cell_idx,
             EnergyBuffer::new(next_energy, self.cells.energy(cell_idx).capacity()),
         );
+        if self
+            .config
+            .genome_physical_accounting
+            .recombination
+            .is_some()
+        {
+            self.apply_genome_recombination_physical_accounting(cell_idx)?;
+        }
 
         let pos_a = self.cells.position(cell_idx);
         let rad_a = self.cells.radius(cell_idx).raw();
@@ -876,6 +988,39 @@ impl WorldState {
             }
         }
 
+        Ok(())
+    }
+
+    fn apply_genome_recombination_physical_accounting(
+        &mut self,
+        cell_idx: CellIndex,
+    ) -> Result<(), String> {
+        let rule = self
+            .config
+            .genome_physical_accounting
+            .recombination
+            .as_ref()
+            .ok_or_else(|| "MissingGenomeRecombinationAccounting".to_string())?;
+        for (resource_type, amount) in &rule.precursor_requirements {
+            let consumed = self
+                .cells
+                .consume_typed_resource(cell_idx, *resource_type, *amount)
+                .map_err(|_| "MissingGenomeRecombinationAccounting".to_string())?;
+            if consumed.raw() + f32::EPSILON < amount.raw() {
+                return Err("InsufficientResources".to_string());
+            }
+        }
+        for (resource_type, amount) in &rule.waste_outputs {
+            let current = self
+                .cells
+                .typed_resource_amount(cell_idx, *resource_type)
+                .map_err(|_| "MissingGenomeRecombinationAccounting".to_string())?;
+            let next = ResourceAmount::new(current.raw() + amount.raw())
+                .map_err(|_| "InvalidGenomeRecombinationAccounting".to_string())?;
+            self.cells
+                .set_typed_resource_amount(cell_idx, *resource_type, next)
+                .map_err(|_| "MissingGenomeRecombinationAccounting".to_string())?;
+        }
         Ok(())
     }
 
@@ -1705,6 +1850,39 @@ impl WorldState {
                 self.fragments
                     .create(crate::core::fragments::MaterialFragment::new(
                         crate::core::materials::MaterialSlot::Sensory.material_type_id(),
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
+            }
+
+            // genome carrier
+            let val = self.cells.genome_carrier_amount(idx);
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                remaining_decompose_mat -= to_decompose;
+                self.cells
+                    .set_genome_carrier_amount(idx, val - to_decompose);
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::GENOME_CARRIER_FRAGMENT_MATERIAL_TYPE_ID,
+                        MaterialAmount::new(to_decompose).unwrap(),
+                        pos,
+                        self.tick,
+                    ));
+            }
+
+            // copied genome carrier
+            let val = self.cells.copied_genome_carrier_amount(idx);
+            if val > 0.0 && remaining_decompose_mat > 0.0 {
+                let to_decompose = val.min(remaining_decompose_mat);
+                decomposed_mat_sum += to_decompose;
+                self.cells
+                    .set_copied_genome_carrier_amount(idx, val - to_decompose);
+                self.fragments
+                    .create(crate::core::fragments::MaterialFragment::new(
+                        crate::core::materials::GENOME_CARRIER_FRAGMENT_MATERIAL_TYPE_ID,
                         MaterialAmount::new(to_decompose).unwrap(),
                         pos,
                         self.tick,
