@@ -803,6 +803,9 @@ fn configure_phase2g_runtime(
                 reactivity_profile: "reactive".to_string(),
                 permeability: "passive".to_string(),
                 tags: vec!["energy_source".to_string(), "dissolved".to_string()],
+                material_profile: None,
+                material_capabilities:
+                    alife::core::material_instance::MaterialCapabilityProfile::empty(),
             },
             ChemistryResourceConfig {
                 id: "waste_A".to_string(),
@@ -813,6 +816,9 @@ fn configure_phase2g_runtime(
                 reactivity_profile: "stable".to_string(),
                 permeability: "blocked".to_string(),
                 tags: vec!["waste".to_string()],
+                material_profile: None,
+                material_capabilities:
+                    alife::core::material_instance::MaterialCapabilityProfile::empty(),
             },
         ],
         materials: vec![
@@ -857,6 +863,7 @@ fn configure_phase2g_runtime(
                 rate: passive_rate,
                 probability: 1.0,
                 accounting_destination: "waste_A".to_string(),
+                material_output: None,
             },
             ChemistryReactionConfig {
                 id: "controlled_conversion".to_string(),
@@ -871,6 +878,7 @@ fn configure_phase2g_runtime(
                 rate: controlled_rate,
                 probability: 1.0,
                 accounting_destination: "waste_A".to_string(),
+                material_output: None,
             },
         ],
         heat: ChemistryHeatConfig {

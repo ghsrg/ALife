@@ -2,7 +2,7 @@ use crate::core::action_plan::ActionPlan;
 use crate::core::cell_store::{
     CellIndex, CellStore, EnergyBuffer, InitialCellState, LifecycleState,
 };
-use crate::core::config::{RuntimeConfig, deterministic_genome_decision_offset};
+use crate::core::config::{deterministic_genome_decision_offset, RuntimeConfig};
 use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
@@ -13,6 +13,9 @@ use crate::core::ids::ResourceTypeId;
 use crate::core::joints::JointStore;
 use crate::core::lineage::{
     DivisionLineage, GenomeCopyLineage, GenomeMutationDelta, LineageEventLog,
+};
+use crate::core::material_instance::{
+    MaterialRecipeInput, MaterialSynthesisInventory, MaterialSynthesisRecipe,
 };
 use crate::core::resources::ResourceGrid;
 use crate::core::spatial::SpatialIndex;
@@ -611,14 +614,14 @@ impl WorldState {
                     return FeasibilityResult::Rejected(RejectionReason::ProcessDisabled);
                 }
                 let energy_cost = self.config.genome_copying.energy_cost_per_step.raw();
+                if self.cells.energy(cell_idx).current().raw() < energy_cost {
+                    return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
+                }
                 let resource_cost = self
                     .config
                     .genome_copying
                     .carrier_resource_cost_per_step
                     .raw();
-                if self.cells.energy(cell_idx).current().raw() < energy_cost {
-                    return FeasibilityResult::Rejected(RejectionReason::InsufficientEnergy);
-                }
                 if self.cells.generic_resource_amount(cell_idx).raw() < resource_cost {
                     return FeasibilityResult::Rejected(RejectionReason::InsufficientResources);
                 }
@@ -750,11 +753,12 @@ impl WorldState {
             .expect("genome copying energy cost is feasibility-checked");
         self.cells
             .set_energy(cell_idx, EnergyBuffer::new(next_energy, energy.capacity()));
-        let consumed = self
+        let copied_carrier_delta = self
             .cells
-            .consume_resources(cell_idx, ResourceAmount::new(resource_cost).unwrap());
+            .consume_resources(cell_idx, ResourceAmount::new(resource_cost).unwrap())
+            .raw();
         let next_carrier_amount =
-            self.cells.copied_genome_carrier_amount(cell_idx) + consumed.raw();
+            self.cells.copied_genome_carrier_amount(cell_idx) + copied_carrier_delta;
         self.cells
             .set_copied_genome_carrier_amount(cell_idx, next_carrier_amount);
 
@@ -864,7 +868,8 @@ impl WorldState {
                 let genome_b = self.genomes.iter().find(|g| g.id == g_b_id).cloned();
                 if let (Some(g_a), Some(g_b)) = (genome_a, genome_b) {
                     let next_raw_id = (self.tick.raw() as u32 % 99999) + 1000;
-                    let recombined = g_a.recombine(&g_b, GenomeId::from_raw(next_raw_id), 0b01010101);
+                    let recombined =
+                        g_a.recombine(&g_b, GenomeId::from_raw(next_raw_id), 0b01010101);
                     self.genomes.push(recombined.clone());
                     self.cells.set_genome_id(cell_idx, Some(recombined.id));
                 }
@@ -941,22 +946,54 @@ impl WorldState {
         let growth_output = (baseline_process_level(max_val) * growth_mult).max(0.01);
 
         match dom_idx {
-            0 => self.cells.set_boundary_material(cell_idx, MaterialAmount::new(boundary + growth_output).unwrap()),
-            1 => self.cells.set_transport_material(cell_idx, MaterialAmount::new(transport + growth_output).unwrap()),
-            2 => self.cells.set_metabolic_material(cell_idx, MaterialAmount::new(metabolic + growth_output).unwrap()),
-            3 => self.cells.set_storage_material(cell_idx, MaterialAmount::new(storage + growth_output).unwrap()),
-            4 => self.cells.set_synthesis_material(cell_idx, MaterialAmount::new(synthesis + growth_output).unwrap()),
-            5 => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + growth_output).unwrap()),
-            6 => self.cells.set_repair_material(cell_idx, MaterialAmount::new(repair + growth_output).unwrap()),
-            7 => self.cells.set_contractile_material(cell_idx, MaterialAmount::new(contractile + growth_output).unwrap()),
-            8 => self.cells.set_sensory_material(cell_idx, MaterialAmount::new(sensory + growth_output).unwrap()),
-            _ => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + growth_output).unwrap()),
+            0 => self.cells.set_boundary_material(
+                cell_idx,
+                MaterialAmount::new(boundary + growth_output).unwrap(),
+            ),
+            1 => self.cells.set_transport_material(
+                cell_idx,
+                MaterialAmount::new(transport + growth_output).unwrap(),
+            ),
+            2 => self.cells.set_metabolic_material(
+                cell_idx,
+                MaterialAmount::new(metabolic + growth_output).unwrap(),
+            ),
+            3 => self.cells.set_storage_material(
+                cell_idx,
+                MaterialAmount::new(storage + growth_output).unwrap(),
+            ),
+            4 => self.cells.set_synthesis_material(
+                cell_idx,
+                MaterialAmount::new(synthesis + growth_output).unwrap(),
+            ),
+            5 => self.cells.set_structural_material(
+                cell_idx,
+                MaterialAmount::new(structural + growth_output).unwrap(),
+            ),
+            6 => self.cells.set_repair_material(
+                cell_idx,
+                MaterialAmount::new(repair + growth_output).unwrap(),
+            ),
+            7 => self.cells.set_contractile_material(
+                cell_idx,
+                MaterialAmount::new(contractile + growth_output).unwrap(),
+            ),
+            8 => self.cells.set_sensory_material(
+                cell_idx,
+                MaterialAmount::new(sensory + growth_output).unwrap(),
+            ),
+            _ => self.cells.set_structural_material(
+                cell_idx,
+                MaterialAmount::new(structural + growth_output).unwrap(),
+            ),
         }
 
         let old_radius = self.cells.radius(cell_idx).raw();
         let computed_radius_val = old_radius * (1.0 + growth_output * 0.05);
         let target_radius = config.growth.growth_target_radius.raw();
-        let new_radius_val = computed_radius_val.min(target_radius).max(old_radius + 0.001);
+        let new_radius_val = computed_radius_val
+            .min(target_radius)
+            .max(old_radius + 0.001);
         let new_radius = Radius::new(new_radius_val).unwrap();
         self.cells.set_radius(cell_idx, new_radius);
 
@@ -1178,6 +1215,146 @@ impl WorldState {
     }
 
     pub fn execute_synthesis(&mut self, cell_idx: CellIndex) -> Result<(), String> {
+        if let Some(reaction) = self
+            .config
+            .chemistry
+            .reactions
+            .iter()
+            .find(|reaction| {
+                reaction.mode == "controlled"
+                    && reaction.process_id.as_deref() == Some("material_synthesis")
+                    && reaction.material_output.is_some()
+            })
+            .cloned()
+        {
+            let material_output = reaction
+                .material_output
+                .clone()
+                .ok_or_else(|| "Material synthesis recipe has no material output".to_string())?;
+            let mut precursors = Vec::new();
+            for (resource_id, amount) in &reaction.inputs {
+                let resource = self
+                    .config
+                    .chemistry
+                    .resources
+                    .iter()
+                    .find(|candidate| candidate.id == *resource_id)
+                    .ok_or_else(|| format!("Unknown synthesis resource: {resource_id}"))?;
+                let profile = resource.material_profile.ok_or_else(|| {
+                    format!("Missing material profile for resource: {resource_id}")
+                })?;
+                precursors.push(MaterialRecipeInput::new(
+                    resource_id.clone(),
+                    MaterialAmount::new(*amount)
+                        .map_err(|error| format!("Invalid synthesis input amount: {error:?}"))?,
+                    profile,
+                    resource.material_capabilities,
+                ));
+            }
+
+            let waste_outputs = reaction
+                .outputs
+                .iter()
+                .map(|(id, amount)| {
+                    ResourceAmount::new(*amount)
+                        .map(|amount| (id.as_str(), amount))
+                        .map_err(|error| format!("Invalid synthesis output amount: {error:?}"))
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let recipe = MaterialSynthesisRecipe::new(
+                reaction.id,
+                material_output.amount,
+                self.config.synthesis.cost_energy,
+                crate::core::units::HeatAmount::new(reaction.heat_output)
+                    .map_err(|error| format!("Invalid synthesis heat output: {error:?}"))?,
+                precursors,
+                waste_outputs,
+            );
+
+            let input_total = reaction
+                .inputs
+                .iter()
+                .map(|(_, amount)| amount)
+                .sum::<f32>();
+            let mut inventory = MaterialSynthesisInventory::new(
+                self.cells.energy(cell_idx).current(),
+                MaterialAmount::new(
+                    self.cells
+                        .effective_free_capacity(
+                            cell_idx,
+                            self.config.material_effects.storage_capacity_per_unit,
+                        )
+                        .raw()
+                        + input_total,
+                )
+                .map_err(|error| format!("Invalid synthesis capacity: {error:?}"))?,
+            );
+            for resource in &self.config.chemistry.resources {
+                let resource_type = self
+                    .config
+                    .chemistry
+                    .resources
+                    .iter()
+                    .position(|candidate| candidate.id == resource.id)
+                    .map(|index| ResourceTypeId::from_raw(index as u32))
+                    .ok_or_else(|| format!("Unknown synthesis resource: {}", resource.id))?;
+                let amount = self
+                    .cells
+                    .typed_resource_amount(cell_idx, resource_type)
+                    .map_err(|error| format!("Invalid typed resource inventory: {error:?}"))?;
+                inventory.set_resource(resource.id.clone(), amount);
+            }
+
+            let outcome = recipe
+                .apply(&mut inventory)
+                .map_err(|rejection| format!("Material synthesis rejected: {rejection:?}"))?;
+            for (index, resource) in self.config.chemistry.resources.iter().enumerate() {
+                self.cells
+                    .set_typed_resource_amount(
+                        cell_idx,
+                        ResourceTypeId::from_raw(index as u32),
+                        inventory.resource_amount(&resource.id),
+                    )
+                    .map_err(|error| format!("Invalid typed resource inventory: {error:?}"))?;
+            }
+            for (resource_id, amount) in outcome.waste_outputs() {
+                let index = self
+                    .config
+                    .chemistry
+                    .resources
+                    .iter()
+                    .position(|candidate| candidate.id == *resource_id)
+                    .ok_or_else(|| format!("Unknown synthesis output resource: {resource_id}"))?;
+                let resource_type = ResourceTypeId::from_raw(index as u32);
+                let current = self
+                    .cells
+                    .typed_resource_amount(cell_idx, resource_type)
+                    .map_err(|error| format!("Invalid typed resource inventory: {error:?}"))?;
+                self.cells
+                    .set_typed_resource_amount(
+                        cell_idx,
+                        resource_type,
+                        ResourceAmount::new(current.raw() + amount.raw()).map_err(|error| {
+                            format!("Invalid output resource amount: {error:?}")
+                        })?,
+                    )
+                    .map_err(|error| format!("Invalid typed resource inventory: {error:?}"))?;
+            }
+            self.cells.set_energy(
+                cell_idx,
+                EnergyBuffer::new(inventory.energy(), self.cells.energy(cell_idx).capacity()),
+            );
+            self.cells
+                .push_material_instance(cell_idx, outcome.material().clone());
+            self.environment.set_heat(
+                crate::core::units::HeatAmount::new(
+                    self.environment.heat().raw() + outcome.heat_output().raw(),
+                )
+                .map_err(|error| format!("Invalid heat amount: {error:?}"))?,
+            );
+            return Ok(());
+        }
+
         let cost_res = self.config.synthesis.cost_resource.raw();
         let cost_eng = self.config.synthesis.cost_energy.raw();
         let current_res = self.cells.generic_resource_amount(cell_idx).raw();
@@ -1229,16 +1406,37 @@ impl WorldState {
         }
 
         match dom_idx {
-            0 => self.cells.set_boundary_material(cell_idx, MaterialAmount::new(boundary + 1.0).unwrap()),
-            1 => self.cells.set_transport_material(cell_idx, MaterialAmount::new(transport + 1.0).unwrap()),
-            2 => self.cells.set_metabolic_material(cell_idx, MaterialAmount::new(metabolic + 1.0).unwrap()),
-            3 => self.cells.set_storage_material(cell_idx, MaterialAmount::new(storage + 1.0).unwrap()),
-            4 => self.cells.set_synthesis_material(cell_idx, MaterialAmount::new(synthesis + 1.0).unwrap()),
-            5 => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + 1.0).unwrap()),
-            6 => self.cells.set_repair_material(cell_idx, MaterialAmount::new(repair + 1.0).unwrap()),
-            7 => self.cells.set_contractile_material(cell_idx, MaterialAmount::new(contractile + 1.0).unwrap()),
-            8 => self.cells.set_sensory_material(cell_idx, MaterialAmount::new(sensory + 1.0).unwrap()),
-            _ => self.cells.set_structural_material(cell_idx, MaterialAmount::new(structural + 1.0).unwrap()),
+            0 => self
+                .cells
+                .set_boundary_material(cell_idx, MaterialAmount::new(boundary + 1.0).unwrap()),
+            1 => self
+                .cells
+                .set_transport_material(cell_idx, MaterialAmount::new(transport + 1.0).unwrap()),
+            2 => self
+                .cells
+                .set_metabolic_material(cell_idx, MaterialAmount::new(metabolic + 1.0).unwrap()),
+            3 => self
+                .cells
+                .set_storage_material(cell_idx, MaterialAmount::new(storage + 1.0).unwrap()),
+            4 => self
+                .cells
+                .set_synthesis_material(cell_idx, MaterialAmount::new(synthesis + 1.0).unwrap()),
+            5 => self
+                .cells
+                .set_structural_material(cell_idx, MaterialAmount::new(structural + 1.0).unwrap()),
+            6 => self
+                .cells
+                .set_repair_material(cell_idx, MaterialAmount::new(repair + 1.0).unwrap()),
+            7 => self.cells.set_contractile_material(
+                cell_idx,
+                MaterialAmount::new(contractile + 1.0).unwrap(),
+            ),
+            8 => self
+                .cells
+                .set_sensory_material(cell_idx, MaterialAmount::new(sensory + 1.0).unwrap()),
+            _ => self
+                .cells
+                .set_structural_material(cell_idx, MaterialAmount::new(structural + 1.0).unwrap()),
         }
 
         Ok(())

@@ -1,5 +1,6 @@
 use crate::core::genome::{GenomeTemplate, GenomeTemplateId};
 use crate::core::ids::ResourceTypeId;
+use crate::core::material_instance::{MaterialCapabilityProfile, MaterialProfile};
 use crate::core::units::{
     CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
     Seed, Tick, WasteAmount, WorldSize,
@@ -15,6 +16,8 @@ pub struct ChemistryResourceConfig {
     pub reactivity_profile: String,
     pub permeability: String,
     pub tags: Vec<String>,
+    pub material_profile: Option<MaterialProfile>,
+    pub material_capabilities: MaterialCapabilityProfile,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -44,6 +47,13 @@ pub struct ChemistryReactionConfig {
     pub rate: f32,
     pub probability: f32,
     pub accounting_destination: String,
+    pub material_output: Option<ChemistryMaterialOutputConfig>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryMaterialOutputConfig {
+    pub amount: MaterialAmount,
+    pub derivation: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -982,6 +992,25 @@ impl RuntimeConfig {
             for tag in &resource.tags {
                 add_text(&mut hash, tag);
             }
+            match resource.material_profile {
+                Some(profile) => {
+                    add(&mut hash, 1);
+                    for value in [
+                        profile.volume(),
+                        profile.stability(),
+                        profile.strength(),
+                        profile.energy_capacity(),
+                        profile.permeability(),
+                        profile.durability(),
+                    ] {
+                        add(&mut hash, value.to_bits() as u64);
+                    }
+                }
+                None => add(&mut hash, 0),
+            }
+            for value in resource.material_capabilities.values() {
+                add(&mut hash, value.to_bits() as u64);
+            }
         }
         for material in &self.chemistry.materials {
             add_text(&mut hash, &material.id);
@@ -1021,6 +1050,14 @@ impl RuntimeConfig {
                 add(&mut hash, value.to_bits() as u64);
             }
             add_text(&mut hash, &reaction.accounting_destination);
+            match &reaction.material_output {
+                Some(output) => {
+                    add(&mut hash, 1);
+                    add(&mut hash, output.amount.raw().to_bits() as u64);
+                    add_text(&mut hash, &output.derivation);
+                }
+                None => add(&mut hash, 0),
+            }
         }
         for value in [
             self.chemistry.heat.capacity,

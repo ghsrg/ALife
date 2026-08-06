@@ -1,6 +1,7 @@
 use crate::core::action_plan::ActionPlan;
 use crate::core::genome::GenomeId;
 use crate::core::ids::{CellId, ResourceTypeId};
+use crate::core::material_instance::MaterialInstance;
 use crate::core::materials::{MaterialComposition, MaterialSlot};
 use crate::core::process::MaterialCapability;
 use crate::core::resource_types::PermeabilityConstraint;
@@ -106,6 +107,7 @@ pub struct CellStore {
     repair_materials: Vec<MaterialAmount>,
     contractile_materials: Vec<MaterialAmount>,
     sensory_materials: Vec<MaterialAmount>,
+    material_instances: Vec<Vec<MaterialInstance>>,
     material_damage: Vec<[f32; 9]>,
     capacity_limits: Vec<CapacityAmount>,
     temperatures: Vec<Temperature>,
@@ -144,6 +146,7 @@ impl CellStore {
             repair_materials: Vec::with_capacity(capacity),
             contractile_materials: Vec::with_capacity(capacity),
             sensory_materials: Vec::with_capacity(capacity),
+            material_instances: Vec::with_capacity(capacity),
             material_damage: Vec::with_capacity(capacity),
             capacity_limits: Vec::with_capacity(capacity),
             temperatures: Vec::with_capacity(capacity),
@@ -185,6 +188,7 @@ impl CellStore {
         self.repair_materials.push(cell.repair_material);
         self.contractile_materials.push(cell.contractile_material);
         self.sensory_materials.push(cell.sensory_material);
+        self.material_instances.push(Vec::new());
         self.material_damage.push([0.0; 9]);
         self.capacity_limits.push(cell.capacity_limit);
         self.temperatures.push(cell.temperature);
@@ -637,6 +641,14 @@ impl CellStore {
         self.total_materials(index)
     }
 
+    pub fn material_instances(&self, index: CellIndex) -> &[MaterialInstance] {
+        &self.material_instances[index.raw()]
+    }
+
+    pub fn push_material_instance(&mut self, index: CellIndex, material: MaterialInstance) {
+        self.material_instances[index.raw()].push(material);
+    }
+
     pub fn material_amount_for_slot(&self, index: CellIndex, slot: MaterialSlot) -> MaterialAmount {
         match slot {
             MaterialSlot::Boundary => self.boundary_material(index),
@@ -867,7 +879,11 @@ impl CellStore {
             + self.structural_materials[index.raw()].raw()
             + self.repair_materials[index.raw()].raw()
             + self.contractile_materials[index.raw()].raw()
-            + self.sensory_materials[index.raw()].raw();
+            + self.sensory_materials[index.raw()].raw()
+            + self.material_instances[index.raw()]
+                .iter()
+                .map(|material| material.amount().raw())
+                .sum::<f32>();
         MaterialAmount::new_unchecked(total)
     }
 }

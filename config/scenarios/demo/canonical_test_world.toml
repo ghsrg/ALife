@@ -1,0 +1,518 @@
+scenario_id = "canonical_test_world"
+seed = 424243
+tick_count = 1000
+legacy_material_distribution = false
+
+[time]
+tick_duration_ms = 100
+
+[world]
+size = [160.0, 120.0]
+
+[space]
+spatial_grid_size = 8.0
+physics_solver_iterations = 2
+
+[scheduler.cell]
+genome_runtime_base_ticks = 5
+genome_runtime_ticks_per_layer = 5
+signal_emit_ticks = 2
+controlled_reaction_ticks = 1
+simple_synthesis_ticks = 2
+basic_repair_ticks = 5
+internal_rebalance_ticks = 5
+
+[scheduler.world]
+resource_diffusion_ticks = 5
+resource_decay_ticks = 5
+passive_reactions_ticks = 2
+background_material_degradation_ticks = 5
+environment_heat_diffusion_ticks = 2
+field_update_ticks = 5
+
+[scheduler.observer]
+observer_metrics_ticks = 10
+resource_totals_ticks = 10
+graph_analysis_ticks = 25
+debug_trace_ticks = 10
+
+[resources]
+resource_type_ids = [
+  "amino_acid", "short_peptide", "sugar", "long_sugar", "fatty_acid",
+  "phospholipid", "sterol", "fiber", "resin", "mineral_salt",
+  "silicate", "phosphate", "carbon_fuel", "storage_fat", "reactive_solvent",
+  "catalyst_mineral", "metal_ion", "inert_waste", "nucleotide_precursor",
+]
+initial_distribution = [
+  800.0, 500.0, 900.0, 600.0, 700.0,
+  650.0, 350.0, 500.0, 350.0, 700.0,
+  650.0, 600.0, 850.0, 500.0, 250.0,
+  220.0, 180.0, 0.0, 300.0,
+]
+optional_decay_rate = 0.00001
+
+[[bootstrap.fields]]
+field_id = "temperature"
+generator = "band"
+version = "band.v1"
+seed_domain = "fields.layers.temperature"
+min_value = 18.0
+max_value = 32.0
+
+[environment]
+heat_current = 0.0
+heat_generated_per_tick = 0.0
+heat_dissipation_rate = 0.2
+heat_warning_threshold = 80.0
+heat_death_threshold = 160.0
+waste_current = 0.0
+waste_generated_per_tick = 0.0
+waste_sink_rate = 0.2
+waste_warning_threshold = 80.0
+waste_death_threshold = 160.0
+
+[lifecycle]
+stress_energy_threshold = 1.0
+dormancy_allowed = false
+critical_capacity_overrun = 40.0
+
+[resource_interaction]
+enabled = true
+uptake_layer_index = 2
+max_uptake_per_tick = 1.0
+metabolism_resource_per_tick = 0.25
+energy_per_resource = 2.0
+heat_per_resource = 0.01
+waste_per_resource = 0.05
+
+[synthesis]
+cost_resource = 0.0
+cost_energy = 2.0
+
+[growth]
+growth_cost_resource = 0.2
+growth_cost_energy = 0.5
+growth_target_radius = 1.4
+max_division_pressure = 4.0
+
+[material_effects]
+transport_uptake_per_unit = 1.0
+metabolic_conversion_per_unit = 1.0
+storage_capacity_per_unit = 1.5
+structural_growth_per_unit = 0.2
+contractile_force_per_unit = 0.8
+sensory_input_per_unit = 0.8
+boundary_retention_per_unit = 1.0
+repair_stress_buffer_per_unit = 1.0
+
+[division]
+enabled = true
+energy_cost = 3.0
+split_ratio = 0.5
+daughter_spacing = 2.0
+min_daughter_radius = 0.6
+partition_loss_fraction = 0.02
+
+[genome_copying]
+enabled = true
+energy_cost_per_step = 0.2
+carrier_resource_cost_per_step = 0.1
+progress_per_step = 0.2
+mutation_rate = 0.02
+mutation_step = 0.05
+
+[decomposition]
+enabled = true
+resource_layer_index = 17
+resources_per_tick = 0.1
+materials_per_tick = 0.2
+remove_when_empty = true
+
+[cell]
+initial_position = [80.0, 60.0]
+radius = 1.2
+initial_resources = { amino_acid = 8.0, short_peptide = 4.0, sugar = 8.0, long_sugar = 4.0, fatty_acid = 5.0, phospholipid = 6.0, sterol = 3.0, fiber = 4.0, resin = 3.0, mineral_salt = 4.0, silicate = 4.0, phosphate = 4.0, carbon_fuel = 6.0, storage_fat = 3.0, reactive_solvent = 2.0, catalyst_mineral = 2.0, metal_ion = 2.0, inert_waste = 0.0, nucleotide_precursor = 3.0 }
+initial_materials = { synthesis = 2.0, repair = 1.0, structural = 1.0 }
+initial_energy = 40.0
+energy_capacity = 60.0
+mandatory_cost_per_tick = 0.2
+capacity_limit = 80.0
+
+[cell.genome]
+template = "balanced"
+
+[genome_templates.balanced]
+variation_amplitude = 0.05
+runtime_interval_ticks = 2
+regulatory_depth = 1
+
+[genome_templates.balanced.carrier]
+material_id = "genome_carrier_matrix"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.balanced.outputs]
+resource_uptake_priority = 0.6
+energy_conversion_priority = 0.6
+genome_copying_priority = 0.4
+genome_recombination_priority = 0.2
+division_preparation_priority = 0.3
+repair_priority = 0.3
+material_synthesis_priority = 0.5
+
+[chemistry.resources.amino_acid]
+volume = 1.0
+diffusion_rate = 0.35
+energy_value = 0.2
+decay_rate = 0.01
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["structural_precursor", "dissolved"]
+material_profile = { volume = 0.4, stability = 0.45, strength = 0.35, energy_capacity = 0.2, permeability = 0.65, durability = 0.4 }
+material_capabilities = { material_synthesis = 0.7, repair = 0.3 }
+
+[chemistry.resources.short_peptide]
+volume = 1.0
+diffusion_rate = 0.25
+energy_value = 0.2
+decay_rate = 0.01
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["structural_precursor", "dissolved"]
+material_profile = { volume = 0.5, stability = 0.55, strength = 0.45, energy_capacity = 0.2, permeability = 0.55, durability = 0.5 }
+material_capabilities = { material_synthesis = 0.6, repair = 0.5, genome_copying = 0.2 }
+
+[chemistry.resources.sugar]
+volume = 1.0
+diffusion_rate = 0.45
+energy_value = 1.0
+decay_rate = 0.02
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["energy_source", "dissolved"]
+material_profile = { volume = 0.35, stability = 0.3, strength = 0.2, energy_capacity = 0.7, permeability = 0.75, durability = 0.25 }
+material_capabilities = { metabolism = 0.6, storage_capacity = 0.2 }
+
+[chemistry.resources.long_sugar]
+volume = 1.0
+diffusion_rate = 0.2
+energy_value = 0.8
+decay_rate = 0.01
+reactivity_profile = "stable"
+permeability = "passive"
+tags = ["energy_source", "structural_precursor"]
+material_profile = { volume = 0.55, stability = 0.5, strength = 0.35, energy_capacity = 0.75, permeability = 0.45, durability = 0.45 }
+material_capabilities = { storage_capacity = 0.6, metabolism = 0.3 }
+
+[chemistry.resources.fatty_acid]
+volume = 1.0
+diffusion_rate = 0.15
+energy_value = 0.7
+decay_rate = 0.01
+reactivity_profile = "stable"
+permeability = "passive"
+tags = ["energy_source", "structural_precursor"]
+material_profile = { volume = 0.65, stability = 0.55, strength = 0.3, energy_capacity = 0.8, permeability = 0.35, durability = 0.55 }
+material_capabilities = { storage_capacity = 0.5, boundary_permeability = 0.2 }
+
+[chemistry.resources.phospholipid]
+volume = 1.0
+diffusion_rate = 0.12
+energy_value = 0.4
+decay_rate = 0.005
+reactivity_profile = "stable"
+permeability = "passive"
+tags = ["structural_precursor"]
+material_profile = { volume = 0.75, stability = 0.7, strength = 0.55, energy_capacity = 0.2, permeability = 0.35, durability = 0.8 }
+material_capabilities = { boundary_permeability = 0.7, resource_uptake = 0.3 }
+
+[chemistry.resources.sterol]
+volume = 1.0
+diffusion_rate = 0.08
+energy_value = 0.3
+decay_rate = 0.002
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["structural_precursor"]
+material_profile = { volume = 0.7, stability = 0.85, strength = 0.6, energy_capacity = 0.1, permeability = 0.2, durability = 0.9 }
+material_capabilities = { boundary_permeability = 0.4, pressure_sensing = 0.2 }
+
+[chemistry.resources.fiber]
+volume = 1.0
+diffusion_rate = 0.08
+energy_value = 0.1
+decay_rate = 0.003
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["structural_precursor"]
+material_profile = { volume = 0.8, stability = 0.75, strength = 0.85, energy_capacity = 0.1, permeability = 0.2, durability = 0.75 }
+material_capabilities = { structural_growth = 0.7, contractility = 0.2 }
+
+[chemistry.resources.resin]
+volume = 1.0
+diffusion_rate = 0.06
+energy_value = 0.2
+decay_rate = 0.002
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["structural_precursor"]
+material_profile = { volume = 0.75, stability = 0.8, strength = 0.65, energy_capacity = 0.2, permeability = 0.15, durability = 0.85 }
+material_capabilities = { repair = 0.4, structural_growth = 0.4 }
+
+[chemistry.resources.mineral_salt]
+volume = 1.0
+diffusion_rate = 0.3
+energy_value = 0.0
+decay_rate = 0.0
+reactivity_profile = "stable"
+permeability = "passive"
+tags = ["dissolved"]
+material_profile = { volume = 0.35, stability = 0.7, strength = 0.45, energy_capacity = 0.0, permeability = 0.55, durability = 0.65 }
+material_capabilities = { resource_uptake = 0.3, damage_sensing = 0.2 }
+
+[chemistry.resources.silicate]
+volume = 1.0
+diffusion_rate = 0.05
+energy_value = 0.0
+decay_rate = 0.0
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["structural_precursor"]
+material_profile = { volume = 0.85, stability = 0.9, strength = 0.9, energy_capacity = 0.0, permeability = 0.1, durability = 0.9 }
+material_capabilities = { structural_growth = 0.6, pressure_sensing = 0.3 }
+
+[chemistry.resources.phosphate]
+volume = 1.0
+diffusion_rate = 0.28
+energy_value = 0.1
+decay_rate = 0.0
+reactivity_profile = "stable"
+permeability = "passive"
+tags = ["structural_precursor", "dissolved"]
+material_profile = { volume = 0.4, stability = 0.6, strength = 0.35, energy_capacity = 0.25, permeability = 0.55, durability = 0.55 }
+material_capabilities = { genome_copying = 0.4, material_synthesis = 0.2 }
+
+[chemistry.resources.carbon_fuel]
+volume = 1.0
+diffusion_rate = 0.3
+energy_value = 1.0
+decay_rate = 0.02
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["energy_source"]
+material_profile = { volume = 0.55, stability = 0.35, strength = 0.25, energy_capacity = 0.9, permeability = 0.5, durability = 0.3 }
+material_capabilities = { metabolism = 0.8, contractility = 0.2 }
+
+[chemistry.resources.storage_fat]
+volume = 1.0
+diffusion_rate = 0.08
+energy_value = 0.9
+decay_rate = 0.005
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["energy_source", "structural_precursor"]
+material_profile = { volume = 0.8, stability = 0.65, strength = 0.35, energy_capacity = 0.95, permeability = 0.2, durability = 0.65 }
+material_capabilities = { storage_capacity = 0.8 }
+
+[chemistry.resources.reactive_solvent]
+volume = 1.0
+diffusion_rate = 0.5
+energy_value = 0.3
+decay_rate = 0.04
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["dissolved"]
+material_profile = { volume = 0.3, stability = 0.2, strength = 0.15, energy_capacity = 0.25, permeability = 0.9, durability = 0.2 }
+material_capabilities = { material_synthesis = 0.4, resource_uptake = 0.4 }
+
+[chemistry.resources.catalyst_mineral]
+volume = 1.0
+diffusion_rate = 0.12
+energy_value = 0.0
+decay_rate = 0.0
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["structural_precursor"]
+material_profile = { volume = 0.55, stability = 0.8, strength = 0.55, energy_capacity = 0.0, permeability = 0.25, durability = 0.8 }
+material_capabilities = { material_synthesis = 0.8, genome_copying = 0.3 }
+
+[chemistry.resources.metal_ion]
+volume = 1.0
+diffusion_rate = 0.22
+energy_value = 0.0
+decay_rate = 0.0
+reactivity_profile = "reactive"
+permeability = "active_required"
+tags = ["dissolved"]
+material_profile = { volume = 0.35, stability = 0.75, strength = 0.7, energy_capacity = 0.1, permeability = 0.35, durability = 0.75 }
+material_capabilities = { pressure_sensing = 0.4, damage_sensing = 0.3 }
+
+[chemistry.resources.inert_waste]
+volume = 1.0
+diffusion_rate = 0.1
+energy_value = 0.0
+decay_rate = 0.01
+reactivity_profile = "stable"
+permeability = "blocked"
+tags = ["waste"]
+material_profile = { volume = 0.25, stability = 0.6, strength = 0.2, energy_capacity = 0.0, permeability = 0.15, durability = 0.6 }
+material_capabilities = {}
+
+[chemistry.resources.nucleotide_precursor]
+volume = 1.0
+diffusion_rate = 0.25
+energy_value = 0.2
+decay_rate = 0.01
+reactivity_profile = "reactive"
+permeability = "passive"
+tags = ["structural_precursor", "dissolved"]
+material_profile = { volume = 0.45, stability = 0.55, strength = 0.3, energy_capacity = 0.3, permeability = 0.55, durability = 0.5 }
+material_capabilities = { genome_copying = 0.8, material_synthesis = 0.3 }
+
+[chemistry.reactions.sugar_metabolism]
+mode = "controlled"
+process_id = "energy_conversion"
+inputs = { sugar = 1.0, carbon_fuel = 1.0 }
+required_materials = {}
+outputs = { inert_waste = 0.6 }
+configured_sink_amount = 1.4
+energy_output = 2.0
+heat_output = 0.1
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+
+[chemistry.reactions.reactive_solvent_decay]
+mode = "passive"
+inputs = { reactive_solvent = 1.0 }
+outputs = { inert_waste = 0.5 }
+configured_sink_amount = 0.5
+energy_output = 0.0
+heat_output = 0.05
+rate = 0.2
+probability = 1.0
+accounting_destination = "inert_waste"
+
+[chemistry.reactions.spent_material_fragment_conversion]
+mode = "passive"
+inputs = { inert_waste = 1.0 }
+outputs = { phosphate = 0.2, mineral_salt = 0.3 }
+configured_sink_amount = 0.5
+energy_output = 0.0
+heat_output = 0.02
+rate = 0.05
+probability = 1.0
+accounting_destination = "inert_waste"
+
+[chemistry.reactions.flexible_membrane_synthesis]
+mode = "controlled"
+process_id = "material_synthesis"
+inputs = { phospholipid = 2.0, sterol = 0.5, amino_acid = 0.5 }
+required_materials = {}
+outputs = { inert_waste = 0.2 }
+configured_sink_amount = 0.8
+energy_output = 0.0
+heat_output = 0.1
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+material_output = { amount = 2.0, derivation = "volume_weighted" }
+
+[chemistry.reactions.dense_membrane_synthesis]
+mode = "controlled"
+process_id = "material_synthesis"
+inputs = { phospholipid = 1.5, sterol = 1.0, mineral_salt = 0.5 }
+required_materials = {}
+outputs = { inert_waste = 0.4 }
+configured_sink_amount = 0.8
+energy_output = 0.0
+heat_output = 0.12
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+material_output = { amount = 1.8, derivation = "volume_weighted" }
+
+[chemistry.reactions.fiber_composite_synthesis]
+mode = "controlled"
+process_id = "material_synthesis"
+inputs = { fiber = 2.0, resin = 1.0, amino_acid = 0.5 }
+required_materials = {}
+outputs = { inert_waste = 0.4 }
+configured_sink_amount = 0.7
+energy_output = 0.0
+heat_output = 0.12
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+material_output = { amount = 2.4, derivation = "volume_weighted" }
+
+[chemistry.reactions.mineral_composite_synthesis]
+mode = "controlled"
+process_id = "material_synthesis"
+inputs = { silicate = 2.0, mineral_salt = 1.0, metal_ion = 0.5 }
+required_materials = {}
+outputs = { inert_waste = 0.3 }
+configured_sink_amount = 0.6
+energy_output = 0.0
+heat_output = 0.15
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+material_output = { amount = 2.6, derivation = "volume_weighted" }
+
+[chemistry.reactions.storage_gel_synthesis]
+mode = "controlled"
+process_id = "material_synthesis"
+inputs = { long_sugar = 2.0, storage_fat = 1.0, phosphate = 0.5 }
+required_materials = {}
+outputs = { inert_waste = 0.5 }
+configured_sink_amount = 0.8
+energy_output = 0.0
+heat_output = 0.1
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+material_output = { amount = 2.2, derivation = "volume_weighted" }
+
+[chemistry.reactions.reactive_matrix_synthesis]
+mode = "controlled"
+process_id = "material_synthesis"
+inputs = { reactive_solvent = 1.0, catalyst_mineral = 0.5, short_peptide = 1.0, carbon_fuel = 1.0 }
+required_materials = {}
+outputs = { inert_waste = 0.7 }
+configured_sink_amount = 1.0
+energy_output = 0.0
+heat_output = 0.2
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+material_output = { amount = 1.8, derivation = "volume_weighted" }
+
+[chemistry.reactions.genome_carrier_matrix_synthesis]
+mode = "controlled"
+process_id = "material_synthesis"
+inputs = { nucleotide_precursor = 1.5, phosphate = 1.0, short_peptide = 0.5, catalyst_mineral = 0.5 }
+required_materials = {}
+outputs = { inert_waste = 0.5 }
+configured_sink_amount = 1.0
+energy_output = 0.0
+heat_output = 0.15
+rate = 1.0
+probability = 1.0
+accounting_destination = "inert_waste"
+material_output = { amount = 2.0, derivation = "volume_weighted" }
+
+[chemistry.heat]
+capacity = 10.0
+dissipation_rate = 0.2
+warning_threshold = 8.0
+death_threshold = 10.0
+
+[chemistry.boundary]
+default_permeability = "blocked"
+retention_rate = 0.9
+
+[chemistry.repair]
+enabled = true
+energy_cost = 0.5
+max_amount_per_tick = 0.2

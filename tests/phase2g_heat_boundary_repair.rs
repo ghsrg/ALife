@@ -243,6 +243,8 @@ fn repair_can_consume_declared_typed_resource_when_generic_resource_is_absent() 
         reactivity_profile: "stable".to_string(),
         permeability: "passive".to_string(),
         tags: Vec::new(),
+        material_profile: None,
+        material_capabilities: alife::core::material_instance::MaterialCapabilityProfile::empty(),
     }];
     config.chemistry.materials = vec![ChemistryMaterialConfig {
         id: "boundary_polymer_A".to_string(),
@@ -296,6 +298,8 @@ fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
             reactivity_profile: "reactive".to_string(),
             permeability: "passive".to_string(),
             tags: Vec::new(),
+            material_profile: None,
+            material_capabilities: alife::core::material_instance::MaterialCapabilityProfile::empty(),
         },
         ChemistryResourceConfig {
             id: "waste_A".to_string(),
@@ -306,6 +310,8 @@ fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
             reactivity_profile: "stable".to_string(),
             permeability: "blocked".to_string(),
             tags: Vec::new(),
+            material_profile: None,
+            material_capabilities: alife::core::material_instance::MaterialCapabilityProfile::empty(),
         },
     ];
     config.chemistry.materials = vec![ChemistryMaterialConfig {
@@ -332,6 +338,7 @@ fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
         rate: 1.0,
         probability: 1.0,
         accounting_destination: "waste_A".to_string(),
+        material_output: None,
     }];
     config.initial_typed_resources = vec![vec![(
         alife::core::ids::ResourceTypeId::from_raw(0),

@@ -17,6 +17,7 @@ pub mod ids;
 pub mod joints;
 pub mod lifecycle;
 pub mod lineage;
+pub mod material_instance;
 pub mod material_types;
 pub mod materials;
 pub mod process;

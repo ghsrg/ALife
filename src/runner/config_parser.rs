@@ -1,20 +1,22 @@
 use crate::bootstrap::generator_spec::BootstrapGeneratorSpec;
 use crate::core::config::{
     CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryHeatConfig,
-    ChemistryMaterialConfig, ChemistryReactionConfig, ChemistryRepairConfig,
-    ChemistryResourceConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
-    EnvironmentConfig, GenomeCopyingConfig, GrowthConfig, LifecycleConfig, MaterialEffectConfig,
-    ResourceConfig, ResourceInteractionConfig, RuntimeConfig, SchedulerCellConfig, SchedulerConfig,
-    SchedulerObserverConfig, SchedulerWorldConfig, SimulationTimeConfig, SpaceConfig,
-    SynthesisConfig, WorldConfig,
+    ChemistryMaterialConfig, ChemistryMaterialOutputConfig, ChemistryReactionConfig,
+    ChemistryRepairConfig, ChemistryResourceConfig, ConfigError, ContractilityConfig,
+    DecompositionConfig, DivisionConfig, EnvironmentConfig, GenomeCopyingConfig, GrowthConfig,
+    LifecycleConfig, MaterialEffectConfig, ResourceConfig, ResourceInteractionConfig,
+    RuntimeConfig, SchedulerCellConfig, SchedulerConfig, SchedulerObserverConfig,
+    SchedulerWorldConfig, SimulationTimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
 };
 use crate::core::genome::{
     GenomeCarrierState, GenomeOutputId, GenomeOutputValue, GenomeTemplate, GenomeTemplateId,
 };
 use crate::core::ids::{MaterialTypeId, ResourceTypeId};
+use crate::core::material_instance::{MaterialCapabilityProfile, MaterialProfile};
 use crate::core::material_types::{
     MaterialProperties, MaterialRegistry, ReactionProfile, RepairRequirements, SignalProperties,
 };
+use crate::core::process::MaterialCapability;
 use crate::core::resource_types::{
     PermeabilityConstraint, ReactivityProfile, ResourceProperties, ResourceRegistry, ResourceTags,
 };
@@ -227,6 +229,19 @@ pub struct RawChemistryResource {
     pub permeability: String,
     #[serde(default)]
     pub tags: Vec<String>,
+    pub material_profile: Option<RawMaterialProfile>,
+    #[serde(default)]
+    pub material_capabilities: HashMap<String, f32>,
+}
+
+#[derive(Deserialize, Debug, Clone, Copy)]
+pub struct RawMaterialProfile {
+    pub volume: f32,
+    pub stability: f32,
+    pub strength: f32,
+    pub energy_capacity: f32,
+    pub permeability: f32,
+    pub durability: f32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -257,6 +272,13 @@ pub struct RawChemistryReaction {
     pub rate: f32,
     pub probability: f32,
     pub accounting_destination: String,
+    pub material_output: Option<RawChemistryMaterialOutput>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawChemistryMaterialOutput {
+    pub amount: f32,
+    pub derivation: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -1125,18 +1147,15 @@ impl RawScenarioConfig {
             .iter()
             .map(|template| template.id().as_str())
             .collect();
-        let mut initial_cell_genome_templates = vec![
-            self.cell
-                .genome
-                .as_ref()
-                .map(|genome| GenomeTemplateId::new(genome.template.clone()))
-                .transpose()
-                .map_err(|error| {
-                    ParseError::ValidationError(format!(
-                        "Invalid Genome template reference: {error:?}"
-                    ))
-                })?,
-        ];
+        let mut initial_cell_genome_templates = vec![self
+            .cell
+            .genome
+            .as_ref()
+            .map(|genome| GenomeTemplateId::new(genome.template.clone()))
+            .transpose()
+            .map_err(|error| {
+                ParseError::ValidationError(format!("Invalid Genome template reference: {error:?}"))
+            })?];
 
         if let Some(raw_cells) = &self.cells {
             initial_cell_genome_templates = raw_cells
@@ -1336,24 +1355,27 @@ fn parse_chemistry(
     {
         return Ok(ChemistryConfig::default());
     }
-    let mut declared = declared_resource_ids.to_vec();
-    declared.sort();
-    if declared.windows(2).any(|pair| pair[0] == pair[1]) {
+    let mut sorted_declared = declared_resource_ids.to_vec();
+    sorted_declared.sort();
+    if sorted_declared.windows(2).any(|pair| pair[0] == pair[1]) {
         return Err(ParseError::ValidationError(
             "Duplicate resource type id".to_string(),
         ));
     }
-    if declared.iter().any(|id| !raw.resources.contains_key(id)) {
+    if declared_resource_ids
+        .iter()
+        .any(|id| !raw.resources.contains_key(id))
+    {
         return Err(ParseError::ValidationError(
             "Unknown declared resource type id".to_string(),
         ));
     }
-    if raw.resources.len() != declared.len() {
+    if raw.resources.len() != declared_resource_ids.len() {
         return Err(ParseError::ValidationError(
             "Chemistry resources must match declared resource type ids".to_string(),
         ));
     }
-    let resource_names = declared;
+    let resource_names = declared_resource_ids.to_vec();
     let mut material_names: Vec<_> = raw.materials.keys().cloned().collect();
     material_names.sort();
 
@@ -1403,6 +1425,12 @@ fn parse_chemistry(
                 ))),
             })
             .collect::<Result<ResourceTags, _>>()?;
+        let material_profile = value
+            .material_profile
+            .map(parse_material_profile)
+            .transpose()?;
+        let material_capabilities =
+            parse_material_capability_profile(&value.material_capabilities)?;
         resource_types.push(crate::core::resource_types::ResourceType::new(
             ResourceTypeId::from_raw(index as u32),
             ResourceProperties::new(
@@ -1424,6 +1452,8 @@ fn parse_chemistry(
             reactivity_profile: reactivity_profile.0.to_string(),
             permeability: permeability.0.to_string(),
             tags: value.tags.clone(),
+            material_profile,
+            material_capabilities,
         });
     }
     ResourceRegistry::new(resource_types)
@@ -1511,6 +1541,7 @@ fn parse_chemistry(
             }
             "controlled" => match value.process_id.as_deref() {
                 Some("energy_conversion") => Some("energy_conversion".to_string()),
+                Some("material_synthesis") => Some("material_synthesis".to_string()),
                 Some(other) => {
                     return Err(ParseError::ValidationError(format!(
                         "Unsupported controlled reaction process_id: {other}"
@@ -1545,6 +1576,37 @@ fn parse_chemistry(
         )?;
         let energy_output = non_negative(value.energy_output, "reaction energy_output")?;
         let heat_output = non_negative(value.heat_output, "reaction heat_output")?;
+        let material_output = match &value.material_output {
+            Some(output) => {
+                if value.process_id.as_deref() != Some("material_synthesis") {
+                    return Err(ParseError::ValidationError(
+                        "material_output requires process_id = material_synthesis".to_string(),
+                    ));
+                }
+                if output.derivation != "volume_weighted" {
+                    return Err(ParseError::ValidationError(format!(
+                        "Unsupported material_output derivation: {}",
+                        output.derivation
+                    )));
+                }
+                for (resource_id, _) in &inputs {
+                    let Some(resource) = raw.resources.get(resource_id) else {
+                        continue;
+                    };
+                    if resource.material_profile.is_none() {
+                        return Err(ParseError::ValidationError(format!(
+                            "material_output input resource missing material_profile: {resource_id}"
+                        )));
+                    }
+                }
+                Some(ChemistryMaterialOutputConfig {
+                    amount: MaterialAmount::new(output.amount)
+                        .map_err(|e| chemistry_value("reaction material_output amount", e))?,
+                    derivation: output.derivation.clone(),
+                })
+            }
+            None => None,
+        };
         let required_materials = normalize_amounts(
             &value.required_materials,
             &material_ids,
@@ -1556,8 +1618,12 @@ fn parse_chemistry(
             ));
         }
         let input_total: f32 = inputs.iter().map(|(_, amount)| amount).sum();
-        let destination_total: f32 =
-            outputs.iter().map(|(_, amount)| amount).sum::<f32>() + configured_sink_amount;
+        let destination_total: f32 = outputs.iter().map(|(_, amount)| amount).sum::<f32>()
+            + configured_sink_amount
+            + material_output
+                .as_ref()
+                .map(|output| output.amount.raw())
+                .unwrap_or(0.0);
         if (input_total - destination_total).abs() > 1e-5 {
             return Err(ParseError::ValidationError(
                 "Reaction inputs must be fully accounted by outputs and configured sink"
@@ -1577,6 +1643,7 @@ fn parse_chemistry(
             rate,
             probability: value.probability,
             accounting_destination: value.accounting_destination.clone(),
+            material_output,
         });
     }
 
@@ -1678,6 +1745,59 @@ fn normalize_amounts(
             Ok((id.clone(), non_negative(values[&id], label)?))
         })
         .collect()
+}
+
+fn parse_material_profile(raw: RawMaterialProfile) -> Result<MaterialProfile, ParseError> {
+    MaterialProfile::new(
+        raw.volume,
+        raw.stability,
+        raw.strength,
+        raw.energy_capacity,
+        raw.permeability,
+        raw.durability,
+    )
+    .map_err(|error| {
+        ParseError::ValidationError(format!("Invalid resource material_profile: {error:?}"))
+    })
+}
+
+fn parse_material_capability_profile(
+    values: &HashMap<String, f32>,
+) -> Result<MaterialCapabilityProfile, ParseError> {
+    let mut profile = MaterialCapabilityProfile::empty();
+    let mut ids: Vec<_> = values.keys().cloned().collect();
+    ids.sort();
+    for id in ids {
+        let capability = material_capability_from_config_id(&id).ok_or_else(|| {
+            ParseError::ValidationError(format!("Unknown material capability: {id}"))
+        })?;
+        let value = values[&id];
+        if !value.is_finite() || !(0.0..=1.0).contains(&value) {
+            return Err(ParseError::ValidationError(format!(
+                "Invalid material capability value: {id}"
+            )));
+        }
+        profile = profile.with(capability, value);
+    }
+    Ok(profile)
+}
+
+fn material_capability_from_config_id(id: &str) -> Option<MaterialCapability> {
+    match id {
+        "boundary_permeability" => Some(MaterialCapability::BoundaryPermeability),
+        "resource_uptake" => Some(MaterialCapability::ResourceUptake),
+        "metabolism" => Some(MaterialCapability::Metabolism),
+        "storage_capacity" => Some(MaterialCapability::StorageCapacity),
+        "material_synthesis" => Some(MaterialCapability::MaterialSynthesis),
+        "structural_growth" => Some(MaterialCapability::StructuralGrowth),
+        "repair" => Some(MaterialCapability::Repair),
+        "genome_copying" => Some(MaterialCapability::GenomeCopying),
+        "contractility" => Some(MaterialCapability::Contractility),
+        "resource_sensing" => Some(MaterialCapability::ResourceSensing),
+        "pressure_sensing" => Some(MaterialCapability::PressureSensing),
+        "damage_sensing" => Some(MaterialCapability::DamageSensing),
+        _ => None,
+    }
 }
 
 fn non_negative(value: f32, label: &str) -> Result<f32, ParseError> {

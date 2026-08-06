@@ -101,6 +101,7 @@ tags:
 - [[outputs/worklogs/2026-07-29-PLAN-al-007-s22-monitor-layout-stabilization|2026-07-29-PLAN-al-007-s22-monitor-layout-stabilization]]
 
 ## Reports
+- [[outputs/worklogs/2026-08-07-0008-REPORT-al-003-s07-resource-derived-material-synthesis|2026-08-07-0008-REPORT-al-003-s07-resource-derived-material-synthesis]]
 - [[outputs/worklogs/2026-07-29-1147-REPORT-al-007-s22-monitor-layout-stabilization|2026-07-29-1147-REPORT-al-007-s22-monitor-layout-stabilization]]
 - [[outputs/worklogs/2026-07-26-2300-REPORT-ui-canon-layout-pixel-perfect|2026-07-26-2300-REPORT-ui-canon-layout-pixel-perfect]]
 - [[outputs/worklogs/2026-07-25-2025-REPORT-al-007-s18-specialization-analytics|2026-07-25-2025-REPORT-al-007-s18-specialization-analytics]]

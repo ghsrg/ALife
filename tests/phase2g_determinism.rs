@@ -78,6 +78,9 @@ fn probabilistic_passive_config(seed: u64) -> RuntimeConfig {
                 reactivity_profile: "reactive".to_string(),
                 permeability: "passive".to_string(),
                 tags: Vec::new(),
+                material_profile: None,
+                material_capabilities:
+                    alife::core::material_instance::MaterialCapabilityProfile::empty(),
             },
             ChemistryResourceConfig {
                 id: "waste_A".to_string(),
@@ -88,6 +91,9 @@ fn probabilistic_passive_config(seed: u64) -> RuntimeConfig {
                 reactivity_profile: "stable".to_string(),
                 permeability: "blocked".to_string(),
                 tags: Vec::new(),
+                material_profile: None,
+                material_capabilities:
+                    alife::core::material_instance::MaterialCapabilityProfile::empty(),
             },
         ],
         materials: Vec::new(),
@@ -104,6 +110,7 @@ fn probabilistic_passive_config(seed: u64) -> RuntimeConfig {
             rate: 1.0,
             probability: 0.5,
             accounting_destination: "waste_A".to_string(),
+            material_output: None,
         }],
         heat: ChemistryHeatConfig {
             capacity: 10.0,
