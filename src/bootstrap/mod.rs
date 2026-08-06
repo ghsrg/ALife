@@ -24,6 +24,7 @@ use crate::bootstrap::seed_domains::{
 };
 use crate::bootstrap::viability::{ViabilityError, validate_prepared_config};
 use crate::bootstrap::world_families::{WORLD_FAMILY_GENERATOR_VERSION, resolve_world_family};
+use crate::core::units::FieldValue;
 use crate::runner::scenario_doc::ScenarioDocument;
 use std::fmt;
 
@@ -101,6 +102,13 @@ pub fn prepare(document: &ScenarioDocument) -> Result<PreparedWorld, BootstrapEr
                 .collect(),
         );
     }
+    runtime_config.prepared_field_layers = prepare_field_layers(
+        document,
+        grid_width,
+        grid_height,
+        &mut seed_domains,
+        &mut generator_versions,
+    )?;
     let viability = validate_prepared_config(&runtime_config).map_err(BootstrapError::Viability)?;
     let field_summary = vec![
         FieldLayerSummary {
@@ -162,6 +170,110 @@ pub fn prepare(document: &ScenarioDocument) -> Result<PreparedWorld, BootstrapEr
         manifest,
         prepared_state_hash,
     })
+}
+
+fn prepare_field_layers(
+    document: &ScenarioDocument,
+    width: usize,
+    height: usize,
+    seed_domains: &mut Vec<crate::bootstrap::seed_domains::SeedDomainRecord>,
+    generator_versions: &mut Vec<GeneratorVersion>,
+) -> Result<Option<Vec<Vec<FieldValue>>>, BootstrapError> {
+    let Some(spec) = document.bootstrap_spec.as_ref() else {
+        return Ok(None);
+    };
+    if spec.fields.is_empty() || document.runtime_config.fields.is_empty() {
+        return Ok(None);
+    }
+
+    let cell_count = width * height;
+    let mut matched = false;
+    let mut layers = document
+        .runtime_config
+        .fields
+        .iter()
+        .map(|field| vec![field.initial_value; cell_count])
+        .collect::<Vec<_>>();
+
+    for field_spec in &spec.fields {
+        let Some(layer_index) = document
+            .runtime_config
+            .fields
+            .iter()
+            .position(|field| field.id == field_spec.field_id)
+        else {
+            continue;
+        };
+        let runtime_field = &document.runtime_config.fields[layer_index];
+        let min_value = field_spec
+            .min_value
+            .unwrap_or(runtime_field.initial_value.raw());
+        let max_value = field_spec
+            .max_value
+            .unwrap_or(runtime_field.initial_value.raw());
+        if !min_value.is_finite() || !max_value.is_finite() || min_value > max_value {
+            return Err(BootstrapError::Generator(ResourceLayerError::new(
+                "BOOTSTRAP_INVALID_RESOURCE_LAYER",
+            )));
+        }
+        let domain = derive_seed_domain(
+            root_seed(document),
+            document.scenario_hash,
+            &field_spec.seed_domain,
+        );
+        seed_domains.push(domain);
+        generator_versions.push(GeneratorVersion::new(field_spec.version.clone()));
+        layers[layer_index] = match field_spec.generator.as_str() {
+            "band" => vec![field_value_midpoint(min_value, max_value, runtime_field)?; cell_count],
+            "gradient" => {
+                gradient_field_values(width, height, min_value, max_value, runtime_field)?
+            }
+            _ => {
+                return Err(BootstrapError::Generator(ResourceLayerError::new(
+                    "BOOTSTRAP_UNKNOWN_FIELD_GENERATOR",
+                )));
+            }
+        };
+        matched = true;
+    }
+
+    Ok(matched.then_some(layers))
+}
+
+fn field_value_midpoint(
+    min_value: f32,
+    max_value: f32,
+    runtime_field: &crate::core::fields::FieldRuntimeConfig,
+) -> Result<FieldValue, BootstrapError> {
+    let value = ((min_value + max_value) * 0.5)
+        .clamp(runtime_field.min_value.raw(), runtime_field.max_value.raw());
+    FieldValue::new(value).map_err(|_| {
+        BootstrapError::Generator(ResourceLayerError::new("BOOTSTRAP_INVALID_RESOURCE_LAYER"))
+    })
+}
+
+fn gradient_field_values(
+    width: usize,
+    height: usize,
+    min_value: f32,
+    max_value: f32,
+    runtime_field: &crate::core::fields::FieldRuntimeConfig,
+) -> Result<Vec<FieldValue>, BootstrapError> {
+    let denominator = width.saturating_sub(1).max(1) as f32;
+    let mut values = Vec::with_capacity(width * height);
+    for _y in 0..height {
+        for x in 0..width {
+            let t = x as f32 / denominator;
+            let value = (min_value + (max_value - min_value) * t)
+                .clamp(runtime_field.min_value.raw(), runtime_field.max_value.raw());
+            values.push(FieldValue::new(value).map_err(|_| {
+                BootstrapError::Generator(ResourceLayerError::new(
+                    "BOOTSTRAP_INVALID_RESOURCE_LAYER",
+                ))
+            })?);
+        }
+    }
+    Ok(values)
 }
 
 fn prepare_resource_layers(
@@ -252,11 +364,15 @@ fn generated_field_summaries(document: &ScenarioDocument) -> Vec<FieldLayerSumma
 }
 
 fn generated_warnings(document: &ScenarioDocument) -> Vec<BootstrapWarning> {
-    if document
-        .bootstrap_spec
-        .as_ref()
-        .is_some_and(|spec| !spec.fields.is_empty())
-    {
+    if document.bootstrap_spec.as_ref().is_some_and(|spec| {
+        spec.fields.iter().any(|field_spec| {
+            !document
+                .runtime_config
+                .fields
+                .iter()
+                .any(|field| field.id == field_spec.field_id)
+        })
+    }) {
         vec![BootstrapWarning {
             code: "BOOTSTRAP_FIELD_LAYER_NOT_CORE_INTEGRATED".to_string(),
             message:

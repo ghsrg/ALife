@@ -2,14 +2,15 @@ use crate::core::action_plan::ActionPlan;
 use crate::core::cell_store::{
     CellIndex, CellStore, EnergyBuffer, InitialCellState, LifecycleState,
 };
-use crate::core::config::{deterministic_genome_decision_offset, RuntimeConfig};
+use crate::core::config::{RuntimeConfig, deterministic_genome_decision_offset};
 use crate::core::contact::ContactCache;
 use crate::core::environment::EnvironmentState;
 use crate::core::events::EventBuffer;
+use crate::core::fields::{FieldGrid, FieldGridError};
 use crate::core::fragments::FragmentStore;
 use crate::core::genome::{GenomeId, GenomeOutputValue, GenomeState};
 use crate::core::genome_bootstrap::instantiate_initial_genome;
-use crate::core::ids::ResourceTypeId;
+use crate::core::ids::{FieldTypeId, ResourceTypeId};
 use crate::core::joints::JointStore;
 use crate::core::lineage::{
     DivisionLineage, GenomeCopyLineage, GenomeMutationDelta, LineageEventLog,
@@ -43,6 +44,7 @@ pub struct WorldState {
     config: RuntimeConfig,
     cells: CellStore,
     resources: ResourceGrid,
+    fields: Option<FieldGrid>,
     environment: EnvironmentState,
     spatial_index: SpatialIndex,
     contact_cache: ContactCache,
@@ -224,12 +226,20 @@ impl WorldState {
         .map_err(|_| WorldInitError::InvalidInitialState)?;
 
         let environment = EnvironmentState::from_config(&config.environment);
+        let fields = FieldGrid::from_configs_with_layers(
+            config.world.size,
+            config.space.spatial_grid_size,
+            &config.fields,
+            config.prepared_field_layers.clone(),
+        )
+        .map_err(|_| WorldInitError::InvalidInitialState)?;
 
         Ok(Self {
             tick: Tick::from_raw(0),
             config,
             cells,
             resources,
+            fields,
             environment,
             spatial_index,
             contact_cache,
@@ -263,6 +273,25 @@ impl WorldState {
 
     pub fn resources_mut_for_commit(&mut self) -> &mut ResourceGrid {
         &mut self.resources
+    }
+
+    pub fn fields(&self) -> Option<&FieldGrid> {
+        self.fields.as_ref()
+    }
+
+    pub fn fields_mut_for_commit(&mut self) -> Option<&mut FieldGrid> {
+        self.fields.as_mut()
+    }
+
+    pub fn local_field_sample(
+        &self,
+        cell_idx: CellIndex,
+        field_type: FieldTypeId,
+    ) -> Result<crate::core::units::FieldValue, FieldGridError> {
+        self.fields
+            .as_ref()
+            .ok_or(FieldGridError::LayerOutOfBounds)?
+            .sample_at_position(field_type, self.cells.position(cell_idx))
     }
 
     pub fn environment(&self) -> EnvironmentState {
@@ -1372,6 +1401,14 @@ impl WorldState {
             })
             .cloned()
         {
+            if let Some(condition) = &reaction.field_condition {
+                let sample = self
+                    .local_field_sample(cell_idx, condition.field_type)
+                    .map_err(|_| "FieldConditionUnavailable".to_string())?;
+                if sample.raw() < condition.min || sample.raw() > condition.max {
+                    return Err("FieldConditionNotMet".to_string());
+                }
+            }
             let material_output = reaction
                 .material_output
                 .clone()

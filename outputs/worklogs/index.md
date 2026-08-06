@@ -100,7 +100,10 @@ tags:
 - [[outputs/worklogs/2026-07-26-2250-PLAN-ui-canon-layout-pixel-perfect|2026-07-26-2250-PLAN-ui-canon-layout-pixel-perfect]]
 - [[outputs/worklogs/2026-07-29-PLAN-al-007-s22-monitor-layout-stabilization|2026-07-29-PLAN-al-007-s22-monitor-layout-stabilization]]
 
+- [[outputs/worklogs/2026-08-07-0140-PLAN-al-003-s09-local-field-runtime-chemistry-effects|2026-08-07-0140-PLAN-al-003-s09-local-field-runtime-chemistry-effects]]
+
 ## Reports
+- [[outputs/worklogs/2026-08-07-0227-REPORT-al-003-s09-local-field-runtime-chemistry-effects|2026-08-07-0227-REPORT-al-003-s09-local-field-runtime-chemistry-effects]]
 - [[outputs/worklogs/2026-08-07-0057-REPORT-al-003-s08-physical-genome-precursor-accounting|2026-08-07-0057-REPORT-al-003-s08-physical-genome-precursor-accounting]]
 - [[outputs/worklogs/2026-08-07-0008-REPORT-al-003-s07-resource-derived-material-synthesis|2026-08-07-0008-REPORT-al-003-s07-resource-derived-material-synthesis]]
 - [[outputs/worklogs/2026-07-29-1147-REPORT-al-007-s22-monitor-layout-stabilization|2026-07-29-1147-REPORT-al-007-s22-monitor-layout-stabilization]]

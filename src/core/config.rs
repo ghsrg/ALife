@@ -1,9 +1,10 @@
+use crate::core::fields::FieldRuntimeConfig;
 use crate::core::genome::{GenomeTemplate, GenomeTemplateId};
-use crate::core::ids::ResourceTypeId;
+use crate::core::ids::{FieldTypeId, ResourceTypeId};
 use crate::core::material_instance::{MaterialCapabilityProfile, MaterialProfile};
 use crate::core::units::{
-    CapacityAmount, EnergyAmount, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount,
-    Seed, Tick, WasteAmount, WorldSize,
+    CapacityAmount, EnergyAmount, FieldValue, HeatAmount, MaterialAmount, Position, Radius,
+    ResourceAmount, Seed, Tick, WasteAmount, WorldSize,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,6 +32,7 @@ pub struct ChemistryMaterialConfig {
     pub decay_rate: f32,
     pub repair_resource: String,
     pub repair_amount: f32,
+    pub field_degradation: Option<ChemistryMaterialFieldDegradationConfig>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -48,12 +50,30 @@ pub struct ChemistryReactionConfig {
     pub probability: f32,
     pub accounting_destination: String,
     pub material_output: Option<ChemistryMaterialOutputConfig>,
+    pub field_condition: Option<ChemistryFieldConditionConfig>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChemistryMaterialOutputConfig {
     pub amount: MaterialAmount,
     pub derivation: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryFieldConditionConfig {
+    pub field_id: String,
+    pub field_type: FieldTypeId,
+    pub min: f32,
+    pub max: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChemistryMaterialFieldDegradationConfig {
+    pub field_id: String,
+    pub field_type: FieldTypeId,
+    pub min: f32,
+    pub max: f32,
+    pub multiplier: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -476,6 +496,8 @@ pub struct RuntimeConfig {
     pub space: SpaceConfig,
     pub resources: ResourceConfig,
     pub prepared_resource_layers: Option<Vec<Vec<ResourceAmount>>>,
+    pub prepared_field_layers: Option<Vec<Vec<FieldValue>>>,
+    pub fields: Vec<FieldRuntimeConfig>,
     pub resource_interaction: ResourceInteractionConfig,
     pub cell: CellInitialConfig,
     pub environment: EnvironmentConfig,
@@ -662,6 +684,8 @@ impl RuntimeConfig {
             space,
             resources,
             prepared_resource_layers: None,
+            prepared_field_layers: None,
+            fields: Vec::new(),
             resource_interaction,
             cell,
             environment,
@@ -1078,6 +1102,17 @@ impl RuntimeConfig {
                 add(&mut hash, value.to_bits() as u64);
             }
             add_text(&mut hash, &material.repair_resource);
+            match &material.field_degradation {
+                Some(effect) => {
+                    add(&mut hash, 1);
+                    add_text(&mut hash, &effect.field_id);
+                    add(&mut hash, effect.field_type.raw() as u64);
+                    add(&mut hash, effect.min.to_bits() as u64);
+                    add(&mut hash, effect.max.to_bits() as u64);
+                    add(&mut hash, effect.multiplier.to_bits() as u64);
+                }
+                None => add(&mut hash, 0),
+            }
         }
         for reaction in &self.chemistry.reactions {
             add_text(&mut hash, &reaction.id);
@@ -1109,6 +1144,35 @@ impl RuntimeConfig {
                     add_text(&mut hash, &output.derivation);
                 }
                 None => add(&mut hash, 0),
+            }
+            match &reaction.field_condition {
+                Some(condition) => {
+                    add(&mut hash, 1);
+                    add_text(&mut hash, &condition.field_id);
+                    add(&mut hash, condition.field_type.raw() as u64);
+                    add(&mut hash, condition.min.to_bits() as u64);
+                    add(&mut hash, condition.max.to_bits() as u64);
+                }
+                None => add(&mut hash, 0),
+            }
+        }
+        for field in &self.fields {
+            add_text(&mut hash, &field.id);
+            add(&mut hash, field.type_id.raw() as u64);
+            add(&mut hash, field.initial_value.raw().to_bits() as u64);
+            add(&mut hash, field.diffusion_rate.to_bits() as u64);
+            add(&mut hash, field.decay_rate.to_bits() as u64);
+            add(&mut hash, field.min_value.raw().to_bits() as u64);
+            add(&mut hash, field.max_value.raw().to_bits() as u64);
+            add(&mut hash, field.effect_profile as u64);
+            add(&mut hash, field.conserved_behavior as u64);
+        }
+        if let Some(layers) = &self.prepared_field_layers {
+            for layer in layers {
+                for value in layer {
+                    add(&mut hash, value.raw().to_bits() as u64);
+                }
+                add(&mut hash, 0xff);
             }
         }
         for value in [

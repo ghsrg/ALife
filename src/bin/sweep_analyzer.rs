@@ -832,6 +832,7 @@ fn configure_phase2g_runtime(
                 decay_rate: material_decay,
                 repair_resource: "nutrient_A".to_string(),
                 repair_amount: 0.25,
+                field_degradation: None,
             },
             ChemistryMaterialConfig {
                 id: "structural_polymer_A".to_string(),
@@ -843,6 +844,7 @@ fn configure_phase2g_runtime(
                 decay_rate: (material_decay * 2.0).clamp(0.0, 1.0),
                 repair_resource: "nutrient_A".to_string(),
                 repair_amount: 0.5,
+                field_degradation: None,
             },
         ],
         reactions: vec![
@@ -864,6 +866,7 @@ fn configure_phase2g_runtime(
                 probability: 1.0,
                 accounting_destination: "waste_A".to_string(),
                 material_output: None,
+                field_condition: None,
             },
             ChemistryReactionConfig {
                 id: "controlled_conversion".to_string(),
@@ -879,6 +882,7 @@ fn configure_phase2g_runtime(
                 probability: 1.0,
                 accounting_destination: "waste_A".to_string(),
                 material_output: None,
+                field_condition: None,
             },
         ],
         heat: ChemistryHeatConfig {

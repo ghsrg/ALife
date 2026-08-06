@@ -10,11 +10,13 @@ fn canonical_test_world_resolves_resource_derived_material_synthesis_surface() {
     let config = &document.runtime_config;
     assert_eq!(document.id, "canonical_test_world");
     assert!(config.chemistry.resources.len() >= 18);
-    assert!(config
-        .chemistry
-        .resources
-        .iter()
-        .any(|resource| resource.id == "nucleotide_precursor"));
+    assert!(
+        config
+            .chemistry
+            .resources
+            .iter()
+            .any(|resource| resource.id == "nucleotide_precursor")
+    );
     assert_eq!(
         config
             .chemistry
@@ -39,13 +41,26 @@ fn canonical_test_world_resolves_resource_derived_material_synthesis_surface() {
         .expect("canonical copying precursor accounting");
     assert_eq!(copying.carrier_material_id, "genome_carrier_matrix");
     assert_eq!(copying.precursor_requirements.len(), 4);
-    assert!(config
-        .genome_physical_accounting
-        .recombination
-        .as_ref()
-        .is_some_and(|rule| rule.precursor_requirements.len() == 4));
-    assert!(document
-        .canonical_source
-        .contains("[canonical_manifests.genome_precursors]"));
+    assert!(
+        config
+            .genome_physical_accounting
+            .recombination
+            .as_ref()
+            .is_some_and(|rule| rule.precursor_requirements.len() == 4)
+    );
+    let temperature = config
+        .fields
+        .iter()
+        .find(|field| field.id == "temperature")
+        .expect("canonical local temperature field");
+    assert_eq!(temperature.initial_value.raw(), 25.0);
+    assert_eq!(temperature.min_value.raw(), 0.0);
+    assert_eq!(temperature.max_value.raw(), 100.0);
+    assert!(
+        document
+            .canonical_source
+            .contains("[canonical_manifests.genome_precursors]")
+    );
+    assert!(document.canonical_source.contains("[fields.temperature]"));
     assert_ne!(document.scenario_hash.raw(), 0);
 }

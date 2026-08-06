@@ -142,6 +142,7 @@ amount_type!(MaterialAmount);
 amount_type!(CapacityAmount);
 amount_type!(HeatAmount);
 amount_type!(WasteAmount);
+amount_type!(FieldValue);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]

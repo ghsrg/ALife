@@ -250,7 +250,7 @@ fn test_synthesis_process_feasibility_and_execution() {
     let result = exec.world().validate_feasibility(idx, &candidate);
     assert!(matches!(result, FeasibilityResult::Allowed { .. }));
 
-    let old_structural = exec.world().cells().structural_material(idx).raw();
+    let old_synthesis = exec.world().cells().synthesis_material(idx).raw();
 
     // Execute synthesis
     exec.world_mut().execute_synthesis(idx).unwrap();
@@ -258,12 +258,12 @@ fn test_synthesis_process_feasibility_and_execution() {
     // Check post-conditions:
     // Resources: 2.0 - 1.0 = 1.0
     // Energy: 6.0 - 5.0 = 1.0
-    // Structural material: old_structural + 1.0
+    // Fallback synthesis reinforces the dominant material slot.
     assert_eq!(exec.world().cells().resource_amount(idx).raw(), 1.0);
     assert_eq!(exec.world().cells().energy(idx).current().raw(), 1.0);
     assert_eq!(
-        exec.world().cells().structural_material(idx).raw(),
-        old_structural + 1.0
+        exec.world().cells().synthesis_material(idx).raw(),
+        old_synthesis + 1.0
     );
 }
 

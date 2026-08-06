@@ -79,6 +79,9 @@ fn passive_chemistry_config() -> RuntimeConfig {
                 reactivity_profile: "reactive".to_string(),
                 permeability: "passive".to_string(),
                 tags: Vec::new(),
+                material_profile: None,
+                material_capabilities:
+                    alife::core::material_instance::MaterialCapabilityProfile::empty(),
             },
             ChemistryResourceConfig {
                 id: "waste_A".to_string(),
@@ -89,6 +92,9 @@ fn passive_chemistry_config() -> RuntimeConfig {
                 reactivity_profile: "stable".to_string(),
                 permeability: "blocked".to_string(),
                 tags: Vec::new(),
+                material_profile: None,
+                material_capabilities:
+                    alife::core::material_instance::MaterialCapabilityProfile::empty(),
             },
         ],
         materials: Vec::<ChemistryMaterialConfig>::new(),
@@ -105,6 +111,8 @@ fn passive_chemistry_config() -> RuntimeConfig {
             rate: 0.1,
             probability: 1.0,
             accounting_destination: "waste_A".to_string(),
+            material_output: None,
+            field_condition: None,
         }],
         heat: ChemistryHeatConfig {
             capacity: 10.0,
@@ -196,6 +204,7 @@ fn material_type_decay_degrades_matching_material_slot() {
         decay_rate: 0.25,
         repair_resource: "nutrient_A".to_string(),
         repair_amount: 0.5,
+        field_degradation: None,
     }];
     let mut executor = TickExecutor::new(config).unwrap();
 
@@ -226,6 +235,8 @@ fn controlled_reaction_requires_metabolic_capability_and_consumes_typed_input() 
         rate: 1.0,
         probability: 1.0,
         accounting_destination: "waste_A".to_string(),
+        material_output: None,
+        field_condition: None,
     });
     let mut executor = TickExecutor::new(config).unwrap();
     executor
@@ -268,6 +279,8 @@ fn missing_catalyst_blocks_controlled_reaction() {
         rate: 1.0,
         probability: 1.0,
         accounting_destination: "waste_A".to_string(),
+        material_output: None,
+        field_condition: None,
     });
     let mut executor = TickExecutor::new(config).unwrap();
     let index = alife::core::cell_store::CellIndex::from_raw(0);
@@ -312,6 +325,8 @@ fn controlled_reaction_heat_changes_only_local_cell_temperature() {
         rate: 1.0,
         probability: 1.0,
         accounting_destination: "waste_A".to_string(),
+        material_output: None,
+        field_condition: None,
     });
     let mut executor = TickExecutor::new(config).unwrap();
     executor
@@ -355,6 +370,8 @@ fn local_reaction_heat_degrades_material_over_tolerance_in_tick() {
         rate: 1.0,
         probability: 1.0,
         accounting_destination: "waste_A".to_string(),
+        material_output: None,
+        field_condition: None,
     });
     let mut executor = TickExecutor::new(config).unwrap();
     let index = alife::core::cell_store::CellIndex::from_raw(0);

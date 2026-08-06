@@ -1,18 +1,22 @@
 use crate::bootstrap::generator_spec::BootstrapGeneratorSpec;
 use crate::core::config::{
-    CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryHeatConfig,
-    ChemistryMaterialConfig, ChemistryMaterialOutputConfig, ChemistryReactionConfig,
-    ChemistryRepairConfig, ChemistryResourceConfig, ConfigError, ContractilityConfig,
-    DecompositionConfig, DivisionConfig, EnvironmentConfig, GenomeCopyingAccountingRule,
-    GenomeCopyingConfig, GenomePhysicalAccountingConfig, GenomeRecombinationAccountingRule,
-    GrowthConfig, LifecycleConfig, MaterialEffectConfig, ResourceConfig, ResourceInteractionConfig,
+    CellInitialConfig, ChemistryBoundaryConfig, ChemistryConfig, ChemistryFieldConditionConfig,
+    ChemistryHeatConfig, ChemistryMaterialConfig, ChemistryMaterialFieldDegradationConfig,
+    ChemistryMaterialOutputConfig, ChemistryReactionConfig, ChemistryRepairConfig,
+    ChemistryResourceConfig, ConfigError, ContractilityConfig, DecompositionConfig, DivisionConfig,
+    EnvironmentConfig, GenomeCopyingAccountingRule, GenomeCopyingConfig,
+    GenomePhysicalAccountingConfig, GenomeRecombinationAccountingRule, GrowthConfig,
+    LifecycleConfig, MaterialEffectConfig, ResourceConfig, ResourceInteractionConfig,
     RuntimeConfig, SchedulerCellConfig, SchedulerConfig, SchedulerObserverConfig,
     SchedulerWorldConfig, SimulationTimeConfig, SpaceConfig, SynthesisConfig, WorldConfig,
+};
+use crate::core::fields::{
+    FieldConservedBehavior, FieldEffectProfile, FieldKind, FieldRuntimeConfig,
 };
 use crate::core::genome::{
     GenomeCarrierState, GenomeOutputId, GenomeOutputValue, GenomeTemplate, GenomeTemplateId,
 };
-use crate::core::ids::{MaterialTypeId, ResourceTypeId};
+use crate::core::ids::{FieldTypeId, MaterialTypeId, ResourceTypeId};
 use crate::core::material_instance::{MaterialCapabilityProfile, MaterialProfile};
 use crate::core::material_types::{
     MaterialProperties, MaterialRegistry, ReactionProfile, RepairRequirements, SignalProperties,
@@ -23,8 +27,8 @@ use crate::core::resource_types::{
 };
 use crate::core::units::{
     CapacityAmount, DecayRate, DiffusionRate, EnergyAmount, EnergyCapacity, EnergyValue,
-    HeatAmount, MaterialAmount, Position, Radius, ResourceAmount, Seed, SignalAmount, Strength,
-    Tick, Volume, WasteAmount, WorldSize,
+    FieldValue, HeatAmount, MaterialAmount, Position, Radius, ResourceAmount, Seed, SignalAmount,
+    Strength, Tick, Volume, WasteAmount, WorldSize,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -280,6 +284,15 @@ pub struct RawChemistryMaterial {
     pub decay_rate: f32,
     pub repair_resource: String,
     pub repair_amount: f32,
+    pub field_degradation: Option<RawMaterialFieldDegradation>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawMaterialFieldDegradation {
+    pub field_id: String,
+    pub min: f32,
+    pub max: f32,
+    pub multiplier: f32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -299,6 +312,14 @@ pub struct RawChemistryReaction {
     pub probability: f32,
     pub accounting_destination: String,
     pub material_output: Option<RawChemistryMaterialOutput>,
+    pub field_condition: Option<RawFieldCondition>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawFieldCondition {
+    pub field_id: String,
+    pub min: f32,
+    pub max: f32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -384,6 +405,8 @@ pub struct RawScenarioConfig {
     pub space: RawSpace,
     pub resources: RawResources,
     pub bootstrap: Option<BootstrapGeneratorSpec>,
+    #[serde(default)]
+    pub fields: HashMap<String, RawFieldRuntime>,
     pub resource_interaction: Option<RawResourceInteraction>,
     pub local_interaction: Option<RawLocalInteraction>,
     pub cell: RawCell,
@@ -402,6 +425,18 @@ pub struct RawScenarioConfig {
     pub chemistry: Option<RawChemistry>,
     #[serde(default)]
     pub genome_templates: HashMap<String, RawGenomeTemplate>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct RawFieldRuntime {
+    pub kind: String,
+    pub initial_value: f32,
+    pub diffusion_rate: f32,
+    pub decay_rate: f32,
+    pub min_value: f32,
+    pub max_value: f32,
+    pub effect_profile: String,
+    pub conserved_behavior: String,
 }
 
 #[derive(Debug)]
@@ -827,6 +862,7 @@ impl RawScenarioConfig {
         runtime_config
             .validate_scheduler_options()
             .map_err(ParseError::ConfigValidationError)?;
+        runtime_config.fields = parse_fields(&self.fields)?;
 
         if let Some(ref raw_growth) = self.growth {
             runtime_config.growth = GrowthConfig {
@@ -1138,6 +1174,7 @@ impl RawScenarioConfig {
         runtime_config.chemistry = parse_chemistry(
             self.chemistry.unwrap_or_default(),
             &self.resources.resource_type_ids,
+            &runtime_config.fields,
         )?;
         runtime_config.initial_typed_resources = if runtime_config.chemistry.resources.is_empty() {
             if let Some(raw_cells) = &self.cells {
@@ -1181,15 +1218,18 @@ impl RawScenarioConfig {
             .iter()
             .map(|template| template.id().as_str())
             .collect();
-        let mut initial_cell_genome_templates = vec![self
-            .cell
-            .genome
-            .as_ref()
-            .map(|genome| GenomeTemplateId::new(genome.template.clone()))
-            .transpose()
-            .map_err(|error| {
-                ParseError::ValidationError(format!("Invalid Genome template reference: {error:?}"))
-            })?];
+        let mut initial_cell_genome_templates = vec![
+            self.cell
+                .genome
+                .as_ref()
+                .map(|genome| GenomeTemplateId::new(genome.template.clone()))
+                .transpose()
+                .map_err(|error| {
+                    ParseError::ValidationError(format!(
+                        "Invalid Genome template reference: {error:?}"
+                    ))
+                })?,
+        ];
 
         if let Some(raw_cells) = &self.cells {
             initial_cell_genome_templates = raw_cells
@@ -1376,9 +1416,74 @@ fn parse_materials_inventory(
     ))
 }
 
+fn parse_fields(
+    raw: &HashMap<String, RawFieldRuntime>,
+) -> Result<Vec<FieldRuntimeConfig>, ParseError> {
+    let mut ids: Vec<_> = raw.keys().cloned().collect();
+    ids.sort();
+    ids.into_iter()
+        .enumerate()
+        .map(|(index, id)| {
+            let value = &raw[&id];
+            let kind = match value.kind.as_str() {
+                "scalar" => FieldKind::Scalar,
+                other => {
+                    return Err(ParseError::ValidationError(format!(
+                        "Unknown field kind: {other}"
+                    )));
+                }
+            };
+            let effect_profile = match value.effect_profile.as_str() {
+                "temperature" => FieldEffectProfile::Temperature,
+                "light" => FieldEffectProfile::Light,
+                "pressure" => FieldEffectProfile::Pressure,
+                "radiation" => FieldEffectProfile::Radiation,
+                "chemical_gradient" => FieldEffectProfile::ChemicalGradient,
+                "flow" => FieldEffectProfile::Flow,
+                other => {
+                    return Err(ParseError::ValidationError(format!(
+                        "Unknown field effect_profile: {other}"
+                    )));
+                }
+            };
+            let conserved_behavior = match value.conserved_behavior.as_str() {
+                "conserved" => FieldConservedBehavior::Conserved,
+                "dissipated" => FieldConservedBehavior::Dissipated,
+                "clamped" => FieldConservedBehavior::Clamped,
+                "derived" => FieldConservedBehavior::Derived,
+                "abstracted" => FieldConservedBehavior::Abstracted,
+                other => {
+                    return Err(ParseError::ValidationError(format!(
+                        "Unknown field conserved_behavior: {other}"
+                    )));
+                }
+            };
+            FieldRuntimeConfig::new(
+                id,
+                FieldTypeId::from_raw(index as u32),
+                kind,
+                FieldValue::new(value.initial_value)
+                    .map_err(|e| chemistry_value("field initial_value", e))?,
+                value.diffusion_rate,
+                value.decay_rate,
+                FieldValue::new(value.min_value)
+                    .map_err(|e| chemistry_value("field min_value", e))?,
+                FieldValue::new(value.max_value)
+                    .map_err(|e| chemistry_value("field max_value", e))?,
+                effect_profile,
+                conserved_behavior,
+            )
+            .map_err(|error| {
+                ParseError::ValidationError(format!("Invalid field config: {error:?}"))
+            })
+        })
+        .collect()
+}
+
 fn parse_chemistry(
     raw: RawChemistry,
     declared_resource_ids: &[String],
+    fields: &[FieldRuntimeConfig],
 ) -> Result<ChemistryConfig, ParseError> {
     if raw.resources.is_empty()
         && raw.materials.is_empty()
@@ -1510,6 +1615,37 @@ fn parse_chemistry(
         let decay = DecayRate::new(value.decay_rate)
             .map_err(|e| chemistry_value("material decay_rate", e))?;
         let repair_amount = non_negative(value.repair_amount, "material repair_amount")?;
+        let field_degradation = match &value.field_degradation {
+            Some(effect) => {
+                if !effect.min.is_finite()
+                    || !effect.max.is_finite()
+                    || effect.min > effect.max
+                    || !effect.multiplier.is_finite()
+                    || effect.multiplier < 0.0
+                {
+                    return Err(ParseError::ValidationError(
+                        "Invalid material field_degradation".to_string(),
+                    ));
+                }
+                let field = fields
+                    .iter()
+                    .find(|field| field.id == effect.field_id)
+                    .ok_or_else(|| {
+                        ParseError::ValidationError(format!(
+                            "Unknown material field_degradation field_id: {}",
+                            effect.field_id
+                        ))
+                    })?;
+                Some(ChemistryMaterialFieldDegradationConfig {
+                    field_id: effect.field_id.clone(),
+                    field_type: field.type_id,
+                    min: effect.min,
+                    max: effect.max,
+                    multiplier: effect.multiplier,
+                })
+            }
+            None => None,
+        };
         material_types.push(crate::core::material_types::MaterialType::new(
             MaterialTypeId::from_raw(index as u32),
             MaterialProperties::new(
@@ -1538,6 +1674,7 @@ fn parse_chemistry(
             decay_rate: value.decay_rate,
             repair_resource: value.repair_resource.clone(),
             repair_amount,
+            field_degradation,
         });
     }
     MaterialRegistry::new(material_types)
@@ -1610,6 +1747,34 @@ fn parse_chemistry(
         )?;
         let energy_output = non_negative(value.energy_output, "reaction energy_output")?;
         let heat_output = non_negative(value.heat_output, "reaction heat_output")?;
+        let field_condition = match &value.field_condition {
+            Some(condition) => {
+                if !condition.min.is_finite()
+                    || !condition.max.is_finite()
+                    || condition.min > condition.max
+                {
+                    return Err(ParseError::ValidationError(
+                        "Invalid reaction field_condition bounds".to_string(),
+                    ));
+                }
+                let field = fields
+                    .iter()
+                    .find(|field| field.id == condition.field_id)
+                    .ok_or_else(|| {
+                        ParseError::ValidationError(format!(
+                            "Unknown reaction field_condition field_id: {}",
+                            condition.field_id
+                        ))
+                    })?;
+                Some(ChemistryFieldConditionConfig {
+                    field_id: condition.field_id.clone(),
+                    field_type: field.type_id,
+                    min: condition.min,
+                    max: condition.max,
+                })
+            }
+            None => None,
+        };
         let material_output = match &value.material_output {
             Some(output) => {
                 if value.process_id.as_deref() != Some("material_synthesis") {
@@ -1678,6 +1843,7 @@ fn parse_chemistry(
             probability: value.probability,
             accounting_destination: value.accounting_destination.clone(),
             material_output,
+            field_condition,
         });
     }
 

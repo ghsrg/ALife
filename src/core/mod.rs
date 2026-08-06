@@ -9,6 +9,7 @@ pub mod deltas;
 pub mod dirty_regions;
 pub mod environment;
 pub mod events;
+pub mod fields;
 pub mod fragments;
 pub mod genome;
 pub mod genome_bootstrap;

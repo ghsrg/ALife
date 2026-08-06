@@ -256,6 +256,7 @@ fn repair_can_consume_declared_typed_resource_when_generic_resource_is_absent() 
         decay_rate: 0.0,
         repair_resource: "nutrient_A".to_string(),
         repair_amount: 0.25,
+        field_degradation: None,
     }];
     config.initial_typed_resources = vec![vec![(
         alife::core::ids::ResourceTypeId::from_raw(0),
@@ -299,7 +300,8 @@ fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
             permeability: "passive".to_string(),
             tags: Vec::new(),
             material_profile: None,
-            material_capabilities: alife::core::material_instance::MaterialCapabilityProfile::empty(),
+            material_capabilities: alife::core::material_instance::MaterialCapabilityProfile::empty(
+            ),
         },
         ChemistryResourceConfig {
             id: "waste_A".to_string(),
@@ -311,7 +313,8 @@ fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
             permeability: "blocked".to_string(),
             tags: Vec::new(),
             material_profile: None,
-            material_capabilities: alife::core::material_instance::MaterialCapabilityProfile::empty(),
+            material_capabilities: alife::core::material_instance::MaterialCapabilityProfile::empty(
+            ),
         },
     ];
     config.chemistry.materials = vec![ChemistryMaterialConfig {
@@ -324,6 +327,7 @@ fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
         decay_rate: 0.0,
         repair_resource: "nutrient_A".to_string(),
         repair_amount: 0.25,
+        field_degradation: None,
     }];
     config.chemistry.reactions = vec![ChemistryReactionConfig {
         id: "controlled_competes_with_repair".to_string(),
@@ -339,6 +343,7 @@ fn repair_rejects_when_declared_resource_was_spent_before_repair_commit() {
         probability: 1.0,
         accounting_destination: "waste_A".to_string(),
         material_output: None,
+        field_condition: None,
     }];
     config.initial_typed_resources = vec![vec![(
         alife::core::ids::ResourceTypeId::from_raw(0),

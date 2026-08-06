@@ -59,11 +59,21 @@ seed_domain = "fields.layers.temperature"
 min_value = 18.0
 max_value = 32.0
 
+[fields.temperature]
+kind = "scalar"
+initial_value = 25.0
+diffusion_rate = 0.05
+decay_rate = 0.0
+min_value = 0.0
+max_value = 100.0
+effect_profile = "temperature"
+conserved_behavior = "abstracted"
+
 [canonical_manifests]
 schema = "canonical_test_world_manifest_v1"
 purpose = "Forward contract for resource-derived material synthesis, physical Genome precursor accounting, and local Field runtime."
-runtime_status = "partially_supported"
-unsupported_until = ["AL-003-S09"]
+runtime_status = "field_runtime_supported"
+unsupported_until = []
 
 [canonical_manifests.genome_precursors]
 carrier_material_id = "genome_carrier_matrix"

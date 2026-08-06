@@ -5,6 +5,9 @@ pub struct CellId(u32);
 pub struct ResourceTypeId(u32);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct FieldTypeId(u32);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MaterialTypeId(u32);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -35,6 +38,7 @@ macro_rules! impl_id {
 
 impl_id!(CellId);
 impl_id!(ResourceTypeId);
+impl_id!(FieldTypeId);
 impl_id!(MaterialTypeId);
 impl_id!(MaterialFragmentId);
 impl_id!(JointId);

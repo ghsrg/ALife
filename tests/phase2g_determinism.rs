@@ -111,6 +111,7 @@ fn probabilistic_passive_config(seed: u64) -> RuntimeConfig {
             probability: 0.5,
             accounting_destination: "waste_A".to_string(),
             material_output: None,
+            field_condition: None,
         }],
         heat: ChemistryHeatConfig {
             capacity: 10.0,

@@ -1,4 +1,5 @@
 use crate::core::cell_store::{LifecycleState, RuntimeFlags};
+use crate::core::fields::FieldLayerIndex;
 use crate::core::genome::GenomeOutputId;
 use crate::core::ids::JointId;
 use crate::core::materials::MaterialSlot;
@@ -16,6 +17,7 @@ impl StableStateHasher {
         hasher.add_u64(world.config().config_hash());
         hasher.add_cells(world);
         hasher.add_resources(world);
+        hasher.add_fields(world);
         hasher.add_environment(world);
         hasher.add_fragments(world);
         hasher.add_joints(world);
@@ -156,6 +158,26 @@ impl StableHasher {
                         .amount_at(ResourceLayerIndex::from_raw(layer), GridCoord::new(x, y))
                         .expect("resource hash iterates valid grid coordinates");
                     self.add_f32(amount.raw());
+                }
+            }
+        }
+    }
+
+    fn add_fields(&mut self, world: &WorldState) {
+        let Some(fields) = world.fields() else {
+            self.add_usize(0);
+            return;
+        };
+        self.add_usize(fields.width());
+        self.add_usize(fields.height());
+        self.add_usize(fields.layer_count());
+        for layer in 0..fields.layer_count() {
+            for y in 0..fields.height() {
+                for x in 0..fields.width() {
+                    let value = fields
+                        .value_at(FieldLayerIndex::from_raw(layer), GridCoord::new(x, y))
+                        .expect("field hash iterates valid grid coordinates");
+                    self.add_f32(value.raw());
                 }
             }
         }

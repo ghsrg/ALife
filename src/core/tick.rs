@@ -1301,6 +1301,13 @@ impl TickExecutor {
             phase2g_metrics.resource_decay_amount +=
                 (resource_amount_before_decay - resource_amount_after_decay).max(0.0);
         }
+        let field_update_cadence = config.scheduler.world.field_update_ticks.max(1);
+        if is_due_on_executing_tick(executing_tick, field_update_cadence) {
+            if let Some(fields) = self.world.fields_mut_for_commit() {
+                fields.decay_elapsed(field_update_cadence);
+                let _ = fields.diffuse_all();
+            }
+        }
         self.world
             .cells_mut_for_commit()
             .commit_contact_stimulus(config.local_interaction.stimulus_decay_per_tick);
@@ -1716,7 +1723,10 @@ impl TickExecutor {
             for cell_raw in 0..self.world.cells().len() {
                 let cell = CellIndex::from_raw(cell_raw);
                 let current = self.world.cells().material_amount_for_slot(cell, slot);
-                let decayed = (current.raw() * decay_rate).min(current.raw());
+                let effective_decay_rate = (decay_rate
+                    * self.material_field_degradation_multiplier(material, cell))
+                .clamp(0.0, 1.0);
+                let decayed = (current.raw() * effective_decay_rate).min(current.raw());
                 if decayed <= 0.0 {
                     continue;
                 }
@@ -1728,12 +1738,30 @@ impl TickExecutor {
                 self.world.cells_mut_for_commit().set_material_damage(
                     cell,
                     slot,
-                    current_damage + decay_rate,
+                    current_damage + effective_decay_rate,
                 );
                 degraded_total += decayed;
             }
         }
         degraded_total
+    }
+
+    fn material_field_degradation_multiplier(
+        &self,
+        material: &crate::core::config::ChemistryMaterialConfig,
+        cell: CellIndex,
+    ) -> f32 {
+        let Some(effect) = &material.field_degradation else {
+            return 1.0;
+        };
+        let Ok(value) = self.world.local_field_sample(cell, effect.field_type) else {
+            return 1.0;
+        };
+        if value.raw() >= effect.min && value.raw() <= effect.max {
+            effect.multiplier
+        } else {
+            1.0
+        }
     }
 
     fn aggregate_external_resources(&self) -> f32 {

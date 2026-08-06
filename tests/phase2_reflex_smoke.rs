@@ -73,6 +73,7 @@ fn test_autonomous_synthesis_and_growth_reflex() {
     // Abundant resources and energy, with synthesis capability enabled
     config.cell.initial_resource_amount = ResourceAmount::new(10.0).unwrap();
     config.cell.initial_synthesis_material = MaterialAmount::new(1.0).unwrap();
+    config.cell.initial_structural_material = MaterialAmount::new(1.1).unwrap();
 
     let mut exec = alife::core::tick::TickExecutor::new(config).unwrap();
     let idx = CellIndex::from_raw(0);
