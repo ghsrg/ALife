@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldFrame } from '../projection/types';
 import {
+  buildResourceGridLineSegments,
   drawCellOrganelles,
   drawIntegrityArc,
   drawJointsLayer,
@@ -48,6 +49,21 @@ describe('sampleBilinearResource', () => {
     expect(topLeft.organic).toBeCloseTo(1.0);
     expect(topLeft.mineral).toBeCloseTo(0.0);
     expect(topLeft.energy).toBeCloseTo(0.0);
+  });
+});
+
+describe('buildResourceGridLineSegments', () => {
+  it('builds world resource grid lines from resource dimensions and camera', () => {
+    const segments = buildResourceGridLineSegments(2, 2, 200, 100, { x: 10, y: 20, scale: 1 });
+
+    expect(segments).toEqual([
+      { from: { x: 10, y: 20 }, to: { x: 10, y: 120 } },
+      { from: { x: 110, y: 20 }, to: { x: 110, y: 120 } },
+      { from: { x: 210, y: 20 }, to: { x: 210, y: 120 } },
+      { from: { x: 10, y: 20 }, to: { x: 210, y: 20 } },
+      { from: { x: 10, y: 70 }, to: { x: 210, y: 70 } },
+      { from: { x: 10, y: 120 }, to: { x: 210, y: 120 } }
+    ]);
   });
 });
 

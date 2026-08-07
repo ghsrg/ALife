@@ -62,6 +62,33 @@ function renderLayerPanel(options: { withResourceProjection?: boolean; activeLev
               sourceOwner: 'WorldFrameProjection',
               sourcePath: 'VisualWorldProjection.fields.CommittedSnapshot.heat'
             }
+          },
+          {
+            fieldId: 'CommittedSnapshot.waste',
+            value: 0,
+            sourceMetric: {
+              fieldId: 'CommittedSnapshot.waste',
+              sourceOwner: 'WorldFrameProjection',
+              sourcePath: 'VisualWorldProjection.fields.CommittedSnapshot.waste'
+            }
+          },
+          {
+            fieldId: 'CommittedSnapshot.temperature',
+            value: 21,
+            sourceMetric: {
+              fieldId: 'CommittedSnapshot.temperature',
+              sourceOwner: 'WorldFrameProjection',
+              sourcePath: 'VisualWorldProjection.fields.CommittedSnapshot.temperature'
+            }
+          },
+          {
+            fieldId: 'CommittedSnapshot.light',
+            value: 64,
+            sourceMetric: {
+              fieldId: 'CommittedSnapshot.light',
+              sourceOwner: 'WorldFrameProjection',
+              sourcePath: 'VisualWorldProjection.fields.CommittedSnapshot.light'
+            }
           }
         ],
         sourceMetrics: []
@@ -115,16 +142,77 @@ describe('LayerPanel', () => {
     renderLayerPanel({ withResourceProjection: true });
 
     const panel = screen.getByTestId('monitor-layers-track');
-    const fieldRow = screen.getByLabelText('Field layer Heat');
+    const fieldRow = screen.getByLabelText('Field layer Temperature');
     const resourceRow = screen.getByLabelText('Resource layer amino_acid');
 
-    expect(fieldRow).toHaveTextContent('Heat');
-    expect(fieldRow).not.toHaveTextContent('CommittedSnapshot.heat');
+    expect(fieldRow).toHaveTextContent('Temperature');
+    expect(fieldRow).not.toHaveTextContent('CommittedSnapshot.temperature');
     expect(resourceRow).toHaveTextContent('amino_acid');
     expect(screen.getByLabelText('Resource layer nucleotide_precursor')).toBeInTheDocument();
-    expect(resourceRow).toHaveTextContent('10 total · bounded');
+    expect(resourceRow).not.toHaveTextContent('10 total');
     expect(resourceRow).not.toHaveTextContent('CommittedSnapshot exposes resource grid cells');
-    expect(panel).not.toHaveTextContent('VisualWorldProjection.fields.CommittedSnapshot.heat');
+    expect(panel).not.toHaveTextContent('VisualWorldProjection.fields.CommittedSnapshot.temperature');
+  });
+
+  it('renders group switches for Fields, Resources, and Visual Effects', () => {
+    const { store } = renderLayerPanel({ withResourceProjection: true });
+
+    const fieldsGroup = screen.getByLabelText('Toggle Fields group');
+    const resourcesGroup = screen.getByLabelText('Toggle Resources group');
+    const visualEffectsGroup = screen.getByLabelText('Toggle Visual Effects group');
+
+    expect(fieldsGroup).toBeChecked();
+    expect(resourcesGroup).toBeChecked();
+    expect(visualEffectsGroup).not.toBeChecked();
+
+    resourcesGroup.click();
+    expect(store.getState().activeResourceLayers).toEqual([]);
+
+    visualEffectsGroup.click();
+    expect(Object.values(store.getState().visualEffects).every((value) => value === true)).toBe(true);
+    expect(store.getState().visualEffects.showWorldGrid).toBe(true);
+
+    fieldsGroup.click();
+    expect(store.getState().disabledFieldLayers).toEqual([
+      'CommittedSnapshot.temperature',
+      'CommittedSnapshot.light'
+    ]);
+  });
+
+  it('renders Fields as configured named scalar layers with color and switches', () => {
+    const { store } = renderLayerPanel({ withResourceProjection: true });
+
+    const panel = screen.getByTestId('monitor-layers-track');
+    expect(panel).not.toHaveTextContent('Heat');
+    expect(panel).not.toHaveTextContent('Waste');
+
+    const temperatureRow = screen.getByLabelText('Field layer Temperature');
+    const lightRow = screen.getByLabelText('Field layer Light');
+    const temperatureToggle = screen.getByLabelText('Toggle field layer Temperature');
+
+    expect(temperatureRow).toHaveTextContent('Temperature');
+    expect(lightRow).toHaveTextContent('Light');
+    expect(temperatureRow.querySelector('.cc-field-dot')).toBeInTheDocument();
+    expect(temperatureToggle).toBeChecked();
+
+    temperatureToggle.click();
+
+    expect(store.getState().disabledFieldLayers).toContain('CommittedSnapshot.temperature');
+  });
+
+  it('renders Visual Effects as icon, name, and switch rows without corrupt glyph text', () => {
+    renderLayerPanel({ withResourceProjection: true });
+
+    const nebulaRow = screen.getByLabelText('Visual effect Nebula Resource Glow');
+    const particlesRow = screen.getByLabelText('Visual effect Stardust Particles');
+    const worldGridRow = screen.getByLabelText('Visual effect World Grid');
+
+    expect(nebulaRow).toHaveTextContent('Nebula Resource Glow');
+    expect(particlesRow).toHaveTextContent('Stardust Particles');
+    expect(worldGridRow).toHaveTextContent('World Grid');
+    expect(nebulaRow).not.toHaveTextContent('рџ');
+    expect(screen.getByLabelText('Toggle visual effect Nebula Resource Glow')).toBeInTheDocument();
+    expect(screen.getByLabelText('Toggle visual effect World Grid')).not.toBeChecked();
   });
 
   it('hides cell-specific controls outside Cells and Organisms levels', () => {
@@ -168,5 +256,12 @@ describe('LayerPanel', () => {
     expect(panel).not.toHaveTextContent('Mineral');
     expect(panel).not.toHaveTextContent('Energy Level');
     expect(panel).toHaveTextContent('Resource layers unavailable');
+  });
+
+  it('explains when only summary heat and waste fields were received', () => {
+    renderLayerPanel();
+
+    const panel = screen.getByTestId('monitor-layers-track');
+    expect(panel).toHaveTextContent('No config');
   });
 });

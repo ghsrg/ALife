@@ -112,6 +112,40 @@ describe('WorldViewer', () => {
     expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
   });
 
+  it('passes visualEffects into renderer frame updates', async () => {
+    const visualEffects = {
+      showNebula: false,
+      showParticles: false,
+      showFilaments: false,
+      showPhenotypeTraits: false,
+      showDivisionFlash: false,
+      showOrganelles: false,
+      showOrganismHulls: false,
+      showJointPulses: false,
+      showWorldGrid: false
+    };
+
+    render(
+      <WorldViewer
+        frame={ui1aFixture.frame}
+        selectedCellId="cell-a"
+        onSelectCell={vi.fn()}
+        activeResourceLayers={[0]}
+        visualEffects={visualEffects}
+      />
+    );
+
+    await waitFor(() => {
+      expect(renderFrame).toHaveBeenLastCalledWith(
+        ui1aFixture.frame,
+        'cell-a',
+        { x: 0, y: 0, scale: 1 },
+        [0],
+        visualEffects
+      );
+    });
+  });
+
   it('opens with the full world fitted as map scale 1:2600', async () => {
     render(
       <WorldViewer

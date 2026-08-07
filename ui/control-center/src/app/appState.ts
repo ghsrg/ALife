@@ -39,17 +39,19 @@ export interface VisualEffectsConfig {
   showOrganelles: boolean;
   showOrganismHulls: boolean;
   showJointPulses: boolean;
+  showWorldGrid: boolean;
 }
 
 export const DEFAULT_VISUAL_EFFECTS: VisualEffectsConfig = {
-  showNebula: true,
-  showParticles: true,
-  showFilaments: true,
-  showPhenotypeTraits: true,
-  showDivisionFlash: true,
-  showOrganelles: true,
-  showOrganismHulls: true,
-  showJointPulses: true,
+  showNebula: false,
+  showParticles: false,
+  showFilaments: false,
+  showPhenotypeTraits: false,
+  showDivisionFlash: false,
+  showOrganelles: false,
+  showOrganismHulls: false,
+  showJointPulses: false,
+  showWorldGrid: false,
 };
 
 export interface AppState {
@@ -73,6 +75,7 @@ export interface AppState {
   lastError: string | null;
   selectionCleared: boolean;
   activeResourceLayers: number[];
+  disabledFieldLayers: string[];
   resourceLayerSelectionInitializedForRunId: string | null;
   visualEffects: VisualEffectsConfig;
   monitorMetricHistory: Record<string, RrdMetricHistory>;
@@ -89,7 +92,11 @@ export interface AppActions {
   selectMonitorTarget: (selection: MonitorSelection) => void;
   clearSelection: (notice?: string | null) => void;
   toggleResourceLayer: (layerIndex: number) => void;
+  setResourceLayersEnabled: (layerIndices: number[], enabled: boolean) => void;
+  toggleFieldLayer: (fieldId: string) => void;
+  setFieldLayersEnabled: (fieldIds: string[], enabled: boolean) => void;
   toggleVisualEffect: (key: keyof VisualEffectsConfig) => void;
+  setVisualEffectsEnabled: (enabled: boolean) => void;
   setMonitorAccountingTarget: (target: AccountingTarget) => void;
   setTheme: (theme: ThemeMode) => void;
   setRunnerEndpoint: (endpoint: string) => void;
@@ -253,6 +260,7 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     lastError: null,
     selectionCleared: false,
     activeResourceLayers: [0, 1],
+    disabledFieldLayers: [],
     resourceLayerSelectionInitializedForRunId: null,
     visualEffects: DEFAULT_VISUAL_EFFECTS,
     monitorMetricHistory: {},
@@ -264,6 +272,23 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         : [...current, layerIndex];
       set({ activeResourceLayers: next });
     },
+    setResourceLayersEnabled: (layerIndices, enabled) => {
+      set({ activeResourceLayers: enabled ? layerIndices : [] });
+    },
+    toggleFieldLayer: (fieldId) => {
+      const current = get().disabledFieldLayers;
+      const next = current.includes(fieldId)
+        ? current.filter((id) => id !== fieldId)
+        : [...current, fieldId];
+      set({ disabledFieldLayers: next });
+    },
+    setFieldLayersEnabled: (fieldIds, enabled) => {
+      set((state) => ({
+        disabledFieldLayers: enabled
+          ? state.disabledFieldLayers.filter((fieldId) => !fieldIds.includes(fieldId))
+          : Array.from(new Set([...state.disabledFieldLayers, ...fieldIds]))
+      }));
+    },
     toggleVisualEffect: (key) =>
       set((state) => ({
         visualEffects: {
@@ -271,6 +296,20 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
           [key]: !state.visualEffects[key]
         }
       })),
+    setVisualEffectsEnabled: (enabled) =>
+      set({
+        visualEffects: {
+          showNebula: enabled,
+          showParticles: enabled,
+          showFilaments: enabled,
+          showPhenotypeTraits: enabled,
+          showDivisionFlash: enabled,
+          showOrganelles: enabled,
+          showOrganismHulls: enabled,
+          showJointPulses: enabled,
+          showWorldGrid: enabled
+        }
+      }),
     setMonitorAccountingTarget: (monitorAccountingTarget) => set({ monitorAccountingTarget }),
     setFrame: (frame) => {
       const state = get();

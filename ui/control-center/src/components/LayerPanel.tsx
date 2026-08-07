@@ -1,6 +1,7 @@
 import { type AppStore } from '../app/appState';
 import { buildFieldLayerDisplay, buildResourceLayerDisplay } from '../app/layerDisplayModel';
 import type { MonitorViewModel } from '../app/monitorViewModel';
+import type { DebugField } from '../projection/types';
 import { uiText } from '../uiText';
 import { type AnalysisLevel } from './LevelPanel';
 
@@ -13,6 +14,8 @@ interface LayerPanelProps {
 }
 
 const RESOURCE_COLORS = ['#00c896', '#3a86ff', '#ffb703', '#8338ec', '#2dd4bf', '#a78bfa'];
+const FIELD_COLORS = ['#22d3ee', '#f97316', '#eab308', '#a855f7', '#38bdf8', '#ef4444'];
+const FRAME_SUMMARY_FIELD_IDS = new Set(['heat', 'waste']);
 
 export function LayerPanel({
   state,
@@ -34,7 +37,17 @@ export function LayerPanel({
     ? state.debugProjections.visualWorld
     : null;
   const fields = visualWorld?.fields ?? [];
+  const configuredFields = fields.filter(isConfiguredFieldLayer);
   const resourceLayers = visualWorld?.resourceLayers ?? [];
+  const configuredFieldIds = configuredFields.map((field) => field.fieldId);
+  const resourceLayerIndices = resourceLayers.map((layer) => layer.layerIndex);
+  const fieldsGroupEnabled =
+    configuredFieldIds.length > 0 &&
+    configuredFieldIds.some((fieldId) => !(state.disabledFieldLayers?.includes(fieldId) ?? false));
+  const resourcesGroupEnabled = resourceLayerIndices.some((layerIndex) =>
+    state.activeResourceLayers?.includes(layerIndex) ?? false
+  );
+  const visualEffectsGroupEnabled = Object.values(state.visualEffects ?? {}).some(Boolean);
   const showCellSpecificControls = activeLevel === 'cells' || activeLevel === 'organisms';
 
   return (
@@ -48,30 +61,55 @@ export function LayerPanel({
 
       <div className="cc-layers-dynamic-scroll" data-testid="layers-dynamic-scroll">
         <section className="cc-layers-section">
-          <span className="cc-layers-section-label">Fields</span>
-          {fields.length > 0 ? (
-            fields.map((field) => {
+          <LayerGroupHeader
+            label="Fields"
+            checked={fieldsGroupEnabled}
+            disabled={configuredFieldIds.length === 0}
+            onChange={() => state.setFieldLayersEnabled?.(configuredFieldIds, !fieldsGroupEnabled)}
+          />
+          {configuredFields.length > 0 ? (
+            configuredFields.map((field, index) => {
               const display = buildFieldLayerDisplay(field);
+              const color = FIELD_COLORS[index % FIELD_COLORS.length];
+              const isActive = !(state.disabledFieldLayers?.includes(field.fieldId) ?? false);
               return (
-                <div
+                <label
                   key={field.fieldId}
-                  className="cc-field-layer"
+                  className="cc-field-layer cc-layer-row-simple"
                   aria-label={`Field layer ${display.primaryLabel}`}
                   title={display.provenance}
                 >
-                  <span className="cc-field-dot" style={{ backgroundColor: '#22d3ee' }} />
+                  <span className="cc-field-dot" style={{ backgroundColor: color }} />
                   <span className="cc-field-name">{display.primaryLabel}</span>
-                  <small className="cc-layer-state">{display.secondaryLabel}</small>
-                </div>
+                  <div className="cc-toggle">
+                    <input
+                      type="checkbox"
+                      aria-label={`Toggle field layer ${display.primaryLabel}`}
+                      checked={isActive}
+                      onChange={() => state.toggleFieldLayer?.(field.fieldId)}
+                    />
+                    <span className="cc-toggle-slider" />
+                  </div>
+                </label>
               );
             })
           ) : (
-            <UnavailableLayerRow label="Field layers unavailable" reason="No source-backed spatial Field projection loaded" />
+            <UnavailableLayerRow
+              label="No config"
+              reason={fields.length > 0
+                ? 'Only summary heat/waste fields were received; configured field layers are absent from the debug projection.'
+                : 'No source-backed configured Field projection loaded'}
+            />
           )}
         </section>
 
         <section className="cc-layers-section">
-          <span className="cc-layers-section-label">Resources</span>
+          <LayerGroupHeader
+            label="Resources"
+            checked={resourcesGroupEnabled}
+            disabled={resourceLayerIndices.length === 0}
+            onChange={() => state.setResourceLayersEnabled?.(resourceLayerIndices, !resourcesGroupEnabled)}
+          />
           {resourceLayers.length > 0 ? (
             resourceLayers.map((layer) => {
               const isActive = state.activeResourceLayers?.includes(layer.layerIndex) ?? true;
@@ -80,21 +118,16 @@ export function LayerPanel({
               return (
                 <label
                   key={layer.layerIndex}
-                  className="cc-field-layer"
+                  className="cc-field-layer cc-layer-row-simple"
                   aria-label={`Resource layer ${display.primaryLabel}`}
                   title={display.provenance}
                 >
                   <span className="cc-field-dot" style={{ backgroundColor: color }} />
                   <span className="cc-field-name">{display.primaryLabel}</span>
-                  <span
-                    className="cc-layer-gradient"
-                    aria-hidden="true"
-                    style={{ background: `linear-gradient(90deg, transparent, ${color})` }}
-                  />
-                  <small className="cc-layer-state">{display.secondaryLabel}</small>
                   <div className="cc-toggle">
                     <input
                       type="checkbox"
+                      aria-label={`Toggle resource layer ${display.primaryLabel}`}
                       checked={isActive}
                       onChange={() => state.toggleResourceLayer?.(layer.layerIndex)}
                     />
@@ -109,45 +142,63 @@ export function LayerPanel({
         </section>
 
         <section className="cc-layers-section">
-          <span className="cc-layers-section-label">Visual Effects</span>
+          <LayerGroupHeader
+            label="Visual Effects"
+            checked={visualEffectsGroupEnabled}
+            onChange={() => state.setVisualEffectsEnabled?.(!visualEffectsGroupEnabled)}
+          />
           <VisualEffectRow
-            label="🌌 Nebula Resource Glow"
+            icon="▦"
+            label="World Grid"
+            checked={state.visualEffects?.showWorldGrid ?? false}
+            onChange={() => state.toggleVisualEffect?.('showWorldGrid')}
+          />
+          <VisualEffectRow
+            icon="🌌"
+            label="Nebula Resource Glow"
             checked={state.visualEffects?.showNebula ?? false}
             onChange={() => state.toggleVisualEffect?.('showNebula')}
           />
           <VisualEffectRow
-            label="💫 Stardust Particles"
+            icon="💫"
+            label="Stardust Particles"
             checked={state.visualEffects?.showParticles ?? false}
             onChange={() => state.toggleVisualEffect?.('showParticles')}
           />
           <VisualEffectRow
-            label="🕸️ Resource Filaments"
+            icon="🕸️"
+            label="Resource Filaments"
             checked={state.visualEffects?.showFilaments ?? false}
             onChange={() => state.toggleVisualEffect?.('showFilaments')}
           />
           <VisualEffectRow
-            label="🚩 Phenotype Traits"
+            icon="🚩"
+            label="Phenotype Traits"
             checked={state.visualEffects?.showPhenotypeTraits ?? false}
             onChange={() => state.toggleVisualEffect?.('showPhenotypeTraits')}
           />
           <VisualEffectRow
-            label="✨ Division Flash FX"
+            icon="✨"
+            label="Division Flash FX"
             checked={state.visualEffects?.showDivisionFlash ?? false}
             onChange={() => state.toggleVisualEffect?.('showDivisionFlash')}
           />
           <VisualEffectRow
-            label="🔬 Organelle Structure"
-            checked={state.visualEffects?.showOrganelles ?? true}
+            icon="🔬"
+            label="Organelle Structure"
+            checked={state.visualEffects?.showOrganelles ?? false}
             onChange={() => state.toggleVisualEffect?.('showOrganelles')}
           />
           <VisualEffectRow
-            label="🧬 Organism Organic Hulls"
-            checked={state.visualEffects?.showOrganismHulls ?? true}
+            icon="🧬"
+            label="Organism Organic Hulls"
+            checked={state.visualEffects?.showOrganismHulls ?? false}
             onChange={() => state.toggleVisualEffect?.('showOrganismHulls')}
           />
           <VisualEffectRow
-            label="⚡ Animated Joint Pulses"
-            checked={state.visualEffects?.showJointPulses ?? true}
+            icon="⚡"
+            label="Animated Joint Pulses"
+            checked={state.visualEffects?.showJointPulses ?? false}
             onChange={() => state.toggleVisualEffect?.('showJointPulses')}
           />
         </section>
@@ -205,12 +256,61 @@ function UnavailableLayerRow({ label, reason }: { label: string; reason: string 
   );
 }
 
-function VisualEffectRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+function LayerGroupHeader({
+  label,
+  checked,
+  disabled,
+  onChange
+}: {
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+}) {
   return (
-    <label className="cc-field-layer">
+    <label className="cc-layer-group-header">
+      <span className="cc-layers-section-label">{label}</span>
+      <div className="cc-toggle">
+        <input
+          type="checkbox"
+          aria-label={`Toggle ${label} group`}
+          checked={checked}
+          disabled={disabled}
+          onChange={onChange}
+        />
+        <span className="cc-toggle-slider" />
+      </div>
+    </label>
+  );
+}
+
+function isConfiguredFieldLayer(field: DebugField) {
+  const canonicalName = field.fieldId.split('.').at(-1)?.toLowerCase() ?? field.fieldId.toLowerCase();
+  return !FRAME_SUMMARY_FIELD_IDS.has(canonicalName);
+}
+
+function VisualEffectRow({
+  icon,
+  label,
+  checked,
+  onChange
+}: {
+  icon: string;
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className="cc-field-layer cc-effect-row" aria-label={`Visual effect ${label}`}>
+      <span className="cc-layer-icon" aria-hidden="true">{icon}</span>
       <span className="cc-field-name">{label}</span>
       <div className="cc-toggle">
-        <input type="checkbox" checked={checked} onChange={onChange} />
+        <input
+          type="checkbox"
+          aria-label={`Toggle visual effect ${label}`}
+          checked={checked}
+          onChange={onChange}
+        />
         <span className="cc-toggle-slider" />
       </div>
     </label>

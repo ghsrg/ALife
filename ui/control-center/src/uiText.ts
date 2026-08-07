@@ -60,7 +60,7 @@ export const uiText = {
     fitButton: 'Fit'
   },
   inspector: {
-    title: 'Cell Inspector',
+    title: 'Inspector',
     emptyCell: 'No cell selected.',
     id: 'ID',
     energy: 'Energy',

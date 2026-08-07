@@ -51,6 +51,184 @@ initial_distribution = [
 ]
 optional_decay_rate = 0.00001
 
+[[bootstrap.resources]]
+resource_type_id = "amino_acid"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.amino_acid"
+patches = 8
+min_amount = 0.02
+max_amount = 7.0
+falloff = 0.42
+
+[[bootstrap.resources]]
+resource_type_id = "short_peptide"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.short_peptide"
+patches = 6
+min_amount = 0.01
+max_amount = 4.5
+falloff = 0.38
+
+[[bootstrap.resources]]
+resource_type_id = "sugar"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.sugar"
+min_amount = 0.05
+max_amount = 8.0
+
+[[bootstrap.resources]]
+resource_type_id = "long_sugar"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.long_sugar"
+patches = 5
+min_amount = 0.01
+max_amount = 5.0
+falloff = 0.45
+
+[[bootstrap.resources]]
+resource_type_id = "fatty_acid"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.fatty_acid"
+min_amount = 0.02
+max_amount = 5.5
+
+[[bootstrap.resources]]
+resource_type_id = "phospholipid"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.phospholipid"
+patches = 5
+min_amount = 0.01
+max_amount = 4.8
+falloff = 0.36
+
+[[bootstrap.resources]]
+resource_type_id = "sterol"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.sterol"
+patches = 4
+min_amount = 0.0
+max_amount = 3.0
+falloff = 0.32
+
+[[bootstrap.resources]]
+resource_type_id = "fiber"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.fiber"
+patches = 5
+min_amount = 0.0
+max_amount = 4.2
+falloff = 0.34
+
+[[bootstrap.resources]]
+resource_type_id = "resin"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.resin"
+min_amount = 0.0
+max_amount = 2.8
+
+[[bootstrap.resources]]
+resource_type_id = "mineral_salt"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.mineral_salt"
+patches = 7
+min_amount = 0.02
+max_amount = 6.0
+falloff = 0.4
+
+[[bootstrap.resources]]
+resource_type_id = "silicate"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.silicate"
+min_amount = 0.01
+max_amount = 5.5
+
+[[bootstrap.resources]]
+resource_type_id = "phosphate"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.phosphate"
+patches = 6
+min_amount = 0.02
+max_amount = 5.0
+falloff = 0.44
+
+[[bootstrap.resources]]
+resource_type_id = "carbon_fuel"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.carbon_fuel"
+patches = 8
+min_amount = 0.02
+max_amount = 7.5
+falloff = 0.46
+
+[[bootstrap.resources]]
+resource_type_id = "storage_fat"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.storage_fat"
+min_amount = 0.0
+max_amount = 4.0
+
+[[bootstrap.resources]]
+resource_type_id = "reactive_solvent"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.reactive_solvent"
+patches = 4
+min_amount = 0.0
+max_amount = 2.2
+falloff = 0.3
+
+[[bootstrap.resources]]
+resource_type_id = "catalyst_mineral"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.catalyst_mineral"
+patches = 4
+min_amount = 0.0
+max_amount = 2.0
+falloff = 0.28
+
+[[bootstrap.resources]]
+resource_type_id = "metal_ion"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "resources.layers.metal_ion"
+min_amount = 0.0
+max_amount = 1.8
+
+[[bootstrap.resources]]
+resource_type_id = "inert_waste"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.inert_waste"
+patches = 3
+min_amount = 0.0
+max_amount = 0.4
+falloff = 0.5
+
+[[bootstrap.resources]]
+resource_type_id = "nucleotide_precursor"
+generator = "patches"
+version = "patches.v1"
+seed_domain = "resources.layers.nucleotide_precursor"
+patches = 5
+min_amount = 0.01
+max_amount = 3.5
+falloff = 0.4
+
 [[bootstrap.fields]]
 field_id = "temperature"
 generator = "band"
@@ -58,6 +236,46 @@ version = "band.v1"
 seed_domain = "fields.layers.temperature"
 min_value = 18.0
 max_value = 32.0
+
+[[bootstrap.fields]]
+field_id = "light"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "fields.layers.light"
+min_value = 0.1
+max_value = 1.0
+
+[[bootstrap.fields]]
+field_id = "pressure"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "fields.layers.pressure"
+min_value = 0.2
+max_value = 1.4
+
+[[bootstrap.fields]]
+field_id = "radiation"
+generator = "band"
+version = "band.v1"
+seed_domain = "fields.layers.radiation"
+min_value = 0.0
+max_value = 0.15
+
+[[bootstrap.fields]]
+field_id = "chemical_gradient"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "fields.layers.chemical_gradient"
+min_value = 0.0
+max_value = 1.0
+
+[[bootstrap.fields]]
+field_id = "flow"
+generator = "gradient"
+version = "gradient.v1"
+seed_domain = "fields.layers.flow"
+min_value = 0.0
+max_value = 0.8
 
 [fields.temperature]
 kind = "scalar"
@@ -67,6 +285,56 @@ decay_rate = 0.0
 min_value = 0.0
 max_value = 100.0
 effect_profile = "temperature"
+conserved_behavior = "abstracted"
+
+[fields.light]
+kind = "scalar"
+initial_value = 0.5
+diffusion_rate = 0.02
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "light"
+conserved_behavior = "abstracted"
+
+[fields.pressure]
+kind = "scalar"
+initial_value = 1.0
+diffusion_rate = 0.01
+decay_rate = 0.0
+min_value = 0.0
+max_value = 2.0
+effect_profile = "pressure"
+conserved_behavior = "abstracted"
+
+[fields.radiation]
+kind = "scalar"
+initial_value = 0.05
+diffusion_rate = 0.0
+decay_rate = 0.001
+min_value = 0.0
+max_value = 1.0
+effect_profile = "radiation"
+conserved_behavior = "abstracted"
+
+[fields.chemical_gradient]
+kind = "scalar"
+initial_value = 0.3
+diffusion_rate = 0.04
+decay_rate = 0.001
+min_value = 0.0
+max_value = 1.0
+effect_profile = "chemical_gradient"
+conserved_behavior = "abstracted"
+
+[fields.flow]
+kind = "scalar"
+initial_value = 0.2
+diffusion_rate = 0.03
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "flow"
 conserved_behavior = "abstracted"
 
 [canonical_manifests]
@@ -196,6 +464,222 @@ capacity_limit = 80.0
 [cell.genome]
 template = "balanced"
 
+[[cells]]
+initial_position = [28.0, 24.0]
+radius = 1.1
+initial_resources = { amino_acid = 7.0, sugar = 6.0, carbon_fuel = 4.0, phosphate = 2.0, nucleotide_precursor = 1.5 }
+initial_materials = { boundary = 2.5, transport = 2.0, metabolic = 2.5, storage = 2.0, synthesis = 1.5, structural = 1.5, repair = 1.0, contractile = 0.6, sensory = 0.8 }
+initial_energy = 46.0
+energy_capacity = 70.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 90.0
+[cells.genome]
+template = "uptake_weighted"
+
+[[cells]]
+initial_position = [36.0, 28.0]
+radius = 1.0
+initial_resources = { amino_acid = 5.0, sugar = 7.0, carbon_fuel = 5.0, phosphate = 1.5, nucleotide_precursor = 1.0 }
+initial_materials = { boundary = 2.0, transport = 2.8, metabolic = 2.0, storage = 2.0, synthesis = 1.2, structural = 1.2, repair = 0.8, contractile = 0.6, sensory = 1.0 }
+initial_energy = 44.0
+energy_capacity = 68.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 88.0
+[cells.genome]
+template = "uptake_weighted"
+
+[[cells]]
+initial_position = [44.0, 32.0]
+radius = 1.2
+initial_resources = { amino_acid = 6.0, sugar = 5.0, carbon_fuel = 4.0, phosphate = 2.0, nucleotide_precursor = 1.0 }
+initial_materials = { boundary = 2.8, transport = 2.4, metabolic = 2.2, storage = 2.2, synthesis = 1.4, structural = 1.6, repair = 1.0, contractile = 0.8, sensory = 0.8 }
+initial_energy = 48.0
+energy_capacity = 72.0
+mandatory_cost_per_tick = 0.2
+capacity_limit = 92.0
+[cells.genome]
+template = "uptake_weighted"
+
+[[cells]]
+initial_position = [78.0, 24.0]
+radius = 1.1
+initial_resources = { sugar = 8.0, carbon_fuel = 7.0, storage_fat = 3.0, phosphate = 1.5, inert_waste = 0.2 }
+initial_materials = { boundary = 2.0, transport = 1.5, metabolic = 3.4, storage = 2.8, synthesis = 1.2, structural = 1.2, repair = 0.8, contractile = 0.8, sensory = 0.6 }
+initial_energy = 50.0
+energy_capacity = 76.0
+mandatory_cost_per_tick = 0.2
+capacity_limit = 92.0
+[cells.genome]
+template = "metabolism_weighted"
+
+[[cells]]
+initial_position = [86.0, 28.0]
+radius = 1.0
+initial_resources = { sugar = 7.0, carbon_fuel = 8.0, long_sugar = 3.0, phosphate = 1.0, inert_waste = 0.2 }
+initial_materials = { boundary = 2.0, transport = 1.6, metabolic = 3.6, storage = 2.4, synthesis = 1.0, structural = 1.2, repair = 0.8, contractile = 1.0, sensory = 0.6 }
+initial_energy = 52.0
+energy_capacity = 78.0
+mandatory_cost_per_tick = 0.2
+capacity_limit = 92.0
+[cells.genome]
+template = "metabolism_weighted"
+
+[[cells]]
+initial_position = [94.0, 32.0]
+radius = 1.2
+initial_resources = { sugar = 6.0, carbon_fuel = 7.0, fatty_acid = 3.0, storage_fat = 2.0, phosphate = 1.0 }
+initial_materials = { boundary = 2.2, transport = 1.5, metabolic = 3.2, storage = 3.0, synthesis = 1.1, structural = 1.4, repair = 0.9, contractile = 1.0, sensory = 0.6 }
+initial_energy = 54.0
+energy_capacity = 80.0
+mandatory_cost_per_tick = 0.22
+capacity_limit = 95.0
+[cells.genome]
+template = "metabolism_weighted"
+
+[[cells]]
+initial_position = [126.0, 24.0]
+radius = 1.1
+initial_resources = { amino_acid = 6.0, short_peptide = 4.0, phospholipid = 4.0, catalyst_mineral = 1.0, reactive_solvent = 1.0, nucleotide_precursor = 1.0 }
+initial_materials = { boundary = 2.0, transport = 1.5, metabolic = 1.5, storage = 1.5, synthesis = 3.6, structural = 1.6, repair = 1.2, contractile = 0.5, sensory = 0.7 }
+initial_energy = 48.0
+energy_capacity = 72.0
+mandatory_cost_per_tick = 0.2
+capacity_limit = 92.0
+[cells.genome]
+template = "synthesis_weighted"
+
+[[cells]]
+initial_position = [134.0, 28.0]
+radius = 1.0
+initial_resources = { short_peptide = 5.0, phospholipid = 3.5, sterol = 1.5, catalyst_mineral = 1.2, reactive_solvent = 1.0, phosphate = 1.0 }
+initial_materials = { boundary = 2.1, transport = 1.4, metabolic = 1.5, storage = 1.4, synthesis = 3.8, structural = 1.5, repair = 1.1, contractile = 0.5, sensory = 0.8 }
+initial_energy = 47.0
+energy_capacity = 70.0
+mandatory_cost_per_tick = 0.2
+capacity_limit = 90.0
+[cells.genome]
+template = "synthesis_weighted"
+
+[[cells]]
+initial_position = [142.0, 32.0]
+radius = 1.2
+initial_resources = { amino_acid = 5.0, fiber = 3.0, resin = 2.0, silicate = 2.0, catalyst_mineral = 1.0, metal_ion = 0.8 }
+initial_materials = { boundary = 2.2, transport = 1.4, metabolic = 1.4, storage = 1.5, synthesis = 3.4, structural = 1.8, repair = 1.2, contractile = 0.6, sensory = 0.8 }
+initial_energy = 49.0
+energy_capacity = 74.0
+mandatory_cost_per_tick = 0.2
+capacity_limit = 94.0
+[cells.genome]
+template = "synthesis_weighted"
+
+[[cells]]
+initial_position = [30.0, 82.0]
+radius = 1.3
+initial_resources = { fiber = 5.0, resin = 3.0, silicate = 4.0, mineral_salt = 3.0, metal_ion = 1.0 }
+initial_materials = { boundary = 3.0, transport = 1.2, metabolic = 1.2, storage = 1.5, synthesis = 1.4, structural = 4.0, repair = 1.4, contractile = 0.8, sensory = 0.5 }
+initial_energy = 45.0
+energy_capacity = 72.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 96.0
+[cells.genome]
+template = "structure_weighted"
+
+[[cells]]
+initial_position = [40.0, 86.0]
+radius = 1.2
+initial_resources = { fiber = 4.0, resin = 2.5, silicate = 5.0, mineral_salt = 2.0, phosphate = 1.0 }
+initial_materials = { boundary = 2.8, transport = 1.2, metabolic = 1.2, storage = 1.6, synthesis = 1.5, structural = 4.2, repair = 1.2, contractile = 0.9, sensory = 0.5 }
+initial_energy = 44.0
+energy_capacity = 70.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 94.0
+[cells.genome]
+template = "structure_weighted"
+
+[[cells]]
+initial_position = [50.0, 90.0]
+radius = 1.3
+initial_resources = { fiber = 4.5, resin = 3.5, silicate = 3.5, mineral_salt = 2.5, metal_ion = 1.0 }
+initial_materials = { boundary = 3.2, transport = 1.2, metabolic = 1.3, storage = 1.6, synthesis = 1.4, structural = 4.1, repair = 1.3, contractile = 0.8, sensory = 0.6 }
+initial_energy = 46.0
+energy_capacity = 72.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 96.0
+[cells.genome]
+template = "structure_weighted"
+
+[[cells]]
+initial_position = [78.0, 84.0]
+radius = 1.1
+initial_resources = { amino_acid = 5.0, short_peptide = 4.0, resin = 3.0, mineral_salt = 3.0, phosphate = 2.0 }
+initial_materials = { boundary = 2.5, transport = 1.5, metabolic = 1.5, storage = 1.8, synthesis = 1.8, structural = 1.8, repair = 3.5, contractile = 0.6, sensory = 0.8 }
+initial_energy = 46.0
+energy_capacity = 72.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 92.0
+[cells.genome]
+template = "repair_weighted"
+
+[[cells]]
+initial_position = [88.0, 88.0]
+radius = 1.0
+initial_resources = { short_peptide = 5.0, resin = 3.0, phospholipid = 2.5, mineral_salt = 2.5, catalyst_mineral = 0.8 }
+initial_materials = { boundary = 2.4, transport = 1.6, metabolic = 1.4, storage = 1.7, synthesis = 1.7, structural = 1.7, repair = 3.7, contractile = 0.6, sensory = 0.8 }
+initial_energy = 45.0
+energy_capacity = 70.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 90.0
+[cells.genome]
+template = "repair_weighted"
+
+[[cells]]
+initial_position = [98.0, 92.0]
+radius = 1.2
+initial_resources = { amino_acid = 4.0, short_peptide = 4.0, resin = 3.5, phosphate = 2.0, metal_ion = 1.0 }
+initial_materials = { boundary = 2.6, transport = 1.5, metabolic = 1.5, storage = 1.8, synthesis = 1.8, structural = 1.8, repair = 3.4, contractile = 0.7, sensory = 0.8 }
+initial_energy = 47.0
+energy_capacity = 72.0
+mandatory_cost_per_tick = 0.18
+capacity_limit = 92.0
+[cells.genome]
+template = "repair_weighted"
+
+[[cells]]
+initial_position = [126.0, 82.0]
+radius = 1.0
+initial_resources = { sugar = 5.0, carbon_fuel = 5.0, nucleotide_precursor = 4.0, phosphate = 3.0, short_peptide = 2.0, catalyst_mineral = 1.0 }
+initial_materials = { boundary = 2.0, transport = 1.8, metabolic = 2.0, storage = 2.0, synthesis = 2.2, structural = 1.5, repair = 1.0, contractile = 0.7, sensory = 0.8 }
+initial_energy = 56.0
+energy_capacity = 82.0
+mandatory_cost_per_tick = 0.22
+capacity_limit = 96.0
+[cells.genome]
+template = "replication_weighted"
+
+[[cells]]
+initial_position = [136.0, 86.0]
+radius = 1.0
+initial_resources = { sugar = 5.5, carbon_fuel = 4.5, nucleotide_precursor = 4.5, phosphate = 3.0, short_peptide = 2.0, catalyst_mineral = 1.0 }
+initial_materials = { boundary = 2.0, transport = 1.8, metabolic = 2.0, storage = 2.0, synthesis = 2.0, structural = 1.5, repair = 1.0, contractile = 0.7, sensory = 0.8 }
+initial_energy = 58.0
+energy_capacity = 84.0
+mandatory_cost_per_tick = 0.22
+capacity_limit = 98.0
+[cells.genome]
+template = "replication_weighted"
+
+[[cells]]
+initial_position = [146.0, 90.0]
+radius = 1.1
+initial_resources = { sugar = 5.0, carbon_fuel = 5.0, nucleotide_precursor = 4.0, phosphate = 3.5, short_peptide = 2.0, catalyst_mineral = 1.2 }
+initial_materials = { boundary = 2.2, transport = 1.8, metabolic = 2.0, storage = 2.0, synthesis = 2.1, structural = 1.6, repair = 1.0, contractile = 0.8, sensory = 0.8 }
+initial_energy = 57.0
+energy_capacity = 84.0
+mandatory_cost_per_tick = 0.22
+capacity_limit = 98.0
+[cells.genome]
+template = "replication_weighted"
+
 [genome_templates.balanced]
 variation_amplitude = 0.05
 runtime_interval_ticks = 2
@@ -214,6 +698,120 @@ genome_recombination_priority = 0.2
 division_preparation_priority = 0.3
 repair_priority = 0.3
 material_synthesis_priority = 0.5
+
+[genome_templates.uptake_weighted]
+variation_amplitude = 0.04
+runtime_interval_ticks = 2
+regulatory_depth = 1
+
+[genome_templates.uptake_weighted.carrier]
+material_id = "genome_carrier_matrix"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.uptake_weighted.outputs]
+resource_uptake_priority = 0.9
+energy_conversion_priority = 0.45
+genome_copying_priority = 0.25
+genome_recombination_priority = 0.15
+division_preparation_priority = 0.25
+repair_priority = 0.25
+material_synthesis_priority = 0.35
+
+[genome_templates.metabolism_weighted]
+variation_amplitude = 0.04
+runtime_interval_ticks = 2
+regulatory_depth = 1
+
+[genome_templates.metabolism_weighted.carrier]
+material_id = "genome_carrier_matrix"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.metabolism_weighted.outputs]
+resource_uptake_priority = 0.55
+energy_conversion_priority = 0.9
+genome_copying_priority = 0.25
+genome_recombination_priority = 0.15
+division_preparation_priority = 0.3
+repair_priority = 0.25
+material_synthesis_priority = 0.3
+
+[genome_templates.synthesis_weighted]
+variation_amplitude = 0.04
+runtime_interval_ticks = 2
+regulatory_depth = 1
+
+[genome_templates.synthesis_weighted.carrier]
+material_id = "genome_carrier_matrix"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.synthesis_weighted.outputs]
+resource_uptake_priority = 0.55
+energy_conversion_priority = 0.45
+genome_copying_priority = 0.25
+genome_recombination_priority = 0.2
+division_preparation_priority = 0.25
+repair_priority = 0.35
+material_synthesis_priority = 0.9
+
+[genome_templates.structure_weighted]
+variation_amplitude = 0.04
+runtime_interval_ticks = 2
+regulatory_depth = 1
+
+[genome_templates.structure_weighted.carrier]
+material_id = "genome_carrier_matrix"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.structure_weighted.outputs]
+resource_uptake_priority = 0.45
+energy_conversion_priority = 0.4
+genome_copying_priority = 0.2
+genome_recombination_priority = 0.15
+division_preparation_priority = 0.2
+repair_priority = 0.35
+material_synthesis_priority = 0.65
+
+[genome_templates.repair_weighted]
+variation_amplitude = 0.04
+runtime_interval_ticks = 2
+regulatory_depth = 1
+
+[genome_templates.repair_weighted.carrier]
+material_id = "genome_carrier_matrix"
+amount = 1.0
+integrity = 1.0
+
+[genome_templates.repair_weighted.outputs]
+resource_uptake_priority = 0.5
+energy_conversion_priority = 0.45
+genome_copying_priority = 0.25
+genome_recombination_priority = 0.2
+division_preparation_priority = 0.25
+repair_priority = 0.9
+material_synthesis_priority = 0.45
+
+[genome_templates.replication_weighted]
+variation_amplitude = 0.06
+runtime_interval_ticks = 2
+regulatory_depth = 1
+
+[genome_templates.replication_weighted.carrier]
+material_id = "genome_carrier_matrix"
+amount = 1.2
+integrity = 1.0
+
+[genome_templates.replication_weighted.outputs]
+resource_uptake_priority = 0.6
+energy_conversion_priority = 0.65
+genome_copying_priority = 0.85
+genome_recombination_priority = 0.35
+division_preparation_priority = 0.75
+repair_priority = 0.35
+material_synthesis_priority = 0.45
 
 [chemistry.resources.amino_acid]
 volume = 1.0

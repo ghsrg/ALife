@@ -451,6 +451,45 @@ const DYNAMIC_LAYER_COLORS: number[] = [
   0xe7c6ff  // Layer 7: Lavender
 ];
 
+export interface ResourceGridLineSegment {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+}
+
+export function buildResourceGridLineSegments(
+  rows: number,
+  cols: number,
+  width: number,
+  height: number,
+  camera: ViewerCamera
+): ResourceGridLineSegment[] {
+  if (rows <= 0 || cols <= 0) return [];
+
+  const cellWidth = (width / cols) * camera.scale;
+  const cellHeight = (height / rows) * camera.scale;
+  const gridWidth = cellWidth * cols;
+  const gridHeight = cellHeight * rows;
+  const segments: ResourceGridLineSegment[] = [];
+
+  for (let x = 0; x <= cols; x++) {
+    const screenX = camera.x + x * cellWidth;
+    segments.push({
+      from: { x: screenX, y: camera.y },
+      to: { x: screenX, y: camera.y + gridHeight }
+    });
+  }
+
+  for (let y = 0; y <= rows; y++) {
+    const screenY = camera.y + y * cellHeight;
+    segments.push({
+      from: { x: camera.x, y: screenY },
+      to: { x: camera.x + gridWidth, y: screenY }
+    });
+  }
+
+  return segments;
+}
+
 function drawResourceLayer(
   frame: WorldFrame,
   width: number,
@@ -523,6 +562,14 @@ function drawResourceLayer(
       }
     });
   });
+
+  if (visualEffects?.showWorldGrid ?? false) {
+    for (const segment of buildResourceGridLineSegments(rows, cols, width, height, camera)) {
+      layer.moveTo(segment.from.x, segment.from.y);
+      layer.lineTo(segment.to.x, segment.to.y);
+    }
+    layer.stroke({ width: 1, color: 0x8fb4c7, alpha: 0.2 });
+  }
 
   // Pass 2: Organic Interconnecting Web Filaments (Neural / Mycelium Network lines)
   if (showFilaments) {

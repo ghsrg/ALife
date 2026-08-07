@@ -6,6 +6,7 @@ describe('uiText', () => {
     expect(uiText.app.title).toBe('ALife Control Center');
     expect(uiText.workspace.monitor).toBe('Monitor');
     expect(uiText.viewer.ariaLabel).toBe('World Viewer');
+    expect(uiText.inspector.title).toBe('Inspector');
     expect(uiText.inspector.emptyCell).toBe('No cell selected.');
   });
 
