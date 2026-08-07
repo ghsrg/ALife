@@ -68,25 +68,19 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
       const membraneAlpha = 0.52 + cell.integrityRatio * 0.35;
       const strokeColor = cellStrokeColor(cell.lifecycleState, cell.selected);
 
-      // 0. Receptor Halo Aura (Resource Uptake Trait)
+      // 0. Receptor Halo Aura (Resource Uptake Trait - soft glow, no hard ring)
       if (showPhenotypeTraits && cell.receptorHaloIntensity > 0.05) {
-        cellGraphic.circle(cell.x, cell.y, cell.radius * 1.35);
-        cellGraphic.fill({ color: 0x00c896, alpha: cell.receptorHaloIntensity * 0.22 });
-      }
-
-      // 0.5. Lineage Color Coat (Lineage Provenance)
-      if (showPhenotypeTraits) {
-        const lineageColor = hslToHex(cell.lineageHue, 0.75, 0.55);
-        cellGraphic.circle(cell.x, cell.y, cell.radius + 1.2);
-        cellGraphic.stroke({ width: 1.2, color: lineageColor, alpha: 0.7 });
+        cellGraphic.circle(cell.x, cell.y, cell.radius * 1.25);
+        cellGraphic.fill({ color: 0x00c896, alpha: cell.receptorHaloIntensity * 0.15 });
       }
 
       // 1. Primary Cell Body (Outer Membrane & Cytoplasm)
+      const lineageColor = showPhenotypeTraits ? hslToHex(cell.lineageHue, 0.75, 0.55) : strokeColor;
       cellGraphic.circle(cell.x, cell.y, cell.radius);
       cellGraphic.fill({ color: fillColor, alpha: cell.selected ? 0.95 : 0.85 });
       cellGraphic.stroke({
         width: cell.selected ? 2.5 : 1.5,
-        color: strokeColor,
+        color: cell.selected ? strokeColor : lineageColor,
         alpha: membraneAlpha
       });
 
@@ -263,30 +257,14 @@ export function drawOrganismHullsLayer(renderPlan: WorldRenderPlan, tick: number
     const glowColorHex = hslToHex(hull.hullColorHue, 0.85, 0.65);
     const pulseAlpha = 0.14 + Math.sin(tick * 0.08) * 0.04;
 
-    if (hull.points.length === 1) {
-      const p = hull.points[0];
-      const r = p.radius * 1.5;
-      layer.circle(p.x, p.y, r);
-      layer.fill({ color: colorHex, alpha: pulseAlpha });
-      layer.stroke({ width: 1.5, color: glowColorHex, alpha: 0.35 });
-    } else {
-      hull.points.forEach((p) => {
-        layer.circle(p.x, p.y, p.radius * 1.55);
-        layer.fill({ color: colorHex, alpha: pulseAlpha });
-      });
-
-      for (let i = 0; i < hull.points.length; i++) {
+    if (hull.points.length > 1) {
+      for (let i = 0; i < hull.points.length - 1; i++) {
         const p1 = hull.points[i];
-        const p2 = hull.points[(i + 1) % hull.points.length];
+        const p2 = hull.points[i + 1];
         layer.moveTo(p1.x, p1.y);
         layer.lineTo(p2.x, p2.y);
-        layer.stroke({ width: Math.max(p1.radius, p2.radius) * 2.2, color: colorHex, alpha: pulseAlpha });
+        layer.stroke({ width: Math.max(p1.radius, p2.radius) * 1.8, color: colorHex, alpha: pulseAlpha });
       }
-
-      hull.points.forEach((p) => {
-        layer.circle(p.x, p.y, p.radius * 1.55);
-        layer.stroke({ width: 1.5, color: glowColorHex, alpha: 0.45 });
-      });
     }
   });
 

@@ -45,7 +45,7 @@ describe('createWorldRenderPlan', () => {
         showMetricRings: true,
         label: 'cell-a · E50 · I100',
         flagellaCount: 1,
-        spikeCount: 3,
+        spikeCount: 0,
         receptorHaloIntensity: 0.005,
         lineageHue: 180,
         divisionFlashIntensity: 0

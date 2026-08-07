@@ -571,7 +571,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
       ) : null}
       <div className="world-hit-targets" aria-label={uiText.viewer.hitTargetsAriaLabel}>
         {buildViewerHitTargets(frame, selectedCellId, viewport, camera).map((target) => {
-          const isSearchMatch = matchesCellSearch(frame, target.id, normalizedMapSearchQuery);
+          const isSearchMatch = Boolean(normalizedMapSearchQuery) && matchesCellSearch(frame, target.id, normalizedMapSearchQuery);
           return (
             <Fragment key={target.id}>
               <button

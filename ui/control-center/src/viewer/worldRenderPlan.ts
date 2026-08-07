@@ -73,7 +73,7 @@ export function createWorldRenderPlan(
 
     const traits = cell.phenotypeTraits ?? {
       flagellaCount: cell.radius > 8 && (cell.energy ?? 0) > 20 ? 2 : cell.radius > 5 ? 1 : 0,
-      spikeCount: (cell.materials?.length ?? 0) > 0 ? 4 : cell.radius > 10 ? 3 : 0,
+      spikeCount: 0,
       receptorHaloIntensity: Math.min(1.0, (cell.energy ?? 0) / Math.max(1, cell.energyCapacity ?? 100)),
       lineageHue: (parseInt(String(cell.id).replace(/\D/g, ''), 10) * 137) % 360 || 180,
       divisionFlashIntensity: (cell.energy ?? 0) > (cell.energyCapacity ?? 100) * 0.85 ? 0.8 : 0
