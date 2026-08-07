@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-007-S31` | planned | high | `docs/delivery/roadmap.md` | Cinematic Map FX & Spatial Event Animations is the next selected candidate after closing `AL-003-S07` through `AL-003-S09`; no execution is authorized yet. |
+| `AL-003-S10` | planned | high | `docs/delivery/roadmap.md` | Scalar Field Capability Boundary And Profile Semantics: selected to close scalar-only Field runtime boundaries before vector/flow or direct profile behavior work; no execution is authorized yet. |
 
 ## Operational Rules
 
@@ -39,9 +39,9 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-007-S34` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Cinematic camera tracking can be planned after the next selected UI visual slice. |
-| 2 | `AL-007-S35` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Pseudo-3D presentation can be planned as a separate visual slice. |
-| 3 | `AL-006-S03` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Deterministic parallelism dependencies are closed; select when Core performance becomes the active priority. |
+| 1 | `AL-007-S31` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Cinematic Map FX remains available after the selected Core field-boundary slice. |
+| 2 | `AL-007-S34` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Cinematic camera tracking can be planned after the next selected UI visual slice. |
+| 3 | `AL-007-S35` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Pseudo-3D presentation can be planned as a separate visual slice. |
 
 ## Recently Closed
 
