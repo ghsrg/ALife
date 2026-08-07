@@ -99,6 +99,155 @@ conserved_behavior = "abstracted"
 }
 
 #[test]
+fn field_runtime_accepts_declared_scalar_profiles_only() {
+    let profiles = [
+        ("temperature", FieldEffectProfile::Temperature),
+        ("light", FieldEffectProfile::Light),
+        ("pressure", FieldEffectProfile::Pressure),
+        ("radiation", FieldEffectProfile::Radiation),
+        ("chemical_gradient", FieldEffectProfile::ChemicalGradient),
+        ("flow", FieldEffectProfile::Flow),
+    ];
+
+    for (profile, expected) in profiles {
+        let field_id = format!("field_{profile}");
+        let field = format!(
+            r#"
+[fields.{field_id}]
+kind = "scalar"
+initial_value = 0.5
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "{profile}"
+conserved_behavior = "abstracted"
+"#
+        );
+        let parsed = RawScenarioConfig::parse(&minimal_field_toml(&field, ""))
+            .expect("supported scalar field profile should parse");
+        assert_eq!(parsed.fields[0].kind, FieldKind::Scalar);
+        assert_eq!(parsed.fields[0].effect_profile, expected);
+    }
+
+    let vector_field = temperature_field_config().replace("kind = \"scalar\"", "kind = \"vector\"");
+    let error = RawScenarioConfig::parse(&minimal_field_toml(&vector_field, ""))
+        .expect_err("non-scalar runtime field kind should be rejected");
+    assert!(
+        format!("{error:?}").contains("scalar Field runtime"),
+        "error should explain scalar-only support, got: {error:?}"
+    );
+}
+
+#[test]
+fn field_profile_semantics_are_non_command_metadata() {
+    for profile in [
+        FieldEffectProfile::Temperature,
+        FieldEffectProfile::Light,
+        FieldEffectProfile::Pressure,
+        FieldEffectProfile::Radiation,
+        FieldEffectProfile::ChemicalGradient,
+        FieldEffectProfile::Flow,
+    ] {
+        let semantics = profile.semantics();
+        assert_eq!(semantics.runtime_kind, FieldKind::Scalar);
+        assert!(semantics.scalar_grid_supported);
+        assert!(!semantics.direct_energy_buffer);
+        assert!(!semantics.direct_cell_movement);
+        assert!(!semantics.direct_genome_mutation);
+        assert!(!semantics.direct_material_damage);
+        assert!(!semantics.direct_resource_transport);
+        assert!(!semantics.direct_genome_behavior);
+    }
+}
+
+#[test]
+fn field_profiles_do_not_execute_direct_behavior() {
+    let fields = r#"
+[fields.light]
+kind = "scalar"
+initial_value = 1.0
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "light"
+conserved_behavior = "abstracted"
+
+[fields.radiation]
+kind = "scalar"
+initial_value = 1.0
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "radiation"
+conserved_behavior = "abstracted"
+
+[fields.flow]
+kind = "scalar"
+initial_value = 1.0
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "flow"
+conserved_behavior = "abstracted"
+
+[fields.pressure]
+kind = "scalar"
+initial_value = 1.0
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "pressure"
+conserved_behavior = "abstracted"
+
+[fields.chemical_gradient]
+kind = "scalar"
+initial_value = 1.0
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "chemical_gradient"
+conserved_behavior = "abstracted"
+"#;
+    let config = RawScenarioConfig::parse(&minimal_field_toml(fields, ""))
+        .expect("all scalar profiles should parse");
+    let mut executor = TickExecutor::new(config).unwrap();
+    let cell = alife::core::cell_store::CellIndex::from_raw(0);
+    let before_energy = executor.world().cells().energy(cell);
+    let before_position = executor.world().cells().position(cell);
+    let before_genome_id = executor.world().cells().genome_id(cell);
+    let before_fuel = executor
+        .world()
+        .cells()
+        .typed_resource_amount(cell, alife::core::ids::ResourceTypeId::from_raw(0))
+        .unwrap();
+    let before_material = executor.world().cells().total_materials(cell);
+
+    executor.step().unwrap();
+
+    assert_eq!(executor.world().cells().energy(cell), before_energy);
+    assert_eq!(executor.world().cells().position(cell), before_position);
+    assert_eq!(executor.world().cells().genome_id(cell), before_genome_id);
+    assert_eq!(
+        executor
+            .world()
+            .cells()
+            .typed_resource_amount(cell, alife::core::ids::ResourceTypeId::from_raw(0))
+            .unwrap(),
+        before_fuel
+    );
+    assert_eq!(
+        executor.world().cells().total_materials(cell),
+        before_material
+    );
+}
+
+#[test]
 fn parses_bounded_scalar_field_config_and_hashes_it() {
     let base = RawScenarioConfig::parse(&minimal_field_toml(temperature_field_config(), ""))
         .expect("valid field config should parse");

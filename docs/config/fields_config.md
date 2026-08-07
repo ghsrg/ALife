@@ -63,6 +63,18 @@ explicit bounds
 
 ---
 
+# Current Runtime Support
+
+Current runtime support:
+
+- kind: scalar only
+- supported effect_profile names: temperature, light, pressure, radiation, chemical_gradient, flow
+- unsupported runtime representations: vector, flow_vector, tensor, function layer behavior inputs
+- profile names do not create direct behavior
+- direct Energy, movement, mutation, damage, Resource transport, or Genome behavior requires a separate explicit mechanism
+
+---
+
 # Semantic Links
 
 - configures: [[docs/world/fields|Fields]]

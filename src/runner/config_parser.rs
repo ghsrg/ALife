@@ -1429,7 +1429,7 @@ fn parse_fields(
                 "scalar" => FieldKind::Scalar,
                 other => {
                     return Err(ParseError::ValidationError(format!(
-                        "Unknown field kind: {other}"
+                        "Unsupported field kind '{other}': current Field runtime supports scalar Field runtime only"
                     )));
                 }
             };

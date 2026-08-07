@@ -67,6 +67,10 @@ Field не може напряму створити Energy Buffer, damage, mutat
 
 # Concrete Profiles
 
+Current implementation status:
+
+The runtime currently supports bounded scalar Field grids and explicit hooks only. The profile names below define semantics and allowed future mechanisms; they do not imply that those mechanisms are currently active.
+
 ## Heat
 
 Heat is a local physical effect represented through local temperature state and explicit transfer/dissipation rules.

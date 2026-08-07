@@ -39,6 +39,44 @@ pub enum FieldEffectProfile {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FieldProfileSemantics {
+    pub runtime_kind: FieldKind,
+    pub scalar_grid_supported: bool,
+    pub direct_energy_buffer: bool,
+    pub direct_cell_movement: bool,
+    pub direct_genome_mutation: bool,
+    pub direct_material_damage: bool,
+    pub direct_resource_transport: bool,
+    pub direct_genome_behavior: bool,
+}
+
+impl FieldProfileSemantics {
+    pub const SCALAR_NON_COMMAND: Self = Self {
+        runtime_kind: FieldKind::Scalar,
+        scalar_grid_supported: true,
+        direct_energy_buffer: false,
+        direct_cell_movement: false,
+        direct_genome_mutation: false,
+        direct_material_damage: false,
+        direct_resource_transport: false,
+        direct_genome_behavior: false,
+    };
+}
+
+impl FieldEffectProfile {
+    pub const fn semantics(self) -> FieldProfileSemantics {
+        match self {
+            Self::Temperature
+            | Self::Light
+            | Self::Pressure
+            | Self::Radiation
+            | Self::ChemicalGradient
+            | Self::Flow => FieldProfileSemantics::SCALAR_NON_COMMAND,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FieldConservedBehavior {
     Conserved,
     Dissipated,

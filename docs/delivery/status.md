@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-003-S10` | planned | high | `docs/delivery/roadmap.md`, `outputs/worklogs/2026-08-07-1226-PLAN-al-003-s10-scalar-field-capability-boundary.md` | Scalar Field Capability Boundary And Profile Semantics: TDD plan exists; no execution is authorized yet. |
+| `AL-007-S31` | planned | high | `docs/delivery/roadmap.md` | Cinematic Map FX & Spatial Event Animations: selected as next roadmap-control planning target after `AL-003-S10` closure. |
 
 ## Operational Rules
 
@@ -39,14 +39,15 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-007-S31` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Cinematic Map FX remains available after the selected Core field-boundary slice. |
-| 2 | `AL-007-S34` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Cinematic camera tracking can be planned after the next selected UI visual slice. |
-| 3 | `AL-007-S35` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Pseudo-3D presentation can be planned as a separate visual slice. |
+| 1 | `AL-007-S34` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Cinematic camera tracking can be planned after the selected Map FX visual slice. |
+| 2 | `AL-007-S35` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Pseudo-3D presentation can be planned as a separate visual slice. |
+| 3 | `AL-007-S36` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | `AL-007-S31`, `AL-007-S34` | `docs/delivery/roadmap.md` | Glassmorphic final WOW acceptance remains downstream of the open visual polish slices. |
 
 ## Recently Closed
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-003-S10` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-07-1258-REPORT-al-003-s10-scalar-field-capability-boundary.md` | Scalar Field Capability Boundary And Profile Semantics closed for scalar-only runtime validation, non-command profile semantics, runtime negative controls, canonical manifest disclosure, and docs updates. |
 | `AL-003-S09` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-07-0227-REPORT-al-003-s09-local-field-runtime-chemistry-effects.md` | Local Field Runtime And Chemistry Effects closed for bounded deterministic field grids, local reaction/material modifiers, replay stability, and canonical scenario coverage. |
 | `AL-003-S08` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-07-0057-REPORT-al-003-s08-physical-genome-precursor-accounting.md` | Physical Genome Precursor Accounting closed for copy/recombination precursor costs, feasibility preservation, deterministic accounting, and canonical scenario coverage. |
 | `AL-003-S07` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-07-0008-REPORT-al-003-s07-resource-derived-material-synthesis.md` | Resource-Derived Material Synthesis closed for precursor Resource profiles, controlled synthesis, explicit byproducts, degradation/fragments, and canonical scenario coverage. |

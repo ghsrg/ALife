@@ -62,5 +62,16 @@ fn canonical_test_world_resolves_resource_derived_material_synthesis_surface() {
             .contains("[canonical_manifests.genome_precursors]")
     );
     assert!(document.canonical_source.contains("[fields.temperature]"));
+    assert!(
+        document
+            .canonical_source
+            .contains("runtime_kind=\"scalar_only\"")
+    );
+    assert!(document.canonical_source.contains(
+        "supported_scalar_profiles=[\"temperature\", \"light\", \"pressure\", \"radiation\", \"chemical_gradient\", \"flow\"]"
+    ));
+    assert!(document.canonical_source.contains(
+        "unsupported_direct_effects=[\"field_to_energy_buffer\", \"field_to_cell_movement\", \"field_to_genome_mutation\", \"field_to_material_damage\", \"field_to_resource_transport\", \"field_to_genome_behavior\"]"
+    ));
     assert_ne!(document.scenario_hash.raw(), 0);
 }

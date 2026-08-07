@@ -91,6 +91,12 @@ inactive_outside_cell = true
 conversion_reaction = "spent_material_fragment_conversion"
 silent_resource_uptake_allowed = false
 
+[canonical_manifests.fields]
+runtime_kind = "scalar_only"
+supported_scalar_profiles = ["temperature", "light", "pressure", "radiation", "chemical_gradient", "flow"]
+unsupported_direct_effects = ["field_to_energy_buffer", "field_to_cell_movement", "field_to_genome_mutation", "field_to_material_damage", "field_to_resource_transport", "field_to_genome_behavior"]
+notes = "Profile names are accepted as bounded scalar runtime fields only; direct behavior requires a separate explicit material, reaction, process, or physics mechanism."
+
 [canonical_manifests.fields.temperature]
 field_id = "temperature"
 runtime_owner_slice = "AL-003-S09"
