@@ -85,6 +85,8 @@ pub struct ResourceLayerCellPayload {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ResourceLayerSummaryPayload {
     pub layer_index: u32,
+    pub resource_type_id: u32,
+    pub resource_id: String,
     pub width: u32,
     pub height: u32,
     pub total_amount: f32,

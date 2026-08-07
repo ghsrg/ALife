@@ -14,6 +14,8 @@ fn resource_snapshot(total: f32) -> CommittedSnapshot {
         resource_layer_totals: vec![ResourceAmount::new(total).unwrap()],
         resource_layers: vec![ResourceLayerSnapshot {
             layer_index: 0,
+            resource_type_id: 0,
+            resource_id: "amino_acid".to_string(),
             width: 1,
             height: 1,
             total_amount: ResourceAmount::new(total).unwrap(),
@@ -33,13 +35,36 @@ fn world_resource_cycle_exposes_conservation_accounting_buckets() {
     let resource_cycle = &json["payload"]["world"]["resource_cycle"];
 
     assert_eq!(resource_cycle["state"], "available");
-    assert_eq!(resource_cycle["source"], "MonitorAccountingProjection.resource");
+    assert_eq!(
+        resource_cycle["source"],
+        "MonitorAccountingProjection.resource"
+    );
     assert_eq!(resource_cycle["total_amount"], 90.0);
     assert!(resource_cycle["locations"]["environment"].as_f64().unwrap() >= 0.0);
-    assert!(resource_cycle["accounting"]["explicit_decay_or_sink"].as_f64().unwrap() >= 0.0);
-    assert!(resource_cycle["accounting"]["metabolism_or_cell_uptake"].as_f64().unwrap() >= 0.0);
-    assert!(resource_cycle["accounting"]["material_conversion"].as_f64().unwrap() >= 0.0);
-    assert!(resource_cycle["accounting"]["unclassified_loss"].as_f64().unwrap() >= 0.0);
+    assert!(
+        resource_cycle["accounting"]["explicit_decay_or_sink"]
+            .as_f64()
+            .unwrap()
+            >= 0.0
+    );
+    assert!(
+        resource_cycle["accounting"]["metabolism_or_cell_uptake"]
+            .as_f64()
+            .unwrap()
+            >= 0.0
+    );
+    assert!(
+        resource_cycle["accounting"]["material_conversion"]
+            .as_f64()
+            .unwrap()
+            >= 0.0
+    );
+    assert!(
+        resource_cycle["accounting"]["unclassified_loss"]
+            .as_f64()
+            .unwrap()
+            >= 0.0
+    );
 }
 
 #[test]

@@ -39,6 +39,8 @@ const bundle = {
       resource_layers: [
         {
           layer_index: 0,
+          resource_type_id: 0,
+          resource_id: 'amino_acid',
           width: 2,
           height: 2,
           total_amount: 4,
@@ -133,6 +135,8 @@ describe('normalizeDebugProjectionBundle', () => {
     });
     expect(normalized.visualWorld.resourceLayers[0]).toMatchObject({
       layerIndex: 0,
+      resourceTypeId: 0,
+      resourceId: 'amino_acid',
       width: 2,
       height: 2,
       cells: [

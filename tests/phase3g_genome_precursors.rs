@@ -315,10 +315,12 @@ fn genome_copying_missing_typed_precursor_rejects_without_state_change() {
             .validate_feasibility(cell, &copying_candidate()),
         FeasibilityResult::Rejected(RejectionReason::InsufficientResources)
     );
-    assert!(executor
-        .world_mut()
-        .execute_genome_copying(cell, &copying_candidate())
-        .is_err());
+    assert!(
+        executor
+            .world_mut()
+            .execute_genome_copying(cell, &copying_candidate())
+            .is_err()
+    );
 
     let cells = executor.world().cells();
     assert_eq!(cells.energy(cell).current(), before_energy);
@@ -418,10 +420,12 @@ fn genome_recombination_missing_precursor_rejects_without_state_change() {
             .validate_feasibility(cell, &recombination_candidate()),
         FeasibilityResult::Rejected(RejectionReason::InsufficientResources)
     );
-    assert!(executor
-        .world_mut()
-        .execute_genome_recombination(cell, &recombination_candidate())
-        .is_err());
+    assert!(
+        executor
+            .world_mut()
+            .execute_genome_recombination(cell, &recombination_candidate())
+            .is_err()
+    );
 
     let cells = executor.world().cells();
     assert_eq!(cells.energy(cell).current(), before_energy);

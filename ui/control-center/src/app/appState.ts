@@ -73,6 +73,7 @@ export interface AppState {
   lastError: string | null;
   selectionCleared: boolean;
   activeResourceLayers: number[];
+  resourceLayerSelectionInitializedForRunId: string | null;
   visualEffects: VisualEffectsConfig;
   monitorMetricHistory: Record<string, RrdMetricHistory>;
   monitorAccountingTarget: AccountingTarget;
@@ -252,6 +253,7 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
     lastError: null,
     selectionCleared: false,
     activeResourceLayers: [0, 1],
+    resourceLayerSelectionInitializedForRunId: null,
     visualEffects: DEFAULT_VISUAL_EFFECTS,
     monitorMetricHistory: {},
     monitorAccountingTarget: 'Energy',
@@ -373,6 +375,11 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         state.latestLiveFrame === null
           ? null
           : enrichFrameWithDebugProjection(state.latestLiveFrame, debugProjections);
+      const resourceLayerSelection = nextResourceLayerSelection(
+        state,
+        debugProjections,
+        enrichedFrame
+      );
       const monitorMetricHistory = appendMonitorProjectionMetricHistory(
         state.monitorMetricHistory,
         debugProjections
@@ -387,6 +394,9 @@ export function createAppStore(initialFrame = loadFixtureFrame(ui1aFixture)) {
         debugProjections,
         frame: enrichedFrame,
         latestLiveFrame: enrichedLatestLiveFrame,
+        activeResourceLayers: resourceLayerSelection.activeResourceLayers,
+        resourceLayerSelectionInitializedForRunId:
+          resourceLayerSelection.resourceLayerSelectionInitializedForRunId,
         monitorMetricHistory,
         selectedCellId: selectionState.selectedCell?.id ?? null,
         selectedCell: selectionState.selectedCell,
@@ -511,6 +521,30 @@ function enrichFrameWithDebugProjection(frame: WorldFrame, debugProjections: Deb
     ...frame,
     resources,
     cells
+  };
+}
+
+function nextResourceLayerSelection(
+  state: AppStore,
+  debugProjections: DebugProjectionState,
+  visibleFrame: WorldFrame
+) {
+  if (
+    debugProjections.status !== 'available' ||
+    visibleFrame.source !== 'live' ||
+    visibleFrame.runId !== debugProjections.runId ||
+    debugProjections.visualWorld.resourceLayers.length === 0 ||
+    state.resourceLayerSelectionInitializedForRunId === debugProjections.runId
+  ) {
+    return {
+      activeResourceLayers: state.activeResourceLayers,
+      resourceLayerSelectionInitializedForRunId: state.resourceLayerSelectionInitializedForRunId
+    };
+  }
+
+  return {
+    activeResourceLayers: debugProjections.visualWorld.resourceLayers.map((layer) => layer.layerIndex),
+    resourceLayerSelectionInitializedForRunId: debugProjections.runId
   };
 }
 

@@ -42,6 +42,8 @@ fn visual_world_projection_is_bounded_and_source_backed() {
         resource_layers: vec![
             ResourceLayerSnapshot {
                 layer_index: 0,
+                resource_type_id: 0,
+                resource_id: "amino_acid".to_string(),
                 width: 1,
                 height: 1,
                 total_amount: ResourceAmount::new(4.0).unwrap(),
@@ -53,6 +55,8 @@ fn visual_world_projection_is_bounded_and_source_backed() {
             },
             ResourceLayerSnapshot {
                 layer_index: 1,
+                resource_type_id: 1,
+                resource_id: "sugar".to_string(),
                 width: 1,
                 height: 1,
                 total_amount: ResourceAmount::new(8.0).unwrap(),
@@ -90,9 +94,13 @@ fn visual_world_projection_is_bounded_and_source_backed() {
 
     assert_eq!(payload.resource_layers.len(), 2);
     assert_eq!(payload.resource_layers[0].layer_index, 0);
+    assert_eq!(payload.resource_layers[0].resource_type_id, 0);
+    assert_eq!(payload.resource_layers[0].resource_id, "amino_acid");
     assert_eq!(payload.resource_layers[0].total_amount, 4.0);
     assert_eq!(payload.resource_layers[0].cells[0].amount, 4.0);
     assert_eq!(payload.resource_layers[1].layer_index, 1);
+    assert_eq!(payload.resource_layers[1].resource_type_id, 1);
+    assert_eq!(payload.resource_layers[1].resource_id, "sugar");
     assert_eq!(payload.resource_layers[1].total_amount, 8.0);
 
     assert_eq!(payload.fields.len(), 2);

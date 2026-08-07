@@ -17,6 +17,8 @@ const availableDebugProjections: DebugProjectionState = {
     resourceLayers: [
       {
         layerIndex: 0,
+        resourceTypeId: 0,
+        resourceId: 'amino_acid',
         width: 2,
         height: 2,
         totalAmount: 4,
@@ -105,9 +107,9 @@ describe('buildDebugLayerPlan', () => {
       layerIndex: 0,
       totalAmount: 4,
       availability: 'bounded',
-      channelLabel: 'green channel',
+      channelLabel: 'amino_acid',
       colorHex: '#27b582',
-      legendLabel: 'Layer 0 green channel total 4'
+      legendLabel: 'amino_acid total 4'
     });
     expect(plan.fields[0]).toMatchObject({
       fieldId: 'heat',
@@ -158,6 +160,8 @@ describe('buildDebugLayerPlan', () => {
   it('bounds large resource legends while preserving total layer count', () => {
     const resourceLayers = Array.from({ length: 27 }, (_, layerIndex) => ({
       layerIndex,
+      resourceTypeId: layerIndex,
+      resourceId: `resource_${layerIndex}`,
       width: 1,
       height: 1,
       totalAmount: layerIndex + 1,

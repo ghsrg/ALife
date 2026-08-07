@@ -60,13 +60,26 @@ async fn latest_projections_include_monitor_data_panel_contract() {
     let json = response_json(response).await;
 
     assert_eq!(json["schema_version"], "ControlCenterProjectionBundle/v1");
-    assert_eq!(json["monitor"]["schema_version"], "MonitorDataPanelProjection/v1");
-    assert_eq!(json["monitor"]["projection_kind"], "MonitorDataPanelProjection");
+    assert_eq!(
+        json["monitor"]["schema_version"],
+        "MonitorDataPanelProjection/v1"
+    );
+    assert_eq!(
+        json["monitor"]["projection_kind"],
+        "MonitorDataPanelProjection"
+    );
     assert_eq!(json["monitor"]["source"], "live");
     assert_eq!(json["monitor"]["run_id"], "run-monitor-projection-test");
     assert_eq!(json["monitor"]["completeness"]["state"], "partial");
 
-    for key in ["world", "cells", "organisms", "lineages", "evolution", "analytics"] {
+    for key in [
+        "world",
+        "cells",
+        "organisms",
+        "lineages",
+        "evolution",
+        "analytics",
+    ] {
         assert!(
             json["monitor"]["payload"].get(key).is_some(),
             "monitor payload must include {key}"

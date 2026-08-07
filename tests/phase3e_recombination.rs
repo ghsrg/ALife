@@ -8,7 +8,9 @@ use alife::core::genome::{
 };
 use alife::core::process::{ActionCandidate, FeasibilityResult, ProcessId, RejectionReason};
 use alife::core::tick::TickExecutor;
-use alife::core::units::{CapacityAmount, EnergyAmount, MaterialAmount, Position, Radius, ResourceAmount};
+use alife::core::units::{
+    CapacityAmount, EnergyAmount, MaterialAmount, Position, Radius, ResourceAmount,
+};
 
 fn base_config() -> RuntimeConfig {
     let cell = CellInitialConfig {
@@ -92,9 +94,18 @@ fn test_genome_recombination_crossover() {
         template_id: template.clone(),
         carrier: carrier.clone(),
         outputs: vec![
-            (GenomeOutputId::ResourceUptakePriority, GenomeOutputValue::new(0.8)),
-            (GenomeOutputId::EnergyConversionPriority, GenomeOutputValue::new(0.2)),
-            (GenomeOutputId::GenomeRecombinationPriority, GenomeOutputValue::new(0.9)),
+            (
+                GenomeOutputId::ResourceUptakePriority,
+                GenomeOutputValue::new(0.8),
+            ),
+            (
+                GenomeOutputId::EnergyConversionPriority,
+                GenomeOutputValue::new(0.2),
+            ),
+            (
+                GenomeOutputId::GenomeRecombinationPriority,
+                GenomeOutputValue::new(0.9),
+            ),
         ],
     };
 
@@ -103,9 +114,18 @@ fn test_genome_recombination_crossover() {
         template_id: template,
         carrier,
         outputs: vec![
-            (GenomeOutputId::ResourceUptakePriority, GenomeOutputValue::new(0.1)),
-            (GenomeOutputId::EnergyConversionPriority, GenomeOutputValue::new(0.9)),
-            (GenomeOutputId::GenomeRecombinationPriority, GenomeOutputValue::new(0.3)),
+            (
+                GenomeOutputId::ResourceUptakePriority,
+                GenomeOutputValue::new(0.1),
+            ),
+            (
+                GenomeOutputId::EnergyConversionPriority,
+                GenomeOutputValue::new(0.9),
+            ),
+            (
+                GenomeOutputId::GenomeRecombinationPriority,
+                GenomeOutputValue::new(0.3),
+            ),
         ],
     };
 
@@ -113,8 +133,20 @@ fn test_genome_recombination_crossover() {
     let recombined = parent_a.recombine(&parent_b, GenomeId::from_raw(3), 0b00000001);
 
     assert_eq!(recombined.id.raw(), 3);
-    assert_eq!(recombined.output(GenomeOutputId::ResourceUptakePriority).unwrap().raw(), 0.1);
-    assert_eq!(recombined.output(GenomeOutputId::EnergyConversionPriority).unwrap().raw(), 0.2);
+    assert_eq!(
+        recombined
+            .output(GenomeOutputId::ResourceUptakePriority)
+            .unwrap()
+            .raw(),
+        0.1
+    );
+    assert_eq!(
+        recombined
+            .output(GenomeOutputId::EnergyConversionPriority)
+            .unwrap()
+            .raw(),
+        0.2
+    );
 }
 
 #[test]
@@ -129,5 +161,8 @@ fn test_recombination_feasibility_contact_requirement() {
 
     // Single isolated cell without partner in contact -> MissingContactOrJoint
     let result = executor.world().validate_feasibility(cell_1, &action);
-    assert_eq!(result, FeasibilityResult::Rejected(RejectionReason::MissingContactOrJoint));
+    assert_eq!(
+        result,
+        FeasibilityResult::Rejected(RejectionReason::MissingContactOrJoint)
+    );
 }

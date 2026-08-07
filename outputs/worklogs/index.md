@@ -103,8 +103,10 @@ tags:
 - [[outputs/worklogs/2026-08-07-0017-PLAN-al-003-s08-physical-genome-precursor-accounting|2026-08-07-0017-PLAN-al-003-s08-physical-genome-precursor-accounting]]
 - [[outputs/worklogs/2026-08-07-0140-PLAN-al-003-s09-local-field-runtime-chemistry-effects|2026-08-07-0140-PLAN-al-003-s09-local-field-runtime-chemistry-effects]]
 - [[outputs/worklogs/2026-08-07-1226-PLAN-al-003-s10-scalar-field-capability-boundary|2026-08-07-1226-PLAN-al-003-s10-scalar-field-capability-boundary]]
+- [[outputs/worklogs/2026-08-07-1550-PLAN-al-007-s37-canonical-resource-layers-end-to-end|2026-08-07-1550-PLAN-al-007-s37-canonical-resource-layers-end-to-end]]
 
 ## Reports
+- [[outputs/worklogs/2026-08-07-1653-REPORT-al-007-s37-canonical-resource-layers-end-to-end|2026-08-07-1653-REPORT-al-007-s37-canonical-resource-layers-end-to-end]]
 - [[outputs/worklogs/2026-08-07-1258-REPORT-al-003-s10-scalar-field-capability-boundary|2026-08-07-1258-REPORT-al-003-s10-scalar-field-capability-boundary]]
 - [[outputs/worklogs/2026-08-07-1025-REPORT-al-003-s07-s09-delivery-status-closure|2026-08-07-1025-REPORT-al-003-s07-s09-delivery-status-closure]]
 - [[outputs/worklogs/2026-08-07-0227-REPORT-al-003-s09-local-field-runtime-chemistry-effects|2026-08-07-0227-REPORT-al-003-s09-local-field-runtime-chemistry-effects]]

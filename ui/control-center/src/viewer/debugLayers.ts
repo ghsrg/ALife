@@ -61,9 +61,9 @@ export function buildDebugLayerPlan(
     layerIndex: layer.layerIndex,
     totalAmount: layer.totalAmount,
     availability: layer.completeness.state,
-    channelLabel: resourceChannelLabel(layer.layerIndex),
+    channelLabel: layer.resourceId,
     colorHex: resourceChannelColor(layer.layerIndex),
-    legendLabel: `Layer ${layer.layerIndex} ${resourceChannelLabel(layer.layerIndex)} total ${formatAmount(layer.totalAmount)}`
+    legendLabel: `${layer.resourceId} total ${formatAmount(layer.totalAmount)}`
   }));
   const resources = options.showResourceLayer
     ? allResources.slice(0, DEBUG_RESOURCE_LEGEND_LIMIT)
@@ -90,17 +90,6 @@ export function buildDebugLayerPlan(
       : 0,
     missingProjectionWarnings: debugProjections.visualWorld.completeness.missingFields
   };
-}
-
-function resourceChannelLabel(layerIndex: number) {
-  const channel = layerIndex % 3;
-  if (channel === 0) {
-    return 'green channel';
-  }
-  if (channel === 1) {
-    return 'blue channel';
-  }
-  return 'amber channel';
 }
 
 function resourceChannelColor(layerIndex: number) {

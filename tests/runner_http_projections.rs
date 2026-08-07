@@ -41,6 +41,24 @@ async fn start_run(state: alife::viewer_server::state::AppState) {
     assert_eq!(response.status(), 200);
 }
 
+async fn start_canonical_run(state: alife::viewer_server::state::AppState) {
+    let response = create_app(state)
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/run/start")
+                .header("content-type", "application/json")
+                .body(json_body(json!({
+                    "scenario_id": "canonical_test_world",
+                    "request_id": "run-canonical-resource-layer-contract-test"
+                })))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 200);
+}
+
 #[tokio::test]
 async fn latest_projections_before_active_run_are_explicitly_unavailable() {
     let app = create_app(make_state());
@@ -134,4 +152,33 @@ async fn latest_projections_return_bounded_observer_payload_bundle() {
             .unwrap()
             .contains("BalanceFinding")
     );
+}
+
+#[tokio::test]
+async fn latest_projections_expose_named_canonical_resource_layers() {
+    let state = make_state();
+    start_canonical_run(state.clone()).await;
+
+    let response = create_app(state)
+        .oneshot(
+            Request::builder()
+                .uri("/projections/latest")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+    let json = response_json(response).await;
+    let layers = json["visual_world"]["payload"]["resource_layers"]
+        .as_array()
+        .unwrap();
+    assert_eq!(layers.len(), 19);
+    assert_eq!(layers[0]["layer_index"], 0);
+    assert_eq!(layers[0]["resource_type_id"], 0);
+    assert_eq!(layers[0]["resource_id"], "amino_acid");
+    assert_eq!(layers[18]["layer_index"], 18);
+    assert_eq!(layers[18]["resource_type_id"], 18);
+    assert_eq!(layers[18]["resource_id"], "nucleotide_precursor");
 }

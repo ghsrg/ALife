@@ -340,11 +340,8 @@ fn organism_behavior_profiles(snapshot: &CommittedSnapshot) -> OrganismBehaviorP
     let mut high_energy = 0_u32;
     let mut generalist = 0_u32;
 
-    let cell_map: std::collections::HashMap<u32, &crate::core::snapshot::CellSnapshot> = snapshot
-        .cells
-        .iter()
-        .map(|c| (c.id.raw(), c))
-        .collect();
+    let cell_map: std::collections::HashMap<u32, &crate::core::snapshot::CellSnapshot> =
+        snapshot.cells.iter().map(|c| (c.id.raw(), c)).collect();
 
     for org in &snapshot.organisms {
         let org_cells: Vec<&&crate::core::snapshot::CellSnapshot> = org

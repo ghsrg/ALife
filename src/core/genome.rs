@@ -437,7 +437,12 @@ impl GenomeState {
             .map(|(_, value)| *value)
     }
 
-    pub fn recombine(&self, partner: &GenomeState, next_id: GenomeId, crossover_mask: u32) -> GenomeState {
+    pub fn recombine(
+        &self,
+        partner: &GenomeState,
+        next_id: GenomeId,
+        crossover_mask: u32,
+    ) -> GenomeState {
         let mut new_outputs = Vec::new();
         let all_outputs = [
             GenomeOutputId::ResourceUptakePriority,

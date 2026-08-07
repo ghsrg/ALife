@@ -75,3 +75,34 @@ fn canonical_test_world_resolves_resource_derived_material_synthesis_surface() {
     ));
     assert_ne!(document.scenario_hash.raw(), 0);
 }
+
+#[test]
+fn canonical_test_world_snapshot_preserves_resource_layer_identity() {
+    let document = ScenarioDocument::resolve(ScenarioSource::Path(
+        "config/scenarios/demo/canonical_test_world.toml".into(),
+    ))
+    .unwrap();
+    let world =
+        alife::core::world::WorldState::from_config(document.runtime_config.clone()).unwrap();
+    let snapshot = alife::core::snapshot::CommittedSnapshot::from_world(&world);
+
+    let expected_ids = &document.resource_type_ids;
+    assert_eq!(expected_ids.len(), 19);
+    assert_eq!(snapshot.resource_layers.len(), expected_ids.len());
+
+    for (index, expected_id) in expected_ids.iter().enumerate() {
+        let layer = &snapshot.resource_layers[index];
+        assert_eq!(layer.layer_index, index as u32);
+        assert_eq!(layer.resource_type_id, index as u32);
+        assert_eq!(layer.resource_id, *expected_id);
+        assert!(layer.width > 0);
+        assert!(layer.height > 0);
+        assert_eq!(layer.cells.len(), (layer.width * layer.height) as usize);
+    }
+
+    assert_eq!(snapshot.resource_layers[0].resource_id, "amino_acid");
+    assert_eq!(
+        snapshot.resource_layers[18].resource_id,
+        "nucleotide_precursor"
+    );
+}

@@ -94,7 +94,7 @@ describe('buildMonitorSurfaceModel', () => {
         completeness: { state: 'bounded', missingFields: [], reason: null },
         cells: [],
         resourceLayers: [
-          { layerIndex: 2, width: 1, height: 1, totalAmount: 7, cells: [{ x: 0, y: 0, amount: 7 }], completeness: { state: 'bounded', missingFields: [], reason: null } }
+          { layerIndex: 2, resourceTypeId: 2, resourceId: 'resource_2', width: 1, height: 1, totalAmount: 7, cells: [{ x: 0, y: 0, amount: 7 }], completeness: { state: 'bounded', missingFields: [], reason: null } }
         ],
         fields: [],
         sourceMetrics: []
@@ -193,7 +193,7 @@ describe('buildMonitorSurfaceModel', () => {
         completeness: { state: 'bounded', missingFields: [], reason: null },
         cells: [],
         resourceLayers: [
-          { layerIndex: 9, width: 1, height: 1, totalAmount: 99, cells: [{ x: 0, y: 0, amount: 99 }], completeness: { state: 'bounded', missingFields: [], reason: null } }
+          { layerIndex: 9, resourceTypeId: 9, resourceId: 'resource_9', width: 1, height: 1, totalAmount: 99, cells: [{ x: 0, y: 0, amount: 99 }], completeness: { state: 'bounded', missingFields: [], reason: null } }
         ],
         fields: [],
         sourceMetrics: []

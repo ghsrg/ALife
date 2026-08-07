@@ -26,12 +26,13 @@ export function buildFieldLayerDisplay(field: DebugField): LayerDisplayRow {
 }
 
 export function buildResourceLayerDisplay(layer: DebugResourceLayer): LayerDisplayRow {
+  const identity = `Layer ${layer.layerIndex} | resource_type_id ${layer.resourceTypeId}`;
   return {
-    primaryLabel: `Resource Layer ${layer.layerIndex}`,
+    primaryLabel: layer.resourceId,
     secondaryLabel: `${formatAmount(layer.totalAmount)} total · ${layer.completeness.state}`,
     provenance: layer.completeness.reason
-      ? `${layer.completeness.state}: ${layer.completeness.reason}`
-      : layer.completeness.state
+      ? `${identity} | ${layer.completeness.state}: ${layer.completeness.reason}`
+      : `${identity} | ${layer.completeness.state}`
   };
 }
 

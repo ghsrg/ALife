@@ -36,6 +36,8 @@ const debugProjections: DebugProjectionState = {
     resourceLayers: [
       {
         layerIndex: 0,
+        resourceTypeId: 0,
+        resourceId: 'nucleotide_precursor',
         width: 2,
         height: 2,
         totalAmount: 4,
@@ -424,6 +426,8 @@ describe('WorldViewer', () => {
   it('bounds large debug resource legends so they cannot cover the map', async () => {
     const resourceLayers = Array.from({ length: 27 }, (_, layerIndex) => ({
       layerIndex,
+      resourceTypeId: layerIndex,
+      resourceId: `resource_${layerIndex}`,
       width: 1,
       height: 1,
       totalAmount: layerIndex + 1,
@@ -459,7 +463,7 @@ describe('WorldViewer', () => {
     const debugOverlay = screen.getByLabelText('Debug Visualization Mode');
     expect(debugOverlay).toHaveTextContent('Resource layers 8 of 27');
     expect(debugOverlay).toHaveTextContent('+19 resource layers hidden');
-    expect(debugOverlay).toHaveTextContent('Layer 0 green channel total 1');
+    expect(debugOverlay).toHaveTextContent('resource_0 total 1');
     expect(debugOverlay).not.toHaveTextContent('Layer 26');
   });
 
@@ -513,6 +517,12 @@ describe('WorldViewer', () => {
     expect(screen.getByLabelText('Select cell-a')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Search match: cell-c');
     expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('Unsupported: process/contact/history search');
+
+    fireEvent.change(screen.getByLabelText('Search cells or resource layers'), {
+      target: { value: 'nucleotide' }
+    });
+
+    expect(screen.getByLabelText('Debug Visualization Mode')).toHaveTextContent('nucleotide_precursor');
   });
 
   it('offers Fit World without a separate Reset navigation control', async () => {

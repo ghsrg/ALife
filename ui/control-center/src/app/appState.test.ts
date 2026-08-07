@@ -161,6 +161,8 @@ describe('createAppStore', () => {
         resourceLayers: [
           {
             layerIndex: 0,
+            resourceTypeId: 0,
+            resourceId: 'resource_0',
             width: 2,
             height: 2,
             totalAmount: 4,
@@ -174,6 +176,8 @@ describe('createAppStore', () => {
           },
           {
             layerIndex: 1,
+            resourceTypeId: 1,
+            resourceId: 'resource_1',
             width: 2,
             height: 2,
             totalAmount: 3,
@@ -187,6 +191,8 @@ describe('createAppStore', () => {
           },
           {
             layerIndex: 2,
+            resourceTypeId: 2,
+            resourceId: 'resource_2',
             width: 2,
             height: 2,
             totalAmount: 2,
@@ -229,6 +235,56 @@ describe('createAppStore', () => {
     });
   });
 
+  it('auto-enables all source-backed resource layers for a new live canonical projection', () => {
+    const store = createAppStore();
+    const frame: WorldFrame = {
+      ...store.getState().frame,
+      source: 'live',
+      runId: 'canonical-run',
+      resources: []
+    };
+    store.getState().setFrame(frame);
+
+    const canonicalResourceLayers = Array.from({ length: 19 }, (_, layerIndex) => ({
+      layerIndex,
+      resourceTypeId: layerIndex,
+      resourceId: layerIndex === 18 ? 'nucleotide_precursor' : `resource_${layerIndex}`,
+      width: 1,
+      height: 1,
+      totalAmount: layerIndex + 1,
+      cells: [{ x: 0, y: 0, amount: layerIndex + 1 }],
+      completeness: { state: 'bounded' as const, missingFields: [], reason: null }
+    }));
+
+    const projection = {
+      status: 'available' as const,
+      runId: 'canonical-run',
+      tick: frame.tick,
+      visualWorld: {
+        projectionKind: 'VisualWorldProjection' as const,
+        completeness: { state: 'bounded' as const, missingFields: [], reason: null },
+        cells: [],
+        resourceLayers: canonicalResourceLayers,
+        fields: [],
+        sourceMetrics: []
+      },
+      coverage: { projectionKind: 'CoverageProjection' as const, completeness: { state: 'bounded' as const, missingFields: [], reason: null }, mechanisms: [] },
+      warnings: { projectionKind: 'WarningProjection' as const, completeness: { state: 'bounded' as const, missingFields: [], reason: null }, warnings: [] },
+      classifications: { projectionKind: 'ClassificationProjection' as const, completeness: { state: 'bounded' as const, missingFields: [], reason: null }, classifications: [] },
+      balanceFindings: { projectionKind: 'BalanceFindingProjection' as const, completeness: { state: 'bounded' as const, missingFields: [], reason: null }, findings: [] }
+    };
+
+    store.getState().setDebugProjections(projection);
+
+    expect(store.getState().activeResourceLayers).toEqual(Array.from({ length: 19 }, (_, index) => index));
+    expect(store.getState().frame.resources[0][0].layers?.[18]).toBe(19);
+
+    store.getState().toggleResourceLayer(18);
+    store.getState().setDebugProjections(projection);
+
+    expect(store.getState().activeResourceLayers).not.toContain(18);
+  });
+
   it('keeps debug projection enrichment across later live frame updates from the same run', () => {
     const store = createAppStore(liveFrame);
 
@@ -256,6 +312,8 @@ describe('createAppStore', () => {
         resourceLayers: [
           {
             layerIndex: 0,
+            resourceTypeId: 0,
+            resourceId: 'resource_0',
             width: 1,
             height: 1,
             totalAmount: 4,

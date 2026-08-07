@@ -141,6 +141,8 @@ export interface DebugResourceCell {
 
 export interface DebugResourceLayer {
   layerIndex: number;
+  resourceTypeId: number;
+  resourceId: string;
   width: number;
   height: number;
   totalAmount: number;

@@ -26,10 +26,26 @@ function renderLayerPanel(options: { withResourceProjection?: boolean; activeLev
         resourceLayers: [
           {
             layerIndex: 0,
+            resourceTypeId: 0,
+            resourceId: 'amino_acid',
             width: 1,
             height: 1,
             totalAmount: 10,
             cells: [{ x: 0, y: 0, amount: 10 }],
+            completeness: {
+              state: 'bounded',
+              missingFields: [],
+              reason: 'CommittedSnapshot exposes resource grid cells for this bounded world.'
+            }
+          },
+          {
+            layerIndex: 18,
+            resourceTypeId: 18,
+            resourceId: 'nucleotide_precursor',
+            width: 1,
+            height: 1,
+            totalAmount: 18,
+            cells: [{ x: 0, y: 0, amount: 18 }],
             completeness: {
               state: 'bounded',
               missingFields: [],
@@ -87,7 +103,7 @@ describe('LayerPanel', () => {
     const tickBefore = store.getState().frame.tick;
     const connectionBefore = store.getState().connectionState;
 
-    screen.getByLabelText('Resource Layer 0').click();
+    screen.getByLabelText('Resource layer amino_acid').click();
 
     expect(store.getState().activeResourceLayers).not.toContain(0);
     expect(store.getState().selectedCellId).toBe(selectedBefore);
@@ -100,10 +116,12 @@ describe('LayerPanel', () => {
 
     const panel = screen.getByTestId('monitor-layers-track');
     const fieldRow = screen.getByLabelText('Field layer Heat');
-    const resourceRow = screen.getByLabelText('Resource Layer 0');
+    const resourceRow = screen.getByLabelText('Resource layer amino_acid');
 
     expect(fieldRow).toHaveTextContent('Heat');
     expect(fieldRow).not.toHaveTextContent('CommittedSnapshot.heat');
+    expect(resourceRow).toHaveTextContent('amino_acid');
+    expect(screen.getByLabelText('Resource layer nucleotide_precursor')).toBeInTheDocument();
     expect(resourceRow).toHaveTextContent('10 total · bounded');
     expect(resourceRow).not.toHaveTextContent('CommittedSnapshot exposes resource grid cells');
     expect(panel).not.toHaveTextContent('VisualWorldProjection.fields.CommittedSnapshot.heat');

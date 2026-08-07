@@ -81,7 +81,7 @@ export function LayerPanel({
                 <label
                   key={layer.layerIndex}
                   className="cc-field-layer"
-                  aria-label={display.primaryLabel}
+                  aria-label={`Resource layer ${display.primaryLabel}`}
                   title={display.provenance}
                 >
                   <span className="cc-field-dot" style={{ backgroundColor: color }} />

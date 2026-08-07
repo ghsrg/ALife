@@ -46,14 +46,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .find(|s| s.id == "canonical_living_world")
         .ok_or("Scenario 'canonical_living_world' not found in config/scenarios")?;
 
-    println!("[verify] Loading scenario: {} ({})", meta.id, meta.path.display());
+    println!(
+        "[verify] Loading scenario: {} ({})",
+        meta.id,
+        meta.path.display()
+    );
     let document = load_scenario_document(&meta)?;
     let engine_config = RunEngineConfig::default();
     let mut engine = RunEngine::prepare_from_document(&document, engine_config)?;
 
     let target_ticks = 10000;
     let sample_interval = 1000;
-    println!("[verify] Running simulation for {} ticks with role & division tracking...", target_ticks);
+    println!(
+        "[verify] Running simulation for {} ticks with role & division tracking...",
+        target_ticks
+    );
     engine.start()?;
 
     let start_time = Instant::now();
@@ -108,10 +115,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let elapsed = start_time.elapsed().as_secs_f32();
     let tps = target_ticks as f32 / elapsed;
 
-    println!("\n[verify] Execution finished in {:.2}s ({:.0} TPS)\n", elapsed, tps);
-    println!("------------------------------------------------------------------------------------------------------------------");
-    println!("| Tick  | Alive | Dead | Gen | Carriers | Bnd | Trn | Met | Strg | Syn | Strc | Rpr | Cnt | Sns | Env Res  | Util % |");
-    println!("------------------------------------------------------------------------------------------------------------------");
+    println!(
+        "\n[verify] Execution finished in {:.2}s ({:.0} TPS)\n",
+        elapsed, tps
+    );
+    println!(
+        "------------------------------------------------------------------------------------------------------------------"
+    );
+    println!(
+        "| Tick  | Alive | Dead | Gen | Carriers | Bnd | Trn | Met | Strg | Syn | Strc | Rpr | Cnt | Sns | Env Res  | Util % |"
+    );
+    println!(
+        "------------------------------------------------------------------------------------------------------------------"
+    );
 
     let mut min_alive = u32::MAX;
     let mut max_alive = 0u32;
@@ -149,12 +165,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             s.utilization * 100.0
         );
     }
-    println!("------------------------------------------------------------------------------------------------------------------");
+    println!(
+        "------------------------------------------------------------------------------------------------------------------"
+    );
 
     let final_sample = samples.last().unwrap();
     let final_alive = final_sample.alive;
 
-    println!("\n=== CELL ROLE BALANCING AUDIT (TICK {}) ===", target_ticks);
+    println!(
+        "\n=== CELL ROLE BALANCING AUDIT (TICK {}) ===",
+        target_ticks
+    );
     let roles_list = [
         "Boundary",
         "Transport",
@@ -172,7 +193,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if cnt > 0 {
             active_roles_count += 1;
         }
-        println!("  {:12}: {:2} cells ({:.1}%)", role, cnt, if final_alive > 0 { (cnt as f32 / final_alive as f32) * 100.0 } else { 0.0 });
+        println!(
+            "  {:12}: {:2} cells ({:.1}%)",
+            role,
+            cnt,
+            if final_alive > 0 {
+                (cnt as f32 / final_alive as f32) * 100.0
+            } else {
+                0.0
+            }
+        );
     }
 
     println!("\n=== REPRODUCTION & POPULATION DYNAMICS ===");
@@ -180,16 +210,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Max living cells:  {}", max_alive);
     println!("  Final living cells:{}", final_alive);
     println!("  Active Carriers:   {}", final_sample.carriers);
-    println!("  Reproduction:      {}", if reproduction_occurred { "YES (REPRODUCTION OBSERVED)" } else { "NO" });
+    println!(
+        "  Reproduction:      {}",
+        if reproduction_occurred {
+            "YES (REPRODUCTION OBSERVED)"
+        } else {
+            "NO"
+        }
+    );
 
     // VERIFICATION ASSERTIONS
     assert!(min_alive > 0, "EXTINCTION ERROR: Population dropped to 0!");
     assert!(final_alive > 0, "EXTINCTION ERROR: Final population is 0!");
-    assert!(active_roles_count >= 5, "DIVERSITY ERROR: Cell roles are collapsed into fewer than 5 active types!");
+    assert!(
+        active_roles_count >= 5,
+        "DIVERSITY ERROR: Cell roles are collapsed into fewer than 5 active types!"
+    );
 
-    println!("\n===================================================================================");
+    println!(
+        "\n==================================================================================="
+    );
     println!(" VERIFICATION RESULT: SUCCESS");
-    println!(" Population: min={}, max={}, final={}, active_roles={}/9, reproduction={}",
+    println!(
+        " Population: min={}, max={}, final={}, active_roles={}/9, reproduction={}",
         min_alive, max_alive, final_alive, active_roles_count, reproduction_occurred
     );
     println!("===================================================================================");

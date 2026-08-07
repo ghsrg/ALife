@@ -1,9 +1,9 @@
+use crate::core::snapshot::CommittedSnapshot;
+use crate::observer::monitor_payloads::build_monitor_data_panel_projection;
 use crate::observer::projection::{
     build_coverage_projection, build_visual_world_projection_sampled, build_warning_projection,
 };
-use crate::observer::monitor_payloads::build_monitor_data_panel_projection;
 use crate::observer::projection_envelope::{ProjectionCompleteness, ProjectionCompletenessState};
-use crate::core::snapshot::CommittedSnapshot;
 use crate::viewer_server::state::AppState;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
 use serde_json::{Value, json};
@@ -94,6 +94,8 @@ fn visual_world_json(
             })).collect::<Vec<_>>(),
             "resource_layers": projection.resource_layers.iter().map(|layer| json!({
                 "layer_index": layer.layer_index,
+                "resource_type_id": layer.resource_type_id,
+                "resource_id": layer.resource_id,
                 "width": layer.width,
                 "height": layer.height,
                 "total_amount": layer.total_amount,
@@ -122,7 +124,10 @@ fn visual_world_json(
     }))
 }
 
-fn monitor_json(state: &crate::viewer_server::state::SharedState, snapshot: &CommittedSnapshot) -> Value {
+fn monitor_json(
+    state: &crate::viewer_server::state::SharedState,
+    snapshot: &CommittedSnapshot,
+) -> Value {
     json!(build_monitor_data_panel_projection(
         snapshot,
         state.run_id.as_deref().unwrap_or("unavailable"),

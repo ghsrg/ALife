@@ -278,10 +278,28 @@ pub fn build_visual_world_projection_sampled(
             phenotype_traits: {
                 let id_raw = cell.id.raw();
                 let lineage_hue = ((id_raw * 137) % 360) as u16;
-                let flagella_count = if cell.radius.raw() > 8.0 && cell.energy.raw() > 20.0 { 2 } else if cell.radius.raw() > 5.0 { 1 } else { 0 };
-                let spike_count = if cell.materials.iter().any(|m| *m > 5.0) { 4 } else if cell.radius.raw() > 10.0 { 3 } else { 0 };
-                let receptor_halo_intensity = (cell.energy.raw() / cell.energy_capacity.raw().max(1.0)).min(1.0);
-                let division_flash_intensity = if cell.energy.raw() > cell.energy_capacity.raw() * 0.85 { 0.8 } else { 0.0 };
+                let flagella_count = if cell.radius.raw() > 8.0 && cell.energy.raw() > 20.0 {
+                    2
+                } else if cell.radius.raw() > 5.0 {
+                    1
+                } else {
+                    0
+                };
+                let spike_count = if cell.materials.iter().any(|m| *m > 5.0) {
+                    4
+                } else if cell.radius.raw() > 10.0 {
+                    3
+                } else {
+                    0
+                };
+                let receptor_halo_intensity =
+                    (cell.energy.raw() / cell.energy_capacity.raw().max(1.0)).min(1.0);
+                let division_flash_intensity =
+                    if cell.energy.raw() > cell.energy_capacity.raw() * 0.85 {
+                        0.8
+                    } else {
+                        0.0
+                    };
                 crate::observer::payloads::PhenotypeTraitPayload {
                     flagella_count,
                     spike_count,
@@ -298,6 +316,8 @@ pub fn build_visual_world_projection_sampled(
         .iter()
         .map(|layer| ResourceLayerSummaryPayload {
             layer_index: layer.layer_index,
+            resource_type_id: layer.resource_type_id,
+            resource_id: layer.resource_id.clone(),
             width: layer.width,
             height: layer.height,
             total_amount: layer.total_amount.raw(),

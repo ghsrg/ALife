@@ -113,6 +113,8 @@ function normalizeVisualWorld(value: any): DebugVisualWorldProjection {
     })),
     resourceLayers: (value.payload?.resource_layers ?? []).map((layer: any) => ({
       layerIndex: layer.layer_index,
+      resourceTypeId: layer.resource_type_id ?? layer.layer_index,
+      resourceId: layer.resource_id ?? `resource_${layer.layer_index}`,
       width: layer.width ?? 0,
       height: layer.height ?? 0,
       totalAmount: layer.total_amount,

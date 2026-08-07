@@ -21,6 +21,8 @@ describe('layerDisplayModel', () => {
   it('summarizes resource rows without exposing verbose completeness as primary text', () => {
     const display = buildResourceLayerDisplay({
       layerIndex: 2,
+      resourceTypeId: 2,
+      resourceId: 'nucleotide_precursor',
       width: 1,
       height: 1,
       totalAmount: 5004.31,
@@ -32,9 +34,10 @@ describe('layerDisplayModel', () => {
       }
     });
 
-    expect(display.primaryLabel).toBe('Resource Layer 2');
+    expect(display.primaryLabel).toBe('nucleotide_precursor');
     expect(display.secondaryLabel).toBe('5,004.31 total · bounded');
     expect(display.secondaryLabel).not.toContain('CommittedSnapshot');
+    expect(display.provenance).toContain('Layer 2');
     expect(display.provenance).toContain('CommittedSnapshot exposes resource grid cells');
   });
 });

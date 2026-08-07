@@ -39,6 +39,8 @@ pub struct ResourceLayerCellSnapshot {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ResourceLayerSnapshot {
     pub layer_index: u32,
+    pub resource_type_id: u32,
+    pub resource_id: String,
     pub width: u32,
     pub height: u32,
     pub total_amount: ResourceAmount,
@@ -143,6 +145,14 @@ impl CommittedSnapshot {
                 }
                 ResourceLayerSnapshot {
                     layer_index: layer as u32,
+                    resource_type_id: layer as u32,
+                    resource_id: world
+                        .config()
+                        .chemistry
+                        .resources
+                        .get(layer)
+                        .map(|resource| resource.id.clone())
+                        .unwrap_or_else(|| format!("resource_{layer}")),
                     width: world.resources().width() as u32,
                     height: world.resources().height() as u32,
                     total_amount: world
@@ -166,7 +176,10 @@ impl CommittedSnapshot {
                 let dx = c1_pos.x() - c2_pos.x();
                 let dy = c1_pos.y() - c2_pos.y();
                 let dist = (dx * dx + dy * dy).sqrt();
-                let pulse_intensity = world.joints().readable_signal(joint_id, world.tick()).unwrap_or(0.0);
+                let pulse_intensity = world
+                    .joints()
+                    .readable_signal(joint_id, world.tick())
+                    .unwrap_or(0.0);
                 Some(JointSnapshot {
                     id: joint_id.raw(),
                     cell1_id: c1_id,
@@ -211,7 +224,8 @@ impl CommittedSnapshot {
             }
 
             if component.len() >= 2 {
-                let hull_hue = ((component.first().map(|c| c.raw()).unwrap_or(1) * 149) % 360) as u16;
+                let hull_hue =
+                    ((component.first().map(|c| c.raw()).unwrap_or(1) * 149) % 360) as u16;
                 organisms.push(OrganismSnapshot {
                     id: organism_id_counter,
                     cell_ids: component,
