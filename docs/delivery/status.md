@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-007-S31` | planned | high | `docs/delivery/roadmap.md` | Cinematic Map FX & Spatial Event Animations: Motion trails for active cells, cell division expansion particle bursts, dissolving decomposition aura on death, integrity damage sparks. |
+| `AL-007-S31` | planned | high | `docs/delivery/roadmap.md` | Cinematic Map FX & Spatial Event Animations is the next selected candidate after closing `AL-003-S07` through `AL-003-S09`; no execution is authorized yet. |
 
 ## Operational Rules
 
@@ -39,14 +39,17 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Order | Plan ID | Operational status | Dependency state | Source | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `AL-007-S33` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Visual Lineage Tree & Evolutionary Diversity Observatory. |
-| 2 | `AL-006-S03` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Deterministic parallelism after Monitor stabilization no longer blocks visual inspection. |
-| 3 | `AL-006-S04` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Projection and Viewer Throughput if Monitor UI remains visually heavy under live streams. |
+| 1 | `AL-007-S34` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Cinematic camera tracking can be planned after the next selected UI visual slice. |
+| 2 | `AL-007-S35` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Pseudo-3D presentation can be planned as a separate visual slice. |
+| 3 | `AL-006-S03` | <kbd style="background-color: #ffd33d; color: #24292f; border: none;">ready-to-plan</kbd> | none | `docs/delivery/roadmap.md` | Deterministic parallelism dependencies are closed; select when Core performance becomes the active priority. |
 
 ## Recently Closed
 
 | Plan ID | Status | Evidence | Notes |
 | --- | --- | --- | --- |
+| `AL-003-S09` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-07-0227-REPORT-al-003-s09-local-field-runtime-chemistry-effects.md` | Local Field Runtime And Chemistry Effects closed for bounded deterministic field grids, local reaction/material modifiers, replay stability, and canonical scenario coverage. |
+| `AL-003-S08` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-07-0057-REPORT-al-003-s08-physical-genome-precursor-accounting.md` | Physical Genome Precursor Accounting closed for copy/recombination precursor costs, feasibility preservation, deterministic accounting, and canonical scenario coverage. |
+| `AL-003-S07` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-07-0008-REPORT-al-003-s07-resource-derived-material-synthesis.md` | Resource-Derived Material Synthesis closed for precursor Resource profiles, controlled synthesis, explicit byproducts, degradation/fragments, and canonical scenario coverage. |
 | `AL-003-S06` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-06-1035-REPORT-al-003-s06-genome-recombination.md` | Genome Recombination And Genetic Exchange closed for registered `genome_recombination` process, physical contact/joint feasibility requirement, `GenomeRecombinationPriority` output ID, bitmask crossover recombine method, and integration tests in `phase3e_recombination.rs`. |
 | `AL-007-S33` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-08-06-1025-REPORT-al-007-s33-visual-lineage-tree.md` | Visual Lineage Tree & Evolutionary Diversity Observatory closed for LineageTreeDiagram SVG tree, GenomeSimilarityMatrix heatmap grid, EvolutionWorkspace integration, LevelPanel tab activation, full Vitest suite, and clean TypeScript build. |
 | `AL-007-S30` | <kbd style="background-color: #2ea44f; color: white; border: none;">done</kbd> | `outputs/worklogs/2026-07-31-2146-REPORT-al-007-s30-organism-organic-hulls-and-animated-joint-pulses.md` | Organism Organic Hulls & Animated Joint Pulses closed for VisualJointPayload, VisualOrganismPayload, metaball organic hull rendering, moving joint pulse dot vectors, Layers panel visual effect toggles, Rust integration test, Vitest 46/46 pass (276 tests), and production build. |
