@@ -14,7 +14,7 @@ confidence, dependencies, and scope live in `docs/delivery/roadmap.md`.
 
 | Plan ID | Status | Confidence | Source | Notes |
 | --- | --- | --- | --- | --- |
-| `AL-003-S10` | planned | high | `docs/delivery/roadmap.md` | Scalar Field Capability Boundary And Profile Semantics: selected to close scalar-only Field runtime boundaries before vector/flow or direct profile behavior work; no execution is authorized yet. |
+| `AL-003-S10` | planned | high | `docs/delivery/roadmap.md`, `outputs/worklogs/2026-08-07-1226-PLAN-al-003-s10-scalar-field-capability-boundary.md` | Scalar Field Capability Boundary And Profile Semantics: TDD plan exists; no execution is authorized yet. |
 
 ## Operational Rules
 

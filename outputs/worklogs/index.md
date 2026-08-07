@@ -102,6 +102,7 @@ tags:
 - [[outputs/worklogs/2026-08-06-2246-PLAN-al-003-s07-resource-derived-material-synthesis|2026-08-06-2246-PLAN-al-003-s07-resource-derived-material-synthesis]]
 - [[outputs/worklogs/2026-08-07-0017-PLAN-al-003-s08-physical-genome-precursor-accounting|2026-08-07-0017-PLAN-al-003-s08-physical-genome-precursor-accounting]]
 - [[outputs/worklogs/2026-08-07-0140-PLAN-al-003-s09-local-field-runtime-chemistry-effects|2026-08-07-0140-PLAN-al-003-s09-local-field-runtime-chemistry-effects]]
+- [[outputs/worklogs/2026-08-07-1226-PLAN-al-003-s10-scalar-field-capability-boundary|2026-08-07-1226-PLAN-al-003-s10-scalar-field-capability-boundary]]
 
 ## Reports
 - [[outputs/worklogs/2026-08-07-1025-REPORT-al-003-s07-s09-delivery-status-closure|2026-08-07-1025-REPORT-al-003-s07-s09-delivery-status-closure]]
