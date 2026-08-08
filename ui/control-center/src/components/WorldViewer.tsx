@@ -11,7 +11,7 @@ import { buildViewerHitTargets, type ViewerHitTarget } from '../viewer/viewerHit
 import { useViewerCamera } from '../viewer/useViewerCamera';
 import { buildDebugLayerPlan, type DebugLayerMode } from '../viewer/debugLayers';
 import { mountWorldRenderer, type WorldRenderer } from '../viewer/worldRenderer';
-import { fitCameraToWorld, formatMapScaleLabel } from '../viewer/viewerNavigation';
+import { fitCameraToWorld, formatMapScaleLabel, type ViewerCamera } from '../viewer/viewerNavigation';
 import { ViewerTruthOverlay } from './ViewerTruthOverlay';
 import { buildViewerTruthState } from './viewerTruth';
 
@@ -148,11 +148,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
 
       // Initial fit and render after mount
       updateViewportAndFit();
-      if (activeResourceLayers !== undefined || visualEffects !== undefined || disabledFieldLayers !== undefined) {
-        renderer.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers);
-      } else {
-        renderer.renderFrame(frame, selectedCellId, camera);
-      }
+      renderWorldFrame(renderer, frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers);
       setIsReady(true);
 
       // Track container resize continuously if browser supports ResizeObserver
@@ -179,11 +175,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
 
   useEffect(() => {
     if (!rendererRef.current) return;
-    if (activeResourceLayers !== undefined || visualEffects !== undefined || disabledFieldLayers !== undefined) {
-      rendererRef.current.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers);
-    } else {
-      rendererRef.current.renderFrame(frame, selectedCellId, camera);
-    }
+    renderWorldFrame(rendererRef.current, frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers);
   }, [frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers, isReady]);
 
   const zoomAtCenter = (scaleFactor: number) => {
@@ -754,3 +746,22 @@ function isHitTargetInsideRectangle(
 
   return x >= minX && x <= maxX && y >= minY && y <= maxY;
 }
+
+function renderWorldFrame(
+  renderer: WorldRenderer,
+  frame: WorldFrame,
+  selectedCellId: CellId | null,
+  camera: ViewerCamera,
+  activeResourceLayers?: number[],
+  visualEffects?: VisualEffectsConfig,
+  disabledFieldLayers?: string[]
+) {
+  if (disabledFieldLayers !== undefined) {
+    renderer.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers);
+  } else if (activeResourceLayers !== undefined || visualEffects !== undefined) {
+    renderer.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects);
+  } else {
+    renderer.renderFrame(frame, selectedCellId, camera);
+  }
+}
+
