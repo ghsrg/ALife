@@ -279,7 +279,7 @@ describe('App', () => {
     });
     expect(screen.getByLabelText('Selected entity focus')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText('World cell hit targets'));
+    fireEvent.click(screen.getByLabelText('World Viewer'));
 
     await waitFor(() => {
       expect(screen.queryByLabelText('Selected entity focus')).not.toBeInTheDocument();
