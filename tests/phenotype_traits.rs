@@ -27,6 +27,7 @@ fn test_visual_cell_payload_contains_phenotype_traits() {
         waste: 0.0,
         resource_layer_totals: vec![],
         resource_layers: vec![],
+        scalar_field_layers: vec![],
     };
 
     let proj = build_visual_world_projection(&snapshot);

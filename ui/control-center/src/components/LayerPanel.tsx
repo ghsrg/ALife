@@ -1,7 +1,6 @@
 import { type AppStore } from '../app/appState';
 import { buildFieldLayerDisplay, buildResourceLayerDisplay } from '../app/layerDisplayModel';
 import type { MonitorViewModel } from '../app/monitorViewModel';
-import type { DebugField } from '../projection/types';
 import { uiText } from '../uiText';
 import { type AnalysisLevel } from './LevelPanel';
 
@@ -15,7 +14,6 @@ interface LayerPanelProps {
 
 const RESOURCE_COLORS = ['#00c896', '#3a86ff', '#ffb703', '#8338ec', '#2dd4bf', '#a78bfa'];
 const FIELD_COLORS = ['#22d3ee', '#f97316', '#eab308', '#a855f7', '#38bdf8', '#ef4444'];
-const FRAME_SUMMARY_FIELD_IDS = new Set(['heat', 'waste']);
 
 export function LayerPanel({
   state,
@@ -37,7 +35,7 @@ export function LayerPanel({
     ? state.debugProjections.visualWorld
     : null;
   const fields = visualWorld?.fields ?? [];
-  const configuredFields = fields.filter(isConfiguredFieldLayer);
+  const configuredFields = visualWorld?.fieldLayers ?? [];
   const resourceLayers = visualWorld?.resourceLayers ?? [];
   const configuredFieldIds = configuredFields.map((field) => field.fieldId);
   const resourceLayerIndices = resourceLayers.map((layer) => layer.layerIndex);
@@ -282,11 +280,6 @@ function LayerGroupHeader({
       </div>
     </label>
   );
-}
-
-function isConfiguredFieldLayer(field: DebugField) {
-  const canonicalName = field.fieldId.split('.').at(-1)?.toLowerCase() ?? field.fieldId.toLowerCase();
-  return !FRAME_SUMMARY_FIELD_IDS.has(canonicalName);
 }
 
 function VisualEffectRow({

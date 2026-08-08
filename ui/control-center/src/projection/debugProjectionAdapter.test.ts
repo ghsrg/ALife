@@ -68,6 +68,20 @@ const bundle = {
           }
         }
       ],
+      field_layers: [
+        {
+          field_id: 'temperature',
+          width: 2,
+          height: 2,
+          summary_value: 25,
+          cells: [{ x: 1, y: 0, value: 30 }],
+          completeness: {
+            state: 'bounded',
+            missing_fields: [],
+            reason: 'Scalar field grid'
+          }
+        }
+      ],
       source_metrics: [
         {
           field_id: 'cells.energy',
@@ -147,6 +161,20 @@ describe('normalizeDebugProjectionBundle', () => {
       ]
     });
     expect(normalized.visualWorld.fields[0].sourceMetric.sourceOwner).toBe('CoreCommittedSnapshot');
+    expect(normalized.visualWorld.fieldLayers).toEqual([
+      {
+        fieldId: 'temperature',
+        width: 2,
+        height: 2,
+        summaryValue: 25,
+        cells: [{ x: 1, y: 0, value: 30 }],
+        completeness: {
+          state: 'bounded',
+          missingFields: [],
+          reason: 'Scalar field grid'
+        }
+      }
+    ]);
   });
 
   it('preserves all created projection categories without inventing rows', () => {

@@ -218,7 +218,7 @@ describe('App', () => {
     setupRunnerMocks();
   });
 
-  it('renders the Monitor layout with fixture data and selected Cell Inspector', async () => {
+  it('renders the Monitor layout with fixture data and selected Inspector', async () => {
     renderApp(<App />);
 
     expect(screen.getByRole('heading', { name: /alife control center/i })).toBeInTheDocument();
@@ -243,7 +243,7 @@ describe('App', () => {
     expect(screen.getByTestId('monitor-navigation-track')).toBeInTheDocument();
     expect(screen.getByLabelText('Layer controls')).toBeInTheDocument();
     expect(screen.getByLabelText('Monitor workspace')).toBeInTheDocument();
-    expect(screen.getByLabelText('Cell Inspector')).toBeInTheDocument();
+    expect(screen.getByLabelText('Inspector')).toBeInTheDocument();
     expect(screen.getByLabelText('Selected entity focus')).toHaveTextContent('Cell cell-a');
     expect(screen.queryByTestId('bottom-stats-strip')).not.toBeInTheDocument();
     expect(screen.getByTestId('monitor-data-track')).toBeInTheDocument();

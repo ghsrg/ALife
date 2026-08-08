@@ -46,6 +46,20 @@ const availableDebugProjections: DebugProjectionState = {
         }
       }
     ],
+    fieldLayers: [
+      {
+        fieldId: 'temperature',
+        width: 2,
+        height: 2,
+        summaryValue: 21,
+        cells: [{ x: 0, y: 0, value: 21 }],
+        completeness: {
+          state: 'bounded',
+          missingFields: [],
+          reason: null
+        }
+      }
+    ],
     sourceMetrics: []
   },
   coverage: {
@@ -112,10 +126,10 @@ describe('buildDebugLayerPlan', () => {
       legendLabel: 'amino_acid total 4'
     });
     expect(plan.fields[0]).toMatchObject({
-      fieldId: 'heat',
-      value: 2.5,
-      sourceOwner: 'CoreCommittedSnapshot',
-      legendLabel: 'heat 2.5'
+      fieldId: 'temperature',
+      value: 21,
+      sourceOwner: 'VisualWorldProjection.fieldLayers',
+      legendLabel: 'temperature 21'
     });
     expect(plan.missingProjectionWarnings).toEqual(['cells.materials']);
   });
@@ -128,8 +142,8 @@ describe('buildDebugLayerPlan', () => {
     });
 
     expect(plan.interpolationLabel).toBe('Smooth interpolated');
-    expect(plan.fields[0].value).toBe(2.5);
-    expect(plan.fields[0].sampledValueLabel).toBe('sampled heat: 2.5');
+    expect(plan.fields[0].value).toBe(21);
+    expect(plan.fields[0].sampledValueLabel).toBe('sampled temperature: 21');
   });
 
   it('keeps unavailable projections explicit and produces no drawable layers', () => {

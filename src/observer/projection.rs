@@ -9,10 +9,10 @@ use crate::observer::contract::{coverage_status_specs, warning_code_specs};
 use crate::observer::payloads::{
     BalanceFindingProjectionPayload, ClassificationEvidencePayload,
     ClassificationProjectionPayload, CoverageMechanismPayload, CoverageProjectionPayload,
-    FieldSummaryPayload, ObserverProjectionPayloadError, ProjectionSourceMetricRef,
-    ResourceAmountPayload, ResourceLayerCellPayload, ResourceLayerSummaryPayload,
-    VisualCellPayload, VisualJointPayload, VisualOrganismPayload, VisualWorldProjection,
-    WarningProjectionPayload,
+    FieldLayerCellPayload, FieldLayerSummaryPayload, FieldSummaryPayload,
+    ObserverProjectionPayloadError, ProjectionSourceMetricRef, ResourceAmountPayload,
+    ResourceLayerCellPayload, ResourceLayerSummaryPayload, VisualCellPayload, VisualJointPayload,
+    VisualOrganismPayload, VisualWorldProjection, WarningProjectionPayload,
 };
 use crate::observer::projection_envelope::ProjectionCompleteness;
 
@@ -337,20 +337,55 @@ pub fn build_visual_world_projection_sampled(
         })
         .collect();
 
-    let fields = vec![
-        FieldSummaryPayload {
-            field_id: "heat".to_string(),
-            value: snapshot.heat,
-            source_metric: source_metric("heat", "CommittedSnapshot.heat"),
-        },
-        FieldSummaryPayload {
-            field_id: "waste".to_string(),
-            value: snapshot.waste,
-            source_metric: source_metric("waste", "CommittedSnapshot.waste"),
-        },
-    ];
+    let field_layers: Vec<FieldLayerSummaryPayload> = snapshot
+        .scalar_field_layers
+        .iter()
+        .map(|layer| FieldLayerSummaryPayload {
+            field_id: layer.field_id.clone(),
+            width: layer.width,
+            height: layer.height,
+            summary_value: layer.summary_value,
+            cells: layer
+                .cells
+                .iter()
+                .filter(|cell| stride == 1 || (cell.x % stride == 0 && cell.y % stride == 0))
+                .map(|cell| FieldLayerCellPayload {
+                    x: cell.x,
+                    y: cell.y,
+                    value: cell.value,
+                })
+                .collect(),
+            completeness: ProjectionCompleteness::bounded(
+                "CommittedSnapshot exposes scalar field grid cells for this bounded world.",
+            ),
+        })
+        .collect();
 
-    let source_metrics = vec![
+    let mut fields: Vec<FieldSummaryPayload> = snapshot
+        .scalar_field_layers
+        .iter()
+        .map(|layer| FieldSummaryPayload {
+            field_id: layer.field_id.clone(),
+            value: layer.summary_value,
+            source_metric: source_metric(
+                &layer.field_id,
+                &format!("CommittedSnapshot.scalar_field_layers.{}", layer.field_id),
+            ),
+        })
+        .collect();
+
+    fields.push(FieldSummaryPayload {
+        field_id: "heat".to_string(),
+        value: snapshot.heat,
+        source_metric: source_metric("heat", "CommittedSnapshot.heat"),
+    });
+    fields.push(FieldSummaryPayload {
+        field_id: "waste".to_string(),
+        value: snapshot.waste,
+        source_metric: source_metric("waste", "CommittedSnapshot.waste"),
+    });
+
+    let mut source_metrics = vec![
         source_metric("tick", "CommittedSnapshot.tick"),
         source_metric("cells.id", "CommittedSnapshot.cells[].id"),
         source_metric("cells.position", "CommittedSnapshot.cells[].position"),
@@ -380,6 +415,12 @@ pub fn build_visual_world_projection_sampled(
         source_metric("heat", "CommittedSnapshot.heat"),
         source_metric("waste", "CommittedSnapshot.waste"),
     ];
+    source_metrics.extend(snapshot.scalar_field_layers.iter().map(|layer| {
+        source_metric(
+            &layer.field_id,
+            &format!("CommittedSnapshot.scalar_field_layers.{}", layer.field_id),
+        )
+    }));
 
     let joints = snapshot
         .joints
@@ -411,6 +452,7 @@ pub fn build_visual_world_projection_sampled(
         joints,
         organisms,
         resource_layers,
+        field_layers,
         fields,
         completeness,
         source_metrics,

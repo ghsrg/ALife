@@ -160,6 +160,9 @@ export function AppShell() {
               exportStatus={exportStatus}
             />
             <InspectorPanel
+              frame={state.frame}
+              debugProjections={state.debugProjections}
+              currentSelection={state.currentSelection}
               selectedCell={state.selectedCell}
               selectionNotice={state.selectionNotice}
               displayedTick={state.frame?.tick || 0}

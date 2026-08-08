@@ -156,6 +156,21 @@ export interface DebugField {
   sourceMetric: DebugProjectionSourceMetric;
 }
 
+export interface DebugFieldCell {
+  x: number;
+  y: number;
+  value: number;
+}
+
+export interface DebugFieldLayer {
+  fieldId: string;
+  width: number;
+  height: number;
+  summaryValue: number;
+  cells: DebugFieldCell[];
+  completeness: DebugProjectionCompleteness;
+}
+
 export interface DebugVisualWorldProjection {
   projectionKind: 'VisualWorldProjection';
   completeness: DebugProjectionCompleteness;
@@ -163,6 +178,7 @@ export interface DebugVisualWorldProjection {
   joints?: DebugVisualJoint[];
   organisms?: DebugVisualOrganism[];
   resourceLayers: DebugResourceLayer[];
+  fieldLayers?: DebugFieldLayer[];
   fields: DebugField[];
   sourceMetrics: DebugProjectionSourceMetric[];
 }

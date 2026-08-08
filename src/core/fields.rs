@@ -211,6 +211,7 @@ impl FieldGrid {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn new_with_layer_values(
         width: usize,
         height: usize,

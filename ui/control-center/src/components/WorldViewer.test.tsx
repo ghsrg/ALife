@@ -228,6 +228,34 @@ describe('WorldViewer', () => {
     expect(onSelectTarget).toHaveBeenCalledWith(expect.objectContaining({ kind: 'world-block' }));
   });
 
+  it('exposes explicit World cell hit targets at World Level', async () => {
+    const onSelectTarget = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <WorldViewer
+        frame={{
+          ...ui1aFixture.frame,
+          resources: [
+            [{ organic: 1, mineral: 0, energy: 0 }, { organic: 2, mineral: 0, energy: 0 }]
+          ]
+        }}
+        selectedCellId={null}
+        activeLevel="world"
+        onSelectCell={vi.fn()}
+        onSelectTarget={onSelectTarget}
+      />
+    );
+
+    await user.click(screen.getByLabelText('Select world cell 1, 0'));
+
+    expect(onSelectTarget).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'world-block',
+      blockX: 1,
+      blockY: 0
+    }));
+  });
+
   it('uses Shift click to emit a compatible Cell selection set instead of replacing selection', async () => {
     const onSelectTarget = vi.fn();
     const user = userEvent.setup();

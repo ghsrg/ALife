@@ -70,13 +70,21 @@ export function buildDebugLayerPlan(
     : [];
 
   const fields = options.showFieldLayer
-    ? debugProjections.visualWorld.fields.map((field) => ({
-        fieldId: field.fieldId,
-        value: field.value,
-        sourceOwner: field.sourceMetric.sourceOwner,
-        legendLabel: `${field.fieldId} ${field.value}`,
-        sampledValueLabel: `sampled ${field.fieldId}: ${field.value}`
-      }))
+    ? (debugProjections.visualWorld.fieldLayers?.length
+        ? debugProjections.visualWorld.fieldLayers.map((field) => ({
+            fieldId: field.fieldId,
+            value: field.summaryValue,
+            sourceOwner: 'VisualWorldProjection.fieldLayers',
+            legendLabel: `${field.fieldId} ${formatAmount(field.summaryValue)}`,
+            sampledValueLabel: `sampled ${field.fieldId}: ${formatAmount(field.summaryValue)}`
+          }))
+        : debugProjections.visualWorld.fields.map((field) => ({
+            fieldId: field.fieldId,
+            value: field.value,
+            sourceOwner: field.sourceMetric.sourceOwner,
+            legendLabel: `${field.fieldId} ${formatAmount(field.value)}`,
+            sampledValueLabel: `sampled ${field.fieldId}: ${formatAmount(field.value)}`
+          })))
     : [];
 
   return {

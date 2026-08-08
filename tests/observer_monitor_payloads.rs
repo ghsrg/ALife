@@ -25,6 +25,7 @@ fn resource_snapshot(total: f32) -> CommittedSnapshot {
                 amount: ResourceAmount::new(total).unwrap(),
             }],
         }],
+        scalar_field_layers: vec![],
     }
 }
 

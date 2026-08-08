@@ -95,6 +95,23 @@ pub struct ResourceLayerSummaryPayload {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct FieldLayerCellPayload {
+    pub x: u32,
+    pub y: u32,
+    pub value: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FieldLayerSummaryPayload {
+    pub field_id: String,
+    pub width: u32,
+    pub height: u32,
+    pub summary_value: f32,
+    pub cells: Vec<FieldLayerCellPayload>,
+    pub completeness: ProjectionCompleteness,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct FieldSummaryPayload {
     pub field_id: String,
     pub value: f32,
@@ -126,6 +143,7 @@ pub struct VisualWorldProjection {
     pub joints: Vec<VisualJointPayload>,
     pub organisms: Vec<VisualOrganismPayload>,
     pub resource_layers: Vec<ResourceLayerSummaryPayload>,
+    pub field_layers: Vec<FieldLayerSummaryPayload>,
     pub fields: Vec<FieldSummaryPayload>,
     pub completeness: ProjectionCompleteness,
     pub source_metrics: Vec<ProjectionSourceMetricRef>,

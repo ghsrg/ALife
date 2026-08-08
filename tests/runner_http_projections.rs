@@ -182,3 +182,56 @@ async fn latest_projections_expose_named_canonical_resource_layers() {
     assert_eq!(layers[18]["resource_type_id"], 18);
     assert_eq!(layers[18]["resource_id"], "nucleotide_precursor");
 }
+
+#[tokio::test]
+async fn latest_projections_expose_configured_resource_and_field_grids() {
+    let state = make_state();
+    start_canonical_run(state.clone()).await;
+
+    let response = create_app(state)
+        .oneshot(
+            Request::builder()
+                .uri("/projections/latest")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+    let json = response_json(response).await;
+
+    let resource_ids: Vec<&str> = json["visual_world"]["payload"]["resource_layers"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|layer| layer["resource_id"].as_str())
+        .collect();
+    assert!(resource_ids.contains(&"amino_acid"));
+    assert!(resource_ids.contains(&"nucleotide_precursor"));
+
+    let field_layers = json["visual_world"]["payload"]["field_layers"]
+        .as_array()
+        .expect("field_layers should be present");
+    let field_ids: Vec<&str> = field_layers
+        .iter()
+        .filter_map(|layer| layer["field_id"].as_str())
+        .collect();
+    for expected in [
+        "temperature",
+        "light",
+        "pressure",
+        "radiation",
+        "chemical_gradient",
+        "flow",
+    ] {
+        assert!(
+            field_ids.contains(&expected),
+            "missing field layer {expected}"
+        );
+    }
+
+    let first_field = &field_layers[0];
+    assert!(!first_field["cells"].as_array().unwrap().is_empty());
+    assert!(first_field["cells"][0]["value"].is_number());
+}

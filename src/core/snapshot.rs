@@ -48,6 +48,22 @@ pub struct ResourceLayerSnapshot {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct FieldLayerCellSnapshot {
+    pub x: u32,
+    pub y: u32,
+    pub value: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScalarFieldLayerSnapshot {
+    pub field_id: String,
+    pub width: u32,
+    pub height: u32,
+    pub summary_value: f32,
+    pub cells: Vec<FieldLayerCellSnapshot>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct JointSnapshot {
     pub id: u32,
     pub cell1_id: CellId,
@@ -75,6 +91,7 @@ pub struct CommittedSnapshot {
     pub waste: f32,
     pub resource_layer_totals: Vec<ResourceAmount>,
     pub resource_layers: Vec<ResourceLayerSnapshot>,
+    pub scalar_field_layers: Vec<ScalarFieldLayerSnapshot>,
 }
 
 impl CommittedSnapshot {
@@ -214,11 +231,9 @@ impl CommittedSnapshot {
                     } else {
                         None
                     };
-                    if let Some(nid) = neighbor_id {
-                        if !visited.contains(&nid.raw()) {
-                            visited.insert(nid.raw());
-                            queue.push_back(nid);
-                        }
+                    if let Some(nid) = neighbor_id.filter(|nid| !visited.contains(&nid.raw())) {
+                        visited.insert(nid.raw());
+                        queue.push_back(nid);
                     }
                 }
             }
@@ -236,6 +251,53 @@ impl CommittedSnapshot {
             }
         }
 
+        let scalar_field_layers = world
+            .fields()
+            .map(|fields| {
+                let width = fields.width();
+                let height = fields.height();
+                (0..fields.layer_count())
+                    .map(|layer_idx| {
+                        let layer_index = crate::core::fields::FieldLayerIndex::from_raw(layer_idx);
+                        let summary_value = (0..height)
+                            .flat_map(|y| {
+                                (0..width).filter_map(move |x| {
+                                    let coord = crate::core::units::GridCoord::new(x, y);
+                                    fields.value_at(layer_index, coord).ok().map(|v| v.raw())
+                                })
+                            })
+                            .sum::<f32>();
+                        let cells = (0..height)
+                            .flat_map(|y| {
+                                (0..width).filter_map(move |x| {
+                                    let coord = crate::core::units::GridCoord::new(x, y);
+                                    fields.value_at(layer_index, coord).ok().map(|v| {
+                                        FieldLayerCellSnapshot {
+                                            x: x as u32,
+                                            y: y as u32,
+                                            value: v.raw(),
+                                        }
+                                    })
+                                })
+                            })
+                            .collect();
+                        let field_id = match layer_idx {
+                            0 => "temperature".to_string(),
+                            1 => "light".to_string(),
+                            _ => format!("field_{}", layer_idx),
+                        };
+                        ScalarFieldLayerSnapshot {
+                            field_id,
+                            width: width as u32,
+                            height: height as u32,
+                            summary_value,
+                            cells,
+                        }
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
         Self {
             tick: world.tick(),
             cells,
@@ -245,6 +307,7 @@ impl CommittedSnapshot {
             waste: world.environment().waste().raw(),
             resource_layer_totals,
             resource_layers,
+            scalar_field_layers,
         }
     }
 }

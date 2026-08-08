@@ -55,6 +55,7 @@ fn test_organism_hulls_and_joints_payload_projection() {
         waste: 0.0,
         resource_layer_totals: vec![],
         resource_layers: vec![],
+        scalar_field_layers: vec![],
     };
 
     let projection = build_visual_world_projection(&snapshot);

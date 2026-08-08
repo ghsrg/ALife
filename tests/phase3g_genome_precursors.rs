@@ -230,9 +230,9 @@ fn recombination_candidate() -> ActionCandidate {
 
 fn contact_pair_config() -> alife::core::config::RuntimeConfig {
     let mut config = RawScenarioConfig::parse(&fixture()).unwrap();
-    let mut second = config.cell.clone();
+    let mut second = config.cell;
     second.position = Position::new(17.5, 16.0);
-    config.initial_cells = vec![config.cell.clone(), second];
+    config.initial_cells = vec![config.cell, second];
     config.initial_typed_resources = vec![
         config.initial_typed_resources[0].clone(),
         config.initial_typed_resources[0].clone(),

@@ -125,6 +125,18 @@ function normalizeVisualWorld(value: any): DebugVisualWorldProjection {
       })),
       completeness: completeness(layer.completeness)
     })),
+    fieldLayers: (value.payload?.field_layers ?? []).map((layer: any) => ({
+      fieldId: String(layer.field_id),
+      width: Number(layer.width ?? 0),
+      height: Number(layer.height ?? 0),
+      summaryValue: Number(layer.summary_value ?? 0),
+      cells: (layer.cells ?? []).map((cell: any) => ({
+        x: Number(cell.x),
+        y: Number(cell.y),
+        value: Number(cell.value)
+      })),
+      completeness: completeness(layer.completeness)
+    })),
     fields: (value.payload?.fields ?? []).map((field: any) => ({
       fieldId: field.field_id,
       value: field.value,

@@ -440,6 +440,23 @@ button:disabled {
   pointer-events: auto;
 }
 
+.world-block-hotspot {
+  position: absolute;
+  z-index: 1;
+  border: 1px solid rgba(116, 222, 210, 0.12);
+  background: transparent;
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
+.world-block-hotspot:hover,
+.world-block-hotspot:focus-visible,
+.world-block-hotspot.selected {
+  border-color: rgba(255, 209, 102, 0.72);
+  background: rgba(255, 209, 102, 0.08);
+  outline: none;
+}
+
 .cell-hotspot:focus-visible {
   border-color: #ffd166;
   outline: none;

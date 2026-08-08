@@ -40,7 +40,7 @@ fn visual_world_json(
     snapshot: &CommittedSnapshot,
     stride: usize,
 ) -> Option<Value> {
-    let projection = build_visual_world_projection_sampled(&snapshot, stride);
+    let projection = build_visual_world_projection_sampled(snapshot, stride);
 
     Some(json!({
         "schema_version": "VisualWorldProjection/v1",
@@ -103,6 +103,18 @@ fn visual_world_json(
                     "x": cell.x,
                     "y": cell.y,
                     "amount": cell.amount,
+                })).collect::<Vec<_>>(),
+                "completeness": completeness_json(&layer.completeness),
+            })).collect::<Vec<_>>(),
+            "field_layers": projection.field_layers.iter().map(|layer| json!({
+                "field_id": layer.field_id,
+                "width": layer.width,
+                "height": layer.height,
+                "summary_value": layer.summary_value,
+                "cells": layer.cells.iter().map(|cell| json!({
+                    "x": cell.x,
+                    "y": cell.y,
+                    "value": cell.value,
                 })).collect::<Vec<_>>(),
                 "completeness": completeness_json(&layer.completeness),
             })).collect::<Vec<_>>(),

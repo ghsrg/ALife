@@ -71,24 +71,24 @@ function renderLayerPanel(options: { withResourceProjection?: boolean; activeLev
               sourceOwner: 'WorldFrameProjection',
               sourcePath: 'VisualWorldProjection.fields.CommittedSnapshot.waste'
             }
+          }
+        ],
+        fieldLayers: [
+          {
+            fieldId: 'temperature',
+            width: 1,
+            height: 1,
+            summaryValue: 21,
+            cells: [{ x: 0, y: 0, value: 21 }],
+            completeness: { state: 'bounded', missingFields: [], reason: null }
           },
           {
-            fieldId: 'CommittedSnapshot.temperature',
-            value: 21,
-            sourceMetric: {
-              fieldId: 'CommittedSnapshot.temperature',
-              sourceOwner: 'WorldFrameProjection',
-              sourcePath: 'VisualWorldProjection.fields.CommittedSnapshot.temperature'
-            }
-          },
-          {
-            fieldId: 'CommittedSnapshot.light',
-            value: 64,
-            sourceMetric: {
-              fieldId: 'CommittedSnapshot.light',
-              sourceOwner: 'WorldFrameProjection',
-              sourcePath: 'VisualWorldProjection.fields.CommittedSnapshot.light'
-            }
+            fieldId: 'light',
+            width: 1,
+            height: 1,
+            summaryValue: 64,
+            cells: [{ x: 0, y: 0, value: 64 }],
+            completeness: { state: 'bounded', missingFields: [], reason: null }
           }
         ],
         sourceMetrics: []
@@ -173,10 +173,7 @@ describe('LayerPanel', () => {
     expect(store.getState().visualEffects.showWorldGrid).toBe(true);
 
     fieldsGroup.click();
-    expect(store.getState().disabledFieldLayers).toEqual([
-      'CommittedSnapshot.temperature',
-      'CommittedSnapshot.light'
-    ]);
+    expect(store.getState().disabledFieldLayers).toEqual(['temperature', 'light']);
   });
 
   it('renders Fields as configured named scalar layers with color and switches', () => {
@@ -197,7 +194,7 @@ describe('LayerPanel', () => {
 
     temperatureToggle.click();
 
-    expect(store.getState().disabledFieldLayers).toContain('CommittedSnapshot.temperature');
+    expect(store.getState().disabledFieldLayers).toContain('temperature');
   });
 
   it('renders Visual Effects as icon, name, and switch rows without corrupt glyph text', () => {

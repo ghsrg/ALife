@@ -3,6 +3,7 @@ use alife::core::fields::{
 };
 use alife::core::fields::{FieldGrid, FieldGridError, FieldLayerIndex};
 use alife::core::ids::FieldTypeId;
+use alife::core::snapshot::CommittedSnapshot;
 use alife::core::stable_state_hash::StableStateHasher;
 use alife::core::tick::TickExecutor;
 use alife::core::units::{FieldValue, GridCoord, MaterialAmount, Position, WorldSize};
@@ -590,4 +591,60 @@ conserved_behavior = "abstracted"
         .unwrap();
     assert_eq!(value, FieldValue::new(50.0).unwrap());
     assert!(prepared.manifest.warnings.is_empty());
+}
+
+#[test]
+fn committed_snapshot_contains_configured_scalar_field_layers() {
+    let fields = r#"
+[[bootstrap.fields]]
+field_id = "temperature"
+generator = "band"
+version = "band.v1"
+seed_domain = "fields.layers.temperature"
+min_value = 40.0
+max_value = 60.0
+
+[fields.temperature]
+kind = "scalar"
+initial_value = 10.0
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 100.0
+effect_profile = "temperature"
+conserved_behavior = "abstracted"
+
+[fields.light]
+kind = "scalar"
+initial_value = 0.75
+diffusion_rate = 0.0
+decay_rate = 0.0
+min_value = 0.0
+max_value = 1.0
+effect_profile = "light"
+conserved_behavior = "abstracted"
+"#;
+    let document = ScenarioDocument::resolve(ScenarioSource::Inline {
+        id: "snapshot_field_projection_test".to_string(),
+        content: minimal_field_toml(fields, ""),
+    })
+    .unwrap();
+    let prepared = alife::bootstrap::prepare(&document).unwrap();
+    let executor = TickExecutor::new(prepared.runtime_config).unwrap();
+
+    let snapshot = CommittedSnapshot::from_world(executor.world());
+
+    let temperature = snapshot
+        .scalar_field_layers
+        .iter()
+        .find(|layer| layer.field_id == "temperature")
+        .expect("temperature should be committed");
+    assert!(temperature.cells.iter().any(|cell| cell.value > 0.0));
+
+    let light = snapshot
+        .scalar_field_layers
+        .iter()
+        .find(|layer| layer.field_id == "light")
+        .expect("light should be committed");
+    assert!(light.cells.iter().any(|cell| cell.value > 0.0));
 }

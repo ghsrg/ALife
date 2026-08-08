@@ -16,6 +16,105 @@ use alife::observer::projection::{
 use alife::observer::projection_envelope::ProjectionCompletenessState;
 
 #[test]
+fn visual_world_projection_exposes_configured_scalar_field_layers_with_cells() {
+    use alife::core::snapshot::{FieldLayerCellSnapshot, ScalarFieldLayerSnapshot};
+
+    let snapshot = CommittedSnapshot {
+        tick: Tick::from_raw(7),
+        cells: vec![],
+        joints: vec![],
+        organisms: vec![],
+        heat: 0.0,
+        waste: 0.0,
+        resource_layer_totals: vec![],
+        resource_layers: vec![],
+        scalar_field_layers: vec![
+            ScalarFieldLayerSnapshot {
+                field_id: "temperature".to_string(),
+                width: 2,
+                height: 2,
+                summary_value: 25.0,
+                cells: vec![
+                    FieldLayerCellSnapshot {
+                        x: 0,
+                        y: 0,
+                        value: 20.0,
+                    },
+                    FieldLayerCellSnapshot {
+                        x: 1,
+                        y: 0,
+                        value: 30.0,
+                    },
+                    FieldLayerCellSnapshot {
+                        x: 0,
+                        y: 1,
+                        value: 22.0,
+                    },
+                    FieldLayerCellSnapshot {
+                        x: 1,
+                        y: 1,
+                        value: 28.0,
+                    },
+                ],
+            },
+            ScalarFieldLayerSnapshot {
+                field_id: "light".to_string(),
+                width: 2,
+                height: 2,
+                summary_value: 0.5,
+                cells: vec![
+                    FieldLayerCellSnapshot {
+                        x: 0,
+                        y: 0,
+                        value: 0.1,
+                    },
+                    FieldLayerCellSnapshot {
+                        x: 1,
+                        y: 0,
+                        value: 0.2,
+                    },
+                    FieldLayerCellSnapshot {
+                        x: 0,
+                        y: 1,
+                        value: 0.8,
+                    },
+                    FieldLayerCellSnapshot {
+                        x: 1,
+                        y: 1,
+                        value: 0.9,
+                    },
+                ],
+            },
+        ],
+    };
+
+    let projection = build_visual_world_projection(&snapshot);
+
+    let temperature = projection
+        .field_layers
+        .iter()
+        .find(|layer| layer.field_id == "temperature")
+        .expect("temperature field layer should be projected");
+    assert_eq!(temperature.width, 2);
+    assert_eq!(temperature.height, 2);
+    assert_eq!(temperature.summary_value, 25.0);
+    assert!(
+        temperature
+            .cells
+            .iter()
+            .any(|cell| { cell.x == 1 && cell.y == 0 && (cell.value - 30.0).abs() < f32::EPSILON })
+    );
+
+    let field_ids: Vec<&str> = projection
+        .fields
+        .iter()
+        .map(|field| field.field_id.as_str())
+        .collect();
+    assert!(field_ids.contains(&"temperature"));
+    assert!(field_ids.contains(&"light"));
+}
+
+#[test]
 fn visual_world_projection_is_bounded_and_source_backed() {
     let snapshot = CommittedSnapshot {
         tick: Tick::from_raw(42),
@@ -69,6 +168,7 @@ fn visual_world_projection_is_bounded_and_source_backed() {
         ],
         joints: vec![],
         organisms: vec![],
+        scalar_field_layers: vec![],
     };
 
     let payload = build_visual_world_projection(&snapshot);

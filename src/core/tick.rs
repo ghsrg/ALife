@@ -1302,11 +1302,11 @@ impl TickExecutor {
                 (resource_amount_before_decay - resource_amount_after_decay).max(0.0);
         }
         let field_update_cadence = config.scheduler.world.field_update_ticks.max(1);
-        if is_due_on_executing_tick(executing_tick, field_update_cadence) {
-            if let Some(fields) = self.world.fields_mut_for_commit() {
-                fields.decay_elapsed(field_update_cadence);
-                let _ = fields.diffuse_all();
-            }
+        if is_due_on_executing_tick(executing_tick, field_update_cadence)
+            && let Some(fields) = self.world.fields_mut_for_commit()
+        {
+            fields.decay_elapsed(field_update_cadence);
+            let _ = fields.diffuse_all();
         }
         self.world
             .cells_mut_for_commit()

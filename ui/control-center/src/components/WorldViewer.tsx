@@ -19,6 +19,7 @@ import {
   createCellSelection,
   createNoneSelection,
   createSelectionSet,
+  createWorldBlockSelection,
   deriveWorldBlockAtPoint,
   toggleSelectionSetMember,
   type AnalysisLevel,
@@ -87,6 +88,16 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
 
   const resourceRows = frame.resources.length;
   const resourceColumns = Math.max(...frame.resources.map((row) => row.length), 0);
+  const worldBlockHitTargets = activeLevel === 'world'
+    ? buildWorldBlockHitTargets({
+        frame,
+        rows: resourceRows,
+        columns: resourceColumns,
+        viewport,
+        camera,
+        currentSelection
+      })
+    : [];
 
   const measureViewport = () => {
     const host = hostRef.current;
@@ -574,6 +585,28 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
         </aside>
       ) : null}
       <div className="world-hit-targets" aria-label={uiText.viewer.hitTargetsAriaLabel}>
+        {worldBlockHitTargets.map((target) => (
+          <button
+            key={`${target.blockX}-${target.blockY}`}
+            type="button"
+            className={target.selected ? 'world-block-hotspot selected' : 'world-block-hotspot'}
+            style={target.style}
+            aria-label={`Select world cell ${target.blockX}, ${target.blockY}`}
+            onMouseDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelectTarget?.(createWorldBlockSelection({
+                runId: frame.runId,
+                tick: frame.tick,
+                blockX: target.blockX,
+                blockY: target.blockY,
+                bounds: target.bounds,
+                completeness: target.completeness
+              }));
+            }}
+          />
+        ))}
         {buildViewerHitTargets(frame, selectedCellId, viewport, camera).map((target) => {
           const isSearchMatch = Boolean(normalizedMapSearchQuery) && matchesCellSearch(frame, target.id, normalizedMapSearchQuery);
           return (
@@ -630,6 +663,63 @@ function matchesCellSearch(frame: WorldFrame, cellId: CellId, query: string) {
     ...((cell.internalResources ?? []).map((resource) => `internal resource ${resource.resourceTypeId}`)),
     ...((cell.localExternalResources ?? []).map((resource) => `local external resource ${resource.resourceTypeId}`))
   ].some((value) => value.toLowerCase().includes(query));
+}
+
+function buildWorldBlockHitTargets({
+  frame,
+  rows,
+  columns,
+  viewport,
+  camera,
+  currentSelection
+}: {
+  frame: WorldFrame;
+  rows: number;
+  columns: number;
+  viewport: { width: number; height: number };
+  camera: { x: number; y: number; scale: number };
+  currentSelection?: MonitorSelection;
+}) {
+  if (rows <= 0 || columns <= 0) {
+    return [];
+  }
+
+  const blockWidthWorld = frame.world.width / columns;
+  const blockHeightWorld = frame.world.height / rows;
+  const scaleX = viewport.width / frame.world.width;
+  const scaleY = viewport.height / frame.world.height;
+
+  return Array.from({ length: rows * columns }, (_, index) => {
+    const blockX = index % columns;
+    const blockY = Math.floor(index / columns);
+    const left = blockX * blockWidthWorld * scaleX * camera.scale + camera.x;
+    const top = blockY * blockHeightWorld * scaleY * camera.scale + camera.y;
+    const width = blockWidthWorld * scaleX * camera.scale;
+    const height = blockHeightWorld * scaleY * camera.scale;
+    const selected =
+      currentSelection?.kind === 'world-block' &&
+      currentSelection.blockX === blockX &&
+      currentSelection.blockY === blockY;
+
+    return {
+      blockX,
+      blockY,
+      selected,
+      bounds: {
+        x: blockX * blockWidthWorld,
+        y: blockY * blockHeightWorld,
+        width: blockWidthWorld,
+        height: blockHeightWorld
+      },
+      completeness: 'bounded' as const,
+      style: {
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${width}px`,
+        height: `${height}px`
+      }
+    };
+  });
 }
 
 function matchesResourceLayerSearch(

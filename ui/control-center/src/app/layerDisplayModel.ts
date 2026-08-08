@@ -1,4 +1,4 @@
-import type { DebugField, DebugResourceLayer } from '../projection/types';
+import type { DebugField, DebugFieldLayer, DebugResourceLayer } from '../projection/types';
 
 export interface LayerDisplayRow {
   primaryLabel: string;
@@ -14,14 +14,21 @@ const FIELD_LABELS: Record<string, string> = {
   mineral: 'Mineral'
 };
 
-export function buildFieldLayerDisplay(field: DebugField): LayerDisplayRow {
+export function buildFieldLayerDisplay(field: DebugField | DebugFieldLayer): LayerDisplayRow {
   const key = field.fieldId.split('.').at(-1) ?? field.fieldId;
   const primaryLabel = FIELD_LABELS[key.toLowerCase()] ?? titleCase(key);
+  const value = 'summaryValue' in field ? field.summaryValue : field.value;
+  const provenance =
+    'sourceMetric' in field
+      ? `${field.sourceMetric.sourceOwner}: ${field.sourceMetric.sourcePath}`
+      : field.completeness.reason
+        ? `VisualWorldProjection.field_layers.${field.fieldId} | ${field.completeness.state}: ${field.completeness.reason}`
+        : `VisualWorldProjection.field_layers.${field.fieldId} | ${field.completeness.state}`;
 
   return {
     primaryLabel,
-    secondaryLabel: formatFieldValue(field.value),
-    provenance: `${field.sourceMetric.sourceOwner}: ${field.sourceMetric.sourcePath}`
+    secondaryLabel: formatFieldValue(value),
+    provenance
   };
 }
 

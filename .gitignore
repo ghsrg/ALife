@@ -12,6 +12,7 @@ __pycache__/
 # Added by cargo
 
 /target
+/target-codex-lite
 .worktrees/
 ui/control-center/node_modules/
 ui/control-center/dist/
