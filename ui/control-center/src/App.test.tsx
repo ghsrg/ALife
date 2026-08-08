@@ -225,8 +225,8 @@ describe('App', () => {
     expect(screen.getByRole('tab', { name: /monitor/i })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('UI-1A Deterministic Fixture')).toBeInTheDocument();
     expect(screen.getAllByText(/Fixture Tick 128/i)[0]).toBeInTheDocument();
-    const inspector = screen.getByLabelText(/cell inspector/i);
-    expect(within(inspector).getByRole('heading', { name: /cell inspector/i })).toBeInTheDocument();
+    const inspector = screen.getByLabelText(/(cell )?inspector/i);
+    expect(within(inspector).getByRole('heading', { name: /(cell )?inspector/i })).toBeInTheDocument();
     expect(within(inspector).getByText('cell-a')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByLabelText('World Viewer')).toHaveAttribute('data-ready', 'true');
@@ -476,7 +476,7 @@ describe('App', () => {
     const workspace = screen.getByLabelText(/monitor workspace/i);
     expect(within(workspace).getByText('demo-scenario')).toBeInTheDocument();
     expect(within(workspace).getAllByText(/Live Tick 9/i)[0]).toBeInTheDocument();
-    const inspector = screen.getByLabelText(/cell inspector/i);
+    const inspector = screen.getByLabelText(/(cell )?inspector/i);
     expect(within(inspector).getByText('No cell selected.')).toBeInTheDocument();
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Resources');
     expect(screen.getByLabelText('Viewer projection truth')).toHaveTextContent('Missing projection');
@@ -527,7 +527,7 @@ describe('App', () => {
 
     const workspace = screen.getByLabelText(/monitor workspace/i);
     expect(within(workspace).getAllByText(/Live Tick 12/i)[0]).toBeInTheDocument();
-    const inspector = screen.getByLabelText(/cell inspector/i);
+    const inspector = screen.getByLabelText(/(cell )?inspector/i);
     expect(within(inspector).getByText('No cell selected.')).toBeInTheDocument();
   });
 
