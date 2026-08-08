@@ -143,6 +143,7 @@ export function MonitorWorkspace({
             isFullScreen={isMapFullScreen}
             debugProjections={state.debugProjections}
             activeResourceLayers={state.activeResourceLayers}
+            disabledFieldLayers={state.disabledFieldLayers}
             visualEffects={state.visualEffects}
           />
           {state.selectedCell ? <SelectedEntityFocusCard selectedCell={state.selectedCell} /> : null}

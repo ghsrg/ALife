@@ -559,6 +559,7 @@ function enrichFrameWithDebugProjection(frame: WorldFrame, debugProjections: Deb
   return {
     ...frame,
     resources,
+    fieldLayers: debugProjections.visualWorld.fieldLayers,
     cells
   };
 }

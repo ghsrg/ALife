@@ -11,7 +11,8 @@ export interface WorldRenderer {
     selectedCellId?: CellId | null,
     camera?: ViewerCamera,
     activeResourceLayers?: number[],
-    visualEffects?: VisualEffectsConfig
+    visualEffects?: VisualEffectsConfig,
+    disabledFieldLayers?: string[]
   ) => void;
   resize: (width: number, height: number) => void;
   exportPng: () => string;
@@ -40,12 +41,16 @@ export async function mountWorldRenderer(host: HTMLElement): Promise<WorldRender
     selectedCellId: CellId | null = null,
     camera: ViewerCamera = DEFAULT_VIEWER_CAMERA,
     activeResourceLayers?: number[],
-    visualEffects?: VisualEffectsConfig
+    visualEffects?: VisualEffectsConfig,
+    disabledFieldLayers: string[] = []
   ) => {
     root.removeChildren();
 
     const bounds = drawBounds(width, height, frame, camera);
     root.addChild(bounds);
+
+    const fieldLayerGraphics = drawFieldLayer(frame, width, height, camera, disabledFieldLayers, visualEffects);
+    root.addChild(fieldLayerGraphics);
 
     const resourceLayer = drawResourceLayer(frame, width, height, camera, activeResourceLayers, visualEffects);
     root.addChild(resourceLayer);
@@ -611,6 +616,101 @@ function drawResourceLayer(
 }
 
 
+
+const FIELD_PALETTES: Record<string, { minColor: number; maxColor: number; baseAlpha: number }> = {
+  temperature: { minColor: 0x3a86ff, maxColor: 0xef4444, baseAlpha: 0.35 },
+  light: { minColor: 0x1e293b, maxColor: 0xfacc15, baseAlpha: 0.30 },
+  pressure: { minColor: 0x06b6d4, maxColor: 0xd946ef, baseAlpha: 0.30 },
+  radiation: { minColor: 0x10b981, maxColor: 0x84cc16, baseAlpha: 0.35 },
+  chemical_gradient: { minColor: 0x6366f1, maxColor: 0x38bdf8, baseAlpha: 0.30 },
+  flow: { minColor: 0x14b8a6, maxColor: 0x99f6e4, baseAlpha: 0.30 }
+};
+
+function interpolateColor(colorA: number, colorB: number, factor: number): number {
+  const t = Math.max(0, Math.min(1, factor));
+  const rA = (colorA >> 16) & 0xff;
+  const gA = (colorA >> 8) & 0xff;
+  const bA = colorA & 0xff;
+
+  const rB = (colorB >> 16) & 0xff;
+  const gB = (colorB >> 8) & 0xff;
+  const bB = colorB & 0xff;
+
+  const r = Math.round(rA + t * (rB - rA));
+  const g = Math.round(gA + t * (gB - gA));
+  const b = Math.round(bA + t * (bB - bA));
+
+  return (r << 16) | (g << 8) | b;
+}
+
+export function drawFieldLayer(
+  frame: WorldFrame,
+  width: number,
+  height: number,
+  camera: ViewerCamera,
+  disabledFieldLayers: string[] = [],
+  visualEffects?: VisualEffectsConfig
+): Graphics {
+  const layer = new Graphics();
+  const fieldLayers = frame.fieldLayers ?? [];
+  if (fieldLayers.length === 0) {
+    return layer;
+  }
+
+  const showNebula = visualEffects?.showNebula ?? false;
+
+  fieldLayers.forEach((fieldLayer) => {
+    if (disabledFieldLayers.includes(fieldLayer.fieldId)) {
+      return;
+    }
+
+    const cols = fieldLayer.width;
+    const rows = fieldLayer.height;
+    if (cols <= 0 || rows <= 0 || fieldLayer.cells.length === 0) {
+      return;
+    }
+
+    const cellWidth = (width / cols) * camera.scale;
+    const cellHeight = (height / rows) * camera.scale;
+
+    const palette = FIELD_PALETTES[fieldLayer.fieldId] ?? {
+      minColor: 0x38bdf8,
+      maxColor: 0xf97316,
+      baseAlpha: 0.3
+    };
+
+    let maxVal = -Infinity;
+    let minVal = Infinity;
+    for (const cell of fieldLayer.cells) {
+      if (cell.value > maxVal) maxVal = cell.value;
+      if (cell.value < minVal) minVal = cell.value;
+    }
+
+    const range = maxVal - minVal;
+
+    for (const cell of fieldLayer.cells) {
+      const normVal = range > 0.0001 ? (cell.value - minVal) / range : cell.value > 0 ? 0.5 : 0;
+      if (normVal <= 0.001) continue;
+
+      const cx = camera.x + (cell.x + 0.5) * cellWidth;
+      const cy = camera.y + (cell.y + 0.5) * cellHeight;
+      const color = interpolateColor(palette.minColor, palette.maxColor, normVal);
+      const alpha = Math.min(0.45, 0.05 + normVal * palette.baseAlpha);
+
+      layer.rect(cx - cellWidth * 0.5, cy - cellHeight * 0.5, cellWidth, cellHeight);
+      layer.fill({ color, alpha });
+
+      if (showNebula) {
+        const glowRadius = Math.max(cellWidth, cellHeight) * (1.1 + normVal * 1.2);
+        const glowAlpha = Math.min(0.18, 0.02 + normVal * 0.12);
+        layer.circle(cx, cy, glowRadius);
+        layer.fill({ color, alpha: glowAlpha });
+      }
+    }
+  });
+
+  return layer;
+}
 
 function cellFillColor(lifecycleState: LifecycleVisualState, energyRatio: number) {
   if (lifecycleState === 'dead') {

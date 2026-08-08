@@ -64,6 +64,7 @@ export interface WorldFrame {
     height: number;
   };
   resources: ResourceConcentration[][];
+  fieldLayers?: DebugFieldLayer[];
   cells: CellProjection[];
   joints?: JointProjection[];
   organismHulls?: OrganismHullProjection[];

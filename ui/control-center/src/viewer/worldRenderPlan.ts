@@ -45,6 +45,7 @@ export interface WorldRenderPlan {
   joints: RenderPlanJoint[];
   organismHulls: RenderPlanOrganismHull[];
   hasResourceField: boolean;
+  hasFieldLayers: boolean;
   visualEffects?: VisualEffectsConfig;
 }
 
@@ -128,6 +129,7 @@ export function createWorldRenderPlan(
 
   return {
     hasResourceField: frame.resources.length > 0 && (frame.resources[0]?.length ?? 0) > 0,
+    hasFieldLayers: (frame.fieldLayers?.length ?? 0) > 0,
     visualEffects,
     cells,
     joints,

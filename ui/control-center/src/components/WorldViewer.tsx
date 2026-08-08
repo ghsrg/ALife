@@ -41,6 +41,7 @@ interface WorldViewerProps {
   isFullScreen?: boolean;
   debugProjections?: DebugProjectionState;
   activeResourceLayers?: number[];
+  disabledFieldLayers?: string[];
   visualEffects?: VisualEffectsConfig;
 }
 
@@ -61,6 +62,7 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
     isFullScreen = false,
     debugProjections,
     activeResourceLayers,
+    disabledFieldLayers,
     visualEffects
   },
   ref
@@ -146,8 +148,8 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
 
       // Initial fit and render after mount
       updateViewportAndFit();
-      if (activeResourceLayers !== undefined || visualEffects !== undefined) {
-        renderer.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects);
+      if (activeResourceLayers !== undefined || visualEffects !== undefined || disabledFieldLayers !== undefined) {
+        renderer.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers);
       } else {
         renderer.renderFrame(frame, selectedCellId, camera);
       }
@@ -177,12 +179,12 @@ export const WorldViewer = forwardRef<WorldViewerHandle, WorldViewerProps>(funct
 
   useEffect(() => {
     if (!rendererRef.current) return;
-    if (activeResourceLayers !== undefined || visualEffects !== undefined) {
-      rendererRef.current.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects);
+    if (activeResourceLayers !== undefined || visualEffects !== undefined || disabledFieldLayers !== undefined) {
+      rendererRef.current.renderFrame(frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers);
     } else {
       rendererRef.current.renderFrame(frame, selectedCellId, camera);
     }
-  }, [frame, selectedCellId, camera, activeResourceLayers, visualEffects, isReady]);
+  }, [frame, selectedCellId, camera, activeResourceLayers, visualEffects, disabledFieldLayers, isReady]);
 
   const zoomAtCenter = (scaleFactor: number) => {
     const point = { x: frame.world.width / 2, y: frame.world.height / 2 };

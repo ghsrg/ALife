@@ -3,6 +3,7 @@ import type { WorldFrame } from '../projection/types';
 import {
   buildResourceGridLineSegments,
   drawCellOrganelles,
+  drawFieldLayer,
   drawIntegrityArc,
   drawJointsLayer,
   sampleBilinearResource
@@ -114,5 +115,37 @@ describe('drawJointsLayer', () => {
   });
 });
 
+describe('drawFieldLayer', () => {
+  it('renders scalar field layer grid rectangles and handles disabled field layers', () => {
+    const mockFrame: WorldFrame = {
+      schemaVersion: 'WorldFrameProjection/v1',
+      runId: 'test-run',
+      tick: 10,
+      world: { width: 800, height: 600 },
+      resources: [],
+      fieldLayers: [
+        {
+          fieldId: 'temperature',
+          width: 2,
+          height: 2,
+          summaryValue: 25.0,
+          completeness: { state: 'full', missingFields: [], reason: null },
+          cells: [
+            { x: 0, y: 0, value: 18.0 },
+            { x: 1, y: 0, value: 25.0 },
+            { x: 0, y: 1, value: 28.0 },
+            { x: 1, y: 1, value: 32.0 }
+          ]
+        }
+      ],
+      cells: []
+    };
 
+    const camera = { x: 0, y: 0, scale: 1 };
+    const layer = drawFieldLayer(mockFrame, 800, 600, camera, []);
+    expect(layer).toBeDefined();
 
+    const disabledLayer = drawFieldLayer(mockFrame, 800, 600, camera, ['temperature']);
+    expect(disabledLayer).toBeDefined();
+  });
+});
