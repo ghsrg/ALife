@@ -281,8 +281,10 @@ describe('App', () => {
 
     fireEvent.click(screen.getByLabelText('World cell hit targets'));
 
-    expect(screen.queryByLabelText('Selected entity focus')).not.toBeInTheDocument();
-    expect(screen.getByText(/No cell selected\.|Block/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Selected entity focus')).not.toBeInTheDocument();
+      expect(screen.getByText('No cell selected.')).toBeInTheDocument();
+    });
   });
 
   it('exports a viewer PNG from the toolbar', async () => {
